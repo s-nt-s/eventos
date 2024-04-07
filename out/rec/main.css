@@ -1,0 +1,217 @@
+body {
+  font-family: arial,sans serif;
+  font-size: 11pt;
+  margin: 0;
+  --max-width: 500px;
+}
+.hide {
+  display: none;
+}
+header, footer {
+  padding: 1em;
+  clear: both;
+  margin: 0px;
+  color: #fff !important;
+  background-color: #3a3a3a !important;
+}
+footer {
+  margin-top: 16px !important;
+}
+footer p:first-child {
+  margin-top: 0;
+}
+footer p:last-child {
+  margin-bottom: 0;
+}
+header {
+  margin-bottom: 16px !important;
+}
+header p:first-child {
+  margin-top: 0;
+}
+header p:last-child {
+  margin-bottom: 0;
+}
+header a, footer a {
+  color: inherit;
+}
+main {
+  margin: auto;
+  max-width: var(--max-width);
+  padding: 0px 1em 0px 1em;
+}
+
+div.evento > div.info p {
+  margin: 0;
+}
+.sesiones {
+  font-family: monospace;
+}
+.sesiones pre {
+  display: inline !important;
+}
+a.rss:before {
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACMUlEQVQ4T5WTW0gUYRTHfzO7O2NrrYbVukQhdHPVDCyyKMgCsSLtKalQiK3AMukhKK2HHnqqXooestgy8qFIgu7ESuWDRdCFirSiJLKIzSjdNS+74870zUhj4gU9MAzfN3N+539uUvigd4UsyxcBv3gmbAa0GpIekDqqfa2Tdf4XRYIWE6CLC8k1Jw9Huh89Gkb78gyjPzoRNYYJEGrAvaaS5PVHBp0SGvG2ZnqbzqB9fjouyAYomYVMyS/HMXM+jrQM2yn29i7d1w+MqcgG/B/GMWsB7lW7SVq2FWQniZ+fiNSVkehsH6HGBqhLNqNmbUD79orYm1voke84Z+eSUl6HnOIj0fGRzrPFI5QM1aBgH8lFh60IxkCcvubz9DSeQJ46g+mV95A96RY4eqVimAob4PRmoixci5JVhCtjufVT/H0jkfqduISS1IqbolcyXbUlaO0vbMioNVBzNjFtyykkxU3vo9P0hI5b56S8UmKt94nWB0YHKP5C0BPEPzxEzS3Bs61WpBPj98mVg6lUhTC0Pn4dy7Hepg0VMXsjnrKgdRm5VC4gD0jdcxvX3KX8uXOUvidB0g49twraFSxFE3MyHLC4GM/2c4OAyzuIvwvhLqgSha0h9voG0at7Sdl1DWXearob9tP/ssEGWKOMJKEKiJmCOTymOcVoK4vWif5/tTqgigKbgxZve8yAaLfZMOlHta9FLEXWuPM6xkdrmcI13nyHIV8QC5E9GYjlrBuBv7XA3MY1VX3bAAAAAElFTkSuQmCC");
+  background-position: left center;
+  background-repeat: no-repeat;
+  padding-left: 1.4em;
+  content:"";
+}
+span.descuento {
+  text-decoration: line-through;
+}
+div.info  {
+  /*! display: grid; */
+  /*! grid-template-columns: auto 1fr; */
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+nav ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 0;
+  background-color: white !important;
+  color: black;
+  display: inline-block;
+  padding: 5px;
+  border-radius: 5px;
+}
+nav li {
+  display: inline-block;
+}
+nav ul li+li:before {
+  padding: 6px;
+  color: black;
+  content: "»";
+}
+nav ul li code {
+  font-size: inherit;
+}
+#categoria {
+  width: 100%;
+}
+ol.sesiones {
+  padding-right: 0px;
+  padding-left: 0px;
+  margin-right: 0px;
+  margin-left: 0px;
+}
+ol.sesiones li {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+div.evento img.cartel {
+  max-width:100%;
+  vertical-align: bottom;
+}
+
+div.img {
+  position: relative;
+}
+div.img > div {
+  text-align: center;
+}
+div.img > div:has(img.cartel.loaded) {
+  background-color: var(--back, #202020);
+}
+body.js div.evento img.cartel:not(.loaded) {
+  height: calc(min(var(--max-width), 100vw) * 9 / 16);
+  opacity: 0;
+}
+div.evento img.cartel {
+  max-height: calc(min(var(--max-width), 100vw) * 9 / 16);
+}
+
+div.img > span, div.img > a {
+  position: absolute;
+  bottom: 0px;
+  margin: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 5px;
+}
+div.img span, div.img a {
+  color: white;
+  text-decoration: none;
+}
+
+div.img > a.lugar {
+  top: 0px;
+  bottom: unset !important;
+}
+a.lugar:before {
+  content: "📍"
+}
+div.img > a.zoom {
+  right: 0 !important;
+  left: unset !important;
+}
+
+body.noinputdate p.fechas {
+  display: none;
+}
+p.fechas {
+  display: flex;
+  align-items: center;
+}
+
+p.fechas input:first-of-type {
+  order: 1;
+  margin-right: auto;
+}
+
+p.fechas input:last-of-type {
+  order: 3;
+  margin-left: auto;
+}
+
+p.fechas::after {
+  content: "";
+  flex-grow: 1;
+  border-bottom: 1px solid black;
+  margin: 0 10px;
+  order: 2;
+}
+
+@media (max-width: 300px) {
+  p.fechas {
+    flex-direction: column;
+    align-items: center;
+  }
+  p.fechas input:first-of-type {
+    margin-bottom: 16px;
+  }
+  p.fechas input {
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  p.fechas::after {
+    content: none; 
+  }
+}
+
+a.logo {
+  text-decoration: none;
+}
+a.logo img {
+  height: 1.15em;
+  min-width: 1.15em;
+  vertical-align: bottom;
+  margin: 0;
+  padding: 0;
+}
+a img.ico:not(.loaderror) {
+  max-height: 1em;
+  display: inline-block;
+  vertical-align: top;
+  margin: 0;
+  padding: 0;
+}
+span.precio {
+  color: green;
+}

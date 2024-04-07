@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <title>Eventos</title>
+  <meta name="Last-Modified" content="{{now.strftime('%Y-%m-%d %H:%M')}}" />
+  <link href="{{PAGE_URL}}/rec/main.css" rel="stylesheet" />
+  <noscript>
+    <style>
+      .needjs {
+        display: none !important;
+      }
+    </style>
+  </noscript>
+  <script src="{{PAGE_URL}}/rec/hacks.js" type="text/javascript"></script>
+  <script src="{{PAGE_URL}}/rec/info.js" type="text/javascript"></script>
+  <script src="{{PAGE_URL}}/rec/img.js" type="text/javascript"></script>
+  <script src="{{PAGE_URL}}/rec/main.js" type="text/javascript"></script>
+  <style id="jscss"></style>
+</head>
+
+<body>
+  {% with root="." %} {% include "header.html" %} {% endwith %}
+  <main>
+    <p class="fechas needjs">
+      <input type="date" id="ini" value="{{fecha.ini}}" min="{{fecha.ini}}" max="{{fecha.fin}}" title="Fecha de inicio">
+      <input type="date" id="fin" value="{{fecha.fin}}" min="{{fecha.ini}}" max="{{fecha.fin}}" title="Fecha de fin">
+    </p>
+    <p class="categoria needjs">
+      <select id="categoria">
+        <option value="">Todos ({{count}})</option>
+        {% for c, num in categorias.items()|sort %}
+        <option value="{{c | simplify }}" data-txt="{{(c|string).title()}}">{{(c|string).title()}} ({{num}})</option>
+        {% endfor %}
+      </select>
+    </p>
+    {% for (img, e) in eventos %}
+    <div id="{{e.id}}" class="evento {{e.category | simplify}}" data-end="{{e.end or ''}}">
+      <div class="img" {%if img.background%} style="--back: rgb{{img.background}}" {%endif%}>
+        <div><img src="{{img.url}}" alt="{{e.titulo}}" class="cartel {{img.orientation}}" loading="lazy" /></div>
+        <span class="categoria">{% if e.more %}<a class="more" href="{{e.more}}">🔗</a> {% endif %}{{(e.category|string).title()}}</span>
+        <a class="zoom" href="{{img.origin.url}}" title="Ver cartel original">🔍</a>
+        <a class="lugar" href="{{e.place.url}}">{{e.place.name}}</a>
+      </div>
+      <div class="info">
+        <p class="titulo">
+          <span class="precio" title="{{e.price | twoDec}}€">{{e.price | round | int}}€</span>
+          {% if e.url %}
+          <a href="{{e.url}}">{{e.title}}</a>
+          {% else %}
+          {{e.title}}
+          {% endif %}
+        </p>
+      </div>
+      {% if e.sessions %}
+      <ol class="sesiones">
+        {% for dia, sesiones in e.dates %}
+        <li>
+          <pre>{{dia.strip()}}</pre>:{% for s in sesiones %}
+          {% if s.url %}
+          <a href="{{s.url}}">{{s.hour}}</a>
+          {% else %}
+          {{s.hour}}
+          {% endif %}
+          {% endfor %}
+        </li>
+        {% endfor %}
+      </ol>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </main>
+  {% with root="." %} {% include "footer.html" %} {% endwith %}
+</body>
+
+</html>

@@ -1,0 +1,70 @@
+name: deploy
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 5 28,1,15 * *'
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+env:
+  LOG_FORMAT: '%(name)s - %(levelname)s - %(message)s'
+  LOG_MODE: 'a'
+  MINIFY: "1"
+jobs:
+  scrape_and_deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Set TimeZone
+        run: |
+          sudo timedatectl set-timezone "Europe/Madrid"
+      - name: Set ENV variables
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}"
+          REPO_OWNER="${GITHUB_REPOSITORY_OWNER}"
+          PAGE_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}"
+          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+          echo $PAGE_URL
+          echo "PAGE_URL=${PAGE_URL}" >> $GITHUB_ENV
+          echo "REPO_URL=${REPO_URL}" >> $GITHUB_ENV
+      - name: Check out this repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      - name: Install pip packages
+        run: pip install -r requirements.txt
+      - name: RM
+        run: rm -rf ./rec/
+      - name: BUILD
+        continue-on-error: false
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 40
+          retry_wait_seconds: 60
+          max_attempts: 6
+          retry_on: any
+          command: python build_site.py
+      - name: LOG
+        run: |
+          echo "$(date +'%Y-%m-%d')" > ./out/execution.log
+          cat ./log/build_site.log >> ./out/execution.log
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: './out'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+      - name: Web Archive
+        run: |
+          ./tool/archive.sh "$PAGE_URL/"
