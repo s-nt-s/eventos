@@ -1,0 +1,210 @@
+query FetchShowGroupsForCinema(
+  $cinemaId: ID
+  $cinemaProximity: Proximity
+  $playing: Playing!
+  $auditoriums: [ID!]
+  $genres: [String!]
+  $flags: [String!]
+  $contentRatings: [ID!]
+  $showGroups: [String!]
+  $actors: [ID!]
+  $periods: [ShowPeriod!]
+  $times: [Time!]
+  $timesOfDay: [ShowTimeOfDay!]
+  $first: Int
+  $page: Int
+) {
+  showGroups(
+    playing: $playing
+    cinemaId: $cinemaId
+    cinemaProximity: $cinemaProximity
+    auditoriums: $auditoriums
+    genres: $genres
+    flags: $flags
+    contentRatings: $contentRatings
+    showGroups: $showGroups
+    actors: $actors
+    periods: $periods
+    times: $times
+    timesOfDay: $timesOfDay
+    first: $first
+    page: $page
+  ) {
+    paginatorInfo {
+      ...SimplePaginatorInfoAttributes
+      __typename
+    }
+    data {
+      uuid
+      name
+      flags {
+        category
+        isCinemaSpecific
+        description
+        code
+        name
+        __typename
+      }
+      movie {
+        ...MovieInterfaceBaseAttributes
+        ...MovieInterfaceContentRating
+        ...MovieInterfaceJugendFilmJury
+        thumbnailImage {
+          ...ImageAttributes
+          __typename
+        }
+        hasTrailers
+        hasMedia
+        genres {
+          ...GenreAttributes
+          __typename
+        }
+        __typename
+      }
+      cinema {
+        city {
+          ...CityAttributes
+          __typename
+        }
+        __typename
+      }
+      shows(playing: $playing, flags: $flags) {
+        data {
+          ...ShowBaseAttributes
+          ...ShowTimings
+          deeplink
+          flags {
+            category
+            isCinemaSpecific
+            description
+            code
+            name
+            __typename
+          }
+          auditorium {
+            ...AuditoriumAttributes
+            __typename
+          }
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+
+fragment MovieInterfaceBaseAttributes on MovieInterface {
+  id
+  title
+  urlSlug
+  duration
+  description
+  additionalDescription
+  additionalInfo
+  distributor
+  publisherUrl
+  released
+  startdate
+  productionYear
+  productionCountries {
+    name
+    __typename
+  }
+  heroImageAlignment
+  __typename
+}
+
+fragment MovieInterfaceContentRating on MovieInterface {
+  contentRating {
+    id
+    aliases
+    contentRatingSystem {
+      name
+      __typename
+    }
+    description
+    icon {
+      url
+      colors
+      __typename
+    }
+    minimumAge
+    minimumAgeAccompanied
+    name
+    __typename
+  }
+  __typename
+}
+
+fragment MovieInterfaceJugendFilmJury on MovieInterface {
+  jugendFilmJury {
+    jfjAgeFrom
+    __typename
+  }
+  __typename
+}
+
+fragment CityAttributes on City {
+  id
+  distance
+  latitude
+  urlSlug
+  longitude
+  name
+  timezone
+  __typename
+}
+
+fragment GenreAttributes on Genre {
+  id
+  name
+  urlSlug
+  __typename
+}
+
+fragment AuditoriumAttributes on Auditorium {
+  id
+  name
+  __typename
+}
+
+fragment ShowTimings on Show {
+  admission
+  beginning
+  endreservation
+  endsale
+  startreservation
+  startsale
+  __typename
+}
+
+fragment ShowBaseAttributes on Show {
+  id
+  name
+  urlSlug
+  __typename
+}
+
+fragment SimplePaginatorInfoAttributes on SimplePaginatorInfo {
+  __typename
+  count
+  currentPage
+  firstItem
+  hasMorePages
+  lastItem
+  perPage
+}
+
+fragment ImageAttributes on Image {
+  id
+  url
+  colors
+  width
+  height
+  license
+  licenseUrl
+  credit
+  __typename
+}

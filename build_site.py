@@ -4,6 +4,7 @@ from core.event import Event, Category
 from core.casaencendida import CasaEncendida
 from core.dore import Dore
 from core.madriddestino import MadridDestino
+from core.cineentradas import CineEntradas
 from core.j2 import Jnj2, toTag
 from datetime import datetime
 from core.log import config_log
@@ -96,7 +97,11 @@ def myfilter(e: Event):
 
 
 logger.info("Recuperar eventos")
-eventos = MadridDestino().events + Dore().events + CasaEncendida().events
+eventos = \
+    MadridDestino().events + \
+    Dore().events + \
+    CasaEncendida().events + \
+    CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).events
 logger.info(f"{len(eventos)} recuperados")
 eventos = tuple(filter(myfilter, eventos))
 logger.info(f"{len(eventos)} filtrados")

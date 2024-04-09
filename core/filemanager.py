@@ -76,6 +76,7 @@ class FileManager:
             "xlsx": "xls",
             "js": "json",
             "sql": "txt",
+            "gql": "txt",
             "htm": "html"
         }.get(ext, ext)
 

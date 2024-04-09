@@ -1,0 +1,23 @@
+query FetchShowGroupsFilters(
+  $movieId: ID
+  $cinemaId: ID
+  $cinemaProximity: Proximity
+  $playing: Playing!
+  $filters: [String!]
+) {
+  showGroups(
+    movieId: $movieId
+    cinemaId: $cinemaId
+    cinemaProximity: $cinemaProximity
+    playing: $playing
+  ) {
+    filterOptions(filters: $filters) {
+      key
+      label
+      values {
+        key
+        label
+      }
+    }
+  }
+}

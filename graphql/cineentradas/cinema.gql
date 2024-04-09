@@ -1,0 +1,80 @@
+query FetchCinemas(
+  $proximity: Proximity
+  $onlyBookable: Boolean
+  $buildingType: CinemaBuildingType
+  $ids: [ID!]
+  $hasCustomerCards: Boolean
+  $first: Int
+  $page: Int
+) {
+  cinemas(
+    proximity: $proximity
+    onlyBookable: $onlyBookable
+    buildingType: $buildingType
+    hasCustomerCards: $hasCustomerCards
+    ids: $ids
+    first: $first
+    page: $page
+  ) {
+    paginatorInfo {
+      ...PaginatorInfoAttributes
+      __typename
+    }
+    data {
+      ...CinemaBaseAttributes
+      thumbnailImage {
+        ...ImageAttributes
+        __typename
+      }
+      city {
+        ...CityAttributes
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+
+fragment CityAttributes on City {
+  id
+  distance
+  latitude
+  urlSlug
+  longitude
+  name
+  timezone
+  __typename
+}
+
+fragment PaginatorInfoAttributes on PaginatorInfo {
+  __typename
+  count
+  currentPage
+  firstItem
+  hasMorePages
+  lastItem
+  lastPage
+  perPage
+  total
+}
+
+fragment CinemaBaseAttributes on Cinema {
+  id
+  name
+  urlSlug
+  heroImageAlignment
+  __typename
+}
+
+fragment ImageAttributes on Image {
+  id
+  url
+  colors
+  width
+  height
+  license
+  licenseUrl
+  credit
+  __typename
+}
