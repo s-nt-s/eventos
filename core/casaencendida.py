@@ -6,6 +6,8 @@ import logging
 from .event import Event, Session, Place, Category
 import re
 import json
+from datetime import datetime
+from .filemanager import FM
 
 logger = logging.getLogger(__name__)
 
@@ -58,20 +60,41 @@ class CasaEncendida(Web):
     def __get_json(self, url) -> List[Dict]:
         self.get(url)
         n = self.select_one('script[type="application/ld+json"]')
-        return json.loads(get_text(n))
+        js = json.loads(get_text(n))
+        return js
 
     def __url_to_event(self, url):
         info = self.__get_json(url)
+        self.__validate_info_event(info)
+        idevent = info[0]['identifier'].split("-")[-1]
+        FM.dump(f"rec/casaencendida/{idevent}.json", info)
         return Event(
-            id="ce"+info['identifier'].split("-")[-1],
+            id="ce"+idevent,
             url=url,
             name=info[0]['name'],
             category=self.__find_category(),
             img=info[0]['image'],
             place=CasaEncendida.PLACE,
             sessions=self.__find_sessions(info),
-            price=self.__find_price(info)
+            price=self.__find_price(info),
+            duration=self.__find_duration(info)
         )
+
+    def __validate_info_event(self, info: List):
+        if not isinstance(info, list):
+            raise CasaEncendida("MUST TO BE A LIST: "+str(info))
+        if len(info) == 0:
+            raise CasaEncendida("MUST TO BE A LIST NOT EMPTY: "+str(info))
+        for i in info:
+            if not isinstance(i, dict):
+                raise CasaEncendida("MUST TO BE A LIS OF DICTs: "+str(info))
+        identifier = info[0].get('identifier')
+        if not isinstance(identifier, str):
+            raise CasaEncendida("MUST TO BE A LIS OF DICTs with a identifier: "+str(info))
+        idevent = identifier.split("-")[-1]
+        if not idevent.isdigit():
+            raise CasaEncendida("MUST TO BE A LIS OF DICTs with a int identifier: "+str(info))
+        return True
 
     def __find_sessions(self, info: List[Dict]):
         if len(info) == 1:
@@ -106,6 +129,29 @@ class CasaEncendida(Web):
         if "conciertos" in tags:
             return Category.CONCERT
         raise CasaEncendidaException("Unknown category: " + ", ".join(sorted(tags)))
+
+    def __find_duration(self, info: List[Dict]):
+        def to_date(s: str):
+            if s is not None:
+                return datetime.strptime(s, "%Y-%m-%dT%H:%M:%S%z")
+        under24: Set[int] = set()
+        over24: Set[int] = set()
+        for i in info:
+            startDate = to_date(i.get('startDate'))
+            endDate = to_date(i.get('endDate'))
+            if startDate and endDate:
+                d = round((endDate - startDate).total_seconds() / 60)
+                if d < 0:
+                    continue
+                if d < (24*60):
+                    under24.add(d)
+                else:
+                    over24.add(d)
+        if len(under24.union(over24)) == 0:
+            raise CasaEncendidaException("NOT FOUND DURATION")
+        if under24:
+            return max(under24)
+        return max(over24)
 
 
 if __name__ == "__main__":

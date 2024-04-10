@@ -1,4 +1,4 @@
-from .web import Driver
+from .web import Driver, Web
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
@@ -8,9 +8,30 @@ from .event import Event, Session, Place, Category
 from .cache import TupleCache
 from datetime import datetime, timezone, timedelta
 import re
+import requests
 
 
 logger = logging.getLogger(__name__)
+S = requests.Session()
+S.headers.update({
+    'Host': 'api-tienda.madrid-destino.com',
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'X-SaleChannel': '3c4b1c81-e854-4324-830f-d59bec8cf9a2',
+    'X-Locale': 'es',
+    'Origin': 'https://tienda.madrid-destino.com',
+    'DNT': '1',
+    'Connection': 'keep-alive',
+    'Referer': 'https://tienda.madrid-destino.com/',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-site',
+    'Pragma': 'no-cache',
+    'Cache-Control': 'no-cache',
+    'TE': 'trailers'
+})
 
 
 class MadridDestinoException(Exception):
@@ -31,7 +52,8 @@ class MadridDestino:
         with Driver(browser="firefox") as f:
             f.get(MadridDestino.URL)
             f.wait_ready()
-            js = f.execute_script("return JSON.stringify(window.__NUXT__.state)")
+            js = f.execute_script(
+                "return JSON.stringify(window.__NUXT__.state)")
             obj = json.loads(js)
             if not isinstance(obj, dict) or obj.get("errorApi") is True:
                 raise ValueError(obj)
@@ -44,6 +66,12 @@ class MadridDestino:
     def state(self):
         return self.__get_state()
 
+    @Cache("rec/madriddestino/{}.json")
+    def get_info(self, id) -> Dict:
+        url = f"https://api-tienda.madrid-destino.com/public_api/events/{id}/info"
+        logger.debug(url)
+        return S.get(url).json()['data']
+
     @property
     @TupleCache("rec/madriddestino.json", builder=Event.build)
     def events(self):
@@ -54,6 +82,7 @@ class MadridDestino:
             if e['freeCapacity'] == 0:
                 continue
             logger.debug("event.id="+str(e['id']))
+            info = self.get_info(e['id'])
             org = self.__find("organizations", e['organization_id'])
             events.add(Event(
                 id="md"+str(e['id']),
@@ -61,6 +90,7 @@ class MadridDestino:
                 name=e['title'],
                 img=e['featuredImage']['url'],
                 price=e['highestPrice'],
+                duration=info['duration'],
                 category=self.__find_category(e),
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(e)
@@ -74,7 +104,8 @@ class MadridDestino:
         if len(space_id) == 0:
             raise MadridDestinoException(f"Unknown place in {e['id']}")
         if len(space_id) > 1:
-            raise MadridDestinoException(f"Indeterminate place in {e['id']}: " + ", ".join(sorted(space_id)))
+            raise MadridDestinoException(
+                f"Indeterminate place in {e['id']}: " + ", ".join(sorted(space_id)))
         space = self.__find("spaces", space_id.pop())
         return Place(
             name=re.sub(r"\s+Madrid$", "", space['name']),
@@ -132,7 +163,8 @@ class MadridDestino:
             return Category.VISIT
         if e['id'] == 3706:
             return Category.CONCERT
-        raise MadridDestinoException(f"Unknown category in {e['id']}: " + ", ".join(sorted(cats)))
+        raise MadridDestinoException(
+            f"Unknown category in {e['id']}: " + ", ".join(sorted(cats)))
 
 
 if __name__ == "__main__":

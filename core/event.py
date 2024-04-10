@@ -98,6 +98,7 @@ class Event:
     price: float
     category: Category
     place: Place
+    duration: int
     sessions: Tuple[Session] = tuple()
 
     def merge(self, **kwargs):

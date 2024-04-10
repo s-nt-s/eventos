@@ -4,6 +4,7 @@ from typing import Set, List, Dict
 from functools import cached_property, cache
 import logging
 from .event import Event, Place, Session, Category
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,14 @@ class Dore(Web):
 
     def __url_to_event(self, url):
         self.get(url)
+        ficha = self.select_one("#textoFicha")
+        leyenda = self.soup.select_one("#textoFicha #leyenda")
+        if leyenda:
+            leyenda.extract()
+        txt = get_text(ficha)
+        duration = tuple(map(int, re.findall(r"(\d+)['’]", txt)))
+        if len(duration) == 0:
+            raise DoreException("NOT FOUND: duration (#textoFicha)")
         return Event(
             id='fm'+url.split("=")[-1],
             url=url,
@@ -110,6 +119,7 @@ class Dore(Web):
             img=self.soup.select_one("div.item.active img").attrs["src"],
             place=self.__find_place(),
             sessions=self.__find_sessions(),
+            duration=sum(duration),
             price=Dore.PRICE
         )
 

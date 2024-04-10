@@ -4,6 +4,7 @@ from os.path import dirname
 
 CRITICAL = (
     'charset_normalizer',
+    'chardet.universaldetector',
     'seleniumwire.proxy.handler',
     'seleniumwire.proxy.client',
     'urllib3.connectionpool',

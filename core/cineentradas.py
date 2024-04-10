@@ -148,6 +148,7 @@ class CineEntradas:
                 url=f"{root}/pelicula/{movie}",
                 name=i['movie']['title'],
                 img=i['movie']['thumbnailImage']['url'],
+                duration=i['movie']['duration'],
                 price=self.price,
                 category=Category.CINEMA,
                 place=Place(
@@ -172,4 +173,4 @@ if __name__ == "__main__":
     from .log import config_log
     import json
     config_log("log/dore.log", log_level=(logging.DEBUG))
-    print(json.dumps(CineEntradas(CineEntradas.SALA_BERLANGA).info))
+    print(CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).events)
