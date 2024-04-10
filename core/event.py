@@ -70,6 +70,10 @@ class Session(NamedTuple):
                 return fch[-1]
         return None
 
+    @property
+    def id(self):
+        return re.sub(r"\D+", "", self.date)
+
 
 class Place(NamedTuple):
     name: str

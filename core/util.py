@@ -7,6 +7,8 @@ import requests
 import logging
 from unidecode import unidecode
 from urllib.parse import urlparse
+import pytz
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -313,3 +315,10 @@ def re_and(s: str, *args: Union[str, Tuple[str]]):
 def get_redirect(url: str):
     r = requests.get(url, allow_redirects=False)
     return r.headers.get('Location')
+
+def to_datetime(s: str):
+    if s is None:
+        return None
+    tz = pytz.timezone('Europe/Madrid')
+    dt = datetime.strptime(s, "%Y-%m-%d %H:%M")
+    return tz.localize(dt)

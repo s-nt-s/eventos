@@ -77,7 +77,8 @@ class FileManager:
             "js": "json",
             "sql": "txt",
             "gql": "txt",
-            "htm": "html"
+            "htm": "html",
+            "ics": "txt"
         }.get(ext, ext)
 
     def load(self, file, *args, **kargv):

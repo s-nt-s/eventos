@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 
-from core.event import Event, Category
+from core.event import Event, Category, Session
 from core.casaencendida import CasaEncendida
 from core.dore import Dore
 from core.madriddestino import MadridDestino
 from core.cineentradas import CineEntradas
 from core.j2 import Jnj2, toTag
-from datetime import datetime
+from datetime import datetime, timedelta
 from core.log import config_log
 from core.img import MyImage
-from core.util import dict_add, safe_get_list_dict, safe_get_dict, get_domain
+from core.util import dict_add, get_domain, to_datetime
 import logging
 from os import environ
 from os.path import isfile
-from typing import Dict, Set, Tuple, List
-from statistics import multimode
+from typing import Dict, Set, Tuple, List, Union
 from core.filemanager import FM
 import math
 import bs4
 import re
-
+from textwrap import dedent
+import uuid
+import pytz
 
 import argparse
 
@@ -32,8 +33,38 @@ OUT = "out/"
 
 config_log("log/build_site.log")
 logger = logging.getLogger(__name__)
-now = datetime.now()
+now = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 white = (255, 255, 255)
+
+
+def to_ics(uid: str, url: str, categories: str, summary: str, description: str, location: str, organizer: str, dtstart: datetime, dtend: datetime):
+    namespace = uuid.UUID('00000000-0000-0000-0000-000000000000')
+    myuuid = str(uuid.uuid5(namespace, uid)).upper()
+    def parse_date(d: datetime):
+        dutc = d.astimezone(pytz.utc)
+        return dutc.strftime("%Y%m%dT%H%M%SZ")
+
+    ics = dedent(f'''
+        BEGIN:VCALENDAR
+        PRODID:-//Eventos//python3.10//ES
+        VERSION:2.0
+        BEGIN:VEVENT
+        STATUS:CONFIRMED
+        DTSTAMP:{now.strftime('%Y%m%dT%H%M%S')}
+        UID:{myuuid}
+        URL:{url}
+        CATEGORIES:{categories}
+        SUMMARY:{summary}
+        DTSTART:{parse_date(dtstart)}
+        DTEND:{parse_date(dtend)}
+        DESCRIPTION:%s
+        LOCATION:{location}
+        ORGANIZER:{organizer}
+        END:VEVENT
+        END:VCALENDAR
+    ''').strip() % re.sub(r"\n", r"\\n", description)
+    ics = re.sub(r"[\r\n]+", r"\r\n", ics)
+    return ics
 
 
 def distance_to_white(*color) -> Tuple[int]:
@@ -130,8 +161,36 @@ for e in eventos:
         f = f.date.split()[0]
         dict_add(sesiones, f, e.id)
 
+
+def write_ics(e: Event, s: Session):
+    description = "\n".join(filter(lambda x: x is not None, [
+        f'{e.price}€', e.url, s.url, e.more
+    ])).strip()
+    dtstart = to_datetime(s.date)
+    dtend = dtstart + timedelta(minutes=e.duration)
+    uid=f"{e.id}_{s.id}"
+    ics = to_ics(
+        uid=uid,
+        url=(s.url or e.url),
+        categories=str(e.category),
+        summary=e.name,
+        description=description,
+        location=e.place.address,
+        organizer=e.place.name,
+        dtstart=dtstart,
+        dtend=dtend
+    )
+    FM.dump(f"out/cal/{uid}.ics", ics)
+
+
+logger.info("Añadiendo ics")
+for e in eventos:
+    for s in e.sessions:
+        write_ics(e, s)
+
 logger.info("Añadiendo imágenes")
 img_eventos = tuple(map(add_image, eventos))
+
 logger.info("Creando web")
 
 
@@ -166,7 +225,7 @@ def set_icons(html: str, **kwargs):
     return str(soup)
 
 
-j = Jnj2("template/", OUT, favicon="📅", post=set_icons)
+j = Jnj2("template/", OUT, favicon="🗓", post=set_icons)
 j.create_script(
     "rec/info.js",
     SESIONES=sesiones,
