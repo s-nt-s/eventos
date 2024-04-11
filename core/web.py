@@ -194,7 +194,7 @@ class Web:
     def select_one(self, slc: str):
         n = self.soup.select_one(slc)
         if n is None:
-            raise WebException(f"{slc} NOT FOUND {self.url}")
+            raise WebException(f"{slc} NOT FOUND in {self.url}")
         return n
 
 FF_DEFAULT_PROFILE = {

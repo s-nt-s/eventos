@@ -1,9 +1,17 @@
 <footer>
   <p>
     Código fuente en
-    <a href="{{REPO_URL}}">GitHub</a>. Si
-    falla o tienes alguna sugerencia pon un
-    <a href="{{REPO_URL}}/issues">issue</a>.
+    <a href="{{REPO_URL}}">GitHub</a>. Si falla o tienes alguna sugerencia pon
+    un <a href="{{REPO_URL}}/issues">issue</a>.
   </p>
-  <p>Última actualización: <a href="{{root}}/execution.log">{{now.strftime('%Y-%m-%d %H:%M')}}</a></p>
+  <p>
+    Última actualización:
+    <a href="{{root}}/execution.log">{{now.strftime('%Y-%m-%d %H:%M')}}</a>
+    <a
+      class="ico"
+      href="{{PAGE_URL}}/eventos.json"
+      title="Usa el json en tus proyectos"
+      ><code>{;}</code></a
+    >
+  </p>
 </footer>

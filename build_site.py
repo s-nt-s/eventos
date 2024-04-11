@@ -254,4 +254,5 @@ EventosRss(
     eventos=eventos
 ).save("eventos.rss")
 
+FM.dump(OUT+"eventos.json", eventos)
 logger.info("Fin")

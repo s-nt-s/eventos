@@ -8,6 +8,7 @@ from functools import cache
 import requests
 from bs4 import BeautifulSoup, Tag
 from json.decoder import JSONDecodeError
+from dataclasses import is_dataclass, asdict
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +148,7 @@ class FileManager:
 
     def dump_json(self, file, obj, *args, indent=2, **kargv):
         with open(file, "w") as f:
-            json.dump(obj, f, *args, indent=indent, **kargv)
+            json.dump(self.__parse(obj), f, *args, indent=indent, **kargv)
 
     def load_html(self, file, *args, parser="lxml", **kargv):
         with open(file, "r") as f:
@@ -172,6 +173,16 @@ class FileManager:
         with open(file, "w") as f:
             f.write(txt)
 
+    def __parse(self, obj):
+        if getattr(obj, "_asdict", None) is not None:
+            obj = obj._asdict()
+        if is_dataclass(obj):
+            obj = asdict(obj)
+        if isinstance(obj, (list, tuple, set)):
+            return tuple(map(self.__parse, obj))
+        if isinstance(obj, dict):
+            obj = {k: self.__parse(v) for k, v in obj.items()}
+        return obj
 
 # Mejoras dinamicas en la documentacion
 for mth in dir(FileManager):

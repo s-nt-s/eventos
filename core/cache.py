@@ -114,17 +114,3 @@ class TupleCache(Cache):
             return self.builder(data)
         return tuple((self.builder(d) for d in data))
 
-    def __parse(self, obj):
-        if getattr(obj, "_asdict", None) is not None:
-            obj = obj._asdict()
-        if is_dataclass(obj):
-            obj = asdict(obj)
-        if isinstance(obj, (list, tuple, set)):
-            return tuple(map(self.__parse, obj))
-        if isinstance(obj, dict):
-            obj = {k: self.__parse(v) for k, v in obj.items()}
-        return obj
-
-    def save(self, file, data, *args, **kwargs):
-        data = self.__parse(data)
-        return super().save(file, data, *args, **kwargs)
