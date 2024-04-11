@@ -127,6 +127,10 @@ class Web:
             return self.s.post(url, data=kvargs, allow_redirects=allow_redirects, verify=self.verify, auth=auth)
         return self.s.get(url, allow_redirects=allow_redirects, verify=self.verify, auth=auth)
 
+    def get_soup(self, url, auth=None, parser="lxml", **kvargs):
+        r = self._get(url, auth=auth, **kvargs)
+        return buildSoup(url, r.content, parser=parser)
+    
     def get(self, url, auth=None, parser="lxml", **kvargs):
         if self.refer:
             self.s.headers.update({'referer': self.refer})
@@ -190,7 +194,7 @@ class Web:
     def select_one(self, slc: str):
         n = self.soup.select_one(slc)
         if n is None:
-            raise WebException("NOT FOUND: "+slc)
+            raise WebException(f"{slc} NOT FOUND {self.url}")
         return n
 
 FF_DEFAULT_PROFILE = {
