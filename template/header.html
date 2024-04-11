@@ -1,5 +1,14 @@
 <header>
-    <p>
-        <a class="logo" href="{{REPO_URL}}" title="Código fuente"><img src="rec/img/github.svg" alt="GitHub"/></a> | <span id="total">{{count}}</span> eventos a {{precio|round}}€ o menos
-    </p>
+  <p>
+    <a
+      class="logo"
+      href="{{PAGE_URL}}/eventos.rss"
+      title="Suscríbete para recibir las novedades"
+      ><img alt="RSS" src="rec/img/rss.svg"
+    /></a>
+    | <a class="logo" href="{{REPO_URL}}" title="Código fuente"
+      ><img src="rec/img/github.svg" alt="GitHub"
+    /></a>
+    | <span id="total">{{count}}</span> eventos a {{precio|round}}€ o menos
+  </p>
 </header>

@@ -22,6 +22,7 @@ import re
 from textwrap import dedent
 import uuid
 import pytz
+from core.rss import EventosRss
 
 import argparse
 
@@ -246,5 +247,11 @@ j.save(
         fin=max(sesiones.keys())
     )
 )
+logger.info(f"Creando rss")
+EventosRss(
+    destino=OUT,
+    root=PAGE_URL,
+    eventos=eventos
+).save("eventos.rss")
 
 logger.info("Fin")
