@@ -122,8 +122,10 @@ class CasaEncendida(Web):
     def __find_category(self):
         tags = set()
         for tag in map(get_text, self.soup.select("div.tags")):
-            for t in re.split(r",?\s+", tag):
+            for t in re.split(r",\s+", tag):
                 tags.add(t.lower())
+        if "en familia" in tags:
+            return Category.CHILDISH
         if "cine" in tags:
             return Category.CINEMA
         if "conciertos" in tags:
