@@ -190,6 +190,7 @@ class CasaAmerica(Web):
         if txt == "musica":
             return Category.MUSIC
         if txt in ("social", "literatura", "politica", "sociedad", "ciencia tecnologia", "economia", "arte", "historia"):
+            logger.warning(self.url+" OTHERS: "+txt)
             return Category.OTHERS
         raise CasaAmericaException("Unknown category: " + txt)
 
