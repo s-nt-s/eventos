@@ -142,7 +142,7 @@ class MadridDestino:
         if "cine" in cats:
             return Category.CINEMA
         if "concierto" in cats:
-            return Category.CONCERT
+            return Category.MUSIC
         if "circo" in cats:
             return Category.CIRCUS
         if "taller" in cats:
@@ -158,11 +158,11 @@ class MadridDestino:
         if "conferencia" in cats:
             return Category.CONFERENCE
         if "música" in cats:
-            return Category.CONCERT
+            return Category.MUSIC
         if "visitas" in cats:
             return Category.VISIT
         if e['id'] == 3706:
-            return Category.CONCERT
+            return Category.MUSIC
         raise MadridDestinoException(
             f"Unknown category in {e['id']}: " + ", ".join(sorted(cats)))
 

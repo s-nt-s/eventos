@@ -14,7 +14,7 @@ MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "dic")
 
 class Category(IntEnum):
     CINEMA = 1
-    CONCERT = 2
+    MUSIC = 2
     CIRCUS = 3
     WORKSHOP = 4
     DANCE = 5
@@ -29,8 +29,8 @@ class Category(IntEnum):
     def __str__(self):
         if self == Category.CINEMA:
             return "cine"
-        if self == Category.CONCERT:
-            return "concierto"
+        if self == Category.MUSIC:
+            return "música"
         if self == Category.CIRCUS:
             return "circo"
         if self == Category.WORKSHOP:

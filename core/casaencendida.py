@@ -129,7 +129,7 @@ class CasaEncendida(Web):
         if "cine" in tags:
             return Category.CINEMA
         if "conciertos" in tags:
-            return Category.CONCERT
+            return Category.MUSIC
         raise CasaEncendidaException("Unknown category: " + ", ".join(sorted(tags)))
 
     def __find_duration(self, info: List[Dict]):
