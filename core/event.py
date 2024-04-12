@@ -1,12 +1,12 @@
 from dataclasses import dataclass, asdict
-from typing import NamedTuple, Tuple, Dict, List
+from typing import NamedTuple, Tuple, Dict, List, Union
 from .util import get_obj, get_redirect
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
 from urllib.parse import quote_plus
 import re
-from datetime import date
+from datetime import date, datetime
 
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "dic")
@@ -144,7 +144,7 @@ class Event:
                 return url
             return "https://www.google.es/search?&complete=0&gbv=1&q="+txt
 
-    @cached_property
+    @property
     def dates(self):
         days: Dict[str, List[Session]] = {}
         for e in self.sessions:
@@ -157,7 +157,7 @@ class Event:
             days[day].append(e)
         return tuple(days.items())
 
-    @cached_property
+    @property
     def end(self):
         if len(self.sessions) == 0:
             return None
@@ -165,3 +165,9 @@ class Event:
         for s in self.sessions:
             endings.add(s.date[:10])
         return max(endings)
+
+    def remove_old_sessions(self, now: Union[str, datetime]):
+        if isinstance(now, datetime):
+            now = datetime.now().strftime("%Y-%m-%d %H:%M")
+        sessions = tuple(filter(lambda s:s.date>=now, self.sessions))
+        object.__setattr__(self, 'sessions', sessions)

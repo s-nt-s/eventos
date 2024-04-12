@@ -128,6 +128,9 @@ def myfilter(e: Event):
         return False
     if e.place.name in ('Espacio Abierto Quinta de los Molinos', 'Faro de Moncloa'):
         return False
+    e.remove_old_sessions(now)
+    if len(e.sessions) == 0:
+        return False
     return True
 
 
