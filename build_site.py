@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from core.event import Event, Category, Session
+from core.ics import IcsEvent
 from core.casaencendida import CasaEncendida
 from core.dore import Dore
 from core.madriddestino import MadridDestino
@@ -39,37 +40,6 @@ config_log("log/build_site.log")
 logger = logging.getLogger(__name__)
 now = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 white = (255, 255, 255)
-
-
-def to_ics(uid: str, url: str, categories: str, summary: str, description: str, location: str, organizer: str, dtstart: datetime, dtend: datetime):
-    namespace = uuid.UUID('00000000-0000-0000-0000-000000000000')
-    myuuid = str(uuid.uuid5(namespace, uid)).upper()
-    def parse_date(d: datetime):
-        dutc = d.astimezone(pytz.utc)
-        return dutc.strftime("%Y%m%dT%H%M%SZ")
-
-    ics = dedent(f'''
-        BEGIN:VCALENDAR
-        PRODID:-//Eventos//python3.10//ES
-        VERSION:2.0
-        BEGIN:VEVENT
-        STATUS:CONFIRMED
-        DTSTAMP:{now.strftime('%Y%m%dT%H%M%S')}
-        UID:{myuuid}
-        URL:{url}
-        CATEGORIES:{categories}
-        SUMMARY:{summary}
-        DTSTART:{parse_date(dtstart)}
-        DTEND:{parse_date(dtend)}
-        DESCRIPTION:%s
-        LOCATION:{location}
-        ORGANIZER:{organizer}
-        END:VEVENT
-        END:VCALENDAR
-    ''').strip() % re.sub(r"\n", r"\\n", description)
-    ics = re.sub(r"[\r\n]+", r"\r\n", ics)
-    return ics
-
 
 def distance_to_white(*color) -> Tuple[int]:
     arr = []
@@ -172,15 +142,15 @@ for e in eventos:
         dict_add(sesiones, f, e.id)
 
 
-def write_ics(e: Event, s: Session):
+def event_to_ics(e: Event, s: Session):
     description = "\n".join(filter(lambda x: x is not None, [
         f'{e.price}€', e.url, s.url, e.more
     ])).strip()
     dtstart = to_datetime(s.date)
     dtend = dtstart + timedelta(minutes=e.duration)
-    uid=f"{e.id}_{s.id}"
-    ics = to_ics(
-        uid=uid,
+    return IcsEvent(
+        uid=f"{e.id}_{s.id}",
+        dtstamp=now,
         url=(s.url or e.url),
         categories=str(e.category),
         summary=e.name,
@@ -190,13 +160,16 @@ def write_ics(e: Event, s: Session):
         dtstart=dtstart,
         dtend=dtend
     )
-    FM.dump(f"out/cal/{uid}.ics", ics)
 
 
 logger.info("Añadiendo ics")
+icsevents = []
 for e in eventos:
     for s in e.sessions:
-        write_ics(e, s)
+        ics = event_to_ics(e, s)
+        ics.dumpme(f"out/cal/{e.id}_{s.id}.ics")
+        icsevents.append(ics)
+IcsEvent.dump("out/eventos.ics", *icsevents)
 
 logger.info("Añadiendo imágenes")
 img_eventos = tuple(map(add_image, eventos))
