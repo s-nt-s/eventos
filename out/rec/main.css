@@ -88,7 +88,7 @@ nav ul li+li:before {
 nav ul li code {
   font-size: inherit;
 }
-#categoria {
+#categoria, #lugar, #filtro {
   width: 100%;
 }
 ol.sesiones {

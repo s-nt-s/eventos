@@ -83,6 +83,20 @@ function isDate(s) {
   );
 }
 
+function set_counts(id) {
+  const select = document.getElementById(id);
+  Array.from(select.options).forEach(o => {
+    const txt = (o.getAttribute("data-txt") ?? "Todos");
+    const cat = o.value ?? "";
+    if (cat.length == 0) o.innerHTML = txt + " (" + document.querySelectorAll("div.evento:not(.hide)").length + ")"
+    else o.innerHTML = txt + " (" + document.querySelectorAll("div.evento." + cat + ":not(.hide)").length + ")"
+  })
+  const op = select.selectedOptions[0];
+  const txt = (op.getAttribute("data-txt") ?? "").trim();
+  if (txt.length == 0) return null;
+  return txt;
+}
+
 class FormQuery {
   static clean(obj) {
     if (!INPUT_DATE_SUPPORT) {
@@ -100,7 +114,7 @@ class FormQuery {
   static form() {
     const fch = [getValDate("ini"), getValDate("fin")].sort();
     const d = {
-      categoria: getVal("categoria"),
+      filtro: getVal("filtro"),
       ini: fch[0],
       fin: fch[1],
     };
@@ -109,28 +123,21 @@ class FormQuery {
   static form_to_query() {
     const form = FormQuery.form();
     const qr = [];
-    if (form.categoria) qr.push(form.categoria);
+    if (form.filtro) qr.push(form.filtro);
     if (form.ini) qr.push(form.ini);
     if (form.fin) qr.push(form.fin);
     let query = qr.length ? "?" + qr.join("&") : "";
     const title = document.querySelector("title");
-    const select = document.getElementById("categoria");
-    Array.from(select.options).forEach(o => {
-      const txt = (o.getAttribute("data-txt") ?? "Todos");
-      const cat = o.value ?? "";
-      if (cat.length == 0) o.innerHTML = txt + " (" + document.querySelectorAll("div.evento:not(.hide)").length + ")"
-      else o.innerHTML = txt + " (" + document.querySelectorAll("div.evento." + cat + ":not(.hide)").length + ")"
-    })
-    const txt = select.selectedOptions[0].getAttribute("data-txt") ?? "".trim();
-    if (txt == null || txt.length == 0) title.textContent = window.__title__;
-    else title.textContent = window.__title__ + ": " + txt;
+    const txt = set_counts("filtro");
+    if (txt == null) title.textContent = window.__title__;
+    else title.textContent = window.__title__ + `: ${txt}`;
     if (document.location.search == query) return;
     const url = document.location.href.replace(/\?.*$/, "");
     history.pushState({}, "", url + query);
   }
   static query_to_form() {
     const query = FormQuery.query();
-    setVal("categoria", query.categoria ?? "");
+    setVal("filtro", query.filtro ?? "");
     setVal("ini", query.ini ?? FormQuery.MIN_DATE);
     setVal("fin", query.fin ?? FormQuery.MAX_DATE);
   }
@@ -141,7 +148,7 @@ class FormQuery {
       return q;
     })();
     const d = {
-      categoria: null,
+      filtro: null,
       ini: null,
       fin: null,
     };
@@ -154,9 +161,9 @@ class FormQuery {
         return;
       }
       if (
-        document.querySelector('#categoria option[value="' + v + '"]') != null
+        document.querySelector('#filtro option[value="' + v + '"]') != null
       )
-        d.categoria = v;
+        d.filtro = v;
     });
     dts.sort();
     if (dts.length > 0) d.ini = dts[0];
@@ -178,7 +185,6 @@ function getOkSession(d) {
 
 function filtrar() {
   const form = FormQuery.form();
-  const categ = form.categoria;
   const okSession = getOkSession(form);
   document.querySelectorAll("div.evento").forEach((e) => {
     e.style.display = "";
@@ -192,13 +198,19 @@ function filtrar() {
     }
     e.classList.add("hide")
   });
-  if (categ == null) FormQuery.CSS.innerHTML = "";
-  else {
-    const style = FormQuery.CATEGORIES.filter(c => c != categ).map(c => "div.evento." + c).join(", ");
-    FormQuery.CSS.innerHTML = style + " {display:none}";
-  }
+  FormQuery.CSS.innerHTML = getCss(form);
   FormQuery.form_to_query();
   return;
+}
+
+function getCss(form) {
+  if (form.filtro == null) return '';
+  const filtro = form.filtro;
+  const style = FormQuery.FILTERS.flatMap(arr=>{
+    if (!arr.includes(form.filtro)) return [];
+    return arr.filter(c => c != form.filtro).map(c => "div.evento." + c)
+  })
+  return style.join(", ") + " {display:none}";
 }
 
 function fixDates() {
@@ -227,15 +239,26 @@ function removeOutdated() {
   document.getElementById("total").textContent = document.querySelectorAll("div.evento").length;
 }
 
+function get_optgroups(id) {
+  const optgroups = [];
+  const select = document.getElementById(id);
+  Array.from(select.getElementsByTagName("optgroup")).forEach(g=>{
+    const arr = []
+    Array.from(g.getElementsByTagName("option")).forEach(o => {
+      const v = o.value.trim();
+      if (v.length>0) arr.push(v);
+    })
+    if (arr.length>0) optgroups.push(arr);
+  })
+  return optgroups;
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   removeOutdated();
   FormQuery.CSS = document.getElementById("jscss");
   FormQuery.MIN_DATE = getAtt("ini", "min");
   FormQuery.MAX_DATE = getAtt("ini", "max");
-  FormQuery.CATEGORIES = Array.from(document.getElementById("categoria").options).flatMap(o => {
-    const v = o.value.trim();
-    return (v.length == 0) ? [] : v;
-  })
+  FormQuery.FILTERS = get_optgroups("filtro");
   window.__title__ = document.querySelector("title").textContent.trim();
   FormQuery.query_to_form();
   document.getElementById("ini").addEventListener("change", fixDates);

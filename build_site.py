@@ -131,9 +131,11 @@ eventos = mysorted(eventos)
 sesiones: Dict[str, Set[int]] = {}
 sin_sesiones: Set[int] = set()
 categorias = {}
+lugares = {}
 
 for e in eventos:
     categorias[e.category] = categorias.get(e.category, 0) + 1
+    lugares[e.place.name] = lugares.get(e.place.name, 0) + 1
     if len(e.sessions) == 0:
         sin_sesiones.add(e.id)
         continue
@@ -220,6 +222,7 @@ j.save(
     eventos=img_eventos,
     now=now,
     categorias=categorias,
+    lugares=lugares,
     count=len(eventos),
     precio=max(e.price for e in eventos),
     fecha=dict(

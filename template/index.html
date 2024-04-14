@@ -28,16 +28,23 @@
       <input type="date" id="ini" value="{{fecha.ini}}" min="{{fecha.ini}}" max="{{fecha.fin}}" title="Fecha de inicio">
       <input type="date" id="fin" value="{{fecha.fin}}" min="{{fecha.ini}}" max="{{fecha.fin}}" title="Fecha de fin">
     </p>
-    <p class="categoria needjs">
-      <select id="categoria">
+    <p class="filtro needjs">
+      <select id="filtro">
         <option value="">Todos ({{count}})</option>
+        <optgroup label="Categoría">
         {% for c, num in categorias.items()|sort %}
         <option value="{{c | simplify }}" data-txt="{{(c|string).title()}}">{{(c|string).title()}} ({{num}})</option>
         {% endfor %}
+        </optgroup>
+        <optgroup label="Lugar">
+          {% for c, num in lugares.items()|sort %}
+          <option value="{{c | simplify }}" data-txt="{{(c|string).title()}}">{{(c|string).title()}} ({{num}})</option>
+          {% endfor %}
+        </optgroup>
       </select>
     </p>
     {% for (img, e) in eventos %}
-    <div id="{{e.id}}" class="evento {{e.category | simplify}}" data-end="{{e.end or ''}}">
+    <div id="{{e.id}}" class="evento {{e.category | simplify}} {{e.place.name | simplify}}" data-end="{{e.end or ''}}">
       <div class="img" {%if img.background%} style="--back: rgb{{img.background}}" {%endif%}>
         <div><img src="{{img.url}}" alt="{{e.titulo}}" class="cartel {{img.orientation}}" loading="lazy" /></div>
         <span class="categoria">{% if e.more %}<a class="more" href="{{e.more}}">🔗</a> {% endif %}{{(e.category|string).title()}}</span>
