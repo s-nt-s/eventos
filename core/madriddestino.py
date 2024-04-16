@@ -100,7 +100,11 @@ class MadridDestino:
     def __find_place(self, e: Dict):
         space_id = set()
         for s in e['rooms']:
-            space_id.add(s['space_id'])
+            space_id.add(s.get('space_id'))
+        for s in e.get('spaces', []):
+            space_id.add(s.get('id'))
+        if None in space_id:
+            space_id.remove(None)
         if len(space_id) == 0:
             raise MadridDestinoException(f"Unknown place in {e['id']}")
         if len(space_id) > 1:
