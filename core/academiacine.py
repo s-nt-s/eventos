@@ -47,7 +47,7 @@ class AcademiaCine(Web):
 
     def __url_to_event(self, url: str, img: str):
         self.get(url)
-        return Event(
+        ev = Event(
             id="ac"+url.split("/")[-1],
             url=url,
             name=get_text(self.select_one("div.fs-1")),
@@ -64,6 +64,12 @@ class AcademiaCine(Web):
                 address="Calle de Zurbano, 3, Chamberí, 28010 Madrid"
             )
         )
+        self.get(url+"/compra/?entradas=1")
+        error = tuple(filter(lambda x: x is not None, map(get_text, self.soup.select("ul.errorlist li"))))
+        if len(error)>0:
+            logger.warning(f"{ev.id}: {ev.name}: {' - '.join(error)}")
+            return None
+        return ev
 
     def __find_session(self):
         months = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
