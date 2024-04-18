@@ -163,7 +163,7 @@ class Event:
             return None
         endings = set()
         for s in self.sessions:
-            endings.add(s.date[:10])
+            endings.add(s.date)
         return max(endings)
 
     def remove_old_sessions(self, now: Union[str, datetime]):

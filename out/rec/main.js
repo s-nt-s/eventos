@@ -223,18 +223,28 @@ function fixDates() {
   fin.value = i;
 }
 
-function removeOutdated() {
-  const now = (new Date()).toLocaleDateString(
+function toLocaleDateString(dt) {
+  if (dt == null) dt=new Date()
+  const [sdt, shm] = dt.toLocaleDateString(
     'es-ES',
-    {year: 'numeric', month: '2-digit', day: '2-digit'}
-  ).split(/\//).reverse().join("-");
+    {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}
+  ).split(", ");
+  const ymd = sdt.split(/\//).reverse().join("-");
+  return ymd+' '+shm;
+}
+
+function removeOutdated() {
+  const now = toLocaleDateString();
+  const tdy = now.split()[0];
   const ini = getAtt("ini", "min");
-  if (ini >= now) return;
-  setAtt("ini", "min", now);
-  if (getVal("ini") < now) setAtt("ini", "value", now);
-  document.querySelectorAll("div.evento").forEach(e=>{
+  if (ini >= tdy) return;
+  setAtt("ini", "min", tdy);
+  if (getVal("ini") < tdy) setAtt("ini", "value", tdy);
+  document.querySelectorAll("*[data-end]").forEach(e=>{
     const end = e.getAttribute("data-end");
-    if (end!=null && end.length==10 && end<now) e.remove();
+    if (end == null) return;
+    if (end.length==10 && end<tdy) e.remove();
+    if (end.length==16 && end<now) e.remove();
   })
   document.getElementById("total").textContent = document.querySelectorAll("div.evento").length;
 }
