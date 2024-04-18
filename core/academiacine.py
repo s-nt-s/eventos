@@ -113,6 +113,9 @@ class AcademiaCine(Web):
         if re.search(r"podcast?", cat):
             logger.warning(self.url+" OTHERS: "+cat)
             return Category.OTHERS
+        if cat in ("los oficios del cine", ):
+            logger.warning(self.url+" OTHERS: "+cat)
+            return Category.OTHERS
         raise AcademiaCineExpecption("Unknown category: " + txt)
 
 if __name__ == "__main__":
