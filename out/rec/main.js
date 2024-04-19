@@ -235,18 +235,42 @@ function toLocaleDateString(dt) {
 
 function removeOutdated() {
   const now = toLocaleDateString();
-  const tdy = now.split()[0];
+  const tdy = now.split(" ")[0];
   const ini = getAtt("ini", "min");
   if (ini >= tdy) return;
   setAtt("ini", "min", tdy);
   if (getVal("ini") < tdy) setAtt("ini", "value", tdy);
-  document.querySelectorAll("*[data-end]").forEach(e=>{
+  let reorder = false;
+  const isOK = (e) => {
     const end = e.getAttribute("data-end");
-    if (end == null) return;
-    if (end.length==10 && end<tdy) e.remove();
-    if (end.length==16 && end<now) e.remove();
-  })
+    if (end == null) return true;
+    if (end.length==10 && end<tdy) return false;
+    if (end.length==16 && end<now) return false;
+    return true;
+  }
+  const rmKO = (e) => {
+    if (isOK(e)) return;
+    console.log("RM", e);
+    e.remove();
+    if (e.tagName == "LI") reorder=true;
+  }
+  document.querySelectorAll("div[data-end]").forEach(rmKO);
+  document.querySelectorAll("li[data-end]").forEach(rmKO);
   document.getElementById("total").textContent = document.querySelectorAll("div.evento").length;
+  if (!reorder) return;
+  console.log("Reordenar");
+  const new_oreder = Array.from(document.querySelectorAll("div.evento")).map((e, i)=>{
+    const li = e.querySelector("li[data-start]");
+    const start = li.getAttribute("data-end");
+    return [e, start, i];
+  }).sort((a, b) => {
+    if (a[1] != b[1]) return a[1]>b[1];
+    return a[2]>b[2];
+  }).map(x=>x[0]);
+  const main = document.querySelector("main");
+  new_oreder.forEach(e=>{
+    main.appendChild(e);
+  })
 }
 
 function get_optgroups(id) {
