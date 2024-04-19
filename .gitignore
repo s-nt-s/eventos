@@ -3,6 +3,7 @@ out/*
 !out/rec/
 out/rec/info.js
 myenv
+core/reinasofia.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
