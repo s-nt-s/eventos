@@ -63,14 +63,15 @@ def iterhref(soup: BeautifulSoup):
     """Recorre los atributos href o src de los tags"""
     n: Tag
     for n in soup.findAll(["img", "form", "a", "iframe", "frame", "link", "script", "input"]):
-        attr = "href" if n.name in ("a", "link") else "src"
+        attrs = ("href", ) if n.name in ("a", "link") else ("src", "data-src")
         if n.name == "form":
-            attr = "action"
-        val = n.attrs.get(attr)
-        if val is None or re_emb.search(val):
-            continue
-        if not (val.startswith("#") or val.startswith("javascript:")):
-            yield n, attr, val
+            attrs = ("action", )
+        for attr in attrs:
+            val = n.attrs.get(attr)
+            if val is None or re_emb.search(val):
+                continue
+            if not (val.startswith("#") or val.startswith("javascript:")):
+                yield n, attr, val
 
 
 def buildSoup(root: str, source: str, parser="lxml"):

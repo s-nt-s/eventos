@@ -9,6 +9,7 @@ from core.cineentradas import CineEntradas
 from core.salaequis import SalaEquis
 from core.casaamerica import CasaAmerica
 from core.academiacine import AcademiaCine
+from core.caixaforum import CaixaForum
 from core.j2 import Jnj2, toTag
 from datetime import datetime, timedelta
 from core.log import config_log
@@ -112,7 +113,8 @@ eventos = \
     CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).events + \
     SalaEquis().events + \
     CasaAmerica().events + \
-    AcademiaCine().events
+    AcademiaCine().events + \
+    CaixaForum().events
 logger.info(f"{len(eventos)} recuperados")
 eventos = tuple(filter(myfilter, eventos))
 logger.info(f"{len(eventos)} filtrados")
