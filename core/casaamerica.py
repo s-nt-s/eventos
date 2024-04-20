@@ -86,6 +86,7 @@ class CasaAmerica(Web):
         ym = url.rstrip("/").split("/")[-1]
         y = int(ym[:4])
         m = int(ym[4:])
+        now = NOW.strftime("%Y-%m-%d")
         for n in self.soup.select("div.view-content h2.dia, div.view-content li.row"):
             txt = get_text(n)
             if txt is None:
@@ -94,9 +95,11 @@ class CasaAmerica(Web):
                 d = int(txt.split()[0])
                 date = f"{y}-{m:02d}-{d:02d}"
                 continue
-            yield self.__url_to_event(date, n)
+            if date < now:
+                continue
+            yield self.__div_to_event(date, n)
 
-    def __url_to_event(self, date: str, info: Tag):
+    def __div_to_event(self, date: str, info: Tag):
         h = info.find("p", string=re.compile(r"^\s*Horario\s*:\s+\d\d:\d\d\s*$"))
         if h is None:
             raise FieldNotFound("p[text=Horario: HH:MM]", info)
@@ -105,52 +108,59 @@ class CasaAmerica(Web):
             raise FieldNotFound("h3.titulo", info)
         hm = get_text(h).split()[-1]
         url = a.attrs["href"]
-        js = self.__find_json(url)
-        if self.__is_block(url):
+
+        ev = self.__url_to_event(url)
+        if ev is None:
             return None
+
+        return ev.merge(
+            name=get_text(a),
+            sessions=(Session(
+                url=url,
+                date=date+" "+hm
+            ),)
+        )
+
+    @cache
+    def __url_to_event(self, url):
+        self.get(url)
+        if self.__is_block():
+            return None
+        js = self.__find_json()
+        content = "\n".join(filter(lambda x:x is not None, map(get_text, self.soup.select("div.contenido p")))).lower()
+        category=self.__find_category(content)
         return Event(
             id="am"+js['path']['currentPath'].split("/")[-1],
             url=url,
-            name=get_text(a),
-            img=self.__find_img(url),
-            price=self.__find_price(url),
-            category=self.__find_category(info),
-            duration=self.__find_duration(url),
-            sessions=tuple((Session(
-                url=url,
-                date=date+" "+hm
-            ),)),
+            name=None,
+            img=self.__find_img(),
+            price=self.__find_price(),
+            category=category,
+            duration=self.__find_duration(category, content),
+            sessions=None,
             place=Place(
                 name="La casa America",
                 address="Plaza Cibeles, s/n, Salamanca, 28014 Madrid"
             )
         )
 
-    @cache
-    def __is_block(self, url: str):
-        self.get(url)
+    def __is_block(self):
         txt = plain_text(self.soup.find("title"))
         if txt is None:
             raise FieldNotFound("title", self.url)
         if txt.lower().startswith("acceso denegado"):
-            logger.warning("ACCESS DENIED "+url)
+            logger.warning("ACCESS DENIED "+self.url)
             return True
         return False
 
-    @cache
-    def __find_img(self, url: str):
-        self.get(url)
+    def __find_img(self):
         return self.select_one("figure.imagen img").attrs["src"]
 
-    @cache
-    def __find_json(self, url: str):
-        self.get(url)
+    def __find_json(self):
         js = get_text(self.select_one('script[type="application/json"]'))
         return json.loads(js)
 
-    @cache
-    def __find_price(self, url: str):
-        self.get(url)
+    def __find_price(self):
         prices = set()
         for p in map(get_text, self.soup.select("article p")):
             if p is None or "General:" not in p:
@@ -160,22 +170,28 @@ class CasaAmerica(Web):
             return 0
         return max(prices)
 
-    @cache
-    def __find_duration(self, url: str):
-        self.get(url)
+    def __find_duration(self, category: Category, content: str):
         durations = set()
         for p in map(get_text, self.soup.select("article p")):
             if p is not None:
                 durations = durations.union(map(int, re.findall(r"(\d+)['’]", p)))
-        if len(durations) == 0:
-            logger.warning(str(FieldNotFound("duration", url)))
-            return 0
-        return sum(durations)
+        if len(durations) > 0:
+            return sum(durations)
+        if re.search(r"1 hora y 20 minutos", content):
+            return 80
+        if re.search(r"lunes a viernes de 11.00 a 19.30. sábados de 11.00 a 15.00", content):
+            return (60*8)+30
+        if re.search(r"19.00 a 21.00", content):
+            return 2*60
+        if re.search(r"9.30 a 18.30", content):
+            return 9*60
+        if category in (Category.CONFERENCE, ):
+            return 60
+        logger.warning(str(FieldNotFound("duration", self.url)))
+        return 0
 
-    def __find_category(self, info: Tag):
-        c = info.select_one("p.categoria")
-        if c is None:
-            raise FieldNotFound("p.categoria", self.url)
+    def __find_category(self, content: str):
+        c = self.select_one("h1.tematica span.field")
         txt = plain_text(c).lower()
         if txt == "cine":
             return Category.CINEMA
@@ -185,8 +201,15 @@ class CasaAmerica(Web):
             return Category.THEATER
         if txt == "musica":
             return Category.MUSIC
+        w1 = content.split()[0]
+        if w1 == "concierto":
+            return Category.MUSIC
+        if re.search(r"proyección del documental", content):
+            return Category.CINEMA
+        if re.search(r"conferencia|mesa redonda|debate", content) or w1 in ("presentación", "diálogo", "jornada"):
+            return Category.CONFERENCE
         if txt in ("social", "literatura", "politica", "sociedad", "ciencia tecnologia", "economia", "arte", "historia"):
-            logger.warning(self.url+" OTHERS: "+txt)
+            logger.warning(self.url+f" OTHERS: {txt} ({w1})")
             return Category.OTHERS
         raise FieldUnknown("category", txt)
 

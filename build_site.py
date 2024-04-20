@@ -95,7 +95,7 @@ def add_image(e: Event):
 def myfilter(e: Event):
     if e.price > args.precio:
         return False
-    if e.category not in (Category.CINEMA, Category.MUSIC, Category.THEATER):
+    if e.category not in (Category.CINEMA, Category.MUSIC, Category.THEATER, Category.DANCE):
         return False
     if e.place.name in ('Espacio Abierto Quinta de los Molinos', 'Faro de Moncloa'):
         return False
