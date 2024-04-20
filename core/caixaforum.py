@@ -3,7 +3,7 @@ from .cache import TupleCache
 from typing import Set, Dict
 from functools import cache
 import logging
-from .event import Event, Place, Session, Category
+from .event import Event, Place, Session, Category, FieldNotFound, FieldUnknown
 import re
 from bs4 import Tag
 from datetime import datetime
@@ -11,9 +11,6 @@ from .util import plain_text
 
 logger = logging.getLogger(__name__)
 NOW = datetime.now()
-
-class CaixaForumException(Exception):
-    pass
 
 
 class CaixaForum(Web):
@@ -63,7 +60,7 @@ class CaixaForum(Web):
         self.get(url)
         sessions = self.__find_session(eid)
         if len(sessions) == 0:
-            logger.warning("NOT FOUND: session in "+self.url)
+            logger.warning(str(FieldNotFound("session", self.url)))
             return None
         nmg = div.select_one('figure img')
         img = nmg.attrs.get("data-src") or nmg.attrs.get("src")
@@ -101,7 +98,7 @@ class CaixaForum(Web):
     def __find_price(self, div: Tag):
         price = get_text(div.select_one("div.card-block-btn span"))
         if price is None:
-            raise CaixaForumException("NOT FOUND price")
+            raise FieldNotFound("price", div)
         price = price.lower()
         if "gratuita" in price:
             return 0
@@ -110,7 +107,7 @@ class CaixaForum(Web):
             n = self.select_one("#description-read")
             prcs = tuple(map(int, re.findall("(\d+)\s*€", get_text(n))))
         if len(prcs) == 0:
-            raise CaixaForumException("NOT FOUND price")
+            raise FieldNotFound("price", div)
         return max(prcs)
 
     def __find_duration(self, category: Category):
@@ -123,13 +120,13 @@ class CaixaForum(Web):
             div = self.soup.select_one("div.secondary-text")
             if div is not None and div.find("p", string=re.compile(r".*duración de una hora.*")):
                 return 60
-            raise CaixaForumException("NOT FOUND duration in "+self.url)
+            raise FieldNotFound("duration", self.url)
         return sum(duration)
 
     def __find_category(self, div: Tag):
         txt = get_text(div.select_one("div.on-title"))
         if txt is None:
-            raise CaixaForumException("NOT FOUND category")
+            raise FieldNotFound("category", div)
         cat = plain_text(txt.lower())
         if re.search(r"concierto", cat):
             return Category.MUSIC
@@ -143,7 +140,7 @@ class CaixaForum(Web):
             return Category.CONFERENCE
         if re.search(r"otros formatos", cat):
             return Category.OTHERS
-        raise CaixaForumException("Unknown category: " + txt)
+        raise FieldUnknown("category", txt)
 
 if __name__ == "__main__":
     from .log import config_log

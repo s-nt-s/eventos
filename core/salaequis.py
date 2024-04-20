@@ -1,19 +1,15 @@
 from .web import Web, get_text
-from functools import cached_property, cache
+from functools import cache
 from bs4 import Tag
 from typing import Set, Dict, List
 from .cache import TupleCache
 import logging
-from .event import Event, Session, Place, Category
+from .event import Event, Session, Place, Category, FieldNotFound
 import logging
 import re
 from .util import plain_text
 
 logger = logging.getLogger(__name__)
-
-
-class SalaEquisException(Exception):
-    pass
 
 
 class SalaEquis(Web):
@@ -61,7 +57,7 @@ class SalaEquis(Web):
             return None
         div = self.soup.find("div", attrs={"id": re.compile("^product-\d+$")})
         if div is None:
-            raise SalaEquisException("NOT FOUND: product-\\d+ in "+self.url)
+            raise FieldNotFound("product-\\d+", self.url)
         id="se"+div.attrs["id"].split("-")[-1]
         name=get_text(self.select_one("h1.product_title")).title()
         sessions = self.__find_session(name)
@@ -89,7 +85,7 @@ class SalaEquis(Web):
         for txt in map(get_text, self.soup.select("div.shortDescription p")):
             duration = duration.union(map(int, re.findall(r"(\d+)\s*min\b", txt)))
         if len(duration) == 0:
-            raise SalaEquisException("NOT FOUND div.shortDescription p[\\d+ min] in "+self.url)
+            raise FieldNotFound("div.shortDescription p[\\d+ min]", self.url)
         return sum(duration)
     
     def __find_session(self, name: str):

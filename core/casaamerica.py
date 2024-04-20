@@ -1,21 +1,18 @@
-from .web import Web, refind, get_text
+from .web import Web, get_text
 from .cache import TupleCache
 from typing import Set, Dict, List
 from functools import cached_property, cache
 import logging
-from .event import Event, Place, Session, Category
+from .event import Event, Place, Session, Category, FieldNotFound, FieldUnknown
 import re
 from bs4 import Tag
-from datetime import datetime, timedelta
+from datetime import datetime
 from .util import plain_text
 import json
 
 
 logger = logging.getLogger(__name__)
 NOW = datetime.now()
-
-class CasaAmericaException(Exception):
-    pass
 
 
 class CasaAmerica(Web):
@@ -102,10 +99,10 @@ class CasaAmerica(Web):
     def __url_to_event(self, date: str, info: Tag):
         h = info.find("p", string=re.compile(r"^\s*Horario\s*:\s+\d\d:\d\d\s*$"))
         if h is None:
-            raise CasaAmericaException("NOT FOUND p[text=Horario: HH:MM]")
+            raise FieldNotFound("p[text=Horario: HH:MM]", info)
         a = info.select_one("h3.titulo a")
         if a is None:
-            raise CasaAmericaException("NOT FOUND h3.titulo")
+            raise FieldNotFound("h3.titulo", info)
         hm = get_text(h).split()[-1]
         url = a.attrs["href"]
         js = self.__find_json(url)
@@ -134,12 +131,11 @@ class CasaAmerica(Web):
         self.get(url)
         txt = plain_text(self.soup.find("title"))
         if txt is None:
-            raise CasaAmericaException("NOT FOUND title")
+            raise FieldNotFound("title", self.url)
         if txt.lower().startswith("acceso denegado"):
-            logger.warn("ACCESS DENIED "+url)
+            logger.warning("ACCESS DENIED "+url)
             return True
         return False
-
 
     @cache
     def __find_img(self, url: str):
@@ -172,14 +168,14 @@ class CasaAmerica(Web):
             if p is not None:
                 durations = durations.union(map(int, re.findall(r"(\d+)['’]", p)))
         if len(durations) == 0:
-            logger.warn("NO DURATION in "+url)
+            logger.warning(str(FieldNotFound("duration", url)))
             return 0
         return sum(durations)
 
     def __find_category(self, info: Tag):
         c = info.select_one("p.categoria")
         if c is None:
-            raise CasaAmericaException("NOT FOUND p.categoria in " + self.url)
+            raise FieldNotFound("p.categoria", self.url)
         txt = plain_text(c).lower()
         if txt == "cine":
             return Category.CINEMA
@@ -192,7 +188,7 @@ class CasaAmerica(Web):
         if txt in ("social", "literatura", "politica", "sociedad", "ciencia tecnologia", "economia", "arte", "historia"):
             logger.warning(self.url+" OTHERS: "+txt)
             return Category.OTHERS
-        raise CasaAmericaException("Unknown category: " + txt)
+        raise FieldUnknown("category", txt)
 
 
 if __name__ == "__main__":

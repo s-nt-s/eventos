@@ -3,7 +3,7 @@ from typing import Set, Dict, List
 from functools import cache
 from .cache import TupleCache
 import logging
-from .event import Event, Session, Place, Category
+from .event import Event, Session, Place, Category, FieldUnknown
 import re
 import json
 from datetime import datetime
@@ -82,18 +82,18 @@ class CasaEncendida(Web):
 
     def __validate_info_event(self, info: List):
         if not isinstance(info, list):
-            raise CasaEncendida("MUST TO BE A LIST: "+str(info))
+            raise CasaEncendidaException("MUST TO BE A LIST: "+str(info))
         if len(info) == 0:
-            raise CasaEncendida("MUST TO BE A LIST NOT EMPTY: "+str(info))
+            raise CasaEncendidaException("MUST TO BE A LIST NOT EMPTY: "+str(info))
         for i in info:
             if not isinstance(i, dict):
-                raise CasaEncendida("MUST TO BE A LIS OF DICTs: "+str(info))
+                raise CasaEncendidaException("MUST TO BE A LIS OF DICTs: "+str(info))
         identifier = info[0].get('identifier')
         if not isinstance(identifier, str):
-            raise CasaEncendida("MUST TO BE A LIS OF DICTs with a identifier: "+str(info))
+            raise CasaEncendidaException("MUST TO BE A LIS OF DICTs with a identifier: "+str(info))
         idevent = identifier.split("-")[-1]
         if not idevent.isdigit():
-            raise CasaEncendida("MUST TO BE A LIS OF DICTs with a int identifier: "+str(info))
+            raise CasaEncendidaException("MUST TO BE A LIS OF DICTs with a int identifier: "+str(info))
         return True
 
     def __find_sessions(self, info: List[Dict]):
@@ -130,7 +130,7 @@ class CasaEncendida(Web):
             return Category.CINEMA
         if "conciertos" in tags:
             return Category.MUSIC
-        raise CasaEncendidaException("Unknown category: " + ", ".join(sorted(tags)))
+        raise FieldUnknown("category", + ", ".join(sorted(tags)))
 
     def __find_duration(self, info: List[Dict]):
         def to_date(s: str):
@@ -150,7 +150,7 @@ class CasaEncendida(Web):
                 else:
                     over24.add(d)
         if len(under24.union(over24)) == 0:
-            raise CasaEncendidaException("NOT FOUND DURATION")
+            raise FileNotFoundError("duration", info)
         if under24:
             return max(under24)
         return max(over24)

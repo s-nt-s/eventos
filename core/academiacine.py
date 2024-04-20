@@ -1,21 +1,16 @@
-from .web import Web, refind, get_text
+from .web import Web, get_text
 from .cache import TupleCache
-from typing import Set, Dict, List
-from functools import cached_property, cache
+from typing import Set
+from functools import cached_property
 import logging
-from .event import Event, Place, Session, Category
+from .event import Event, Place, Session, Category, FieldNotFound, FieldUnknown
 import re
-from bs4 import Tag
-from datetime import datetime, timedelta
+from datetime import datetime
 from .util import plain_text
-import json
 
 
 logger = logging.getLogger(__name__)
 NOW = datetime.now()
-
-class AcademiaCineExpecption(Exception):
-    pass
 
 
 class AcademiaCine(Web):
@@ -77,7 +72,7 @@ class AcademiaCine(Web):
         dat = txt.split("|")[0].lower()
         match = re.search(r"(\d+) de (" + "|".join(months) + r")\S+ de (\d+) a las (\d+):(\d+)", dat)
         if match is None:
-            raise AcademiaCineExpecption("NOT FOUND DATE: " + dat)
+            raise FieldNotFound("date", dat)
         d, month, y, h, mm = match.groups()
         m = months.index(month) + 1
         d, y, h, mm = map(int, (d, y, h, mm))
@@ -88,13 +83,13 @@ class AcademiaCine(Web):
         for p in map(get_text, self.soup.select("div.session-info div")):
             prices = prices.union(map(lambda x: float(x.replace(",", ".")), re.findall(r"([\d,.]+)\s+euro\(s\)", p)))
         if len(prices) == 0:
-            raise AcademiaCineExpecption("NOT FOUND PRICE in "+self.url)
+            raise FieldNotFound("price", self.url)
         return max(prices)
 
     def __find_duration(self):
         td = self.soup.find("td", string=re.compile(r"^\s*\d+\s+minutos\s*$"))
         if td is None:
-            logger.warning("NO DURATION in "+self.url)
+            logger.warning(str(FieldNotFound("duration", self.url)))
             return 0
         txt = get_text(td)
         return int(txt.split()[0])
@@ -107,16 +102,16 @@ class AcademiaCine(Web):
         cat = plain_text(txt.split("|")[-1]).lower()
         if cat in ("la academia preestrena", "aniversarios de cine"):
             return Category.CINEMA
+        if cat in ("los oficios del cine", ):
+            logger.warning(self.url+" OTHERS: "+cat)
+            return Category.CONFERENCE
         if re.search(r"libros?", cat):
             logger.warning(self.url+" OTHERS: "+cat)
             return Category.OTHERS
         if re.search(r"podcast?", cat):
             logger.warning(self.url+" OTHERS: "+cat)
             return Category.OTHERS
-        if cat in ("los oficios del cine", ):
-            logger.warning(self.url+" OTHERS: "+cat)
-            return Category.OTHERS
-        raise AcademiaCineExpecption("Unknown category: " + txt)
+        raise FieldUnknown("category", txt)
 
 if __name__ == "__main__":
     from .log import config_log

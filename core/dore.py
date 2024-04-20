@@ -1,16 +1,12 @@
 from .web import Web, refind, get_text
 from .cache import TupleCache
-from typing import Set, List, Dict
+from typing import Set, Dict
 from functools import cached_property, cache
 import logging
-from .event import Event, Place, Session, Category
+from .event import Event, Place, Session, Category, FieldNotFound, FieldUnknown
 import re
 
 logger = logging.getLogger(__name__)
-
-
-class DoreException(Exception):
-    pass
 
 
 class Dore(Web):
@@ -110,7 +106,7 @@ class Dore(Web):
         txt = get_text(ficha)
         duration = tuple(map(int, re.findall(r"(\d+)['’]", txt)))
         if len(duration) == 0:
-            raise DoreException("NOT FOUND: duration (#textoFicha)")
+            raise FieldNotFound("duration (#textoFicha)", self.url)
         return Event(
             id='fm'+url.split("=")[-1],
             url=url,
@@ -141,7 +137,7 @@ class Dore(Web):
         txt = get_text(n).split()[0].lower()
         if txt == "cine":
             return Category.CINEMA
-        raise DoreException("Unknown category: "+txt)
+        raise FieldUnknown("category", txt)
 
     def __find_place(self):
         place = get_text(self.select_one("#lateralFicha h4")).lower()
@@ -150,7 +146,7 @@ class Dore(Web):
                 name="Cine Doré",
                 address="C. de Santa Isabel, 3, Centro, 28012 Madrid"
             )
-        raise DoreException("Unknown place: "+place)
+        raise FieldUnknown("place", place)
 
 
 if __name__ == "__main__":

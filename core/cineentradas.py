@@ -5,7 +5,7 @@ import logging
 import json
 from .web import Web
 from .cache import Cache, TupleCache
-from .event import Event, Session, Place, Category
+from .event import Event, Session, Place, Category, FieldNotFound
 from .filemanager import FM
 
 logger = logging.getLogger(__name__)
@@ -90,9 +90,9 @@ class CineEntradas:
         root = f"https://cine.entradas.com/cine/{city}/{cinema}"
         logger.debug(root)
         slc = 'script[type="application/ld+json"]'
-        n = Web().get(root).select_one(slc)
-        if n is None:
-            raise CineEntradasException('NOT FOUND: '+slc)
+        w = Web()
+        w.get(root)
+        n = w.select_one(slc)
         js = json.loads(n.get_text())
         ad = js['address']
         dt['address'] = ", ".join((
@@ -116,8 +116,7 @@ class CineEntradas:
         for f in js['showGroups']['filterOptions']:
             if f['label'] == 'Movie':
                 return f['values']
-        raise CineEntradasException(
-            "showGroups/filterOptions[label='Movie']/values NOT FOUND: "+str(js))
+        raise FieldNotFound("showGroups/filterOptions[label='Movie']/values", js)
 
     @CinemaCache("rec/cineentradas/{cinema}/{movies}.json")
     def get_sessions(self, *movies: str):

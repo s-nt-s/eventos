@@ -198,6 +198,7 @@ class Web:
             raise WebException(f"{slc} NOT FOUND in {self.url}")
         return n
 
+
 FF_DEFAULT_PROFILE = {
     "browser.tabs.drawInTitlebar": True,
     "browser.uidensity": 1,

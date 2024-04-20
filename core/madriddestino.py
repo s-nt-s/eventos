@@ -1,10 +1,10 @@
-from .web import Driver, Web
+from .web import Driver
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
 from .cache import Cache
 import json
-from .event import Event, Session, Place, Category
+from .event import Event, Session, Place, Category, FieldNotFound, FieldUnknown
 from .cache import TupleCache
 from datetime import datetime, timezone, timedelta
 import re
@@ -32,10 +32,6 @@ S.headers.update({
     'Cache-Control': 'no-cache',
     'TE': 'trailers'
 })
-
-
-class MadridDestinoException(Exception):
-    pass
 
 
 def timestamp_to_date(timestamp):
@@ -106,10 +102,9 @@ class MadridDestino:
         if None in space_id:
             space_id.remove(None)
         if len(space_id) == 0:
-            raise MadridDestinoException(f"Unknown place in {e['id']}")
+            raise FieldNotFound("place", e['id'])
         if len(space_id) > 1:
-            raise MadridDestinoException(
-                f"Indeterminate place in {e['id']}: " + ", ".join(sorted(space_id)))
+            raise FieldUnknown(f"place in {e['id']}", ", ".join(sorted(space_id)))
         space = self.__find("spaces", space_id.pop())
         return Place(
             name=re.sub(r"\s+Madrid$", "", space['name']),
@@ -129,7 +124,7 @@ class MadridDestino:
         for i in self.state[k]:
             if isinstance(i, dict) and i.get('id') == id:
                 return i
-        raise MadridDestinoException(f"NOT FOUND {k}.id={id}")
+        raise FieldNotFound(f"{k}.id={id}", self.state[k])
 
     def __find_category(self, e: Dict):
         cats: Set[str] = set()
@@ -167,8 +162,7 @@ class MadridDestino:
             return Category.VISIT
         if e['id'] == 3706:
             return Category.MUSIC
-        raise MadridDestinoException(
-            f"Unknown category in {e['id']}: " + ", ".join(sorted(cats)))
+        raise FieldUnknown(f"category in {e['id']}", ", ".join(sorted(cats)))
 
 
 if __name__ == "__main__":

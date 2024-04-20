@@ -12,6 +12,19 @@ from datetime import date, datetime
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "dic")
 
 
+class FieldNotFound(Exception):
+    def __init__(self, field: str, scope=None):
+        msg = "NOT FOUND "+field
+        if scope is not None:
+            msg = msg + f" in {scope}"
+        super().__init__(msg)
+
+
+class FieldUnknown(Exception):
+    def __init__(self, field: str, value: str):
+        super().__init__(f"UNKNOWN {field}: {value}")
+
+
 class Category(IntEnum):
     CINEMA = 1
     MUSIC = 2
