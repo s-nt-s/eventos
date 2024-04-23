@@ -237,7 +237,7 @@ function removeOutdated() {
   const now = toLocaleDateString();
   const tdy = now.split(" ")[0];
   const ini = getAtt("ini", "min");
-  if (ini >= tdy) return;
+  if (ini > tdy) return;
   setAtt("ini", "min", tdy);
   if (getVal("ini") < tdy) setAtt("ini", "value", tdy);
   let reorder = false;
@@ -257,20 +257,29 @@ function removeOutdated() {
   document.querySelectorAll("div[data-end]").forEach(rmKO);
   document.querySelectorAll("li[data-end]").forEach(rmKO);
   document.getElementById("total").textContent = document.querySelectorAll("div.evento").length;
-  if (!reorder) return;
-  console.log("Reordenar");
-  const new_oreder = Array.from(document.querySelectorAll("div.evento")).map((e, i)=>{
-    const li = e.querySelector("li[data-start]");
-    const start = li.getAttribute("data-end");
-    return [e, start, i];
-  }).sort((a, b) => {
-    if (a[1] != b[1]) return a[1]>b[1];
-    return a[2]>b[2];
-  }).map(x=>x[0]);
-  const main = document.querySelector("main");
-  new_oreder.forEach(e=>{
-    main.appendChild(e);
-  })
+  if (reorder) {
+    console.log("Reordenar");
+    const new_oreder = Array.from(document.querySelectorAll("div.evento")).map((e, i)=>{
+      const li = e.querySelector("li[data-start]");
+      const start = li.getAttribute("data-end");
+      return [e, start, i];
+    }).sort((a, b) => {
+      if (a[1] != b[1]) return a[1]>b[1];
+      return a[2]>b[2];
+    }).map(x=>x[0]);
+    const main = document.querySelector("main");
+    new_oreder.forEach(e=>{
+      main.appendChild(e);
+    })
+  }
+  const li = document.querySelector("li[data-start]");
+  if (li == null) return;
+  const dstart = li.getAttribute("data-start");
+  console.log("primer evento:", dstart);
+  const min = dstart.substring(0, 10);
+  setAtt("ini", "min", min);
+  if (getVal("ini") < min) setAtt("ini", "value", min);
+
 }
 
 function get_optgroups(id) {
