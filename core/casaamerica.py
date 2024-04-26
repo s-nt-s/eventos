@@ -201,6 +201,8 @@ class CasaAmerica(Web):
             return Category.THEATER
         if txt == "musica":
             return Category.MUSIC
+        if txt == "infantil":
+            return Category.CHILDISH
         w1 = content.split()[0]
         if w1 == "concierto":
             return Category.MUSIC
@@ -211,7 +213,7 @@ class CasaAmerica(Web):
         if txt in ("social", "literatura", "politica", "sociedad", "ciencia tecnologia", "economia", "arte", "historia"):
             logger.warning(self.url+f" OTHERS: {txt} ({w1})")
             return Category.OTHERS
-        raise FieldUnknown("category", txt)
+        raise FieldUnknown("category", txt+" in "+self.url)
 
 
 if __name__ == "__main__":

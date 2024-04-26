@@ -100,7 +100,7 @@ class AcademiaCine(Web):
             return Category.CINEMA
         txt = get_text(self.select_one("div.fs-5"))
         cat = plain_text(txt.split("|")[-1]).lower()
-        if cat in ("la academia preestrena", "aniversarios de cine"):
+        if cat in ("la academia preestrena", "aniversarios de cine", "series de cine"):
             return Category.CINEMA
         if cat in ("los oficios del cine", ):
             logger.warning(self.url+" OTHERS: "+cat)
@@ -111,7 +111,7 @@ class AcademiaCine(Web):
         if re.search(r"podcast?", cat):
             logger.warning(self.url+" OTHERS: "+cat)
             return Category.OTHERS
-        raise FieldUnknown("category", txt)
+        raise FieldUnknown("category", txt+" in "+self.url)
 
 if __name__ == "__main__":
     from .log import config_log
