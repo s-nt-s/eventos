@@ -90,7 +90,7 @@ class AcademiaCine(Web):
         td = self.soup.find("td", string=re.compile(r"^\s*\d+\s+minutos\s*$"))
         if td is None:
             logger.warning(str(FieldNotFound("duration", self.url)))
-            return 0
+            return 60
         txt = get_text(td)
         return int(txt.split()[0])
 

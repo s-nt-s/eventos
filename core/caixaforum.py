@@ -7,6 +7,7 @@ from .event import Event, Place, Session, Category, FieldNotFound, FieldUnknown
 import re
 from bs4 import Tag
 from datetime import datetime
+import json
 from .util import plain_text
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ class CaixaForum(Web):
         logger.debug(url)
         return super().get(url, auth, parser, **kvargs)
 
+    @cache
     def json(self, url) -> Dict:
         logger.debug(url)
         r = self.s.get(url)
@@ -58,7 +60,8 @@ class CaixaForum(Web):
         eid = int(url.split("_a")[-1])
         category=self.__find_category(div)
         self.get(url)
-        sessions = self.__find_session(eid)
+        info = self.__get_json(url)
+        sessions = self.__find_session(eid, info)
         if len(sessions) == 0:
             logger.warning(str(FieldNotFound("session", self.url)))
             return None
@@ -72,7 +75,7 @@ class CaixaForum(Web):
             img=img,
             price=self.__find_price(div),
             category=category,
-            duration=self.__find_duration(category),
+            duration=self.__find_duration(category, info),
             sessions=sessions,
             place=Place(
                 name="Caixa Forum",
@@ -80,8 +83,7 @@ class CaixaForum(Web):
             )
         )
 
-    @cache
-    def __find_session(self, eid: int):
+    def __find_session(self, eid: int, info: Dict):
         sessions: Set[Session] = set()
         url = "https://caixaforum.org/es/web/madrid/actividades?p_p_id=headersearch_INSTANCE_HeaderSearch&p_p_lifecycle=2&p_p_resource_id=%2Fsearch%2FoneBox&_headersearch_INSTANCE_HeaderSearch_cpDefinitionId="+str(eid)
         js = self.json(url)
@@ -93,8 +95,28 @@ class CaixaForum(Web):
                 url=s['url'],
                 date=f"{y}-{m:02d}-{d:02d} {h:02d}:{mm:02d}"
             ))
-        return tuple(sorted(sessions))
+        if sessions:
+            return tuple(sorted(sessions))
+        st: datetime = info.get("startDate")
+        nd: datetime = info.get("endDate")
+        if None in (st, nd) or st.date() != nd.date():
+            return tuple()
+        return (Session(
+                url=self.url,
+                date=st.strftime("%Y-%m-%d %H:%M")
+        ),)
 
+    @cache
+    def __get_json(self, url:str) -> Dict:
+        self.get(url)
+        n = self.select_one('script[type="application/ld+json"]')
+        js = json.loads(get_text(n))
+        for k in ("startDate", "endDate"):
+            v = js.get(k)
+            if v:
+                js[k]=datetime.fromisoformat(v)
+        return js
+    
     def __find_price(self, div: Tag):
         price = get_text(div.select_one("div.card-block-btn span"))
         if price is None:
@@ -110,18 +132,22 @@ class CaixaForum(Web):
             raise FieldNotFound("price", div)
         return max(prcs)
 
-    def __find_duration(self, category: Category):
+    def __find_duration(self, category: Category, info: Dict):
         duration = []
         for p in map(get_text, self.soup.findAll("p", string=re.compile(r".*\d+\s+minutos.*"))):
             duration.extend(map(int, re.findall(r"\d+", p)))
-        if len(duration) == 0:
-            if category in (Category.EXPO, Category.WORKSHOP, Category.MUSIC, Category.CONFERENCE, Category.OTHERS):
-                return 60
-            div = self.soup.select_one("div.secondary-text")
-            if div is not None and div.find("p", string=re.compile(r".*duración de una hora.*")):
-                return 60
-            raise FieldNotFound("duration", self.url)
-        return sum(duration)
+        if duration:
+            return sum(duration)
+        if category in (Category.EXPO, Category.WORKSHOP, Category.MUSIC, Category.CONFERENCE, Category.OTHERS):
+            return 60
+        div = self.soup.select_one("div.secondary-text")
+        if div is not None and div.find("p", string=re.compile(r".*duración de una hora.*")):
+            return 60
+        st: datetime = info.get("startDate")
+        nd: datetime = info.get("endDate")
+        if None not in (st, nd) and st.date() == nd.date():
+            return int((nd-st).total_seconds() / 60)
+        raise FieldNotFound("duration", self.url)
 
     def __find_category(self, div: Tag):
         txt = get_text(div.select_one("div.on-title"))
