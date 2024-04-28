@@ -124,6 +124,12 @@ class Event:
     duration: int
     sessions: Tuple[Session] = tuple()
 
+    def __post_init__(self):
+        if self.name is not None:
+            name = re.sub(r"\s*\(Ídem\)\s*$", "",self.name, flags=re.IGNORECASE)
+            name = name.strip(". ")
+            object.__setattr__(self, 'name', name)
+
     def merge(self, **kwargs):
         return Event(**{**asdict(self), **kwargs})
 
@@ -150,9 +156,7 @@ class Event:
 
     @cached_property
     def more(self):
-        txt = re.sub(r"\s*\(Ídem\)\s*$", "",self.name, flags=re.IGNORECASE)
-        txt = txt.strip(". ")
-        txt = quote_plus(txt)
+        txt = quote_plus(self.name)
         if self.category == Category.CINEMA:
             url = get_redirect("https://www.filmaffinity.com/es/search.php?stype%5B%5D=title&stext="+txt)
             if url and re.match(r"https://www.filmaffinity.com/es/film\d+.html", url):
