@@ -264,8 +264,8 @@ function removeOutdated() {
       const start = li.getAttribute("data-end");
       return [e, start, i];
     }).sort((a, b) => {
-      if (a[1] != b[1]) return a[1]>b[1];
-      return a[2]>b[2];
+      if (a[1] == b[1]) return a[2]-b[2];
+      return (a[1] < b[1])?-1:1;
     }).map(x=>x[0]);
     const main = document.querySelector("main");
     new_oreder.forEach(e=>{
