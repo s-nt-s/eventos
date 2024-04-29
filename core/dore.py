@@ -5,9 +5,11 @@ from functools import cached_property, cache
 import logging
 from .event import Event, Place, Session, Category, FieldNotFound, FieldUnknown
 import re
+import time
 
 logger = logging.getLogger(__name__)
 
+months = ('ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic')
 
 class Dore(Web):
     URL = "https://entradasfilmoteca.gob.es/"
@@ -31,10 +33,12 @@ class Dore(Web):
             days = refind(cal, "td a", r"\d+")
             if len(days) == 0:
                 return tuple(sorted(ids))
+            y = refind(cal, "td", r".* de \d+$")[0]
+            y = get_text(y).split()[-1]
             for a in days:
-                href = a.attrs["href"]
-                id = href.split("'")[-2]
-                ids.add(int(id))
+                d, _, m = a.attrs["title"].strip().split()
+                m = months.index(m.lower()[:3]) + 1
+                ids.add((int(y), int(m), int(d)))
             nxt = refind(cal, "a", r">")
             if len(nxt) < 1:
                 return tuple(sorted(ids))
@@ -48,12 +52,8 @@ class Dore(Web):
     def get_links(self):
         urls: Set[str] = set()
         self.get(Dore.URL)
-        action, data = self.prepare_submit("#ctl01")
-        data['__EVENTTARGET'] = "ctl00$CalendarioBusqueda"
-        data['ctl00$TBusqueda'] = ""
-        for cal in self.calendar:
-            data['__EVENTARGUMENT'] = str(cal)
-            self.get(action, **data)
+        for y, m, d in self.calendar:
+            self.get(f"https://entradasfilmoteca.gob.es/Busqueda.aspx?fecha={d:02d}/{m:02d}/{y}%200:00:00")
             for a in self.soup.select("div.thumPelicula a.linkPelicula"):
                 urls.add(a.attrs["href"])
         return tuple(sorted(urls))
