@@ -210,7 +210,7 @@ class CasaAmerica(Web):
             return Category.CINEMA
         if re.search(r"conferencia|mesa redonda|debate", content) or w1 in ("presentación", "diálogo", "jornada"):
             return Category.CONFERENCE
-        if txt in ("social", "literatura", "politica", "sociedad", "ciencia tecnologia", "economia", "arte", "historia"):
+        if txt in ("prensa", "social", "literatura", "politica", "sociedad", "ciencia tecnologia", "economia", "arte", "historia"):
             logger.warning(self.url+f" OTHERS: {txt} ({w1})")
             return Category.OTHERS
         raise FieldUnknown("category", txt+" in "+self.url)
