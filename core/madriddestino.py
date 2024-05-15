@@ -1,4 +1,5 @@
 from .web import Driver
+from .util import re_or
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
@@ -161,6 +162,10 @@ class MadridDestino:
         if "visitas" in cats:
             return Category.VISIT
         if e['id'] == 3706:
+            return Category.MUSIC
+        if e['id'] == 3719:
+            return Category.RECITAL
+        if re_or(e['title'], 'música'):
             return Category.MUSIC
         raise FieldUnknown(f"category in {e['id']}", ", ".join(sorted(cats)))
 

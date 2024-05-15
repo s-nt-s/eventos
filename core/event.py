@@ -38,6 +38,7 @@ class Category(IntEnum):
     VISIT = 10
     CHILDISH = 11 # infantil
     OTHERS = 12
+    RECITAL = 13
 
     def __str__(self):
         if self == Category.CINEMA:
@@ -64,6 +65,8 @@ class Category(IntEnum):
             return "infantil"
         if self == Category.OTHERS:
             return "otros"
+        if self == Category.RECITAL:
+            return "recital"
         raise ValueError()
 
 
