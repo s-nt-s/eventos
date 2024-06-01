@@ -167,6 +167,8 @@ class MadridDestino:
             return Category.RECITAL
         if re_or(e['title'], 'música'):
             return Category.MUSIC
+        if "juvenil" in cats:
+            return Category.YOUTH
         raise FieldUnknown(f"category in {e['id']}", ", ".join(sorted(cats)))
 
 

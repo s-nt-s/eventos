@@ -39,6 +39,7 @@ class Category(IntEnum):
     CHILDISH = 11 # infantil
     OTHERS = 12
     RECITAL = 13
+    YOUTH = 14
 
     def __str__(self):
         if self == Category.CINEMA:
