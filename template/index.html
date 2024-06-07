@@ -46,9 +46,13 @@
     {% for (img, e) in eventos %}
     <div id="{{e.id}}" class="evento {{e.category | simplify}} {{e.place.name | simplify}}" data-end="{{e.end or ''}}">
       <div class="img" {%if img.background%} style="--back: rgb{{img.background}}" {%endif%}>
+        {% if img %}
         <div><img src="{{img.url}}" alt="{{e.titulo}}" class="cartel {{img.orientation}}" loading="lazy" /></div>
-        <span class="categoria">{% if e.more %}<a class="more" href="{{e.more}}">🔗</a> {% endif %}{{(e.category|string).title()}}</span>
         <a class="zoom" href="{{img.origin.url}}" title="Ver cartel original">🔍</a>
+        {%else %}
+        <div class="noimg"></div>
+        {% endif %}
+        <span class="categoria">{% if e.more %}<a class="more" href="{{e.more}}">🔗</a> {% endif %}{{(e.category|string).title()}}</span>
         <a class="lugar" href="{{e.place.url}}">{{e.place.name}}</a>
       </div>
       <div class="info">

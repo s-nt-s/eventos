@@ -146,7 +146,7 @@ class CineEntradas:
                 id=f"ce{self.info['id']}_{i['movie']['id']}",
                 url=f"{root}/pelicula/{movie}",
                 name=i['movie']['title'],
-                img=i['movie']['thumbnailImage']['url'],
+                img=(i['movie'].get('thumbnailImage') or {}).get('url'),
                 duration=i['movie']['duration'],
                 price=self.price,
                 category=Category.CINEMA,

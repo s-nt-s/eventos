@@ -215,3 +215,7 @@ a img.ico:not(.loaderror) {
 span.precio {
   color: green;
 }
+div.noimg {
+  height: 6em !important;
+  background-color: black;
+}

@@ -71,6 +71,8 @@ def get_trim_image(im: MyImage):
 
 
 def add_image(e: Event):
+    if e.img is None:
+        return (None, e)
     local = f"img/{e.id}.jpg"
     file = OUT+local
     im = MyImage.get(e.img)
