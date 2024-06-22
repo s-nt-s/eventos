@@ -49,14 +49,18 @@ class CustomEncoder(json.JSONEncoder):
 
 
 def simplify(s: str):
-    s = str(s).replace("/", " ")
+    re_rm = re.compile(r"[/\.\(\)\[\]]+")
+    s = re_rm.sub(" ", str(s)).strip().lower()
     s = re_sp.sub(" ", s).strip().lower()
     s = unidecode(s)
     spl = s.rsplit(",", 1)
     if len(spl) == 2 and spl[1].strip() in ('el', 'la', 'los', 'las'):
         s = spl[0].strip()
+    s = re_rm.sub(" ", s)
+    s = re_sp.sub(" ", s)
     s = re_sp.sub("-", s)
-    return s
+    s = re.sub(r"-+", "-", s)
+    return s.strip()
 
 
 def jinja_quote_plus(s: str):

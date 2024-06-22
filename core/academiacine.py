@@ -98,6 +98,7 @@ class AcademiaCine(Web):
         tds = tuple(map(plain_text, self.soup.select("th")))
         if len(set({"duracion", "idioma", "formato"}).difference(tds)) == 0:
             return Category.CINEMA
+        tit = plain_text(get_text(self.select_one("div.fs-1")))
         txt = get_text(self.select_one("div.fs-5"))
         cat = plain_text(txt.split("|")[-1]).lower()
         if cat in ("la academia preestrena", "aniversarios de cine", "series de cine"):
@@ -111,6 +112,8 @@ class AcademiaCine(Web):
         if re.search(r"podcast?", cat):
             logger.warning(self.url+" OTHERS: "+cat)
             return Category.OTHERS
+        if re.search(r"\bcorto\b", tit):
+            return Category.CINEMA
         raise FieldUnknown("category", txt+" in "+self.url)
 
 if __name__ == "__main__":

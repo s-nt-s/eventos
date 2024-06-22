@@ -9,7 +9,7 @@ import re
 from datetime import date, datetime
 
 
-MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "dic")
+MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
 
 class FieldNotFound(Exception):
@@ -101,6 +101,7 @@ class Session(NamedTuple):
 class Place(NamedTuple):
     name: str
     address: str
+    latlon: str = None
 
     @staticmethod
     def build(*args, **kwargs):
@@ -111,8 +112,12 @@ class Place(NamedTuple):
 
     @property
     def url(self):
+        if self.latlon is not None:
+            return "https://www.google.com/maps?q=" + self.latlon
         if self.address is None:
             return "#"
+        if re.match(r"^[\d\.,]+$", self.address):
+            return "https://www.google.com/maps?q=" + self.address
         return "https://www.google.com/maps/place/" + quote(self.address)
 
 

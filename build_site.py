@@ -10,6 +10,7 @@ from core.salaequis import SalaEquis
 from core.casaamerica import CasaAmerica
 from core.academiacine import AcademiaCine
 from core.caixaforum import CaixaForum
+from core.madrides import MadridEs
 from core.j2 import Jnj2, toTag
 from datetime import datetime, timedelta
 from core.log import config_log
@@ -99,7 +100,7 @@ def myfilter(e: Event):
         return False
     if e.category not in (Category.CINEMA, Category.MUSIC, Category.THEATER, Category.DANCE):
         return False
-    if e.place.name in ('Espacio Abierto Quinta de los Molinos', 'Faro de Moncloa'):
+    if e.place.name in ('Espacio Abierto Quinta de los Molinos', 'Faro de Moncloa', 'Centro Cultural Las Californias', 'Plaza de Daoíz y Velarde'):
         return False
     e.remove_old_sessions(now)
     if len(e.sessions) == 0:
@@ -116,7 +117,8 @@ eventos = \
     SalaEquis().events + \
     CasaAmerica().events + \
     AcademiaCine().events + \
-    CaixaForum().events
+    CaixaForum().events + \
+    MadridEs().events
 logger.info(f"{len(eventos)} recuperados")
 eventos = tuple(filter(myfilter, eventos))
 logger.info(f"{len(eventos)} filtrados")
