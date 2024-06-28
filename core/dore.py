@@ -106,7 +106,8 @@ class Dore(Web):
         txt = get_text(ficha)
         duration = tuple(map(int, re.findall(r"(\d+)['’]", txt)))
         if len(duration) == 0:
-            raise FieldNotFound("duration (#textoFicha)", self.url)
+            logger.warn(str(FieldNotFound("duration (#textoFicha)", self.url)))
+            duration=(120, ) 
         return Event(
             id='fm'+url.split("=")[-1],
             url=url,
