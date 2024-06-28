@@ -114,7 +114,8 @@ class AcademiaCine(Web):
             return Category.OTHERS
         if re.search(r"\bcorto\b", tit):
             return Category.CINEMA
-        raise FieldUnknown("category", txt+" in "+self.url)
+        logger.warning(str(FieldUnknown("category", txt+" in "+self.url)))
+        return Category.CINEMA
 
 if __name__ == "__main__":
     from .log import config_log
