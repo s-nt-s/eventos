@@ -81,9 +81,10 @@ class MadridDestino:
             logger.debug("event.id="+str(e['id']))
             info = self.get_info(e['id'])
             org = self.__find("organizations", e['organization_id'])
+            url=MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
             events.add(Event(
                 id="md"+str(e['id']),
-                url=MadridDestino.URL+'/'+org['slug']+'/'+e['slug'],
+                url=url,
                 name=e['title'],
                 img=e['featuredImage']['url'],
                 price=e['highestPrice'],
@@ -169,7 +170,7 @@ class MadridDestino:
             return Category.MUSIC
         if "juvenil" in cats:
             return Category.YOUTH
-        if re_or(e['title'].lower(), "visitas dialogadas"):
+        if re_or(e['title'].lower(), "visitas"):
             return Category.VISIT
         raise FieldUnknown(f"category in {e['id']}", ", ".join(sorted(cats)))
 
