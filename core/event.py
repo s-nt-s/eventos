@@ -7,10 +7,12 @@ from functools import cached_property
 from urllib.parse import quote_plus
 import re
 from datetime import date, datetime
+from core.web import Web
 
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
+re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
 
 class FieldNotFound(Exception):
     def __init__(self, field: str, scope=None):
@@ -138,6 +140,11 @@ class Event:
             name = re.sub(r"\s*\(Ídem\)\s*$", "",self.name, flags=re.IGNORECASE)
             name = name.strip(". ")
             object.__setattr__(self, 'name', name)
+        if self.img is None and re_filmaffinity.match(self.more or ''):
+            soup = Web().get(self.more)
+            img = soup.select_one("#right-column a.lightbox img")
+            if img:
+                object.__setattr__(self, 'img', img.attrs.get('src'))
 
     def merge(self, **kwargs):
         return Event(**{**asdict(self), **kwargs})
@@ -168,7 +175,7 @@ class Event:
         txt = quote_plus(self.name)
         if self.category == Category.CINEMA:
             url = get_redirect("https://www.filmaffinity.com/es/search.php?stype%5B%5D=title&stext="+txt)
-            if url and re.match(r"https://www.filmaffinity.com/es/film\d+.html", url):
+            if url and re_filmaffinity.match(url):
                 return url
             return "https://www.google.es/search?&complete=0&gbv=1&q="+txt
 
