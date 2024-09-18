@@ -72,7 +72,7 @@ class CasaEncendida(Web):
             id="ce"+idevent,
             url=url,
             name=info[0]['name'],
-            category=self.__find_category(),
+            category=self.__find_category(info),
             img=info[0]['image'],
             place=CasaEncendida.PLACE,
             sessions=self.__find_sessions(info),
@@ -119,18 +119,24 @@ class CasaEncendida(Web):
                 prices.add(float(o["price"]))
         return max(prices)
 
-    def __find_category(self):
+    def __find_category(self, info: List[Dict]):
         tags = set()
-        for tag in map(get_text, self.soup.select("div.tags")):
-            for t in re.split(r",\s+", tag):
-                tags.add(t.lower())
+        for tag in map(get_text, self.soup.select("div.tags, div.item-detail__info__tags a")):
+            for t in re.split(r"\s*[,/]\s+", tag):
+                tags.add(t.replace("#", "").strip().lower())
         if "en familia" in tags:
             return Category.CHILDISH
-        if "cine" in tags:
+        if tags.intersection(("cine", "audiovisuales")):
             return Category.CINEMA
-        if "conciertos" in tags:
+        if tags.intersection(("conciertos", "música")):
             return Category.MUSIC
-        raise FieldUnknown("category", + ", ".join(sorted(tags)))
+        name = info[0]['name'].lower()
+        if "concierto" in name:
+            return Category.MUSIC
+        desc = get_text(self.soup.select_one("div.item-detail__info__content")) or ""
+        if "canciones" in desc:
+            return Category.MUSIC
+        raise FieldUnknown(f"category in {self.url}", ", ".join(sorted(tags)))
 
     def __find_duration(self, info: List[Dict]):
         def to_date(s: str):

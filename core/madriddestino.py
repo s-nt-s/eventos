@@ -162,17 +162,25 @@ class MadridDestino:
             return Category.MUSIC
         if "visitas" in cats:
             return Category.VISIT
-        if e['id'] == 3706:
-            return Category.MUSIC
-        if e['id'] == 3719:
-            return Category.RECITAL
         if re_or(e['title'], 'música'):
             return Category.MUSIC
         if "juvenil" in cats:
             return Category.YOUTH
         if re_or(e['title'].lower(), "visitas"):
             return Category.VISIT
-        raise FieldUnknown(f"category in {e['id']}", ", ".join(sorted(cats)))
+        
+        if e['id'] == 5158:
+            return Category.CONFERENCE
+        if e['id'] == 3719:
+            return Category.RECITAL
+        if e['id'] in (5156, 3706):
+            return Category.MUSIC
+        if e['id'] in (5159, ):
+            return Category.CINEMA
+        if e['id'] in (5230, ):
+            return Category.DANCE
+
+        raise FieldUnknown(f"category in {e['id']} {e['title']}", ", ".join(sorted(cats)))
 
 
 if __name__ == "__main__":
