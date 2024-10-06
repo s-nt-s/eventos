@@ -140,7 +140,7 @@ class MadridDestino:
         for c in list(cats):
             if " / " in c:
                 cats = cats.union(c.split(" / "))
-        if "cine" in cats:
+        if cats.intersection({"cine", "audiovisual"}):
             return Category.CINEMA
         if "concierto" in cats:
             return Category.MUSIC

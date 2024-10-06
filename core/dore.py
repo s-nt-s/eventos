@@ -106,14 +106,15 @@ class Dore(Web):
         txt = get_text(ficha)
         duration = tuple(map(int, re.findall(r"(\d+)['’]", txt)))
         if len(duration) == 0:
-            logger.warn(str(FieldNotFound("duration (#textoFicha)", self.url)))
+            logger.warning(str(FieldNotFound("duration (#textoFicha)", self.url)))
             duration=(120, ) 
+        img = self.soup.select_one("div.item.active img")
         return Event(
             id='fm'+url.split("=")[-1],
             url=url,
             name=get_text(self.soup.select_one("div.row h1")),
             category=self.__find_category(),
-            img=self.soup.select_one("div.item.active img").attrs["src"],
+            img=img.attrs["src"] if img else None,
             place=self.__find_place(),
             sessions=self.__find_sessions(),
             duration=sum(duration),
