@@ -3,7 +3,7 @@ from typing import Dict, Set, List, Union
 from functools import cached_property
 import logging
 import json
-from .web import Web
+from .web import Web, WebException
 from .cache import Cache, TupleCache
 from .event import Event, Session, Place, Category, FieldNotFound
 from .filemanager import FM
@@ -89,10 +89,16 @@ class CineEntradas:
         city = dt['city']['urlSlug']
         root = f"https://cine.entradas.com/cine/{city}/{cinema}"
         logger.debug(root)
-        slc = 'script[type="application/ld+json"]'
-        w = Web()
-        w.get(root)
-        n = w.select_one(slc)
+        def __get(slc: str, *urls):
+            w = Web()
+            for i, url in enumerate(urls):
+                w.get(url)
+                try:
+                    return w.select_one(slc)
+                except WebException:
+                    if i == len(urls)-1:
+                        raise
+        n = __get('script[type="application/ld+json"]', root, root+"/sesiones")
         js = json.loads(n.get_text())
         ad = js['address']
         dt['address'] = ", ".join((

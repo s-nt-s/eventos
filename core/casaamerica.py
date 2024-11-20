@@ -97,12 +97,15 @@ class CasaAmerica(Web):
                 continue
             if date < now:
                 continue
-            yield self.__div_to_event(date, n)
+            ev = self.__div_to_event(date, n)
+            if ev:
+                yield ev
 
     def __div_to_event(self, date: str, info: Tag):
         h = info.find("p", string=re.compile(r"^\s*Horario\s*:\s+\d\d:\d\d\s*$"))
         if h is None:
-            raise FieldNotFound("p[text=Horario: HH:MM]", info)
+            logger.warning(str(FieldNotFound("p[text=Horario: HH:MM]", info)))
+            return None
         a = info.select_one("h3.titulo a")
         if a is None:
             raise FieldNotFound("h3.titulo", info)

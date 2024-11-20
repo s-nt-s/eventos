@@ -130,12 +130,14 @@ class CasaEncendida(Web):
             return Category.CINEMA
         if tags.intersection(("conciertos", "música")):
             return Category.MUSIC
-        name = info[0]['name'].lower()
+        name:str = info[0]['name'].lower()
         if "concierto" in name:
             return Category.MUSIC
         desc = get_text(self.soup.select_one("div.item-detail__info__content")) or ""
         if "canciones" in desc:
             return Category.MUSIC
+        if "film" in name.split():
+            return Category.CINEMA
         raise FieldUnknown(f"category in {self.url}", ", ".join(sorted(tags)))
 
     def __find_duration(self, info: List[Dict]):
