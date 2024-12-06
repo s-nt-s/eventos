@@ -120,7 +120,7 @@ class CaixaForum(Web):
     def __find_price(self, div: Tag):
         price = get_text(div.select_one("div.card-block-btn span"))
         if price is None:
-            raise FieldNotFound("price", div)
+            raise FieldNotFound("price", self.url)
         price = price.lower()
         if "gratuita" in price:
             return 0
@@ -129,7 +129,7 @@ class CaixaForum(Web):
             n = self.select_one("#description-read")
             prcs = tuple(map(int, re.findall("(\d+)\s*€", get_text(n))))
         if len(prcs) == 0:
-            raise FieldNotFound("price", div)
+            raise FieldNotFound("price", self.url)
         return max(prcs)
 
     def __find_duration(self, category: Category, info: Dict):
@@ -152,7 +152,7 @@ class CaixaForum(Web):
     def __find_category(self, div: Tag):
         txt = get_text(div.select_one("div.on-title"))
         if txt is None:
-            raise FieldNotFound("category", div)
+            raise FieldNotFound("category", self.url)
         cat = plain_text(txt.lower())
         if re.search(r"concierto", cat):
             return Category.MUSIC

@@ -104,11 +104,11 @@ class CasaAmerica(Web):
     def __div_to_event(self, date: str, info: Tag):
         h = info.find("p", string=re.compile(r"^\s*Horario\s*:\s+\d\d:\d\d\s*$"))
         if h is None:
-            logger.warning(str(FieldNotFound("p[text=Horario: HH:MM]", info)))
+            logger.warning(str(FieldNotFound("p[text=Horario: HH:MM]", self.url)))
             return None
         a = info.select_one("h3.titulo a")
         if a is None:
-            raise FieldNotFound("h3.titulo", info)
+            raise FieldNotFound("h3.titulo", self.url)
         hm = get_text(h).split()[-1]
         url = a.attrs["href"]
 

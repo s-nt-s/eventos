@@ -104,7 +104,7 @@ class Dore(Web):
         if leyenda:
             leyenda.extract()
         txt = get_text(ficha)
-        duration = tuple(map(int, re.findall(r"(\d+)['’]", txt)))
+        duration = tuple(map(int, re.findall(r"(\d+)['’]", txt or "")))
         if len(duration) == 0:
             logger.warning(str(FieldNotFound("duration (#textoFicha)", self.url)))
             duration=(120, ) 

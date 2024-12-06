@@ -68,11 +68,12 @@ class AcademiaCine(Web):
 
     def __find_session(self):
         months = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
-        txt = get_text(self.select_one("div.fs-5"))
+        selector = "div.fs-5"
+        txt = get_text(self.select_one(selector))
         dat = txt.split("|")[0].lower()
         match = re.search(r"(\d+) de (" + "|".join(months) + r")\S+ de (\d+) a las (\d+):(\d+)", dat)
         if match is None:
-            raise FieldNotFound("date", dat)
+            raise FieldNotFound("date", self.url)
         d, month, y, h, mm = match.groups()
         m = months.index(month) + 1
         d, y, h, mm = map(int, (d, y, h, mm))

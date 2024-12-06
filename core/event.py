@@ -7,7 +7,7 @@ from functools import cached_property
 from urllib.parse import quote_plus
 import re
 from datetime import date, datetime
-from core.web import Web
+from core.web import Web, get_text
 
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
@@ -172,11 +172,17 @@ class Event:
 
     @cached_property
     def more(self):
-        txt = quote_plus(self.name)
+        title = re.sub(r"\s*\+\s*Coloquio\s*$", "", self.title, flags=re.IGNORECASE)
+        txt = quote_plus(title)
         if self.category == Category.CINEMA:
-            url = get_redirect("https://www.filmaffinity.com/es/search.php?stype%5B%5D=title&stext="+txt)
-            if url and re_filmaffinity.match(url):
-                return url
+            w = Web()
+            w.get("https://www.filmaffinity.com/es/search.php?stext="+txt)
+            if re_filmaffinity.match(w.url):
+                return w.url
+            lwtitle = title.lower()
+            for a in w.soup.select("div.mc-title a"):
+                if get_text(a).lower() == lwtitle:
+                    return a.attrs["href"]
             return "https://www.google.es/search?&complete=0&gbv=1&q="+txt
 
     @property
