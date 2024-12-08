@@ -7,9 +7,11 @@ from .cache import Cache
 import json
 from .event import Event, Session, Place, Category, FieldNotFound, FieldUnknown
 from .cache import TupleCache
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 import re
 import requests
+from pytz import timezone
+
 
 
 logger = logging.getLogger(__name__)
@@ -35,8 +37,8 @@ S.headers.update({
 })
 
 
-def timestamp_to_date(timestamp):
-    tz = timezone(timedelta(hours=2))
+def timestamp_to_date(timestamp: int):
+    tz = timezone('Europe/Madrid')
     d = datetime.fromtimestamp(timestamp, tz)
     return d.strftime("%Y-%m-%d %H:%M")
 
