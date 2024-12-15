@@ -1,15 +1,26 @@
 from .web import Web, refind, get_text
 from .cache import TupleCache
-from typing import Set, Dict
+from typing import Set, Dict, Union
 from functools import cached_property, cache
 import logging
 from .event import Event, Place, Session, Category, FieldNotFound, FieldUnknown
 import re
 import time
+from bs4 import Tag
 
 logger = logging.getLogger(__name__)
 
 months = ('ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic')
+
+
+def get_img(n: Union[None, Tag]):
+    if n is None:
+        return None
+    src = n.attrs.get("src")
+    if src in (None, 'https://entradasfilmoteca.gob.es//Contenido/ImagenesEspectaculos/00_4659/Lou-n'):
+        return None
+    return src
+
 
 class Dore(Web):
     URL = "https://entradasfilmoteca.gob.es/"
@@ -114,7 +125,7 @@ class Dore(Web):
             url=url,
             name=get_text(self.soup.select_one("div.row h1")),
             category=self.__find_category(),
-            img=img.attrs["src"] if img else None,
+            img=get_img(img),
             place=self.__find_place(),
             sessions=self.__find_sessions(),
             duration=sum(duration),
