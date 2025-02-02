@@ -58,19 +58,29 @@ class CineEntradas:
         self.cinema = cinema
         self.price = price
 
-    def graphql(self, data: Dict):
+    def iter_graphql(self, data: Dict):
         logger.debug("graphql operationName="+data.get("operationName"))
-        r = requests.post(
-            'https://entradas-next-live.kinoheld.de/graphql',
-            headers={'content-type': 'application/json'},
-            json=data
-        )
-        js = r.json()
-        if not isinstance(js, dict) or js.get('errors'):
-            raise CineEntradasException(js)
-        if hasMorePages(js):
+        while True:
+            r = requests.post(
+                'https://entradas-next-live.kinoheld.de/graphql',
+                headers={'content-type': 'application/json'},
+                json=data
+            )
+            js = r.json()
+            if not isinstance(js, dict) or js.get('errors'):
+                raise CineEntradasException(js)
+            yield js['data']
+            if not hasMorePages(js):
+                break
+            data['variables']['page'] = data['variables'].get('page', 1) + 1
+
+    def graphql(self, data: Dict):
+        gen = self.iter_graphql(data)
+        val = next(gen)
+        nxt = next(gen, None)
+        if nxt is not None:
             raise NotImplementedError("Pagination is not supported")
-        return js['data']
+        return val
 
     @property
     @CinemaCache("rec/cineentradas/{cinema}.json")
@@ -136,8 +146,10 @@ class CineEntradas:
         }
         if len(movies) > 0:
             data['variables']['showGroups'] = list(movies)
-        js = self.graphql(data)
-        return js['showGroups']['data']
+        arr = []
+        for js in self.iter_graphql(data):
+            arr.extend(js['showGroups']['data'])
+        return arr
 
     @property
     @CinemaEventCache("rec/cinenetradas{cinema}.json")
