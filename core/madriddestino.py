@@ -170,6 +170,8 @@ class MadridDestino:
             return Category.YOUTH
         if re_or(e['title'].lower(), "visitas"):
             return Category.VISIT
+        if "en familia" in cats:
+            return Category.CHILDISH
         
         if e['id'] == 5158:
             return Category.CONFERENCE
@@ -181,7 +183,7 @@ class MadridDestino:
             return Category.CINEMA
         if e['id'] in (5230, ):
             return Category.DANCE
-        if re_or(e['title'].lower(), "theke", "en familia"):
+        if "theke" in e['title'].lower():
             return Category.CHILDISH
         raise FieldUnknown(f"category in {e['id']} {e['title']}", ", ".join(sorted(cats)))
 
