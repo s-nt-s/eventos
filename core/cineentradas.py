@@ -162,7 +162,7 @@ class CineEntradas:
             root = f"https://cine.entradas.com/cine/{city}/{cinema}"
             events.add(Event(
                 id=f"ce{self.info['id']}_{i['movie']['id']}",
-                url=f"{root}/pelicula/{movie}",
+                url=f"{root}/sesiones?showGroups={movie}",
                 name=i['movie']['title'],
                 img=(i['movie'].get('thumbnailImage') or {}).get('url'),
                 duration=i['movie']['duration'],
