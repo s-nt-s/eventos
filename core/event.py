@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict
-from typing import NamedTuple, Tuple, Dict, List, Union
+from typing import NamedTuple, Tuple, Dict, List, Union, Any
 from .util import get_obj, get_redirect
 from urllib.parse import quote
 from enum import IntEnum
@@ -8,7 +8,9 @@ from urllib.parse import quote_plus
 import re
 from datetime import date, datetime
 from core.web import Web, get_text
+from core.filemanager import FM
 
+FIX_EVENT: Dict[str, Dict[str, Any]] = FM.load("rec/fix.json")
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
@@ -172,6 +174,9 @@ class Event:
 
     @cached_property
     def more(self):
+        fix_more = FIX_EVENT.get(self.id, {}).get("more")
+        if fix_more:
+            return fix_more
         title = re.sub(r"\s*\+\s*Coloquio\s*$", "", self.title, flags=re.IGNORECASE)
         txt = quote_plus(title)
         if self.category == Category.CINEMA:

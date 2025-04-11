@@ -1,9 +1,10 @@
-/rec/
+/rec/*
 out/*
 !out/rec/
 out/rec/info.js
 myenv
 core/reinasofia.py
+!rec/fix.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
