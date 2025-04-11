@@ -184,6 +184,7 @@ class FileManager:
             obj = {k: self.__parse(v) for k, v in obj.items()}
         return obj
 
+
 # Mejoras dinamicas en la documentacion
 for mth in dir(FileManager):
     slp = mth.split("_", 1)

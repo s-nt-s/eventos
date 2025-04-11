@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict
 from typing import NamedTuple, Tuple, Dict, List, Union, Any
-from .util import get_obj, get_redirect
+from .util import get_obj
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
@@ -10,11 +10,12 @@ from datetime import date, datetime
 from core.web import Web, get_text
 from core.filemanager import FM
 
-FIX_EVENT: Dict[str, Dict[str, Any]] = FM.load("rec/fix.json")
+FIX_EVENT: Dict[str, Dict[str, Any]] = FM.load("fix/event.json")
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
 re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
+
 
 class FieldNotFound(Exception):
     def __init__(self, field: str, scope=None):
