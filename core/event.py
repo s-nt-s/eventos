@@ -108,10 +108,6 @@ class Place(NamedTuple):
     address: str
     latlon: str = None
 
-    def __post_init__(self):
-        if self.name == "Cineteca Madrid":
-            object.__setattr__(self, 'name', "Cineteca")
-
     @staticmethod
     def build(*args, **kwargs):
         obj = get_obj(*args, **kwargs)

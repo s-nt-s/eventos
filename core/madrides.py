@@ -37,6 +37,8 @@ def get_text(n: Tag):
 def clean_lugar(s: str):
     s = re.sub(r"^Biblioteca Pública( Municipal)?", "Biblioteca", s)
     s = re.sub(r"\s+\(.*?\)\s*$", "", s)
+    if s == "Cineteca Madrid":
+        return "Cineteca"
     return s
 
 
