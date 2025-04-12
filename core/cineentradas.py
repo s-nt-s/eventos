@@ -7,6 +7,7 @@ from .web import Web, WebException
 from .cache import Cache, TupleCache
 from .event import Event, Session, Place, Category, FieldNotFound
 from .filemanager import FM
+from .util import re_or
 
 logger = logging.getLogger(__name__)
 
@@ -156,18 +157,22 @@ class CineEntradas:
     def events(self):
         events: Set[Event] = set()
         for i in self.get_sessions():
+            category = Category.CINEMA
             city = i['cinema']['city']['urlSlug']
             movie = i['movie']['urlSlug']
             cinema = self.info['urlSlug']
+            name: str = i['movie']['title']
+            if re_or(name.lower(), "enclavedanza", ("entrevista", "conciertos"), ("conciertos", "cortecitas")):
+                category = Category.DANCE
             root = f"https://cine.entradas.com/cine/{city}/{cinema}"
             events.add(Event(
                 id=f"ce{self.info['id']}_{i['movie']['id']}",
                 url=f"{root}/sesiones?showGroups={movie}",
-                name=i['movie']['title'],
+                name=name,
                 img=(i['movie'].get('thumbnailImage') or {}).get('url'),
                 duration=i['movie']['duration'],
                 price=self.price,
-                category=Category.CINEMA,
+                category=category,
                 place=Place(
                     name=self.info['name'],
                     address=f"{self.info['address']}"
