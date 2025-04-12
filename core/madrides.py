@@ -1,17 +1,15 @@
 from .web import Web
 from bs4 import Tag, BeautifulSoup
 import re
-from typing import NamedTuple, Tuple, Set, Dict, List
-import json
-from functools import cached_property, cache
+from typing import Set, Dict, List
 from urllib.parse import urlencode
-from .event import Event, Session, Place, Category, FieldNotFound
-from .util import plain_text
+from .event import Event, Session, Place, Category
+from .util import plain_text, re_or
 from ics import Calendar
-from datetime import timedelta
 import logging
 from .cache import TupleCache
 from urllib.parse import urlparse, parse_qs
+from functools import cached_property
 
 
 logger = logging.getLogger(__name__)
@@ -48,6 +46,7 @@ def get_href(n: Tag):
     if n.name == "a":
         return n.attrs.get("href")
     return get_href(n.find("a"))
+
 
 class MadridEs:
     AGENDA = "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/?vgnextfmt=default&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"
@@ -136,9 +135,13 @@ class MadridEs:
         lg = div.select_one("a.event-location")
         if lg and re.search(r"\btiteres\b", plain_text(lg.attrs["data-name"])):
             return Category.PUPPETRY
-        tp = safe_get_text(div.select_one("p.event-type")) or ""
+        tp = plain_text(safe_get_text(div.select_one("p.event-type")))
         name = get_text(div.select_one("a.event-link"))
-        tp_name = plain_text((tp+" "+name).strip())
+        tp_name = plain_text(((tp or "")+" "+name).strip())
+        if re_or(tp, "exposiciones", "exposicion"):
+            return Category.EXPO
+        if re.search(r"concierto infantil", tp_name):
+            return Category.CHILDISH
         if re.search(r"\b(monologos?)\b", tp_name):
             return Category.OTHERS
         if re.search(r"\b(cine|proyeccion(es)?|cortometraje)\b", tp_name):
@@ -181,7 +184,6 @@ class MadridEs:
         for dis in my_filter("distrito", self.centro.keys()):
             data["distrito"] = dis
             yield action, data
-
 
     @cached_property
     def centro(self):
