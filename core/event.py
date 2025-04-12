@@ -126,6 +126,20 @@ class Place(NamedTuple):
         return "https://www.google.com/maps/place/" + quote(self.address)
 
 
+def _clean_name(name: str):
+    if name is None:
+        return None
+    name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.IGNORECASE)
+    name = name.strip(". ")
+    if re.search(r"^Cinefórum[^':]*:[^':]*'.*'", name):
+        return name.split("'", 2)[1].strip()
+    if re.search(r"^Cinefórum en la Biblioteca Mario Vargas Llosa:", name):
+        return name.split(":", 1)[1].strip()
+    if re.search(r"^Madrid, plató de cine: '.*'", name):
+        return name.split("'", 2)[1].strip()
+    return name
+
+
 @dataclass(frozen=True, order=True)
 class Event:
     id: str
@@ -139,10 +153,12 @@ class Event:
     sessions: Tuple[Session] = tuple()
 
     def __post_init__(self):
-        if self.name is not None:
-            name = re.sub(r"\s*\(Ídem\)\s*$", "",self.name, flags=re.IGNORECASE)
-            name = name.strip(". ")
-            object.__setattr__(self, 'name', name)
+        object.__setattr__(self, 'name', _clean_name(self.name))
+        if self.img in (
+            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
+            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/MadridPlat%C3%B3Cine_260.png'
+        ):
+            object.__setattr__(self, 'img', None)
         if self.img is None and re_filmaffinity.match(self.more or ''):
             soup = Web().get(self.more)
             img = soup.select_one("#right-column a.lightbox img")
