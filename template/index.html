@@ -38,7 +38,7 @@
         </optgroup>
         <optgroup label="Lugar">
           {% for c, num in lugares.items()|sort %}
-          <option value="{{c | simplify }}" data-txt="{{(c|string).title()}}">{{(c|string).title()}} ({{num}})</option>
+          <option value="{{c | simplify }}" data-txt="{{(c)}}">{{(c)}} ({{num}})</option>
           {% endfor %}
         </optgroup>
       </select>

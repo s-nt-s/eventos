@@ -58,8 +58,8 @@ class SalaEquis(Web):
         div = self.soup.find("div", attrs={"id": re.compile("^product-\d+$")})
         if div is None:
             raise FieldNotFound("product-\\d+", self.url)
-        id="se"+div.attrs["id"].split("-")[-1]
-        name=get_text(self.select_one("h1.product_title")).title()
+        id = "se"+div.attrs["id"].split("-")[-1]
+        name = get_text(self.select_one("h1.product_title")).title()
         sessions = self.__find_session(name)
         if len(sessions) == 0:
             logger.debug(f"{id}[name={name}] no have sessions")

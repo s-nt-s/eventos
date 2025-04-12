@@ -272,7 +272,7 @@ def plain_text(s: Union[str, Tag], is_html=False):
             n.insert_after(" ")
         s = get_text(s)
     faken = "&%%%#%%%#%%#%%%%%%&"
-    s = re.sub(r"[,\.:\(\)\[\]¡!¿\?]", " ", s).lower()
+    s = re.sub(r"[,\.:\(\)\[\]¡!¿\?\"']", " ", s).lower()
     s = s.replace("ñ", faken)
     s = unidecode(s)
     s = s.replace(faken, "ñ")
@@ -282,20 +282,30 @@ def plain_text(s: Union[str, Tag], is_html=False):
     return s
 
 
-def re_or(s: str, *args: Union[str, Tuple[str]]):
+def re_or(s: str, *args: Union[str, Tuple[str]], to_log: str = None):
     if s is None or len(s) == 0 or len(args) == 0:
         return None
     for r in args:
         if isinstance(r, tuple):
             b = re_and(s, *r)
             if b is not None:
+                if to_log:
+                    logger.debug(f"{to_log} cumple {b}")
                 return b
-        elif re.search(r"\b" + r + r"\b", s):
-            return r
+        else:
+            reg = str(r)
+            if reg[0] != "^":
+                reg = r"\b" + reg
+            if reg[-1] != "$":
+                reg = reg + r"\b"
+            if re.search(reg, s):
+                if to_log:
+                    logger.debug(f"{to_log} cumple {r}")
+                return r
     return None
 
 
-def re_and(s: str, *args: Union[str, Tuple[str]]):
+def re_and(s: str, *args: Union[str, Tuple[str]], to_log: str = None):
     if s is None or len(s) == 0 or len(args) == 0:
         return None
     arr = []
@@ -309,7 +319,10 @@ def re_and(s: str, *args: Union[str, Tuple[str]]):
             arr.append(r)
         else:
             return None
-    return " AND ".join(arr)
+    txt = " AND ".join(arr)
+    if to_log:
+        logger.debug(f"{to_log} cumple {txt}")
+    return txt
 
 
 def get_redirect(url: str):

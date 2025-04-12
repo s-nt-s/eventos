@@ -9,6 +9,9 @@ import re
 from datetime import date, datetime
 from core.web import Web, get_text
 from core.filemanager import FM
+import logging
+
+logger = logging.getLogger(__name__)
 
 FIX_EVENT: Dict[str, Dict[str, Any]] = FM.load("fix/event.json")
 
@@ -26,11 +29,18 @@ class FieldNotFound(Exception):
 
 
 class FieldUnknown(Exception):
-    def __init__(self, field: str, value: str):
-        super().__init__(f"UNKNOWN {field}: {value}")
+    def __init__(self, url: str, field: str, value: str):
+        super().__init__(f"UNKNOWN {field}: {value} <-- {url}")
+
+
+class CategoryUnknown(FieldUnknown):
+    def __init__(self, url: str, value: str):
+        super().__init__(url, "category", value)
 
 
 class Category(IntEnum):
+    SPAM = -1
+    UNKNOWN = 9999999
     CINEMA = 1
     MUSIC = 2
     CIRCUS = 3
@@ -42,11 +52,27 @@ class Category(IntEnum):
     CONFERENCE = 9
     VISIT = 10
     CHILDISH = 11 # infantil
-    OTHERS = 12
+    #OTHERS = 12
     RECITAL = 13
     YOUTH = 14
+    READING_CLUB = 15
+    CONTEST = 16
+    SPORT = 17
+    POETRY = 18
+    ACTIVISM = 19
+    SENIORS = 20
+    ORGANIZATIONS = 21
+    MARGINNALIZED = 22
+    NON_GENERAL_PUBLIC = 23
+    ONLINE = 24
+    HIKING = 35 # senderismo
+    MAGIC = 36
 
     def __str__(self):
+        #if self == Category.OTHERS:
+        #    return "otros"
+        if self == Category.UNKNOWN:
+            return "otros"
         if self == Category.CINEMA:
             return "cine"
         if self == Category.MUSIC:
@@ -69,11 +95,37 @@ class Category(IntEnum):
             return "visita"
         if self == Category.CHILDISH:
             return "infantil"
-        if self == Category.OTHERS:
-            return "otros"
         if self == Category.RECITAL:
             return "recital"
-        raise ValueError()
+        if self == Category.YOUTH:
+            return "juventud"
+        if self == Category.READING_CLUB:
+            return "club lectura"
+        if self == Category.CONTEST:
+            return "concurso"
+        if self == Category.SPORT:
+            return "deporte"
+        if self == Category.POETRY:
+            return "poesía"
+        if self == Category.ACTIVISM:
+            return "activismo"
+        if self == Category.SENIORS:
+            return "mayores"
+        if self == Category.ORGANIZATIONS:
+            return "organizaciones"
+        if self == Category.MARGINNALIZED:
+            return "marginados"
+        if self == Category.NON_GENERAL_PUBLIC:
+            return "público no general"
+        if self == Category.ONLINE:
+            return "online"
+        if self == Category.HIKING:
+            return "senderismo"
+        if self == Category.SPAM:
+            return "spam"
+        if self == Category.MAGIC:
+            return "magia"
+        raise ValueError(self.value)
 
 
 class Session(NamedTuple):
@@ -126,6 +178,50 @@ class Place(NamedTuple):
         return "https://www.google.com/maps/place/" + quote(self.address)
 
 
+def unquote(s: str):
+    quotes = ("'", '"')
+    bak = ''
+    while bak != s:
+        bak = str(s)
+        if len(s) > 2 and s[0] == s[-1] and s[0] in quotes:
+            s = s[1:-1]
+        if (s.count('"'), s.count("'")) == (1, 1):
+            s = s.replace('"', "'")
+        if len(s) > 2 and s[0] in quotes and s[0] not in s[1:]:
+            s = s[1:]
+        if len(s) > 2 and s[-1] in quotes and s[-1] not in s[:-1]:
+            s = s[:-1]
+        s = s.strip()
+    return s
+
+
+def _clean_name(name: str):
+    if name is None:
+        return None
+    bak = ''
+    while bak != name:
+        bak = str(name)
+        name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"\.\s*(conferencia)\s*$", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"Visita a la exposición '([^']+)'\. .*", r"\1", name, flags=re.IGNORECASE)
+        name = re.sub(r"^(lectura dramatizada|presentación del libro|Cinefórum[^:]*|^Madrid, plató de cine)\s*[\.:]\s+", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"^(conferencia|visita[^'\"]*)[\s:]+(['\"])", r"\2", name, flags=re.IGNORECASE)
+        name = re.sub(r"^(conferencia)\s*-\s*", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"^(conferencia)\s*", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"^visita (comentada|guiada)(:| -)\s+", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"^Proyección del documental:\s+", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"^(Cine .*)?Proyección de (['\"])", r"\2", name, flags=re.IGNORECASE)
+        name = re.sub(r"^Cineclub con .* '([^']+)'.*", r"\1", name, flags=re.IGNORECASE)
+        name = unquote(name.strip(". "))
+        if len(name) < 2:
+            name = str(bak)
+    name = unquote(name)
+    w1 = name[0]
+    if w1.isalpha():
+        name = w1.upper()+name[1:]
+    return name
+
+
 @dataclass(frozen=True, order=True)
 class Event:
     id: str
@@ -139,15 +235,28 @@ class Event:
     sessions: Tuple[Session] = tuple()
 
     def __post_init__(self):
-        if self.name is not None:
-            name = re.sub(r"\s*\(Ídem\)\s*$", "",self.name, flags=re.IGNORECASE)
-            name = name.strip(". ")
-            object.__setattr__(self, 'name', name)
+        new_name = _clean_name(self.name)
+        if new_name != self.name:
+            logger.debug(f"FIX: {new_name} <- {self.name}")
+            object.__setattr__(self, 'name', new_name)
+        if self.img in (
+            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
+            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/MadridPlat%C3%B3Cine_260.png',
+            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Infantiles_Juveniles/Cine/ficheros/2504_CineForumPerezGaldos_260x260.jpg',
+            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Teatro_Performance/ficheros/250429_BuscandoHogar_260x260.jpg',
+            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/Cineclub_javierdelatorre_260.jpg',
+            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Conferencias/ficheros/Ajam_260x260.jpg',
+            'https://www.casamerica.es/themes/casamerica/images/cabecera_generica.jpg',
+        ):
+            object.__setattr__(self, 'img', None)
+
+    def fix(self):
         if self.img is None and re_filmaffinity.match(self.more or ''):
             soup = Web().get(self.more)
             img = soup.select_one("#right-column a.lightbox img")
             if img:
                 object.__setattr__(self, 'img', img.attrs.get('src'))
+        return self
 
     def merge(self, **kwargs):
         return Event(**{**asdict(self), **kwargs})
@@ -189,6 +298,11 @@ class Event:
             for a in w.soup.select("div.mc-title a"):
                 if get_text(a).lower() == lwtitle:
                     return a.attrs["href"]
+            if self.url and self.url.startswith("https://tienda.madrid-destino.com/es/"):
+                w.get(self.url)
+                a = w.soup.select_one("a.c-mod-file-event__content-link")
+                if a and a.attrs.get("href"):
+                    return a.attrs["href"]
             return "https://www.google.es/search?&complete=0&gbv=1&q="+txt
 
     @property
@@ -216,5 +330,5 @@ class Event:
     def remove_old_sessions(self, now: Union[str, datetime]):
         if isinstance(now, datetime):
             now = datetime.now().strftime("%Y-%m-%d %H:%M")
-        sessions = tuple(filter(lambda s:s.date>=now, self.sessions))
+        sessions = tuple(filter(lambda s: s.date >= now, self.sessions))
         object.__setattr__(self, 'sessions', sessions)

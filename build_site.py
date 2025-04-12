@@ -19,13 +19,11 @@ from core.util import dict_add, get_domain, to_datetime
 import logging
 from os import environ
 from os.path import isfile
-from typing import Dict, Set, Tuple, List, Union
+from typing import Dict, Set, Tuple, List
 from core.filemanager import FM
 import math
 import bs4
 import re
-from textwrap import dedent
-import uuid
 import pytz
 from core.rss import EventosRss
 
@@ -95,17 +93,52 @@ def add_image(e: Event):
     return (lc, e)
 
 
+OK_CAT = (
+    Category.CINEMA,
+    Category.MUSIC,
+    Category.THEATER,
+    Category.DANCE,
+    Category.CONFERENCE,
+    Category.VISIT,
+    Category.UNKNOWN,
+)
+
+
 def myfilter(e: Event):
     if e.price > args.precio:
         return False
-    if e.category not in (Category.CINEMA, Category.MUSIC, Category.THEATER, Category.DANCE):
+    if e.category not in OK_CAT:
         return False
-    if e.place.name in ('Espacio Abierto Quinta de los Molinos', 'Faro de Moncloa', 'Centro Cultural Las Californias', 'Plaza de Daoíz y Velarde'):
+    if e.place.name in (
+        'Espacio Abierto Quinta de los Molinos',
+        'Faro de Moncloa',
+        'Centro Cultural Las Californias',
+        'Centro Cultural Julio Cortázar',
+        'Centro Cultural Juan Genovés',
+        'Plaza de Daoíz y Velarde',
+        'Parroquia de la Asunción de Aravaca',
+        'Mercado Villaverde Alto',
+        'Mercado Villa de Vallecas',
+        'Mercado Vicálvaro',
+        'Mercado Maravillas',
+        'Espacio Abierto Quinta de los Molinos',
+        'Centro Cultural El Plantío',
+        'Biblioteca Pablo Neruda'
+    ) or e.place.name.endswith("Dehesa de la Villa"):
         return False
+
     e.remove_old_sessions(now)
     if len(e.sessions) == 0:
         return False
     return True
+
+
+def sorted_and_fix(eventos: List[Event]):
+    arr1 = sorted(
+        set(e.fix() for e in set(eventos)),
+        key=lambda e: (min(s.date for s in e.sessions), e.name, e.url)
+    )
+    return tuple(arr1)
 
 
 logger.info("Recuperar eventos")
@@ -120,19 +153,11 @@ eventos = \
     CaixaForum().events + \
     MadridEs().events
 logger.info(f"{len(eventos)} recuperados")
+
 eventos = tuple(filter(myfilter, eventos))
+eventos = sorted_and_fix(eventos)
+
 logger.info(f"{len(eventos)} filtrados")
-
-
-def mysorted(eventos: List[Event]):
-    arr1 = sorted(
-        eventos,
-        key=lambda e: (min(s.date for s in e.sessions), e.name, e.url)
-    )
-    return tuple(arr1)
-
-
-eventos = mysorted(eventos)
 
 sesiones: Dict[str, Set[int]] = {}
 sin_sesiones: Set[int] = set()
@@ -152,7 +177,10 @@ for e in eventos:
 
 def event_to_ics(e: Event, s: Session):
     description = "\n".join(filter(lambda x: x is not None, [
-        f'{e.price}€', e.url, s.url, e.more
+        f'{e.price}€',
+        e.url,
+        s.url,
+        e.more if (e.more and not e.more.startswith("https://www.google.es/search")) else None
     ])).strip()
     dtstart = to_datetime(s.date)
     dtend = dtstart + timedelta(minutes=e.duration)
@@ -236,7 +264,7 @@ j.save(
         fin=max(sesiones.keys())
     )
 )
-logger.info(f"Creando rss")
+logger.info("Creando rss")
 EventosRss(
     destino=OUT,
     root=PAGE_URL,

@@ -19,6 +19,7 @@ ICS_BEGIN = dedent(
 
 ICS_END = "END:VCALENDAR"
 
+
 @dataclass(frozen=True)
 class IcsEvent:
     dtstamp: str
@@ -61,10 +62,10 @@ class IcsEvent:
             return s.upper()
         except ValueError:
             return str(uuid.uuid5(UUID_NAMESPACE, s)).upper()
-        
+
     def parse_description(self, s: str):
         return re.sub(r"\n", r"\\n", s)
-    
+
     def __str__(self):
         lines = ["BEGIN:VEVENT", "STATUS:CONFIRMED"]
         for k, v in asdict(self).items():

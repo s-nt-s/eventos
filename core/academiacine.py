@@ -3,7 +3,7 @@ from .cache import TupleCache
 from typing import Set
 from functools import cached_property
 import logging
-from .event import Event, Place, Session, Category, FieldNotFound, FieldUnknown
+from .event import Event, Place, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from datetime import datetime
 from .util import plain_text
@@ -105,18 +105,12 @@ class AcademiaCine(Web):
         if cat in ("la academia preestrena", "aniversarios de cine", "series de cine"):
             return Category.CINEMA
         if cat in ("los oficios del cine", ):
-            logger.warning(self.url+" OTHERS: "+cat)
             return Category.CONFERENCE
-        if re.search(r"libros?", cat):
-            logger.warning(self.url+" OTHERS: "+cat)
-            return Category.OTHERS
-        if re.search(r"podcast?", cat):
-            logger.warning(self.url+" OTHERS: "+cat)
-            return Category.OTHERS
         if re.search(r"\bcorto\b", tit):
             return Category.CINEMA
-        logger.warning(str(FieldUnknown("category", txt+" in "+self.url)))
-        return Category.CINEMA
+        logger.critical(str(CategoryUnknown(self.url, txt)))
+        return Category.UNKNOWN
+
 
 if __name__ == "__main__":
     from .log import config_log

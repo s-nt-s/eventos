@@ -1,13 +1,14 @@
 from .web import Web, get_text
-from typing import Set, Dict, List
+from typing import Set, Dict, List, Union
 from functools import cache
 from .cache import TupleCache
 import logging
-from .event import Event, Session, Place, Category, FieldUnknown
+from .event import Event, Session, Place, Category, CategoryUnknown
 import re
 import json
 from datetime import datetime
 from .filemanager import FM
+from .web import get_text, Driver, MyTag
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class CasaEncendidaException(Exception):
     pass
 
 
-class CasaEncendida(Web):
+class CasaEncendida:
     URL = "https://www.lacasaencendida.es/actividades?t[0]=activity_"
     ACTIVITY = (2, 3)
     PLACE = Place(
@@ -26,15 +27,33 @@ class CasaEncendida(Web):
         address="Rda. de Valencia, 2, Centro, 28012 Madrid"
     )
 
-    def get(self, url, auth=None, parser="lxml", **kvargs):
-        logger.debug(url)
-        return super().get(url, auth, parser, **kvargs)
+    def __init__(self):
+        self.__driver: Union[Driver, None] = None
+
+    def __visit(self, url: str):
+        if url != self.__driver.current_url:
+            self.__driver.get(url)
+            self.__driver.wait_ready()
+
+    def __get_soup(self, url: str):
+        self.__visit(url)
+        return MyTag(url, self.__driver.get_soup())
+
+    def __get_json(self, url: str) -> Union[Dict, List]:
+        node = self.__get_soup(url)
+        return node.select_one_json("body")
+
+    def __get_ld_json(self, url: str) -> Dict:
+        js = self.__get_soup(url).select_one_json('script[type="application/ld+json"]')
+        return js
 
     @cache
     def get_links(self):
         urls: Set[str] = set()
-        for a in CasaEncendida.ACTIVITY:
-            urls = urls.union(self.__get_links(CasaEncendida.URL+str(a)))
+        with Driver(browser="firefox") as f:
+            self.__driver = f
+            for a in CasaEncendida.ACTIVITY:
+                urls = urls.union(self.__get_links(CasaEncendida.URL+str(a)))
         return tuple(sorted(urls))
 
     def __get_links(self, url_cat):
@@ -42,8 +61,9 @@ class CasaEncendida(Web):
         page = 0
         while True:
             page = page + 1
-            self.get(url_cat+f"&page={page}")
-            links = self.soup.select("div.results-list a.results-list__link")
+            soup = self.__get_soup(url_cat+f"&page={page}")
+            rsls = soup.select_one("div.results-list")
+            links = rsls.select("a.results-list__link")
             for a in links:
                 urls.add(a.attrs["href"])
             if len(links) == 0:
@@ -57,14 +77,9 @@ class CasaEncendida(Web):
             events.add(self.__url_to_event(url))
         return tuple(sorted(events))
 
-    def __get_json(self, url) -> List[Dict]:
-        self.get(url)
-        n = self.select_one('script[type="application/ld+json"]')
-        js = json.loads(get_text(n))
-        return js
-
     def __url_to_event(self, url):
-        info = self.__get_json(url)
+        soup = self.__get_soup(url)
+        info = self.__get_ld_json(url)
         self.__validate_info_event(info)
         idevent = info[0]['identifier'].split("-")[-1]
         FM.dump(f"rec/casaencendida/{idevent}.json", info)
@@ -72,10 +87,10 @@ class CasaEncendida(Web):
             id="ce"+idevent,
             url=url,
             name=info[0]['name'],
-            category=self.__find_category(info),
+            category=self.__find_category(soup, info),
             img=info[0]['image'],
             place=CasaEncendida.PLACE,
-            sessions=self.__find_sessions(info),
+            sessions=self.__find_sessions(url, info),
             price=self.__find_price(info),
             duration=self.__find_duration(info)
         )
@@ -96,10 +111,10 @@ class CasaEncendida(Web):
             raise CasaEncendidaException("MUST TO BE A LIS OF DICTs with a int identifier: "+str(info))
         return True
 
-    def __find_sessions(self, info: List[Dict]):
+    def __find_sessions(self, url: str, info: List[Dict]):
         if len(info) == 1:
             return tuple((Session(
-                url=self.url,
+                url=url,
                 date=info[0]["startDate"][:16].replace("T", " ")
             ), ))
         sessions: Set[Session] = set()
@@ -119,26 +134,38 @@ class CasaEncendida(Web):
                 prices.add(float(o["price"]))
         return max(prices)
 
-    def __find_category(self, info: List[Dict]):
+    def __find_category(self, soup: MyTag, info: List[Dict]):
+        for li in map(get_text, soup.node.select("ul.item-detail__list li")):
+            if "No está permitida la entrada a mayores si no van acompañados de un menor" in li:
+                return Category.CHILDISH
         tags = set()
-        for tag in map(get_text, self.soup.select("div.tags, div.item-detail__info__tags a")):
-            for t in re.split(r"\s*[,/]\s+", tag):
-                tags.add(t.replace("#", "").strip().lower())
-        if "en familia" in tags:
+        for tag in soup.select_txt(", ".join(
+            (
+                "div.tags",
+                "div.item-detail__info__tags a",
+                "div.breadcrumb__item a",
+                "div.item-detail__hero__info__content a.group-link"
+            )
+        )):
+            for t in re.split(r"\s*[,/\.]\s+", tag):
+                t = re.sub(r"^#\s*", "", t.strip())
+                tags.add(t.lower())
+        if tags.intersection(("en familia", "espacio nido")):
             return Category.CHILDISH
         if tags.intersection(("cine", "audiovisuales")):
             return Category.CINEMA
         if tags.intersection(("conciertos", "música")):
             return Category.MUSIC
-        name:str = info[0]['name'].lower()
+        name: str = info[0]['name'].lower()
         if "concierto" in name:
             return Category.MUSIC
-        desc = get_text(self.soup.select_one("div.item-detail__info__content")) or ""
+        desc = soup.select_one_txt("div.item-detail__info__content")
         if "canciones" in desc:
             return Category.MUSIC
         if "film" in name.split():
             return Category.CINEMA
-        raise FieldUnknown(f"category in {self.url}", ", ".join(sorted(tags)))
+        logger.critical(str(CategoryUnknown(soup.url, ", ".join(sorted(tags)))))
+        return Category.UNKNOWN
 
     def __find_duration(self, info: List[Dict]):
         def to_date(s: str):

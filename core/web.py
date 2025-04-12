@@ -2,7 +2,8 @@ import os
 import re
 import time
 from urllib.parse import parse_qsl, urljoin, urlsplit
-from typing import List, Tuple
+from typing import List, Tuple, Dict
+import json
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -131,7 +132,7 @@ class Web:
     def get_soup(self, url, auth=None, parser="lxml", **kvargs):
         r = self._get(url, auth=auth, **kvargs)
         return buildSoup(url, r.content, parser=parser)
-    
+
     def get(self, url, auth=None, parser="lxml", **kvargs):
         if self.refer:
             self.s.headers.update({'referer': self.refer})
@@ -141,7 +142,7 @@ class Web:
         return self.soup
 
     def prepare_submit(self, slc, silent_in_fail=False, **kvargs):
-        data = {}
+        data: Dict[str, Union[str, int, float, None]] = {}
         self.form = self.soup.select_one(slc)
         if silent_in_fail and self.form is None:
             return None, None
@@ -154,7 +155,7 @@ class Web:
             slc = slc.attrs.get("value") if slc else None
             data[name] = slc
         data = {**data, **kvargs}
-        action = self.form.attrs.get("action")
+        action: str = self.form.attrs.get("action")
         action = action.rstrip() if action else None
         if action is None:
             action = self.response.url
@@ -198,6 +199,55 @@ class Web:
             raise WebException(f"{slc} NOT FOUND in {self.url}")
         return n
 
+
+class MyTag:
+    def __init__(self, url: str, node: Tag):
+        self.__url = url
+        self.__node = node
+
+    def select_one(self, slc: str):
+        n = self.__node.select_one(slc)
+        if n is None:
+            raise WebException(f"{slc} NOT FOUND in {self.__url}")
+        return n
+
+    def select_one_txt(self, slc: str):
+        n = self.select_one(slc)
+        txt = get_text(n)
+        if txt is None:
+            raise WebException(f"{slc} EMPTY in {self.__url}")
+        return txt
+
+    def select_one_json(self, slc: str) -> Union[Dict, List]:
+        txt = self.select_one_txt(slc)
+        try:
+            return json.loads(txt)
+        except json.JSONDecodeError:
+            raise WebException(f"{slc} no json in {self.__url}")
+
+    def select(self, slc: str):
+        nds = self.__node.select(slc)
+        if len(nds) == 0:
+            raise WebException(f"{slc} NOT FOUND in {self.__url}")
+        return nds
+
+    def select_txt(self, slc: str):
+        arr: List[str] = []
+        for n in self.select(slc):
+            txt = get_text(n)
+            if txt:
+                arr.append(txt)
+        if len(arr) == 0:
+            raise WebException(f"{slc} EMPTY in {self.__url}")
+        return tuple(arr)
+
+    @property
+    def url(self):
+        return self.__url
+
+    @property
+    def node(self):
+        return self.__node
 
 FF_DEFAULT_PROFILE = {
     "browser.tabs.drawInTitlebar": True,
@@ -342,7 +392,7 @@ class Driver:
         time.sleep(2 * (int(intentos/10)+1))
         return True, sleep
 
-    def get(self, url):
+    def get(self, url: str):
         logger.debug(url)
         self.driver.get(url)
 
@@ -465,7 +515,7 @@ class Driver:
     def execute_script(self, *args, **kwargs):
         return self.driver.execute_script(*args, **kwargs)
 
-    def pass_cookies(self, session=None):
+    def pass_cookies(self, session: requests.Session = None):
         if self._driver is None:
             return session
         if session is None:

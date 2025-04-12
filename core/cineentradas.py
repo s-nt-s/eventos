@@ -7,7 +7,7 @@ from .web import Web, WebException
 from .cache import Cache, TupleCache
 from .event import Event, Session, Place, Category, FieldNotFound
 from .filemanager import FM
-from .util import re_or
+from .util import re_or, re_and
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +153,7 @@ class CineEntradas:
         return arr
 
     @property
-    @CinemaEventCache("rec/cinenetradas{cinema}.json")
+    @CinemaEventCache("rec/cineentradas{cinema}.json")
     def events(self):
         events: Set[Event] = set()
         for i in self.get_sessions():
@@ -162,11 +162,14 @@ class CineEntradas:
             movie = i['movie']['urlSlug']
             cinema = self.info['urlSlug']
             name: str = i['movie']['title']
-            if re_or(name.lower(), "enclavedanza", ("entrevista", "conciertos"), ("conciertos", "cortecitas")):
+            id = f"ce{self.info['id']}_{i['movie']['id']}"
+            if re_or(name.lower(), "enclavedanza", to_log=id):
                 category = Category.DANCE
+            elif re_and(name.lower(), "conciertos", ("territorios", "jazz", "duo", "trio"), to_log=id):
+                category = Category.MUSIC
             root = f"https://cine.entradas.com/cine/{city}/{cinema}"
             events.add(Event(
-                id=f"ce{self.info['id']}_{i['movie']['id']}",
+                id=id,
                 url=f"{root}/sesiones?showGroups={movie}",
                 name=name,
                 img=(i['movie'].get('thumbnailImage') or {}).get('url'),
@@ -194,5 +197,5 @@ class CineEntradas:
 if __name__ == "__main__":
     from .log import config_log
     import json
-    config_log("log/dore.log", log_level=(logging.DEBUG))
+    config_log("log/cineentradas.log", log_level=(logging.DEBUG))
     print(CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).events)

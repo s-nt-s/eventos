@@ -7,6 +7,8 @@ from os import makedirs
 from typing import List, Tuple, NamedTuple, Union, Dict
 from functools import cached_property, cache
 from os.path import isfile
+from core.web import Driver
+from selenium.webdriver.common.by import By
 
 logger = logging.getLogger(__name__)
 
@@ -82,11 +84,12 @@ class MyImage:
     def im(self):
         if isinstance(self.__path_or_image, Image.Image):
             return self.__path_or_image
+        path = str(self.path)
+        if not isfile(path):
+            path = self.__get(self.path)
+            if path is None:
+                return None
         try:
-            path = str(self.path)
-            if not isfile(path):
-                response = requests.get(self.path)
-                path = BytesIO(response.content)
             im = Image.open(path)
             im = im.convert('RGB')
             return im
@@ -95,6 +98,17 @@ class MyImage:
         except UnidentifiedImageError:
             logger.critical("La ruta no apunta a una imagen válida "+str(self.path), exc_info=True)
         return None
+
+    def __get(self, url: str):
+        r = requests.get(url)
+        if r.status_code != 403 and r.content:
+            return BytesIO(r.content)
+        with Driver(browser="firefox") as f:
+            f.get(url)
+            img = f.wait("img", by=By.CSS_SELECTOR)
+            if img:
+                return BytesIO(img.screenshot_as_png)
+        logger.critical(f"status_code={r.status_code} en {self.path}")
 
     def trim(self):
         count = self.get_corner_colors().get_count()

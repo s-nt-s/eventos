@@ -1,17 +1,16 @@
 from .web import Driver
-from .util import re_or
+from .util import re_or, plain_text
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
 from .cache import Cache
 import json
-from .event import Event, Session, Place, Category, FieldNotFound, FieldUnknown
+from .event import Event, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown
 from .cache import TupleCache
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 import requests
 from pytz import timezone
-
 
 
 logger = logging.getLogger(__name__)
@@ -83,15 +82,16 @@ class MadridDestino:
             logger.debug("event.id="+str(e['id']))
             info = self.get_info(e['id'])
             org = self.__find("organizations", e['organization_id'])
-            url=MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
+            url = MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
+            id = "md"+str(e['id'])
             events.add(Event(
-                id="md"+str(e['id']),
+                id=id,
                 url=url,
                 name=e['title'],
                 img=e['featuredImage']['url'],
                 price=e['highestPrice'],
                 duration=info['duration'],
-                category=self.__find_category(e),
+                category=self.__find_category(id, e, info),
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(e)
             ))
@@ -108,7 +108,7 @@ class MadridDestino:
         if len(space_id) == 0:
             raise FieldNotFound("place", e['id'])
         if len(space_id) > 1:
-            raise FieldUnknown(f"place in {e['id']}", ", ".join(sorted(space_id)))
+            raise FieldUnknown(MadridDestino.URL, "place", f"{e['id']}: " + ", ".join(sorted(space_id)))
         space = self.__find("spaces", space_id.pop())
         return Place(
             name=re.sub(r"\s+Madrid$", "", space['name']),
@@ -130,62 +130,107 @@ class MadridDestino:
                 return i
         raise FieldNotFound(f"{k}.id={id}", self.state[k])
 
-    def __find_category(self, e: Dict):
+    def __find_category(self, id: str, e: Dict, info: Dict):
+        audience = plain_text(info['audience'])
+        if re_or(
+            audience,
+            "solo niñas",
+            "solo niños",
+            r"de [0-9][\-a\s]+([0-9]|1[0-2]) años",
+            "especialmente recomendada para la infancia",
+            "peques menores de",
+            to_log=id
+        ):
+            return Category.CHILDISH
+        if re_or(
+            audience,
+            r"de [0-9][\-a\s]+1[0-8] años",
+            r"solo si tienes entre 1[3-8] y 18 años",
+            to_log=id
+        ):
+            return Category.YOUTH
+
+        is_para_todos = audience is None or re_or(
+            audience,
+            "todos los publicos",
+            "de 6 a 99 años",
+            "no recomendada para menores de",
+            to_log=id
+        )
+
+        pt = plain_text(e['title'])
         cats: Set[str] = set()
         for c in self.state['categories']:
             if c['id'] in e['eventCategories']:
-                cats.add(c['label'].lower())
+                cats.add(c['label'])
             for ch in c.get('children', []):
                 if ch['id'] in e['eventCategories']:
-                    cats.add(ch['label'].lower())
-                    cats.add(c['label'].lower())
+                    cats.add(ch['label'])
+                    cats.add(c['label'])
         for c in list(cats):
             if " / " in c:
                 cats = cats.union(c.split(" / "))
-        if cats.intersection({"cine", "audiovisual"}):
-            return Category.CINEMA
-        if "concierto" in cats:
-            return Category.MUSIC
-        if "circo" in cats:
-            return Category.CIRCUS
-        if "taller" in cats:
-            return Category.WORKSHOP
-        if "danza" in cats:
-            return Category.DANCE
-        if "títeres" in cats:
-            return Category.PUPPETRY
-        if "teatro" in cats:
-            return Category.THEATER
-        if cats.intersection(("pintura", "exposición")):
-            return Category.EXPO
-        if "conferencia" in cats:
-            return Category.CONFERENCE
-        if "música" in cats:
-            return Category.MUSIC
-        if "visitas" in cats:
-            return Category.VISIT
-        if re_or(e['title'], 'música'):
-            return Category.MUSIC
-        if "juvenil" in cats:
+        cats = set(plain_text(c.lower()) for c in cats)
+
+        def is_cat(*args):
+            ok = cats.intersection((plain_text(a).lower() for a in args))
+            if ok:
+                logger.debug(f"{id} cumple {', '.join(sorted(ok))}")
+                return True
+
+        if re_or(pt, "taller infantil", "concierto matinal familiar", to_log=id):
+            return Category.CHILDISH
+        if not is_cat("cine") and is_cat("en familia", "infantil"):
+            return Category.CHILDISH
+        if re_or(pt, "sesion adolescente", to_log=id):
             return Category.YOUTH
-        if re_or(e['title'].lower(), "visitas"):
+        if not is_para_todos and is_cat("mayores"):
+            return Category.SENIORS
+        if is_cat("online"):
+            return Category.ONLINE
+        if is_cat("visitas"):
             return Category.VISIT
-        if "en familia" in cats:
-            return Category.CHILDISH
-        
-        if e['id'] == 5158:
-            return Category.CONFERENCE
-        if e['id'] == 3719:
-            return Category.RECITAL
-        if e['id'] in (5156, 3706):
-            return Category.MUSIC
-        if e['id'] in (5159, ):
+        if is_cat("títeres"):
+            return Category.PUPPETRY
+        if is_cat("circo"):
+            return Category.CIRCUS
+        if is_cat("taller", "curso"):
+            return Category.WORKSHOP
+        if is_cat("cine"):
             return Category.CINEMA
-        if e['id'] in (5230, ):
+        if is_cat("danza"):
             return Category.DANCE
-        if "theke" in e['title'].lower():
-            return Category.CHILDISH
-        raise FieldUnknown(f"category in {e['id']} {e['title']}", ", ".join(sorted(cats)))
+        if is_cat("concierto"):
+            return Category.MUSIC
+
+        if re_or(pt, "visitas dialogadas", to_log=id):
+            return Category.VISIT
+
+        if re_or(pt, "^taller", to_log=id):
+            return Category.WORKSHOP
+
+        if is_cat("teatro", "teatro de objetos", "performance"):
+            return Category.THEATER
+        if is_cat("conferencia"):
+            return Category.CONFERENCE
+        if is_cat("música", "jazz", "arte sonoro"):
+            return Category.MUSIC
+        if is_cat("pintura", "ilustración", "fotografía", "exposición"):
+            return Category.EXPO
+
+        if re_or(pt, 'musica', to_log=id):
+            return Category.MUSIC
+        if re_or(pt, "visitas", to_log=id):
+            return Category.VISIT
+        if is_cat("audiovisual"):
+            return Category.CINEMA
+        if is_cat("letras"):
+            return Category.CONFERENCE
+
+        if is_cat("juvenil"):
+            return Category.YOUTH
+        logger.critical(str(CategoryUnknown(MadridDestino.URL, f"{e['id']} {pt}: " + ", ".join(sorted(cats)))))
+        return Category.UNKNOWN
 
 
 if __name__ == "__main__":

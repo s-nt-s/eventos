@@ -3,11 +3,11 @@ from .cache import TupleCache
 from typing import Set, Dict, List
 from functools import cached_property, cache
 import logging
-from .event import Event, Place, Session, Category, FieldNotFound, FieldUnknown
+from .event import Event, Place, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from bs4 import Tag
 from datetime import datetime
-from .util import plain_text
+from .util import plain_text, re_or
 import json
 
 
@@ -17,6 +17,24 @@ NOW = datetime.now()
 
 class CasaAmerica(Web):
     URL = "https://www.casamerica.es/agenda"
+
+    def __init__(self, refer=None, verify=True):
+        super().__init__(refer, verify)
+        self.s.headers.update({
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/123.0.0.0 Safari/537.36"
+            ),
+            "Accept": (
+                "text/html,application/xhtml+xml,application/xml;"
+                "q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+            ),
+            "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+            "Accept-Encoding": "gzip, deflate",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1"
+        })
 
     def get(self, url, auth=None, parser="lxml", **kvargs):
         if url == self.url:
@@ -97,14 +115,14 @@ class CasaAmerica(Web):
                 continue
             if date < now:
                 continue
-            ev = self.__div_to_event(date, n)
+            ev = self.__div_to_event(date, n, url)
             if ev:
                 yield ev
 
-    def __div_to_event(self, date: str, info: Tag):
+    def __div_to_event(self, date: str, info: Tag, source: str):
         h = info.find("p", string=re.compile(r"^\s*Horario\s*:\s+\d\d:\d\d\s*$"))
         if h is None:
-            logger.warning(str(FieldNotFound("p[text=Horario: HH:MM]", self.url)))
+            #logger.warning(str(FieldNotFound("p[text=Horario: HH:MM]", source)))
             return None
         a = info.select_one("h3.titulo a")
         if a is None:
@@ -130,8 +148,8 @@ class CasaAmerica(Web):
         if self.__is_block():
             return None
         js = self.__find_json()
-        content = "\n".join(filter(lambda x:x is not None, map(get_text, self.soup.select("div.contenido p")))).lower()
-        category=self.__find_category(content)
+        content = "\n".join(filter(lambda x: x is not None, map(get_text, self.soup.select("div.contenido p")))).lower()
+        category = self.__find_category(content)
         return Event(
             id="am"+js['path']['currentPath'].split("/")[-1],
             url=url,
@@ -195,7 +213,12 @@ class CasaAmerica(Web):
 
     def __find_category(self, content: str):
         c = self.select_one("h1.tematica span.field")
+        plan_content = plain_text(content)
         txt = plain_text(c).lower()
+        if txt == "infantil":
+            return Category.CHILDISH
+        if re_or(plan_content, "presentacion (del )?libro"):
+            return Category.CONFERENCE
         if txt == "cine":
             return Category.CINEMA
         if txt == "exposiciones":
@@ -204,19 +227,15 @@ class CasaAmerica(Web):
             return Category.THEATER
         if txt == "musica":
             return Category.MUSIC
-        if txt == "infantil":
-            return Category.CHILDISH
         w1 = content.split()[0]
         if w1 == "concierto":
             return Category.MUSIC
         if re.search(r"proyección del documental", content):
             return Category.CINEMA
-        if re.search(r"conferencia|mesa redonda|debate", content) or w1 in ("presentación", "diálogo", "jornada"):
+        if re.search(r"\b(conferencia|mesa redonda|debate|esta charla propone|seminario)\b", content) or w1 in ("presentación", "diálogo", "jornada"):
             return Category.CONFERENCE
-        if txt in ("prensa", "social", "literatura", "politica", "sociedad", "ciencia tecnologia", "economia", "arte", "historia"):
-            logger.warning(self.url+f" OTHERS: {txt} ({w1})")
-            return Category.OTHERS
-        raise FieldUnknown("category", txt+" in "+self.url)
+        logger.critical(str(CategoryUnknown(self.url, txt)))
+        return Category.UNKNOWN
 
 
 if __name__ == "__main__":
