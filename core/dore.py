@@ -115,10 +115,10 @@ class Dore(Web):
         if leyenda:
             leyenda.extract()
         txt = get_text(ficha)
-        duration = tuple(map(int, re.findall(r"(\d+)['’]", txt or "")))
-        if len(duration) == 0:
+        duration = self.__find_duration(txt)
+        if duration is None:
             logger.warning(str(FieldNotFound("duration (#textoFicha)", self.url)))
-            duration=(120, ) 
+            duration = 120
         img = self.soup.select_one("div.item.active img")
         return Event(
             id='fm'+url.split("=")[-1],
@@ -128,9 +128,20 @@ class Dore(Web):
             img=get_img(img),
             place=self.__find_place(),
             sessions=self.__find_sessions(),
-            duration=sum(duration),
+            duration=duration,
             price=Dore.PRICE
         )
+
+    def __find_duration(self, txt: str):
+        if txt is None:
+            return None
+        m = re.search(r"Total sesión: (\d+)['’]", txt, re.IGNORECASE)
+        if m:
+            return int(m.group(1))
+        duration = tuple(map(int, re.findall(r"(\d+)['’]", txt)))
+        if len(duration) == 0:
+            return None
+        return sum(duration)
 
     def __find_sessions(self):
         sessions: Set[Session] = set()
