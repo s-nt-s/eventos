@@ -185,6 +185,8 @@ class MadridDestino:
             return Category.DANCE
         if "theke" in e['title'].lower():
             return Category.CHILDISH
+        if "artes escénicas" in cats:
+            return Category.THEATER
         raise FieldUnknown(f"category in {e['id']} {e['title']}", ", ".join(sorted(cats)))
 
 
