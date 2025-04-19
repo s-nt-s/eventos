@@ -155,7 +155,7 @@ def event_to_ics(e: Event, s: Session):
         f'{e.price}€',
         e.url,
         s.url,
-        e.more if not e.more.startswith("https://www.google.es/search") else None
+        e.more if (e.more and not e.more.startswith("https://www.google.es/search")) else None
     ])).strip()
     dtstart = to_datetime(s.date)
     dtend = dtstart + timedelta(minutes=e.duration)
