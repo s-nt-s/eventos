@@ -19,6 +19,7 @@ ICS_BEGIN = dedent(
 
 ICS_END = "END:VCALENDAR"
 
+
 @dataclass(frozen=True)
 class IcsEvent:
     dtstamp: str

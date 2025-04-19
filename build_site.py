@@ -152,7 +152,10 @@ for e in eventos:
 
 def event_to_ics(e: Event, s: Session):
     description = "\n".join(filter(lambda x: x is not None, [
-        f'{e.price}€', e.url, s.url, e.more
+        f'{e.price}€',
+        e.url,
+        s.url,
+        e.more if not e.more.startswith("https://www.google.es/search") else None
     ])).strip()
     dtstart = to_datetime(s.date)
     dtend = dtstart + timedelta(minutes=e.duration)
