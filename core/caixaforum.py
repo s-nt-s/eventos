@@ -177,7 +177,8 @@ class CaixaForum:
             if m:
                 return int(m.group(1))
         span = div.select_one_txt(
-            "div.card-detail div.card-block-btn span", warning=True
+            "div.card-detail div.card-block-btn span",
+            warning=True
         ) or ""
         price = span.lower()
         if "gratuita" in price:

@@ -205,14 +205,18 @@ class MyTag:
         self.__url = url
         self.__node = node
 
-    def select_one(self, slc: str):
+    def select_one(self, slc: str, warning: bool = False):
         n = self.__node.select_one(slc)
         if n is None:
-            raise WebException(f"{slc} NOT FOUND in {self.__url}")
+            ex = WebException(f"{slc} NOT FOUND in {self.__url}")
+            if warning:
+                logger.warning(str(ex))
+                return None
+            raise ex
         return n
 
     def select_one_txt(self, slc: str, warning: bool = False):
-        n = self.select_one(slc)
+        n = self.select_one(slc, warning=warning)
         txt = get_text(n)
         if txt is None:
             ex = WebException(f"{slc} EMPTY in {self.__url}")
