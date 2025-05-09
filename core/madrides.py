@@ -422,7 +422,7 @@ class MadridEs:
             return Category.MUSIC
         if re_or(tp_name, "teatro", "zarzuela", "lectura dramatizada", to_log=id):
             return Category.THEATER
-        if re_or(tp_name, "exposicion(es)?", to_log=id):
+        if re_or(tp_name, "exposicion(es)?", "noche de los museos", to_log=id):
             return Category.EXPO
         if re_or(tp, "danza", "baile", to_log=id):
             return Category.DANCE

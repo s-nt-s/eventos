@@ -234,6 +234,8 @@ class CaixaForum:
         #    return Category.OTHERS
         if re_or(cat, "visita"):
             return Category.VISIT
+        if re_or(cat, "performance"):
+            return Category.THEATER
         logger.critical(str(CategoryUnknown(div.url, txt)))
         return Category.UNKNOWN
 
