@@ -176,7 +176,10 @@ class CaixaForum:
             m = re.search(r"loadOneBoxTicketsDetailActivity\(['\"]" + str(id) + r"['\"], ['\"](\d+)", txt)
             if m:
                 return int(m.group(1))
-        price = div.select_one_txt("div.card-detail div.card-block-btn span").lower()
+        span = div.select_one_txt(
+            "div.card-detail div.card-block-btn span", warning=True
+        ) or ""
+        price = span.lower()
         if "gratuita" in price:
             return 0
         prcs = tuple(map(int, re.findall(r"(\d+)\s*€", price)))

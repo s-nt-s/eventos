@@ -211,11 +211,15 @@ class MyTag:
             raise WebException(f"{slc} NOT FOUND in {self.__url}")
         return n
 
-    def select_one_txt(self, slc: str):
+    def select_one_txt(self, slc: str, warning: bool = False):
         n = self.select_one(slc)
         txt = get_text(n)
         if txt is None:
-            raise WebException(f"{slc} EMPTY in {self.__url}")
+            ex = WebException(f"{slc} EMPTY in {self.__url}")
+            if warning:
+                logger.warning(str(ex))
+                return None
+            raise ex
         return txt
 
     def select_one_json(self, slc: str) -> Union[Dict, List]:
