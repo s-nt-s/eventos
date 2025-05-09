@@ -187,7 +187,8 @@ class CaixaForum:
             n = div.select_one("#description-read")
             prcs = tuple(map(int, re.findall(r"(\d+)\s*€", get_text(n))))
         if len(prcs) == 0:
-            raise FieldNotFound("price", div.url)
+            logger.warning(str(FieldNotFound("price", div.url)))
+            return 0
         return max(prcs)
 
     def __find_duration(self, url_event: str, soup: Tag, category: Category, info: Dict):
