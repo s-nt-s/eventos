@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict
 from typing import NamedTuple, Tuple, Dict, List, Union, Any
-from .util import get_obj
+from .util import get_obj, plain_text
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
@@ -227,9 +227,10 @@ def unquote(s: str):
     return s
 
 
-def _clean_name(name: str):
+def _clean_name(name: str, place: str):
     if name is None:
         return None
+    place = plain_text((place or "").lower())
     bak = ''
     while bak != name:
         bak = str(name)
@@ -244,6 +245,9 @@ def _clean_name(name: str):
         name = re.sub(r"^Proyección del documental:\s+", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^(Cine .*)?Proyección de (['\"])", r"\2", name, flags=re.IGNORECASE)
         name = re.sub(r"^Cineclub con .* '([^']+)'.*", r"\1", name, flags=re.IGNORECASE)
+        name = re.sub(r"\s*-\s*$", "", name)
+        if place == "faro de la moncloa":
+            name = re.sub(r"\s*-\s*moncloa\s*$", "", name, flags=re.IGNORECASE)
         name = unquote(name.strip(". "))
         if len(name) < 2:
             name = str(bak)
@@ -267,7 +271,7 @@ class Event:
     sessions: Tuple[Session] = tuple()
 
     def __post_init__(self):
-        new_name = _clean_name(self.name)
+        new_name = _clean_name(self.name, self.place.name)
         if new_name != self.name:
             logger.debug(f"FIX: {new_name} <- {self.name}")
             object.__setattr__(self, 'name', new_name)
