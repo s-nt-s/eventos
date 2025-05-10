@@ -53,7 +53,6 @@ class Category(IntEnum):
     VISIT = 10
     CHILDISH = 11 # infantil
     #OTHERS = 12
-    RECITAL = 13
     YOUTH = 14
     READING_CLUB = 15
     CONTEST = 16
@@ -95,8 +94,6 @@ class Category(IntEnum):
             return "visita"
         if self == Category.CHILDISH:
             return "infantil"
-        if self == Category.RECITAL:
-            return "recital"
         if self == Category.YOUTH:
             return "juventud"
         if self == Category.READING_CLUB:
@@ -126,6 +123,13 @@ class Category(IntEnum):
         if self == Category.MAGIC:
             return "magia"
         raise ValueError(self.value)
+
+    def __lt__(self, other):
+        if self == Category.UNKNOWN:
+            return False
+        if other == Category.UNKNOWN:
+            return True
+        return str(self).__lt__(str(other))
 
 
 class Session(NamedTuple):

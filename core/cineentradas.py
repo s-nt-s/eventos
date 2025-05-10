@@ -165,7 +165,7 @@ class CineEntradas:
             id = f"ce{self.info['id']}_{i['movie']['id']}"
             if re_or(name.lower(), "enclavedanza", to_log=id):
                 category = Category.DANCE
-            elif re_and(name.lower(), "conciertos", ("territorios", "jazz", "duo", "trio"), to_log=id):
+            elif re_and(name.lower(), "conciertos", ("territorios", "jazz", "duo", "trio", "charla"), to_log=id):
                 category = Category.MUSIC
             root = f"https://cine.entradas.com/cine/{city}/{cinema}"
             events.add(Event(

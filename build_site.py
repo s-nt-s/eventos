@@ -100,6 +100,7 @@ OK_CAT = (
     Category.DANCE,
     Category.CONFERENCE,
     Category.VISIT,
+    Category.MAGIC,
     Category.UNKNOWN,
 )
 
@@ -161,8 +162,8 @@ logger.info(f"{len(eventos)} filtrados")
 
 sesiones: Dict[str, Set[int]] = {}
 sin_sesiones: Set[int] = set()
-categorias = {}
-lugares = {}
+categorias: Dict[Category, int] = {}
+lugares: Dict[str, int] = {}
 
 for e in eventos:
     categorias[e.category] = categorias.get(e.category, 0) + 1
