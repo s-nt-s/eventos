@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 now = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 white = (255, 255, 255)
 
+
 def distance_to_white(*color) -> Tuple[int]:
     arr = []
     for c in color:
@@ -129,6 +130,8 @@ def myfilter(e: Event):
         return False
 
     e.remove_old_sessions(now)
+    e.remove_working_sessions()
+
     if len(e.sessions) == 0:
         return False
     return True

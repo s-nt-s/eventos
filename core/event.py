@@ -10,6 +10,7 @@ from datetime import date, datetime
 from core.web import Web, get_text
 from core.filemanager import FM
 import logging
+from functools import cache
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,17 @@ FIX_EVENT: Dict[str, Dict[str, Any]] = FM.load("fix/event.json")
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
 re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
+
+
+@cache
+def get_festivos(year: int):
+    dates: set[str] = set()
+    soup = Web().get(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
+    for month, div in enumerate(soup.select("#wrapIntoMeses div.mes")):
+        for day in map(get_text, div.select("td[class^='cajaFestivo']")):
+            dt = date(year, month+1, int(day))
+            dates.add(dt)
+    return tuple(sorted(dates))
 
 
 class FieldNotFound(Exception):
@@ -157,6 +169,22 @@ class Session(NamedTuple):
     @property
     def id(self):
         return re.sub(r"\D+", "", self.date)
+
+    def isWorkingHours(self):
+        if self.date is None:
+            return False
+        dt = self.get_date()
+        if dt.weekday() in (5, 6):
+            return False
+        if dt.date() in get_festivos(dt.year):
+            return False
+        if dt.hour > 15:
+            return False
+        return True
+
+    def get_date(self):
+        dt_int = tuple(map(int, re.split(r"\D+", self.date)))
+        return datetime(*dt_int)
 
 
 class Place(NamedTuple):
@@ -336,3 +364,14 @@ class Event:
             now = datetime.now().strftime("%Y-%m-%d %H:%M")
         sessions = tuple(filter(lambda s: s.date >= now, self.sessions))
         object.__setattr__(self, 'sessions', sessions)
+
+    def remove_working_sessions(self):
+        sessions = []
+        w = 'LMXJVSD'
+        for s in self.sessions:
+            if s.isWorkingHours():
+                d = s.get_date()
+                logger.debug(f"Sesion {s.date} {w[d.weekday()]} eliminada por estar en horario de trabajo")
+                continue
+            sessions.append(s)
+        object.__setattr__(self, 'sessions', tuple(sessions))
