@@ -174,11 +174,12 @@ class Session(NamedTuple):
         if self.date is None:
             return False
         dt = self.get_date()
+        hm = dt.hour + (dt.minute/100)
+        if hm == 0 or hm > 15:
+            return False
         if dt.weekday() in (5, 6):
             return False
         if dt.date() in get_festivos(dt.year):
-            return False
-        if dt.hour > 15:
             return False
         return True
 
