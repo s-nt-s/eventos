@@ -460,6 +460,8 @@ class MadridEs:
             return Category.CHILDISH
         if re_or(name, "^re vuelta al patio"):
             return Category.CHILDISH
+        if re_or(name, "para mayores$"):
+            return Category.SENIORS
         if re_or(name, "el mundo de los toros", "el mundo del toro"):
             return Category.SPAM
         if re_and(name, "ballet", ("repertorio", "clasico")):

@@ -248,7 +248,7 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"Visita a la exposición '([^']+)'\. .*", r"\1", name, flags=re.IGNORECASE)
         name = re.sub(r"^(lectura dramatizada|presentación del libro|Cinefórum[^:]*|^Madrid, plató de cine)\s*[\.:]\s+", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^(conferencia|visita[^'\"]*)[\s:]+(['\"])", r"\2", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(conferencia|concierto)\s*[\-:\.]\s*", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"^(conferencia|concierto|proyección( película)?)\s*[\-:\.]\s*", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^(conferencia)\s*", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^visita (comentada|guiada)(:| -)\s+", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^Proyección del documental:\s+", "", name, flags=re.IGNORECASE)
