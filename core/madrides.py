@@ -95,7 +95,9 @@ OK_ZONE = {
     # Pacifico
     (40.401874, -3.674703): 1,
     # Sainz de Baranda
-    (40.414912, -3.669639): 1
+    (40.414912, -3.669639): 1,
+    # Oporto
+    (40.388966, -3.731448): 1
 }
 
 
@@ -597,7 +599,7 @@ class MadridEs:
     def zona(self):
         data: Dict[str, str] = {}
         for k, v in self.distritos.items():
-            if re.search(r"arganzuela|centro|moncloa|chamberi|retiro|salamaca|villaverde", plain_text(v)):
+            if re.search(r"arganzuela|centro|moncloa|chamberi|retiro|salamaca|villaverde|carabanchel", plain_text(v)):
                 data[k] = v
         return data
 
