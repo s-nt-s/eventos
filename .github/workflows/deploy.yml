@@ -33,9 +33,6 @@ jobs:
           echo $PAGE_URL
           echo "PAGE_URL=${PAGE_URL}" >> $GITHUB_ENV
           echo "REPO_URL=${REPO_URL}" >> $GITHUB_ENV
-      - name: WGET
-        run: |
-          ./wget.sh publish.json '{}'
       - name: Check out this repo
         uses: actions/checkout@v2
       - name: Set up Python
@@ -44,8 +41,10 @@ jobs:
           python-version: '3.10'
       - name: Install pip packages
         run: pip install -r requirements.txt
-      - name: RM
-        run: rm -rf ./rec/
+      - name: RM and WGET
+        run: |
+          rm -rf ./rec/
+          ./wget.sh publish.json '{}'
       - name: BUILD
         continue-on-error: false
         uses: nick-fields/retry@v2
