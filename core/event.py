@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict
-from typing import NamedTuple, Tuple, Dict, List, Union, Any
+from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional
 from .util import get_obj, plain_text, getKm
 from urllib.parse import quote
 from enum import IntEnum
@@ -14,6 +14,7 @@ from functools import cache
 
 logger = logging.getLogger(__name__)
 
+NOW = date.today().strftime("%Y-%m-%d")
 FIX_EVENT: Dict[str, Dict[str, Any]] = FM.load("fix/event.json")
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
@@ -241,12 +242,13 @@ def _clean_name(name: str, place: str):
     bak = ''
     while bak != name:
         bak = str(name)
+        name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.IGNORECASE)
         name = re.sub(r"\.\s*(conferencia)\s*$", "", name, flags=re.IGNORECASE)
         name = re.sub(r"Visita a la exposición '([^']+)'\. .*", r"\1", name, flags=re.IGNORECASE)
         name = re.sub(r"^(lectura dramatizada|presentación del libro|Cinefórum[^:]*|^Madrid, plató de cine)\s*[\.:]\s+", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^(conferencia|visita[^'\"]*)[\s:]+(['\"])", r"\2", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(conferencia|concierto)\s*[\-:]\s*", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"^(conferencia|concierto)\s*[\-:\.]\s*", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^(conferencia)\s*", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^visita (comentada|guiada)(:| -)\s+", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^Proyección del documental:\s+", "", name, flags=re.IGNORECASE)
@@ -269,11 +271,12 @@ class Event:
     id: str
     url: str
     name: str
-    img: str
     price: float
     category: Category
     place: Place
     duration: int
+    publish: str = NOW
+    img: Optional[str] = None
     sessions: Tuple[Session] = tuple()
 
     def __post_init__(self):
@@ -288,16 +291,20 @@ class Event:
             'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Teatro_Performance/ficheros/250429_BuscandoHogar_260x260.jpg',
             'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/Cineclub_javierdelatorre_260.jpg',
             'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Conferencias/ficheros/Ajam_260x260.jpg',
+            'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/ficheros/Bohemios.jpg',
             'https://www.casamerica.es/themes/casamerica/images/cabecera_generica.jpg',
         ):
             object.__setattr__(self, 'img', None)
 
-    def fix(self):
+    def fix(self, **kwargs):
         if self.img is None and re_filmaffinity.match(self.more or ''):
             soup = Web().get(self.more)
             img = soup.select_one("#right-column a.lightbox img")
             if img:
                 object.__setattr__(self, 'img', img.attrs.get('src'))
+        for k, v in kwargs.items():
+            if v is not None:
+                object.__setattr__(self, k, v)
         return self
 
     def merge(self, **kwargs):
@@ -308,9 +315,12 @@ class Event:
         obj = get_obj(*args, **kwargs)
         if obj is None:
             return None
-        obj['category'] = Category(obj['category'])
-        obj['place'] = Place.build(obj['place'])
-        obj['sessions'] = tuple(map(Session.build, obj['sessions']))
+        if isinstance(obj['category'], int):
+            obj['category'] = Category(obj['category'])
+        if isinstance(obj['place'], dict):
+            obj['place'] = Place.build(obj['place'])
+        if isinstance(obj['sessions'], (list, tuple)) and len(obj['sessions']) > 0 and isinstance(obj['sessions'][0], dict):
+            obj['sessions'] = tuple(map(Session.build, obj['sessions']))
         return Event(**obj)
 
     @cached_property
@@ -345,7 +355,7 @@ class Event:
                 a = w.soup.select_one("a.c-mod-file-event__content-link")
                 if a and a.attrs.get("href"):
                     return a.attrs["href"]
-            return "https://www.google.es/search?&complete=0&gbv=1&q="+txt
+            #return "https://www.google.es/search?&complete=0&gbv=1&q="+txt
 
     @property
     def dates(self):
@@ -385,3 +395,21 @@ class Event:
                 continue
             sessions.append(s)
         object.__setattr__(self, 'sessions', tuple(sessions))
+
+    def isSimilar(self, e: "Event"):
+        ob1 = asdict(e)
+        ob2 = asdict(self)
+        for k, v1 in ob1.items():
+            if v1 is None:
+                continue
+            v2 = ob2[k]
+            if k == "name":
+                if plain_text(v1) != plain_text(v2):
+                    return False
+                continue
+            if v1 != v2:
+                return False
+        return True
+
+    def _asdict(self):
+        return asdict(self)

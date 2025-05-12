@@ -4,7 +4,7 @@ import re
 from typing import Set, Dict, List, Tuple
 from urllib.parse import urlencode
 from .event import Event, Session, Place, Category, CategoryUnknown
-from .util import plain_text, re_or, re_and, getKm
+from .util import plain_text, re_or, re_and, getKm, my_filter, get_main_value
 from ics import Calendar
 from arrow import Arrow
 import logging
@@ -36,6 +36,8 @@ def get_text(n: Tag):
 
 
 def clean_lugar(s: str):
+    if re.search(r"Centro Cultural Casa del Reloj", s, flags=re.IGNORECASE):
+        return "Centro cultural Casa del Reloj"
     s = re.sub(r"^Biblioteca Pública( Municipal)?", "Biblioteca", s)
     s = re.sub(r"\s+\(.*?\)\s*$", "", s)
     s = re.sub(r"^Mercado municipal de ", "Mercado ", s, flags=re.IGNORECASE)
@@ -53,6 +55,7 @@ def clean_lugar(s: str):
     s = re.sub(r"^(Matadero) (Medialab|Madrid)$", r"\1", s, flags=re.IGNORECASE)
     s = re.sub(r"^(Cineteca) Madrid$", r"\1", s, flags=re.IGNORECASE)
     s = re.sub(r"^(Imprenta Municipal)\s.*$", r"\1", s, flags=re.IGNORECASE)
+    s = re.sub(r"^Centro (cultural|sociocultural)\b", "Centro cultural", s, flags=re.IGNORECASE)
     lw = plain_text(s).lower()
     if lw.startswith("museo de san isidro"):
         return "Museo San Isidro"
@@ -102,7 +105,9 @@ OK_ZONE = {
 
 
 @cache
-def isOkZone(p: Place):
+def isOkPlace(p: Place):
+    if re.search(r"\bcentro juvenil\b", p.name, flags=re.IGNORECASE):
+        return False
     if p.latlon is None:
         return True
     kms: list[float] = []
@@ -257,46 +262,71 @@ class MadridEs:
 
     @property
     @TupleCache("rec/madrides.json", builder=Event.build)
-    def events(self):
-        evts: Set[Event] = set()
+    def events(self) -> Tuple[Event, ...]:
+        all_events: Set[Event] = set()
         for action, data in self.iter_submit():
-            evts = evts.union(self.__get_events(action, data))
-        data: Dict[Event, List[Event]] = defaultdict(list)
-        for e in sorted(evts):
-            img = self.get(e.url).select_one("div.image-content img")
-            if img:
-                e = e.merge(img=img.attrs["src"])
-            data[e.merge(
-                name=plain_text(e.name),
-                id=None,
-                img=None,
-                url=None,
-                duration=None,
-                sessions=tuple()
-            )].append(e)
+            all_events = all_events.union(self.__get_events(action, data))
+        if len(all_events) == 0:
+            return tuple()
 
-        evts: Set[Event] = set()
-        for key, events in data.items():
-            e1 = events[0]
+        def _merge(events: List[Event]):
             if len(events) == 1:
-                evts.add(e1)
-                continue
+                return events[0]
             logger.debug("Fusión: " + " + ".join(map(lambda e: f"{e.id} {e.duration}", events)))
             sessions: Set[Session] = set()
+            categories: List[Category] = []
+            durations: List[float] = []
+            imgs: List[str] = []
             for e in events:
+                if e.category not in (None, Category.UNKNOWN):
+                    categories.append(e.category)
+                if e.duration is not None:
+                    durations.append(e.duration)
+                if e.img is not None:
+                    imgs.append(e.img)
                 for s in e.sessions:
                     sessions.add(s._replace(
                         url=s.url or e.url
                     ))
-            evts.add(key.merge(
-                id=e1.id,
-                name=e1.name,
-                duration=next((e.duration for e in events if e.duration), None),
-                img=next((e.img for e in events if e.img), None),
-                sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url)))
-            ))
+            return events[0].merge(
+                url=None,
+                duration=get_main_value(durations),
+                img=get_main_value(imgs),
+                category=get_main_value(categories, default=Category.UNKNOWN),
+                sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
+            )
 
-        return tuple(sorted(evts))
+        mrg_events: Set[Event] = set()
+        ko_events = sorted(all_events)
+        empty = {k: None for k in ko_events[0]._asdict().keys()}
+
+        while ko_events:
+            e = ko_events[0]
+            k: Event = Event.build({
+                **empty,
+                **{
+                    'name': e.name,
+                    'place': e.place,
+                    'category': None
+                }
+            })
+            ok, ko_events = my_filter(ko_events, lambda x: x.isSimilar(k))
+            mrg_events.add(_merge(ok))
+        arr_events: List[Event] = []
+        for e in sorted(mrg_events):
+            urls: List[str] = []
+            if e.url:
+                urls.append(e.url)
+            for s in e.sessions:
+                if s.url and s.url not in urls:
+                    urls.append(s.url)
+            while e.img is None and urls:
+                img = self.get(urls.pop(0)).select_one("div.image-content img")
+                if img:
+                    e = e.merge(img=img.attrs["src"])
+            arr_events.append(e)
+
+        return tuple(sorted(arr_events))
 
     def __get_ids(self, action: str, data: Dict = None):
         ids: Set[str] = set()
@@ -315,7 +345,7 @@ class MadridEs:
                 address=lg.attrs["data-direction"],
                 latlon=lg.attrs["data-latitude"]+","+lg.attrs["data-longitude"]
             )
-            if not isOkZone(place):
+            if not isOkPlace(place):
                 continue
             url_event = a.attrs["href"]
             cat = self.__find_category(id, div, url_event)

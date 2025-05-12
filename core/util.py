@@ -1,5 +1,5 @@
 import re
-from typing import List, Dict, Union, Set, Tuple
+from typing import List, Dict, Union, Set, Tuple, Optional
 from bs4 import Tag, BeautifulSoup
 from minify_html import minify
 import unicodedata
@@ -10,7 +10,10 @@ from urllib.parse import urlparse
 import pytz
 from datetime import datetime
 from math import radians, sin, cos, sqrt, atan2
+from collections import Counter
 
+from typing import TypeVar, Callable, Iterable, Iterator
+T = TypeVar('T')
 
 logger = logging.getLogger(__name__)
 
@@ -359,3 +362,24 @@ def getKm(lat1: float, lon1: float, lat2: float, lon2: float):
     # Distancia
     distance = R * c
     return abs(distance)
+
+
+def my_filter(iterable: Iterable[T], func: Callable[[T], bool]) -> Tuple[List[T], List[T]]:
+    ok: List[T] = []
+    ko: List[T] = []
+    for i in iterable:
+        if func(i) is True:
+            ok.append(i)
+        else:
+            ko.append(i)
+    return ok, ko
+
+
+def get_main_value(arr: List[T], default: Optional[T] = None) -> Union[T, None]:
+    if len(arr) == 0:
+        return default
+    contador = Counter(arr)
+    max_rep = max(contador.values())
+    for e in arr:
+        if contador[e] == max_rep:
+            return e

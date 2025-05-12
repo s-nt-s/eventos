@@ -38,8 +38,9 @@ OUT = "out/"
 
 config_log("log/build_site.log")
 logger = logging.getLogger(__name__)
-now = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 white = (255, 255, 255)
+NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
+PUBLISH: dict[str, str] = FM.load(OUT+"publish.json")
 
 
 def distance_to_white(*color) -> Tuple[int]:
@@ -112,7 +113,7 @@ def myfilter(e: Event):
     if e.category not in OK_CAT:
         return False
 
-    e.remove_old_sessions(now)
+    e.remove_old_sessions(NOW)
     e.remove_working_sessions()
 
     if len(e.sessions) == 0:
@@ -121,8 +122,16 @@ def myfilter(e: Event):
 
 
 def sorted_and_fix(eventos: List[Event]):
+    def _iter_fix(eventos: List[Event]):
+        done: set[Event] = set()
+        for e in eventos:
+            e = e.fix(publish=PUBLISH.get(e.id))
+            PUBLISH[e.id] = e.publish
+            if e not in done:
+                done.add(e)
+                yield e
     arr1 = sorted(
-        set(e.fix() for e in set(eventos)),
+        _iter_fix(eventos),
         key=lambda e: (min(s.date for s in e.sessions), e.name, e.url)
     )
     return tuple(arr1)
@@ -173,7 +182,7 @@ def event_to_ics(e: Event, s: Session):
     dtend = dtstart + timedelta(minutes=e.duration)
     return IcsEvent(
         uid=f"{e.id}_{s.id}",
-        dtstamp=now,
+        dtstamp=NOW,
         url=(s.url or e.url),
         categories=str(e.category),
         summary=e.title,
@@ -241,7 +250,7 @@ j.create_script(
 j.save(
     "index.html",
     eventos=img_eventos,
-    now=now,
+    now=NOW,
     categorias=categorias,
     lugares=lugares,
     count=len(eventos),
@@ -259,4 +268,5 @@ EventosRss(
 ).save("eventos.rss")
 
 FM.dump(OUT+"eventos.json", eventos)
+FM.dump(OUT+"publish.json", PUBLISH)
 logger.info("Fin")

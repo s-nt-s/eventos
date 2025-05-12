@@ -23,7 +23,7 @@ class CasaEncendida:
     URL = "https://www.lacasaencendida.es/actividades?t[0]=activity_"
     ACTIVITY = (2, 3)
     PLACE = Place(
-        name="La Casa Encendida",
+        name="La casa encendida",
         address="Rda. de Valencia, 2, Centro, 28012 Madrid"
     )
 
