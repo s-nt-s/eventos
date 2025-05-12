@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict
 from typing import NamedTuple, Tuple, Dict, List, Union, Any
-from .util import get_obj, plain_text
+from .util import get_obj, plain_text, getKm
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
@@ -209,6 +209,12 @@ class Place(NamedTuple):
         if re.match(r"^[\d\.,]+$", self.address):
             return "https://www.google.com/maps?q=" + self.address
         return "https://www.google.com/maps/place/" + quote(self.address)
+
+    def getKmFrom(self, lat: float, lon: float):
+        if self.latlon is None:
+            return None
+        lt, ln = map(float, self.latlon.split(","))
+        return getKm(lt, ln, lat, lon)
 
 
 def unquote(s: str):

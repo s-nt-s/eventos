@@ -4,7 +4,7 @@ import re
 from typing import Set, Dict, List, Tuple
 from urllib.parse import urlencode
 from .event import Event, Session, Place, Category, CategoryUnknown
-from .util import plain_text, re_or, re_and
+from .util import plain_text, re_or, re_and, getKm
 from ics import Calendar
 from arrow import Arrow
 import logging
@@ -79,6 +79,39 @@ def get_href(n: Tag):
     if n.name == "a":
         return n.attrs.get("href")
     return get_href(n.find("a"))
+
+
+OK_ZONE = {
+    # Villaverde Bajo
+    (40.352672, -3.684576): 1,
+    # Legazpi
+    (40.391225, -3.695124): 2,
+    # Delicias
+    (40.400400, -3.692774): 2,
+    # Banco de España
+    (40.419529, -3.693949): 3,
+    # Moncloa
+    (40.434616, -3.719097): 1,
+    # Pacifico
+    (40.401874, -3.674703): 1,
+    # Sainz de Baranda
+    (40.414912, -3.669639): 1
+}
+
+
+@cache
+def isOkZone(p: Place):
+    if p.latlon is None:
+        return True
+    kms: list[float] = []
+    lat, lon = map(float, p.latlon.split(","))
+    for (lt, ln), km in OK_ZONE.items():
+        kms.append(getKm(lat, lon, lt, ln))
+        if kms[-1] <= km:
+            return True
+    k = round(min(kms))
+    logger.debug(f"Lugar descartado {k}km {p.name} {p.url}")
+    return False
 
 
 class MadridEs:
@@ -272,12 +305,19 @@ class MadridEs:
     def __get_events(self, action: str, data: Dict = None):
         evts: Set[Event] = set()
         for id, a, div in self.__get_soup_events(action, data):
+            lg = div.select_one("a.event-location")
+            if lg is None:
+                continue
+            place = Place(
+                name=clean_lugar(lg.attrs["data-name"]),
+                address=lg.attrs["data-direction"],
+                latlon=lg.attrs["data-latitude"]+","+lg.attrs["data-longitude"]
+            )
+            if not isOkZone(place):
+                continue
             url_event = a.attrs["href"]
             cat = self.__find_category(id, div, url_event)
             if cat is None:
-                continue
-            lg = div.select_one("a.event-location")
-            if lg is None:
                 continue
             duration, sessions = self.__get_sessions(url_event, div)
             if len(sessions) == 0:
@@ -289,11 +329,7 @@ class MadridEs:
                 img=None,
                 price=0,
                 category=cat,
-                place=Place(
-                    name=clean_lugar(lg.attrs["data-name"]),
-                    address=lg.attrs["data-direction"],
-                    latlon=lg.attrs["data-latitude"]+","+lg.attrs["data-longitude"]
-                ),
+                place=place,
                 duration=duration,
                 sessions=sessions
             )
@@ -418,7 +454,7 @@ class MadridEs:
             return Category.MAGIC
         if re_or(tp_name, "cine", "proyeccion(es)?", "cortometrajes?", to_log=id):
             return Category.CINEMA
-        if re_or(tp_name, "musica", "conciertos?", "hip-hob", "jazz", "reagge", "flamenco", "batucada", "rock", to_log=id):
+        if re_or(tp_name, "musica", "musicales", "conciertos?", "hip-hob", "jazz", "reagge", "flamenco", "batucada", "rock", to_log=id):
             return Category.MUSIC
         if re_or(tp_name, "teatro", "zarzuela", "lectura dramatizada", to_log=id):
             return Category.THEATER
@@ -553,15 +589,15 @@ class MadridEs:
         def my_filter(k, arr, **kwargs):
             return tuple(filter(lambda v: do_filter(**{**kwargs, **{k: v}}), arr))
 
-        for dis in my_filter("distrito", self.centro.keys()):
+        for dis in my_filter("distrito", self.zona.keys()):
             data["distrito"] = dis
             yield action, data
 
     @cached_property
-    def centro(self):
+    def zona(self):
         data: Dict[str, str] = {}
         for k, v in self.distritos.items():
-            if re.search(r"arganzuela|centro|moncloa|chamberi|retiro|salamaca", plain_text(v)):
+            if re.search(r"arganzuela|centro|moncloa|chamberi|retiro|salamaca|villaverde", plain_text(v)):
                 data[k] = v
         return data
 

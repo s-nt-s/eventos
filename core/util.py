@@ -9,6 +9,8 @@ from unidecode import unidecode
 from urllib.parse import urlparse
 import pytz
 from datetime import datetime
+from math import radians, sin, cos, sqrt, atan2
+
 
 logger = logging.getLogger(__name__)
 
@@ -329,9 +331,31 @@ def get_redirect(url: str):
     r = requests.get(url, allow_redirects=False)
     return r.headers.get('Location')
 
+
 def to_datetime(s: str):
     if s is None:
         return None
     tz = pytz.timezone('Europe/Madrid')
     dt = datetime.strptime(s, "%Y-%m-%d %H:%M")
     return tz.localize(dt)
+
+
+def getKm(lat1: float, lon1: float, lat2: float, lon2: float):
+    # Radio de la Tierra en kilómetros
+    R = 6371.0
+
+    lat1_rad = radians(lat1)
+    lon1_rad = radians(lon1)
+    lat2_rad = radians(lat2)
+    lon2_rad = radians(lon2)
+
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+
+    # Fórmula de Haversine
+    a = sin(dlat / 2)**2 + cos(lat1_rad) * cos(lat2_rad) * sin(dlon / 2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    # Distancia
+    distance = R * c
+    return abs(distance)

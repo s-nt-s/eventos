@@ -111,23 +111,6 @@ def myfilter(e: Event):
         return False
     if e.category not in OK_CAT:
         return False
-    if e.place.name in (
-        'Espacio Abierto Quinta de los Molinos',
-        'Faro de Moncloa',
-        'Centro Cultural Las Californias',
-        'Centro Cultural Julio Cortázar',
-        'Centro Cultural Juan Genovés',
-        'Plaza de Daoíz y Velarde',
-        'Parroquia de la Asunción de Aravaca',
-        'Mercado Villaverde Alto',
-        'Mercado Villa de Vallecas',
-        'Mercado Vicálvaro',
-        'Mercado Maravillas',
-        'Espacio Abierto Quinta de los Molinos',
-        'Centro Cultural El Plantío',
-        'Biblioteca Pablo Neruda'
-    ) or e.place.name.endswith("Dehesa de la Villa"):
-        return False
 
     e.remove_old_sessions(now)
     e.remove_working_sessions()
