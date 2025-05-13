@@ -38,6 +38,7 @@ def get_text(n: Tag):
 def clean_lugar(s: str):
     if re.search(r"Centro Cultural Casa del Reloj", s, flags=re.IGNORECASE):
         return "Centro cultural Casa del Reloj"
+    s = re.sub(r"\bCentro de Información y Educación Ambiental\b", "CIEA", s, flags=re.IGNORECASE)
     s = re.sub(r"^Biblioteca Pública( Municipal)?", "Biblioteca", s)
     s = re.sub(r"\s+\(.*?\)\s*$", "", s)
     s = re.sub(r"^Mercado municipal de ", "Mercado ", s, flags=re.IGNORECASE)
@@ -56,13 +57,15 @@ def clean_lugar(s: str):
     s = re.sub(r"^(Cineteca) Madrid$", r"\1", s, flags=re.IGNORECASE)
     s = re.sub(r"^(Imprenta Municipal)\s.*$", r"\1", s, flags=re.IGNORECASE)
     s = re.sub(r"^Centro (cultural|sociocultural)\b", "Centro cultural", s, flags=re.IGNORECASE)
+    s = re.sub(r"\s+de\s+Madrid$", "", s, flags=re.IGNORECASE)
+    s = re.sub(r"^Centro dotacional integrado", "Centro dotacional integrado", s, flags=re.IGNORECASE)
     lw = plain_text(s).lower()
     if lw.startswith("museo de san isidro"):
         return "Museo San Isidro"
     for txt in (
         "Biblioteca Eugenio Trías",
-        "Centro Dotacional Integrado Arganzuela",
-        "Centro Danza Matadero",
+        "Centro dotacional integrado Arganzuela",
+        "Centro danza Matadero",
         "Auditorio de la Plaza de Chamberí",
     ):
         if lw.startswith(plain_text(txt)):
@@ -312,21 +315,7 @@ class MadridEs:
             })
             ok, ko_events = my_filter(ko_events, lambda x: x.isSimilar(k))
             mrg_events.add(_merge(ok))
-        arr_events: List[Event] = []
-        for e in sorted(mrg_events):
-            urls: List[str] = []
-            if e.url:
-                urls.append(e.url)
-            for s in e.sessions:
-                if s.url and s.url not in urls:
-                    urls.append(s.url)
-            while e.img is None and urls:
-                img = self.get(urls.pop(0)).select_one("div.image-content img")
-                if img:
-                    e = e.merge(img=img.attrs["src"])
-            arr_events.append(e)
-
-        return tuple(sorted(arr_events))
+        return tuple(sorted(mrg_events))
 
     def __get_ids(self, action: str, data: Dict = None):
         ids: Set[str] = set()
@@ -482,7 +471,7 @@ class MadridEs:
             return Category.WORKSHOP
         if re_or(name, r"^visita guiada\s[:'\"\-].*$", "visitas guiadas para", to_log=id):
             return Category.VISIT
-        if re_or(name, r"^concierto:", to_log=id):
+        if re_or(name, r"^concierto: ", "^concierto de", to_log=id):
             return Category.MUSIC
         if re_or(tp_name, ("espectaculo", "magia")):
             return Category.MAGIC
@@ -553,7 +542,7 @@ class MadridEs:
             return Category.CONFERENCE
 
         desc = self.__get_description(url_event)
-        if re_or(desc, "zarzuela", "teatro", to_log=id):
+        if re_or(desc, "zarzuela", "teatro", "espectaculo (circense y )?teatral", to_log=id):
             return Category.THEATER
         if re_or(desc, "itinerario .* kilometros", to_log=id):
             return Category.SPORT

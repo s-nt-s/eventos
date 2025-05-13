@@ -26,6 +26,7 @@ import bs4
 import re
 import pytz
 from core.rss import EventosRss
+from collections import defaultdict
 
 import argparse
 
@@ -224,7 +225,9 @@ def set_icons(html: str, **kwargs):
             "google": "https://www.google.es/favicon.ico",
             "cinesa": "https://www.cinesa.es/scripts/dist/favicon/es/favicon.ico",
             "yelmocines": "https://eu-static.yelmocines.es/img/favicon.ico",
-            "lavaguadacines": "https://lavaguadacines.es/assets/images/favicon.jpg"
+            "lavaguadacines": "https://lavaguadacines.es/assets/images/favicon.jpg",
+            "madrid": "https://www.madrid.es/favicon.ico",
+            "21distritos": "https://21distritos.es/CD_Favicon_generico.jpg",
         }.get(dom)
         if ico is None:
             continue
@@ -234,10 +237,24 @@ def set_icons(html: str, **kwargs):
             "filmaffinity": "Ver en Filmaffinity",
             "atrapalo": "Buscar en Atrapalo",
             "google": "Buscar en Google",
+            "21distritos": "Ver en 21distritos.es",
         }.get(dom)
         if tit and not a.attrs.get("title"):
             a.attrs["title"] = tit
     return str(soup)
+
+
+PBLSH = sorted(set((e.publish for e in eventos)), reverse=True)
+NEWS = PBLSH[0 if len(PBLSH) < 3 else 1]
+
+CLSS = defaultdict(list)
+CLSS_COUNT = defaultdict(int)
+for e in eventos:
+    if NEWS <= e.publish:
+        CLSS[e.id].append("novedad")
+for arr in CLSS.values():
+    for a in arr:
+        CLSS_COUNT[a] = CLSS_COUNT[a] + 1
 
 
 j = Jnj2("template/", OUT, favicon="🗓", post=set_icons)
@@ -249,8 +266,10 @@ j.create_script(
 )
 j.save(
     "index.html",
-    eventos=img_eventos,
     now=NOW,
+    eventos=img_eventos,
+    clss=CLSS,
+    clss_count=CLSS_COUNT,
     categorias=categorias,
     lugares=lugares,
     count=len(eventos),

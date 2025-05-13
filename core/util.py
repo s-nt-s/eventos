@@ -6,7 +6,7 @@ import unicodedata
 import requests
 import logging
 from unidecode import unidecode
-from urllib.parse import urlparse
+from urllib.parse import urlparse, ParseResult
 import pytz
 from datetime import datetime
 from math import radians, sin, cos, sqrt, atan2
@@ -28,8 +28,10 @@ block = heads + ("p", "div", "table", "article")
 inline = ("span", "strong", "i", "em", "u", "b", "del")
 
 
-def get_domain(url):
-    parsed_url = urlparse(url)
+def get_domain(url: str):
+    if url is None or len(url) == 0:
+        return None
+    parsed_url: ParseResult = urlparse(url)
     domain: str = parsed_url.netloc.lower()
     if domain.startswith("www."):
         domain = domain[4:]
@@ -299,9 +301,9 @@ def re_or(s: str, *args: Union[str, Tuple[str]], to_log: str = None):
                 return b
         else:
             reg = str(r)
-            if reg[0] != "^":
+            if reg[0] not in ("^", " "):
                 reg = r"\b" + reg
-            if reg[-1] != "$":
+            if reg[-1] not in ("$", " "):
                 reg = reg + r"\b"
             if re.search(reg, s):
                 if to_log:

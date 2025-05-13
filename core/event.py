@@ -1,6 +1,6 @@
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, fields
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional
-from .util import get_obj, plain_text, getKm
+from .util import get_obj, plain_text, getKm, get_domain
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
@@ -11,6 +11,7 @@ from core.web import Web, get_text
 from core.filemanager import FM
 import logging
 from functools import cache
+from bs4 import Tag
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +22,12 @@ MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", 
 
 re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
 
+WEB = Web()
 
 @cache
 def get_festivos(year: int):
     dates: set[str] = set()
-    soup = Web().get(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
+    soup = WEB.get(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
     for month, div in enumerate(soup.select("#wrapIntoMeses div.mes")):
         for day in map(get_text, div.select("td[class^='cajaFestivo']")):
             dt = date(year, month+1, int(day))
@@ -248,7 +250,7 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"Visita a la exposición '([^']+)'\. .*", r"\1", name, flags=re.IGNORECASE)
         name = re.sub(r"^(lectura dramatizada|presentación del libro|Cinefórum[^:]*|^Madrid, plató de cine)\s*[\.:]\s+", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^(conferencia|visita[^'\"]*)[\s:]+(['\"])", r"\2", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(conferencia|concierto|proyección( película)?)\s*[\-:\.]\s*", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"^(conferencia|concierto|espect[aá]culo|proyección( película)?)\s*[\-:\.]\s*", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^(conferencia)\s*", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^visita (comentada|guiada)(:| -)\s+", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^Proyección del documental:\s+", "", name, flags=re.IGNORECASE)
@@ -265,6 +267,34 @@ def _clean_name(name: str, place: str):
         name = w1.upper()+name[1:]
     return name
 
+
+def get_img_src(n: Tag):
+    if n is None:
+        return None
+    src = n.attrs.get('src')
+    if not isinstance(src, str):
+        return None
+    src = src.strip()
+    if len(src) == 0:
+        return None
+    sch = src.split("://")[0].lower()
+    if sch not in ("https", "http"):
+        return None
+    return src
+
+
+KO_IMG = (
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/MadridPlat%C3%B3Cine_260.png',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Infantiles_Juveniles/Cine/ficheros/2504_CineForumPerezGaldos_260x260.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Teatro_Performance/ficheros/250429_BuscandoHogar_260x260.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/Cineclub_javierdelatorre_260.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Conferencias/ficheros/Ajam_260x260.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/ficheros/Bohemios.jpg',
+    'https://www.madrid.es/UnidadWeb/Contenidos/Ficheros/TemaCulturaYOcio/Bohemios.jpg',
+    'https://www.madrid.es/UnidadWeb/Contenidos/Ficheros/canalcasareloj.png',
+    'https://www.casamerica.es/themes/casamerica/images/cabecera_generica.jpg',
+)
 
 @dataclass(frozen=True, order=True)
 class Event:
@@ -284,28 +314,61 @@ class Event:
         if new_name != self.name:
             logger.debug(f"FIX: {new_name} <- {self.name}")
             object.__setattr__(self, 'name', new_name)
-        if self.img in (
-            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
-            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/MadridPlat%C3%B3Cine_260.png',
-            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Infantiles_Juveniles/Cine/ficheros/2504_CineForumPerezGaldos_260x260.jpg',
-            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Teatro_Performance/ficheros/250429_BuscandoHogar_260x260.jpg',
-            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/Cineclub_javierdelatorre_260.jpg',
-            'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Conferencias/ficheros/Ajam_260x260.jpg',
-            'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/ficheros/Bohemios.jpg',
-            'https://www.casamerica.es/themes/casamerica/images/cabecera_generica.jpg',
-        ):
-            object.__setattr__(self, 'img', None)
 
     def fix(self, **kwargs):
-        if self.img is None and re_filmaffinity.match(self.more or ''):
-            soup = Web().get(self.more)
-            img = soup.select_one("#right-column a.lightbox img")
-            if img:
-                object.__setattr__(self, 'img', img.attrs.get('src'))
         for k, v in kwargs.items():
             if v is not None:
                 object.__setattr__(self, k, v)
+        for f in fields(self):
+            self.__fix_field(f.name)
         return self
+
+    def __fix_field(self, name: str):
+        fnc = getattr(self, f'_fix_{name}', None)
+        if fnc is None or not callable(fnc):
+            return
+        old_val = getattr(self, name, None)
+        fix_val = fnc()
+        if fix_val == old_val:
+            return
+        logger.debug(f"FIX: {name} {fix_val} <- {old_val}")
+        object.__setattr__(self, name, fix_val)
+
+    def iter_urls(self):
+        done: set[str] = set((None,))
+        if self.url not in done:
+            done.add(self.url)
+            yield self.url
+        for s in self.sessions:
+            if s.url not in done:
+                done.add(s.url)
+                yield s.url
+        if self.more not in done:
+            done.add(self.more)
+            yield self.more
+
+    def _fix_img(self):
+        ko = (None, ) + KO_IMG
+        if self.img not in ko:
+            return self.img
+        for url in self.iter_urls():
+            src = self.__get_img_from_url(url)
+            if src not in ko:
+                return src
+
+    def __get_img_from_url(self, url: str):
+        if url is None:
+            return None
+        if get_domain(url) == "madrid.es":
+            soup = WEB.get(url)
+            for src in map(get_img_src, soup.select("div.image-content img, div.tramites-content div.tiny-text img")):
+                if src:
+                    return src
+        if re_filmaffinity.match(url):
+            soup = WEB.get(self.more)
+            img = get_img_src(soup.select_one("#right-column a.lightbox img"))
+            if img:
+                return img
 
     def merge(self, **kwargs):
         return Event(**{**asdict(self), **kwargs})
@@ -339,23 +402,33 @@ class Event:
         fix_more = FIX_EVENT.get(self.id, {}).get("more")
         if fix_more:
             return fix_more
+        dom = get_domain(self.url)
         title = re.sub(r"\s*\+\s*Coloquio\s*$", "", self.title, flags=re.IGNORECASE)
         txt = quote_plus(title)
         if self.category == Category.CINEMA:
-            w = Web()
-            w.get("https://www.filmaffinity.com/es/search.php?stext="+txt)
-            if re_filmaffinity.match(w.url):
-                return w.url
+            WEB.get("https://www.filmaffinity.com/es/search.php?stext="+txt)
+            if re_filmaffinity.match(WEB.url):
+                return WEB.url
             lwtitle = title.lower()
-            for a in w.soup.select("div.mc-title a"):
+            for a in WEB.soup.select("div.mc-title a"):
                 if get_text(a).lower() == lwtitle:
                     return a.attrs["href"]
-            if self.url and self.url.startswith("https://tienda.madrid-destino.com/es/"):
-                w.get(self.url)
-                a = w.soup.select_one("a.c-mod-file-event__content-link")
+            if dom == "tienda.madrid-destino.com":
+                WEB.get(self.url)
+                a = WEB.soup.select_one("a.c-mod-file-event__content-link")
                 if a and a.attrs.get("href"):
                     return a.attrs["href"]
             #return "https://www.google.es/search?&complete=0&gbv=1&q="+txt
+        if dom == "madrid.es":
+            WEB.get(self.url)
+            h4 = WEB.soup.find('h4', string='Amplíe información')
+            if h4 is not None:
+                a = h4.find_next('a')
+                if a is not None and a.attrs.get("href"):
+                    return a.attrs["href"]
+            a = WEB.soup.find('a', string='Para más información del evento')
+            if a is not None and a.attrs.get("href"):
+                return a.attrs["href"]
 
     @property
     def dates(self):
@@ -413,3 +486,4 @@ class Event:
 
     def _asdict(self):
         return asdict(self)
+

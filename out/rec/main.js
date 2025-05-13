@@ -205,10 +205,12 @@ function filtrar() {
 
 function getCss(form) {
   if (form.filtro == null) return '';
+  return `div.evento:not(.${form.filtro}) {display:none}`;
   const filtro = form.filtro;
   const style = FormQuery.FILTERS.flatMap(arr=>{
     if (!arr.includes(form.filtro)) return [];
-    return arr.filter(c => c != form.filtro).map(c => "div.evento." + c)
+    if (arr.length==1) return arr.map(c=> `div.evento:not(.${c})`);
+    return arr.filter(c => c != form.filtro).map(c => `div.evento.${c}`)
   })
   return style.join(", ") + " {display:none}";
 }
@@ -242,6 +244,12 @@ function removeOutdated() {
   if (getVal("ini") < tdy) setAtt("ini", "value", tdy);
   let reorder = false;
   const isOK = (e) => {
+    if (e.tagName == "DIV" && e.classList.contains("evento")) {
+      const lis = e.querySelectorAll("ol.sesiones > li[data-start]");
+      if (lis.length == 0) return false;
+      const hasOk = Array.from(lis).find(isOK);
+      if (hasOk == null) return false;
+    }
     const end = e.getAttribute("data-end");
     if (end == null) return true;
     if (end.length==10 && end<tdy) return false;
@@ -254,7 +262,7 @@ function removeOutdated() {
     e.remove();
     if (e.tagName == "LI") reorder=true;
   }
-  document.querySelectorAll("div[data-end]").forEach(rmKO);
+  document.querySelectorAll("div.evento").forEach(rmKO);
   document.querySelectorAll("li[data-end]").forEach(rmKO);
   document.getElementById("total").textContent = document.querySelectorAll("div.evento").length;
   if (reorder) {
@@ -279,7 +287,6 @@ function removeOutdated() {
   const min = dstart.substring(0, 10);
   setAtt("ini", "min", min);
   if (getVal("ini") < min) setAtt("ini", "value", min);
-
 }
 
 function get_optgroups(id) {

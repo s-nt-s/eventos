@@ -31,10 +31,11 @@
     <p class="filtro needjs">
       <select id="filtro">
         <option value="">Todos ({{count}})</option>
+        <option value="novedad" data-txt="Novedades">Novedades ({{clss_count['novedad']}})</option>
         <optgroup label="Categoría">
-        {% for c, num in categorias.items()|sort %}
-        <option value="{{c | simplify }}" data-txt="{{(c|string).title()}}">{{(c|string).title()}} ({{num}})</option>
-        {% endfor %}
+          {% for c, num in categorias.items()|sort %}
+          <option value="{{c | simplify }}" data-txt="{{(c|string).title()}}">{{(c|string).title()}} ({{num}})</option>
+          {% endfor %}
         </optgroup>
         <optgroup label="Lugar">
           {% for c, num in lugares.items()|sort %}
@@ -44,7 +45,7 @@
       </select>
     </p>
     {% for (img, e) in eventos %}
-    <div id="{{e.id}}" class="evento {{e.category | simplify}} {{e.place.name | simplify}}" data-end="{{e.end or ''}}" data-publish="{{e.publish}}">
+    <div id="{{e.id}}" class="evento {{e.category | simplify}} {{e.place.name | simplify}} {{ clss[e.id]|join(' ') }}" data-publish="{{e.publish}}">
       <div class="img" {%if img.background%} style="--back: rgb{{img.background}}" {%endif%}>
         {% if img %}
         <div><img src="{{img.url}}" alt="{{e.titulo}}" class="cartel {{img.orientation}}" loading="lazy" /></div>
