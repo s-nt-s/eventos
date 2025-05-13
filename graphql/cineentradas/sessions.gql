@@ -10,7 +10,6 @@ query FetchShowGroupsForCinema(
   $actors: [ID!]
   $periods: [ShowPeriod!]
   $times: [Time!]
-  $timesOfDay: [ShowTimeOfDay!]
   $first: Int
   $page: Int
 ) {
@@ -26,7 +25,6 @@ query FetchShowGroupsForCinema(
     actors: $actors
     periods: $periods
     times: $times
-    timesOfDay: $timesOfDay
     first: $first
     page: $page
   ) {
