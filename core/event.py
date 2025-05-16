@@ -257,6 +257,8 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"^(Cine .*)?Proyección de (['\"])", r"\2", name, flags=re.IGNORECASE)
         name = re.sub(r"^Cineclub con .* '([^']+)'.*", r"\1", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*-\s*(moncloa|arganzuela|retiro|chamberi)\s*$", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"^(Exposición|Danza|Música):? ([\"'`])(.+)\2$", r"\3", name, flags=re.IGNORECASE)
+        name = re.sub(r"Red de Escuelas Municipales del Ayuntamiento de Madrid", "red de Escuelas", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*-\s*$", "", name)
         name = unquote(name.strip(". "))
         if len(name) < 2:
@@ -334,17 +336,20 @@ class Event:
         logger.debug(f"FIX: {name} {fix_val} <- {old_val}")
         object.__setattr__(self, name, fix_val)
 
-    def iter_urls(self):
-        done: set[str] = set((None,))
-        if self.url not in done:
-            done.add(self.url)
-            yield self.url
+    def __get_urls(self):
+        arr: List[str] = [None, ]
+        if self.url not in arr:
+            arr.append(self.url)
         for s in self.sessions:
-            if s.url not in done:
-                done.add(s.url)
-                yield s.url
-        if self.more not in done:
-            done.add(self.more)
+            if s.url not in arr:
+                arr.append(self.url)
+        return tuple(arr[1:])
+
+    def iter_urls(self):
+        urls = self.__get_urls()
+        for url in urls:
+            yield url
+        if self.more and self.more not in urls:
             yield self.more
 
     def _fix_img(self):
@@ -402,33 +407,32 @@ class Event:
         fix_more = FIX_EVENT.get(self.id, {}).get("more")
         if fix_more:
             return fix_more
-        dom = get_domain(self.url)
-        title = re.sub(r"\s*\+\s*Coloquio\s*$", "", self.title, flags=re.IGNORECASE)
-        txt = quote_plus(title)
         if self.category == Category.CINEMA:
-            WEB.get("https://www.filmaffinity.com/es/search.php?stext="+txt)
+            title = re.sub(r"\s*\+\s*Coloquio\s*$", "", self.title, flags=re.IGNORECASE)
+            WEB.get("https://www.filmaffinity.com/es/search.php?stext="+quote_plus(title))
             if re_filmaffinity.match(WEB.url):
                 return WEB.url
             lwtitle = title.lower()
             for a in WEB.soup.select("div.mc-title a"):
                 if get_text(a).lower() == lwtitle:
                     return a.attrs["href"]
+        for url in self.__get_urls():
+            dom = get_domain(url)
             if dom == "tienda.madrid-destino.com":
-                WEB.get(self.url)
+                WEB.get(url)
                 a = WEB.soup.select_one("a.c-mod-file-event__content-link")
                 if a and a.attrs.get("href"):
                     return a.attrs["href"]
-            #return "https://www.google.es/search?&complete=0&gbv=1&q="+txt
-        if dom == "madrid.es":
-            WEB.get(self.url)
-            h4 = WEB.soup.find('h4', string='Amplíe información')
-            if h4 is not None:
-                a = h4.find_next('a')
+            if dom == "madrid.es":
+                WEB.get(url)
+                h4 = WEB.soup.find('h4', string='Amplíe información')
+                if h4 is not None:
+                    a = h4.find_next('a')
+                    if a is not None and a.attrs.get("href"):
+                        return a.attrs["href"]
+                a = WEB.soup.find('a', string='Para más información del evento')
                 if a is not None and a.attrs.get("href"):
                     return a.attrs["href"]
-            a = WEB.soup.find('a', string='Para más información del evento')
-            if a is not None and a.attrs.get("href"):
-                return a.attrs["href"]
 
     @property
     def dates(self):
