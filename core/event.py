@@ -256,7 +256,7 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"^Proyección del documental:\s+", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^(Cine .*)?Proyección de (['\"])", r"\2", name, flags=re.IGNORECASE)
         name = re.sub(r"^Cineclub con .* '([^']+)'.*", r"\1", name, flags=re.IGNORECASE)
-        name = re.sub(r"\s*-\s*(moncloa|arganzuela|retiro)\s*$", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"\s*-\s*(moncloa|arganzuela|retiro|chamberi)\s*$", "", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*-\s*$", "", name)
         name = unquote(name.strip(". "))
         if len(name) < 2:
