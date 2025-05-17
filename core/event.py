@@ -285,6 +285,21 @@ def get_img_src(n: Tag):
     return src
 
 
+def get_a_href(n: Tag):
+    if n is None:
+        return None
+    href = n.attrs.get('href')
+    if not isinstance(href, str):
+        return None
+    href = href.strip()
+    if len(href) == 0:
+        return None
+    sch = href.split("://")[0].lower()
+    if sch not in ("https", "http"):
+        return None
+    return href
+
+
 KO_IMG = (
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/MadridPlat%C3%B3Cine_260.png',
@@ -342,7 +357,7 @@ class Event:
             arr.append(self.url)
         for s in self.sessions:
             if s.url not in arr:
-                arr.append(self.url)
+                arr.append(s.url)
         return tuple(arr[1:])
 
     def iter_urls(self):
@@ -420,19 +435,19 @@ class Event:
             dom = get_domain(url)
             if dom == "tienda.madrid-destino.com":
                 WEB.get(url)
-                a = WEB.soup.select_one("a.c-mod-file-event__content-link")
-                if a and a.attrs.get("href"):
-                    return a.attrs["href"]
+                href = get_a_href(WEB.soup.select_one("a.c-mod-file-event__content-link"))
+                if href:
+                    return href
             if dom == "madrid.es":
+                href = None
                 WEB.get(url)
                 h4 = WEB.soup.find('h4', string='Amplíe información')
                 if h4 is not None:
-                    a = h4.find_next('a')
-                    if a is not None and a.attrs.get("href"):
-                        return a.attrs["href"]
-                a = WEB.soup.find('a', string='Para más información del evento')
-                if a is not None and a.attrs.get("href"):
-                    return a.attrs["href"]
+                    href = get_a_href(h4.find_next('a'))
+                if href is None:
+                    href = get_a_href(WEB.soup.find('a', string='Para más información del evento'))
+                if href:
+                    return href
 
     @property
     def dates(self):
