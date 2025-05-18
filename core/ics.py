@@ -44,7 +44,7 @@ class IcsEvent:
 
     def parse_dt(self, k: str, d: Union[datetime, str]):
         if isinstance(d, str):
-            if not re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$"):
+            if not re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$", d):
                 return d
             tz = pytz.timezone('Europe/Madrid')
             dt = datetime.strptime(d, "%Y-%m-%d %H:%M")
@@ -53,8 +53,8 @@ class IcsEvent:
             if k != 'dtstamp':
                 return None
             d = datetime.now(tz=pytz.timezone('Europe/Madrid'))
-        dutc = d.astimezone(pytz.utc)
-        return dutc.strftime("%Y%m%dT%H%M%SZ")
+
+        return f";TZID=Europe/Madrid:{d.strftime('%Y%m%dT%H%M%S')}"
 
     def parse_uid(self, s: str):
         try:
@@ -69,18 +69,24 @@ class IcsEvent:
     def __str__(self):
         lines = ["BEGIN:VEVENT", "STATUS:CONFIRMED"]
         for k, v in asdict(self).items():
-            if v is not None:
+            if v is None:
+                continue
+            if isinstance(v, str) and v.startswith(";TZID="):
+                # Formato tipo: ;TZID=Europe/Madrid:20250603T143000
+                base, valor = v.split(":", 1)
+                lines.append(f"{k.upper()}{base}:{valor}")
+            else:
                 lines.append(f"{k.upper()}:{v}")
         lines.append("END:VEVENT")
         return "\n".join(lines)
 
     def __lt__(self, o: "IcsEvent"):
         return self.key_order < o.key_order
-    
+
     @property
     def key_order(self):
         return (self.dtstart, self.dtend, self.uid)
-    
+
     @staticmethod
     def dump(path, *events: "IcsEvent"):
         events = sorted(events)

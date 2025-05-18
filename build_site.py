@@ -228,6 +228,7 @@ def set_icons(html: str, **kwargs):
             "lavaguadacines": "https://lavaguadacines.es/assets/images/favicon.jpg",
             "madrid": "https://www.madrid.es/favicon.ico",
             "21distritos": "https://21distritos.es/CD_Favicon_generico.jpg",
+            "centrodanzamatadero": "https://www.centrodanzamatadero.es/themes/custom/centro_danza/favicon.ico",
         }.get(dom)
         if ico is None:
             continue

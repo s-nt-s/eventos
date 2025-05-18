@@ -289,12 +289,12 @@ def plain_text(s: Union[str, Tag], is_html=False):
     return s
 
 
-def re_or(s: str, *args: Union[str, Tuple[str]], to_log: str = None):
+def re_or(s: str, *args: Union[str, Tuple[str]], to_log: str = None, flags = 0):
     if s is None or len(s) == 0 or len(args) == 0:
         return None
     for r in args:
         if isinstance(r, tuple):
-            b = re_and(s, *r)
+            b = re_and(s, *r, flags=flags)
             if b is not None:
                 if to_log:
                     logger.debug(f"{to_log} cumple {b}")
@@ -305,24 +305,24 @@ def re_or(s: str, *args: Union[str, Tuple[str]], to_log: str = None):
                 reg = r"\b" + reg
             if reg[-1] not in ("$", " "):
                 reg = reg + r"\b"
-            if re.search(reg, s):
+            if re.search(reg, s, flags=flags):
                 if to_log:
                     logger.debug(f"{to_log} cumple {r}")
                 return r
     return None
 
 
-def re_and(s: str, *args: Union[str, Tuple[str]], to_log: str = None):
+def re_and(s: str, *args: Union[str, Tuple[str]], to_log: str = None, flags=0):
     if s is None or len(s) == 0 or len(args) == 0:
         return None
     arr = []
     for r in args:
         if isinstance(r, tuple):
-            b = re_or(s, *r)
+            b = re_or(s, *r, flags=flags)
             if b is None:
                 return None
             arr.append(b)
-        elif re.search(r"\b" + r + r"\b", s):
+        elif re.search(r"\b" + r + r"\b", s, flags=flags):
             arr.append(r)
         else:
             return None

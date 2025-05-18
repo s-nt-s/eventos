@@ -1,7 +1,7 @@
 from .web import Web, WebException
 from bs4 import Tag, BeautifulSoup
 import re
-from typing import Set, Dict, List, Tuple
+from typing import Set, Dict, List, Tuple, Union
 from urllib.parse import urlencode
 from .event import Event, Session, Place, Category, CategoryUnknown
 from .util import plain_text, re_or, re_and, getKm, my_filter, get_main_value
@@ -85,6 +85,17 @@ def get_href(n: Tag):
     if n.name == "a":
         return n.attrs.get("href")
     return get_href(n.find("a"))
+
+
+def str_to_arrow_hour(h: str):
+    if h is None:
+        return None
+    if h.isdigit() and int(h) < 25:
+        h = f"{int(h):02d}:00"
+    while len(h) < 5:
+        h = "0"+h
+    if re.match(r"^([0-1][0-9]|2[0-4]):([0-5][0-9]|60)$", h):
+        return Arrow.strptime(h, "%H:%M")
 
 
 OK_ZONE = {
@@ -261,7 +272,8 @@ class MadridEs:
     def __get_description(self, url: str):
         w = Web()
         w.get(url)
-        return plain_text(get_text(w.select_one("div.tramites-content div.tiny-text")))
+        txt = get_text(w.select_one("div.tramites-content div.tiny-text"))
+        return txt
 
     @property
     @TupleCache("rec/madrides.json", builder=Event.build)
@@ -343,6 +355,8 @@ class MadridEs:
             duration, sessions = self.__get_sessions(url_event, div)
             if len(sessions) == 0:
                 continue
+            if duration is None:
+                duration = 120 if cat == Category.CINEMA else 60
             ev = Event(
                 id=id,
                 url=url_event,
@@ -357,41 +371,64 @@ class MadridEs:
             evts.add(ev)
         return evts
 
-    def __get_sessions(self, url_event: str, div: Tag) -> Tuple[int, Tuple[Session, ...]]:
+    def __get_sessions(self, url_event: str, div: Tag) -> Tuple[Union[int, None], Tuple[Session, ...]]:
         cal = self.__get_cal(div)
         if cal is None:
             return 0, tuple()
         durations: Set[int] = set()
         sessions: Set[Session] = set()
+        dates: set[str] = set()
         for event in cal.events:
             start = event.begin
-            end = event.end
-            durations.add(int((end - start).seconds / 60))
             s_date = self.__get_start(start, url_event)
+            dates.add(s_date)
             sessions.add(Session(
                 date=s_date
             ))
-        if len(durations) == 0:
+            if event.end.strftime("%H:%M") != "23:59":
+                durations.add(int((event.end - start).seconds / 60))
+        if len(sessions) == 0:
             return 0, tuple()
-        duration = max(durations) # self.__get_duration(durations, url_event)
+        duration = self.__get_duration(durations, url_event)
         return duration, tuple(sorted(sessions))
 
     def __get_duration(self, durations: Set[int], url_event: str):
-        limit = 1439
+        limit = (24*60)-1
         ok = set((d for d in durations if d < limit))
-        duration = max(ok) if durations else limit
+        duration = max(ok) if ok else limit
         if duration < limit:
             return duration
         desc = self.__get_description(url_event)
         if not desc:
-            return 60
-        # TODO
-        pass
+            return None
+        for r in (
+            r"\bDuraci[óo]n[:\s]+(\d+) min",
+        ):
+            m = re.search(r, desc, flags=re.IGNORECASE)
+            if m is None:
+                continue
+            duration = int(m.group(1))
+            logger.debug(f"FIX duration={duration} <- {url_event}")
+            return duration
+        for r in (
+            r"\bcelebraci[oó]n[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h",
+            r"\bhorario[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h"
+        ):
+            m = re.search(r, desc, flags=re.IGNORECASE)
+            if m is None:
+                continue
+            h1 = str_to_arrow_hour(m.group(1))
+            h2 = str_to_arrow_hour(m.group(2))
+            if None in (h1, h2):
+                continue
+            if h1 > h2:
+                h2 = h2.shift(days=1)
+            duration = int((h2 - h1).seconds / 60)
+            logger.debug(f"FIX duration={duration} <- {url_event}")
+            return duration
 
     def __get_start(self, start: Arrow, url_event: str):
         s_date = start.strftime("%Y-%m-%d %H:%M")
-        return s_date
-        # TODO
         s_day, s_hour = s_date.split()
         if s_hour != "00:00":
             return s_date
@@ -399,22 +436,17 @@ class MadridEs:
         if not desc:
             return s_date
         for r in (
-            r"\bsalida desde *?, a las (\d+(:\d+)?) h",
-            r"\bHorario (\d+(:\d+)?) h",
-            r"\ba las (\d+(:\d+)?) h",
-            r"\bde (\d+(:\d+)?) a (\d+(:\d+)?) h",
+            r"\bcelebraci[óo]n[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h",
+            r"\bhorario[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h"
         ):
             m = re.search(r, desc, flags=re.IGNORECASE)
             if m is None:
                 continue
-            h: str = m.group(1)
-            if h.isdigit() and int(h) < 25:
-                h = f"{int(h):02d}:00"
-            while len(h) < 5:
-                h = "0"+h
-            if re.match(r"^([0-1][0-9]|2[0-4]):([0-5][0-9]|60)$", h):
-                logger.debug(f"FIX {h} <- {url_event}")
-                return f"{s_day} {h}"
+            h = str_to_arrow_hour(m.group(1))
+            if h:
+                hm = h.strftime("%H:%M")
+                logger.debug(f"FIX hour={hm} <- {url_event}")
+                return f"{s_day} {hm}"
         return s_date
 
     def __get_cal(self, div: Tag):
@@ -558,11 +590,11 @@ class MadridEs:
             return Category.CONFERENCE
 
         desc = self.__get_description(url_event)
-        if re_or(desc, "zarzuela", "teatro", "espectaculo (circense y )?teatral", to_log=id):
+        if re_or(desc, "zarzuela", "teatro", "espect[áa]culo (circense y )?teatral", to_log=id, flags=re.IGNORECASE):
             return Category.THEATER
-        if re_or(desc, "itinerario .* kilometros", to_log=id):
+        if re_or(desc, "itinerario .* kil[ó]metros", to_log=id, flags=re.IGNORECASE):
             return Category.SPORT
-        if desc.count("poesia") > 2:
+        if desc.count("poesía") > 2:
             return Category.CONFERENCE
 
         if re_and(lg, "ambiental", ("casa de campo", "retiro"), to_log=id):
