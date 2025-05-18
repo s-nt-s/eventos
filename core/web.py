@@ -544,3 +544,6 @@ class Driver:
         with open(file, "r") as f:
             js = f.read()
         return self.execute_script(js)
+
+
+WEB = Web()

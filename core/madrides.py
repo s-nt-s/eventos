@@ -1,10 +1,10 @@
-from .web import Web, WebException
+from .web import Web, WebException, WEB
 from bs4 import Tag, BeautifulSoup
 import re
 from typing import Set, Dict, List, Tuple, Union
 from urllib.parse import urlencode
 from .event import Event, Session, Place, Category, CategoryUnknown
-from .util import plain_text, re_or, re_and, getKm, my_filter, get_main_value
+from .util import plain_text, re_or, re_and, getKm, my_filter, get_main_value, get_domain
 from ics import Calendar
 from arrow import Arrow
 import logging
@@ -12,6 +12,8 @@ from .cache import TupleCache
 from urllib.parse import urlparse, parse_qs
 from functools import cached_property, cache
 from collections import defaultdict
+from core.util.madrides import find_more_url
+
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
@@ -398,7 +400,29 @@ class MadridEs:
         duration = max(ok) if ok else limit
         if duration < limit:
             return duration
-        desc = self.__get_description(url_event)
+        duration = self.__get_duration_from_madrides(url_event)
+        if duration is not None:
+            return duration
+        more_url = find_more_url(url_event)
+        dom = get_domain(more_url)
+        if dom == "madrid.es":
+            duration = self.__get_duration_from_madrides(more_url)
+            if duration is not None:
+                return duration
+        if dom == "centrodanzamatadero.es":
+            soup = WEB.get(more_url)
+            for txt in map(get_text, soup.select(".inner-wrapper.card .field__item")):
+                if txt is None:
+                    continue
+                m = re.match(r"^(\d+) hora\D+(\d+) minutos*", txt)
+                if m:
+                    return (int(m.group(1))*60)+int(m.group(2))
+                m = re.match(r"^(\d+) hora\b.*", txt)
+                if m:
+                    return (int(m.group(1))*60)
+
+    def __get_duration_from_madrides(self, url: str):
+        desc = self.__get_description(url)
         if not desc:
             return None
         for r in (
@@ -408,7 +432,7 @@ class MadridEs:
             if m is None:
                 continue
             duration = int(m.group(1))
-            logger.debug(f"FIX duration={duration} <- {url_event}")
+            logger.debug(f"FIX duration={duration} <- {url}")
             return duration
         for r in (
             r"\bcelebraci[oó]n[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h",
@@ -424,20 +448,42 @@ class MadridEs:
             if h1 > h2:
                 h2 = h2.shift(days=1)
             duration = int((h2 - h1).seconds / 60)
-            logger.debug(f"FIX duration={duration} <- {url_event}")
+            logger.debug(f"FIX duration={duration} <- {url}")
             return duration
 
     def __get_start(self, start: Arrow, url_event: str):
+        ko_hour = ("00:00", None)
         s_date = start.strftime("%Y-%m-%d %H:%M")
         s_day, s_hour = s_date.split()
-        if s_hour != "00:00":
+        if s_hour not in ko_hour:
             return s_date
-        desc = self.__get_description(url_event)
+        s_hour = self.__get_start_from_madrides(url_event)
+        if s_hour not in ko_hour:
+            return f"{s_day} {s_hour}"
+        more_url = find_more_url(url_event)
+        dom = get_domain(more_url)
+        if dom == "madrid.es":
+            s_hour = self.__get_start_from_madrides(more_url)
+            if s_hour not in ko_hour: 
+                return f"{s_day} {s_hour}"
+        if dom == "centrodanzamatadero.es":
+            soup = WEB.get(more_url)
+            for txt in map(get_text, soup.select(".inner-wrapper.card .field__item")):
+                if txt is None:
+                    continue
+                m = re.match(r"^(\d\d:\d\d)(\s*h)?$", txt)
+                if m:
+                    return f"{s_day} {m.group(1)}"
+        return s_date
+
+    def __get_start_from_madrides(self, url: str):
+        desc = self.__get_description(url)
         if not desc:
-            return s_date
+            return None
         for r in (
             r"\bcelebraci[óo]n[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h",
-            r"\bhorario[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h"
+            r"\bhorario[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h",
+            r"\bdar[áa]n? comienzo a las (\d+(?::\d+)?) h",
         ):
             m = re.search(r, desc, flags=re.IGNORECASE)
             if m is None:
@@ -445,9 +491,9 @@ class MadridEs:
             h = str_to_arrow_hour(m.group(1))
             if h:
                 hm = h.strftime("%H:%M")
-                logger.debug(f"FIX hour={hm} <- {url_event}")
-                return f"{s_day} {hm}"
-        return s_date
+                logger.debug(f"FIX hour={hm} <- {url}")
+                return hm
+        return None
 
     def __get_cal(self, div: Tag):
         cal = div.select_one("p.event-date a")

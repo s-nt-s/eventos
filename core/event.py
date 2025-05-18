@@ -1,6 +1,7 @@
 from dataclasses import dataclass, asdict, fields
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional
-from .util import get_obj, plain_text, getKm, get_domain
+from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, get_a_href
+from core.util.madrides import find_more_url as find_more_url_madrides
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
@@ -11,7 +12,6 @@ from core.web import Web, get_text
 from core.filemanager import FM
 import logging
 from functools import cache
-from bs4 import Tag
 
 logger = logging.getLogger(__name__)
 
@@ -270,36 +270,6 @@ def _clean_name(name: str, place: str):
     return name
 
 
-def get_img_src(n: Tag):
-    if n is None:
-        return None
-    src = n.attrs.get('src')
-    if not isinstance(src, str):
-        return None
-    src = src.strip()
-    if len(src) == 0:
-        return None
-    sch = src.split("://")[0].lower()
-    if sch not in ("https", "http"):
-        return None
-    return src
-
-
-def get_a_href(n: Tag):
-    if n is None:
-        return None
-    href = n.attrs.get('href')
-    if not isinstance(href, str):
-        return None
-    href = href.strip()
-    if len(href) == 0:
-        return None
-    sch = href.split("://")[0].lower()
-    if sch not in ("https", "http"):
-        return None
-    return href
-
-
 KO_IMG = (
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/MadridPlat%C3%B3Cine_260.png',
@@ -439,20 +409,9 @@ class Event:
                 if href:
                     return href
             if dom == "madrid.es":
-                href = None
-                WEB.get(url)
-                h4 = WEB.soup.find('h4', string='Amplíe información')
-                if h4 is not None:
-                    href = get_a_href(h4.find_next('a'))
-                    if href:
-                        return href
-                link_more = ['Para más información del evento', 'Más información']
-                while href is None and len(link_more) > 0:
-                    link = link_more.pop(0)
-                    for lk in (link, link+'.'):
-                        href = get_a_href(WEB.soup.find('a', string=lk))
-                        if href:
-                            return href
+                href = find_more_url_madrides(url)
+                if href:
+                    return href
 
     @property
     def dates(self):

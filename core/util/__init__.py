@@ -38,6 +38,36 @@ def get_domain(url: str):
     return domain
 
 
+def get_img_src(n: Tag):
+    if n is None:
+        return None
+    src = n.attrs.get('src')
+    if not isinstance(src, str):
+        return None
+    src = src.strip()
+    if len(src) == 0:
+        return None
+    sch = src.split("://")[0].lower()
+    if sch not in ("https", "http"):
+        return None
+    return src
+
+
+def get_a_href(n: Tag):
+    if n is None:
+        return None
+    href = n.attrs.get('href')
+    if not isinstance(href, str):
+        return None
+    href = href.strip()
+    if len(href) == 0:
+        return None
+    sch = href.split("://")[0].lower()
+    if sch not in ("https", "http"):
+        return None
+    return href
+
+
 def clean_html(html: str):
     soup = BeautifulSoup(html, "html.parser")
     for div in soup.findAll(["div", "p"]):
