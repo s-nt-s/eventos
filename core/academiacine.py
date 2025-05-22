@@ -6,7 +6,7 @@ import logging
 from .event import Event, Place, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from datetime import datetime
-from .util import plain_text
+from .util import plain_text, re_or
 
 
 logger = logging.getLogger(__name__)
@@ -104,10 +104,15 @@ class AcademiaCine(Web):
         cat = plain_text(txt.split("|")[-1]).lower()
         if cat in ("la academia preestrena", "aniversarios de cine", "series de cine"):
             return Category.CINEMA
-        if cat in ("los oficios del cine", ):
+        if cat in ("los oficios del cine", "libros de cine"):
             return Category.CONFERENCE
         if re.search(r"\bcorto\b", tit):
             return Category.CINEMA
+        if re_or(cat, "podcast"):
+            return Category.CONFERENCE
+        desc = plain_text(get_text(self.select_one("div.session-desc")))
+        if re_or(desc, "sesion informativa"):
+            return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(self.url, txt)))
         return Category.UNKNOWN
 

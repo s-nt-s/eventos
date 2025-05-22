@@ -4,6 +4,7 @@ import time
 from urllib.parse import parse_qsl, urljoin, urlsplit
 from typing import List, Tuple, Dict
 import json
+from functools import cache
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -198,6 +199,16 @@ class Web:
         if n is None:
             raise WebException(f"{slc} NOT FOUND in {self.url}")
         return n
+
+    @cache
+    def __cached_get(self, url: str):
+        r = self._get(url)
+        return r.content
+
+    def get_cached_soup(self, url: str, parser="lxml"):
+        content = self.__cached_get(url)
+        soup = buildSoup(url, content, parser=parser)
+        return soup
 
 
 class MyTag:

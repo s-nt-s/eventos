@@ -27,7 +27,7 @@ WEB = Web()
 @cache
 def get_festivos(year: int):
     dates: set[str] = set()
-    soup = WEB.get(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
+    soup = WEB.get_cached_soup(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
     for month, div in enumerate(soup.select("#wrapIntoMeses div.mes")):
         for day in map(get_text, div.select("td[class^='cajaFestivo']")):
             dt = date(year, month+1, int(day))
@@ -350,12 +350,12 @@ class Event:
         if url is None:
             return None
         if get_domain(url) == "madrid.es":
-            soup = WEB.get(url)
+            soup = WEB.get_cached_soup(url)
             for src in map(get_img_src, soup.select("div.image-content img, div.tramites-content div.tiny-text img")):
                 if src:
                     return src
         if re_filmaffinity.match(url):
-            soup = WEB.get(self.more)
+            soup = WEB.get_cached_soup(self.more)
             img = get_img_src(soup.select_one("#right-column a.lightbox img"))
             if img:
                 return img
@@ -404,8 +404,8 @@ class Event:
         for url in self.__get_urls():
             dom = get_domain(url)
             if dom == "tienda.madrid-destino.com":
-                WEB.get(url)
-                href = get_a_href(WEB.soup.select_one("a.c-mod-file-event__content-link"))
+                soup = WEB.get_cached_soup(url)
+                href = get_a_href(soup.select_one("a.c-mod-file-event__content-link"))
                 if href:
                     return href
             if dom == "madrid.es":

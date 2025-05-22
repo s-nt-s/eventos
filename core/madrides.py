@@ -410,7 +410,7 @@ class MadridEs:
             if duration is not None:
                 return duration
         if dom == "centrodanzamatadero.es":
-            soup = WEB.get(more_url)
+            soup = WEB.get_cached_soup(more_url)
             for txt in map(get_text, soup.select(".inner-wrapper.card .field__item")):
                 if txt is None:
                     continue
@@ -467,7 +467,7 @@ class MadridEs:
             if s_hour not in ko_hour: 
                 return f"{s_day} {s_hour}"
         if dom == "centrodanzamatadero.es":
-            soup = WEB.get(more_url)
+            soup = WEB.get_cached_soup(more_url)
             for txt in map(get_text, soup.select(".inner-wrapper.card .field__item")):
                 if txt is None:
                     continue
@@ -531,7 +531,7 @@ class MadridEs:
             return Category.CHILDISH
         if re_or(plain_name, "para mayores$"):
             return Category.SENIORS
-        if re_or(plain_name, "el mundo de los toros", "el mundo del toro"):
+        if re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina"):
             return Category.SPAM
         if re_and(plain_name, "ballet", ("repertorio", "clasico")):
             return Category.DANCE
