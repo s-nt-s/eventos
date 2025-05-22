@@ -19,3 +19,7 @@ def find_more_url(url: str):
             href = get_a_href(soup.find('a', string=lk))
             if href:
                 return href
+    for a in soup.select('div.tramites-content div.tiny-text a'):
+        href = get_a_href(a)
+        if href:
+            return href
