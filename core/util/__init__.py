@@ -300,14 +300,14 @@ def safe_get_dict(url) -> Dict:
 
 
 def plain_text(s: Union[str, Tag], is_html=False):
-    if s is None:
-        return None
     if isinstance(s, str) and is_html:
         s = BeautifulSoup(s, "html.parser")
     if isinstance(s, Tag):
         for n in s.findAll(["p", "br"]):
             n.insert_after(" ")
         s = get_text(s)
+    if s is None:
+        return None
     faken = "&%%%#%%%#%%#%%%%%%&"
     s = re.sub(r"[,\.:\(\)\[\]¡!¿\?\"']", " ", s).lower()
     s = s.replace("ñ", faken)

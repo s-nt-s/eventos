@@ -1,5 +1,5 @@
 from core.web import WEB
-from core.util import get_a_href
+from core.util import get_a_href, get_domain
 from functools import cache
 
 
@@ -21,5 +21,5 @@ def find_more_url(url: str):
                 return href
     for a in soup.select('div.tramites-content div.tiny-text a'):
         href = get_a_href(a)
-        if href:
+        if href and get_domain(href) != "madrid.es":
             return href

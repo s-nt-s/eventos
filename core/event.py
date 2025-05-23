@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict, fields
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional
-from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, get_a_href
+from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, get_a_href, re_or
 from core.util.madrides import find_more_url as find_more_url_madrides
 from urllib.parse import quote
 from enum import IntEnum
@@ -345,6 +345,18 @@ class Event:
             src = self.__get_img_from_url(url)
             if src not in ko:
                 return src
+
+    def _fix_category(self):
+        dom = get_domain(self.url)
+        if self.category == Category.CHILDISH or dom != "madrid.es":
+            return self.category
+        soup = WEB.get_cached_soup(self.url)
+        for txt in map(plain_text, soup.select("div.tramites-content div.tiny-text")):
+            if txt is None:
+                continue
+            if re_or(txt, "actividad dirigida a familias", "para que menores y mayores aprendan"):
+                return Category.CHILDISH
+        return self.category
 
     def __get_img_from_url(self, url: str):
         if url is None:

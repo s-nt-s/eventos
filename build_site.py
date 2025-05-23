@@ -127,10 +127,11 @@ def sorted_and_fix(eventos: List[Event]):
         done: set[Event] = set()
         for e in eventos:
             e = e.fix(publish=PUBLISH.get(e.id))
-            PUBLISH[e.id] = e.publish
             if e not in done:
                 done.add(e)
-                yield e
+                if myfilter(e):
+                    PUBLISH[e.id] = e.publish
+                    yield e
     arr1 = sorted(
         _iter_fix(eventos),
         key=lambda e: (min(s.date for s in e.sessions), e.name, e.url)
