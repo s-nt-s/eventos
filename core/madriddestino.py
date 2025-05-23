@@ -108,8 +108,14 @@ class MadridDestino:
         if len(space_id) == 0:
             raise FieldNotFound("place", e['id'])
         if len(space_id) > 1:
-            raise FieldUnknown(MadridDestino.URL, "place", f"{e['id']}: " + ", ".join(sorted(space_id)))
-        space = self.__find("spaces", space_id.pop())
+            address: Set[str] = set()
+            for i in space_id:
+                address.add(self.__find("spaces", i)['address'])
+            if len(address) > 1:
+                raise FieldUnknown(MadridDestino.URL, "place", f"{e['id']}: " + ", ".join(
+                    map(str, sorted(space_id))
+                ))
+        space = self.__find("spaces", sorted(space_id).pop())
         return Place(
             name=re.sub(r"\s+Madrid$", "", space['name']),
             address=space['address']
