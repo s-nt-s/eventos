@@ -110,8 +110,10 @@ class MadridDestino:
         if len(space_id) > 1:
             address: Set[str] = set()
             for i in space_id:
-                address.add(self.__find("spaces", i)['address'])
-            if len(address) > 1:
+                a = plain_text(self.__find("spaces", i)['address'])
+                if a:
+                    address.add(a)
+            if len(address) != 1:
                 raise FieldUnknown(MadridDestino.URL, "place", f"{e['id']}: " + ", ".join(
                     map(str, sorted(space_id))
                 ))
