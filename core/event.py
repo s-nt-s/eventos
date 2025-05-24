@@ -406,6 +406,8 @@ class Event:
             return fix_more
         if self.category == Category.CINEMA:
             title = re.sub(r"\s*\+\s*Coloquio\s*$", "", self.title, flags=re.IGNORECASE)
+            title = re.sub(r"\s*,\s+de\s+[A-ZÁÉÍÓÚÑÜ]+.*$", "", title)
+            title = unquote(title)
             WEB.get("https://www.filmaffinity.com/es/search.php?stext="+quote_plus(title))
             if re_filmaffinity.match(WEB.url):
                 return WEB.url
