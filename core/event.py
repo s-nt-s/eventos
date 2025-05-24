@@ -241,9 +241,9 @@ def _clean_name(name: str, place: str):
     if name is None:
         return None
     place = plain_text((place or "").lower())
-    bak = ''
-    while bak != name:
-        bak = str(name)
+    bak = ['']
+    while bak[-1] != name:
+        bak.append(str(name))
         name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.IGNORECASE)
         name = re.sub(r"\.\s*(conferencia)\s*$", "", name, flags=re.IGNORECASE)
@@ -259,10 +259,11 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"\s*-\s*(moncloa|arganzuela|retiro|chamberi)\s*$", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^(Exposición|Danza|Música):? ([\"'`])(.+)\2$", r"\3", name, flags=re.IGNORECASE)
         name = re.sub(r"Red de Escuelas Municipales del Ayuntamiento de Madrid", "red de Escuelas", name, flags=re.IGNORECASE)
+        name = re.sub(r".*Ciclo de conferencias de la Sociedad Española de Retórica': (['\"])", r"\1", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*-\s*$", "", name)
         name = unquote(name.strip(". "))
         if len(name) < 2:
-            name = str(bak)
+            name = bak[-1]
     name = unquote(name)
     w1 = name[0]
     if w1.isalpha():
@@ -282,6 +283,7 @@ KO_IMG = (
     'https://www.madrid.es/UnidadWeb/Contenidos/Ficheros/canalcasareloj.png',
     'https://www.casamerica.es/themes/casamerica/images/cabecera_generica.jpg',
 )
+
 
 @dataclass(frozen=True, order=True)
 class Event:
