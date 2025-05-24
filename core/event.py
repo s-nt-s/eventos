@@ -12,6 +12,7 @@ from core.web import Web, get_text
 from core.filemanager import FM
 import logging
 from functools import cache
+from .util import to_uuid
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +172,7 @@ class Session(NamedTuple):
 
     @property
     def id(self):
-        return re.sub(r"\D+", "", self.date)
+        return to_uuid(re.sub(r"\D+", "", self.date) + (self.url or ""))
 
     def isWorkingHours(self):
         if self.date is None:

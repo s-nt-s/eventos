@@ -12,7 +12,11 @@ from datetime import datetime
 from math import radians, sin, cos, sqrt, atan2
 from collections import Counter
 
-from typing import TypeVar, Callable, Iterable, Iterator
+from typing import TypeVar, Callable, Iterable
+import uuid
+
+UUID_NAMESPACE = uuid.UUID('00000000-0000-0000-0000-000000000000')
+
 T = TypeVar('T')
 
 logger = logging.getLogger(__name__)
@@ -415,3 +419,11 @@ def get_main_value(arr: List[T], default: Optional[T] = None) -> Union[T, None]:
     for e in arr:
         if contador[e] == max_rep:
             return e
+
+
+def to_uuid(s: str):
+    try:
+        _ = uuid.UUID(s)
+        return s.upper()
+    except ValueError:
+        return str(uuid.uuid5(UUID_NAMESPACE, s)).upper()
