@@ -198,11 +198,14 @@ def event_to_ics(e: Event, s: Session):
 
 
 logger.info("Añadiendo ics")
+session_ics: Dict[str, str] = dict()
 icsevents = []
 for e in eventos:
     for s in e.sessions:
         ics = event_to_ics(e, s)
-        ics.dumpme(f"out/cal/{e.id}_{s.id}.ics")
+        uid = ics.uid.lower()
+        session_ics[e.id+s.id] = uid
+        ics.dumpme(f"out/cal/{uid}.ics")
         icsevents.append(ics)
 IcsEvent.dump("out/eventos.ics", *icsevents)
 
@@ -275,6 +278,7 @@ j.save(
     clss=CLSS,
     clss_count=CLSS_COUNT,
     categorias=categorias,
+    session_ics=session_ics,
     lugares=lugares,
     count=len(eventos),
     precio=max(e.price for e in eventos),
