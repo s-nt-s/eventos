@@ -294,6 +294,7 @@ class MadridEs:
             categories: List[Category] = []
             durations: List[float] = []
             imgs: List[str] = []
+            seen_in: Set[str] = set()
             for e in events:
                 if e.category not in (None, Category.UNKNOWN):
                     categories.append(e.category)
@@ -302,11 +303,14 @@ class MadridEs:
                 if e.img is not None:
                     imgs.append(e.img)
                 for s in e.sessions:
-                    sessions.add(s._replace(
-                        url=s.url or e.url
-                    ))
+                    sessions.add(s)
+                seen_in.add(e.url)
+                for u in e.also_in:
+                    seen_in.add(u)
+            seen_in = tuple(sorted(seen_in))
             return events[0].merge(
-                url=None,
+                url=seen_in[0],
+                also_in=seen_in[1:],
                 duration=get_main_value(durations),
                 img=get_main_value(imgs),
                 category=get_main_value(categories, default=Category.UNKNOWN),

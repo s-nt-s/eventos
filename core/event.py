@@ -297,6 +297,7 @@ class Event:
     duration: int
     publish: str = NOW
     img: Optional[str] = None
+    also_in: Tuple[str] = tuple()
     sessions: Tuple[Session] = tuple()
 
     def __post_init__(self):
@@ -304,6 +305,10 @@ class Event:
         if new_name != self.name:
             logger.debug(f"FIX: {new_name} <- {self.name}")
             object.__setattr__(self, 'name', new_name)
+        for f in fields(self):
+            v = getattr(self, f.name, None)
+            if isinstance(v, list):
+                object.__setattr__(self, f.name, tuple(v))
 
     def fix(self, **kwargs):
         for k, v in kwargs.items():
@@ -328,6 +333,9 @@ class Event:
         arr: List[str] = [None, ]
         if self.url not in arr:
             arr.append(self.url)
+        for url in self.also_in:
+            if url not in arr:
+                arr.append(url)
         for s in self.sessions:
             if s.url not in arr:
                 arr.append(s.url)
