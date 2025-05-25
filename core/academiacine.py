@@ -59,7 +59,9 @@ class AcademiaCine(Web):
                 address="Calle de Zurbano, 3, Chamberí, 28010 Madrid"
             )
         )
-        self.get(url+"/compra/?entradas=1")
+        # hay qu tener en cuenta que 2 entradas
+        # son para silla de ruedas
+        self.get(url+"/compra/?entradas=4")
         error = tuple(filter(lambda x: x is not None, map(get_text, self.soup.select("ul.errorlist li"))))
         if len(error) > 0:
             logger.warning(f"{ev.id}: {ev.name}: {' - '.join(error)}")
