@@ -26,14 +26,14 @@ class Dore(Web):
     URL = "https://entradasfilmoteca.gob.es/"
     PRICE = 3
 
-    def get(self, url, auth=None, parser="lxml", **kvargs):
+    def get(self, url, auth=None, parser="lxml", **kwargs):
         kys = ('__EVENTTARGET', '__EVENTARGUMENT')
-        if len(kvargs) and len(set(kys).difference(kvargs.keys())) == 0:
-            msg = str(url) + '?' + "&".join(map(lambda k: f"{k}={kvargs[k]}", kys))
+        if len(kwargs) and len(set(kys).difference(kwargs.keys())) == 0:
+            msg = str(url) + '?' + "&".join(map(lambda k: f"{k}={kwargs[k]}", kys))
             logger.debug(msg)
         else:
             logger.debug(url)
-        return super().get(url, auth, parser, **kvargs)
+        return super().get(url, auth, parser, **kwargs)
 
     @cached_property
     def calendar(self):

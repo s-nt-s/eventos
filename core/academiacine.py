@@ -16,11 +16,11 @@ NOW = datetime.now()
 class AcademiaCine(Web):
     URL = "https://entradas.aliro.academiadecine.com/"
 
-    def get(self, url, auth=None, parser="lxml", **kvargs):
+    def get(self, url, auth=None, parser="lxml", **kwargs):
         if url == self.url:
             return self.soup
         logger.debug(url)
-        return super().get(url, auth, parser, **kvargs)
+        return super().get(url, auth, parser, **kwargs)
 
     @cached_property
     def calendar(self):
@@ -61,7 +61,7 @@ class AcademiaCine(Web):
         )
         self.get(url+"/compra/?entradas=1")
         error = tuple(filter(lambda x: x is not None, map(get_text, self.soup.select("ul.errorlist li"))))
-        if len(error)>0:
+        if len(error) > 0:
             logger.warning(f"{ev.id}: {ev.name}: {' - '.join(error)}")
             return None
         return ev

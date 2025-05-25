@@ -16,9 +16,9 @@ class SalaEquis(Web):
     TAQUILLA = "https://salaequis.es/taquilla/"
     ENCUENTROS = "https://salaequis.es/encuentros/"
 
-    def get(self, url, auth=None, parser="lxml", **kvargs):
+    def get(self, url, auth=None, parser="lxml", **kwargs):
         logger.debug(url)
-        return super().get(url, auth, parser, **kvargs)
+        return super().get(url, auth, parser, **kwargs)
 
     @cache
     def get_encuentros(self):

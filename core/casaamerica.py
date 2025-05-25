@@ -36,11 +36,11 @@ class CasaAmerica(Web):
             "Upgrade-Insecure-Requests": "1"
         })
 
-    def get(self, url, auth=None, parser="lxml", **kvargs):
+    def get(self, url, auth=None, parser="lxml", **kwargs):
         if url == self.url:
             return self.soup
         logger.debug(url)
-        return super().get(url, auth, parser, **kvargs)
+        return super().get(url, auth, parser, **kwargs)
 
     @cached_property
     def calendar(self):
