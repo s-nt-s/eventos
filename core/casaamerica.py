@@ -106,11 +106,11 @@ class CasaAmerica(Web):
         m = int(ym[4:])
         now = NOW.strftime("%Y-%m-%d")
         for n in self.soup.select("div.view-content h2.dia, div.view-content li.row"):
-            txt = get_text(n)
-            if txt is None:
+            cat = get_text(n)
+            if cat is None:
                 continue
             if n.name == "h2":
-                d = int(txt.split()[0])
+                d = int(cat.split()[0])
                 date = f"{y}-{m:02d}-{d:02d}"
                 continue
             if date < now:
@@ -166,10 +166,10 @@ class CasaAmerica(Web):
         )
 
     def __is_block(self):
-        txt = plain_text(self.soup.find("title"))
-        if txt is None:
+        cat = plain_text(self.soup.find("title"))
+        if cat is None:
             raise FieldNotFound("title", self.url)
-        if txt.lower().startswith("acceso denegado"):
+        if cat.lower().startswith("acceso denegado"):
             logger.warning("ACCESS DENIED "+self.url)
             return True
         return False
@@ -212,21 +212,23 @@ class CasaAmerica(Web):
         return 0
 
     def __find_category(self, content: str):
-        c = self.select_one("h1.tematica span.field")
-        plan_content = plain_text(content)
-        txt = plain_text(c).lower()
-        if txt == "infantil":
+        plain_content = plain_text(content)
+        cat = plain_text(self.select_one("h1.tematica span.field")).lower()
+        tit = plain_text(self.select_one("h1.titulo span.field")).lower()
+        if cat == "infantil":
             return Category.CHILDISH
-        if re_or(plan_content, "presentacion (del )?libro"):
+        if re_or(plain_content, "presentacion (del )?libro"):
             return Category.CONFERENCE
-        if txt == "cine":
+        if cat == "cine":
             return Category.CINEMA
-        if txt == "exposiciones":
+        if cat == "exposiciones":
             return Category.EXPO
-        if txt == "teatro":
+        if cat == "teatro":
             return Category.THEATER
-        if txt == "musica":
+        if cat == "musica":
             return Category.MUSIC
+        if cat == "literatura" and re_or(tit, "poesia"):
+            return Category.POETRY
         w1 = content.split()[0]
         if w1 == "concierto":
             return Category.MUSIC
@@ -234,7 +236,7 @@ class CasaAmerica(Web):
             return Category.CINEMA
         if re.search(r"\b(conferencia|mesa redonda|debate|esta charla propone|seminario)\b", content) or w1 in ("presentación", "diálogo", "jornada"):
             return Category.CONFERENCE
-        logger.critical(str(CategoryUnknown(self.url, txt)))
+        logger.critical(str(CategoryUnknown(self.url, cat)))
         return Category.UNKNOWN
 
 
