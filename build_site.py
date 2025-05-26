@@ -15,7 +15,7 @@ from core.j2 import Jnj2, toTag
 from datetime import datetime, timedelta
 from core.log import config_log
 from core.img import MyImage
-from core.util import dict_add, get_domain, to_datetime
+from core.util import dict_add, get_domain, to_datetime, uniq
 import logging
 from os import environ
 from os.path import isfile
@@ -175,7 +175,9 @@ for e in eventos:
 
 def event_to_ics(e: Event, s: Session):
     price = str(int(e.price)) if int(e.price) == e.price else f"{e.price:.2f}"
-    description = (f'{price} €\n\n' + "\n\n".join(e.iter_urls())).strip()
+    description = (f'{price} €\n\n' + "\n\n".join(
+        uniq(e.url, *e.also_in, s.url, e.more)
+    )).strip()
     dtstart = to_datetime(s.date)
     dtend = dtstart + timedelta(minutes=e.duration)
     return IcsEvent(

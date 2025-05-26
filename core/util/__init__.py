@@ -427,3 +427,11 @@ def to_uuid(s: str):
         return s.upper()
     except ValueError:
         return str(uuid.uuid5(UUID_NAMESPACE, s)).upper()
+
+
+def uniq(*args: Union[str, None]):
+    arr: List[str] = []
+    for a in args:
+        if a not in (None, ''):
+            arr.append(a)
+    return arr
