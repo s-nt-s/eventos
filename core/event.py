@@ -309,6 +309,8 @@ class Event:
             v = getattr(self, f.name, None)
             if isinstance(v, list):
                 object.__setattr__(self, f.name, tuple(v))
+            elif isinstance(v, str) and len(v) == 0:
+                object.__setattr__(self, f.name, None)
 
     def fix(self, **kwargs):
         for k, v in kwargs.items():
@@ -349,7 +351,7 @@ class Event:
             yield self.more
 
     def _fix_img(self):
-        ko = (None, ) + KO_IMG
+        ko = (None, '') + KO_IMG
         if self.img not in ko:
             return self.img
         for url in self.iter_urls():

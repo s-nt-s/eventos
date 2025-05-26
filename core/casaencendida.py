@@ -136,7 +136,7 @@ class CasaEncendida:
 
     def __find_category(self, soup: MyTag, info: List[Dict]):
         for li in map(get_text, soup.node.select("ul.item-detail__list li")):
-            if "No está permitida la entrada a mayores si no van acompañados de un menor" in li:
+            if li and "No está permitida la entrada a mayores si no van acompañados de un menor" in li:
                 return Category.CHILDISH
         tags = set()
         for tag in soup.select_txt(", ".join(
