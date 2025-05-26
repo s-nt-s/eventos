@@ -291,6 +291,7 @@ class MadridEs:
                 return events[0]
             logger.debug("Fusión: " + " + ".join(map(lambda e: f"{e.id} {e.duration}", events)))
             sessions: Set[Session] = set()
+            sessions_with_url: Set[Session] = set()
             categories: List[Category] = []
             durations: List[float] = []
             imgs: List[str] = []
@@ -304,13 +305,20 @@ class MadridEs:
                     imgs.append(e.img)
                 for s in e.sessions:
                     sessions.add(s)
+                    sessions_with_url.add(s._replace(url=e.url))
                 seen_in.add(e.url)
                 for u in e.also_in:
                     seen_in.add(u)
             seen_in = tuple(sorted(seen_in))
+            url = seen_in[0]
+            also_in = seen_in[1:]
+            if len(sessions) > 1:
+                sessions = sessions_with_url
+                url = None
+                also_in = tuple()
             return events[0].merge(
-                url=seen_in[0],
-                also_in=seen_in[1:],
+                url=url,
+                also_in=also_in,
                 duration=get_main_value(durations),
                 img=get_main_value(imgs),
                 category=get_main_value(categories, default=Category.UNKNOWN),

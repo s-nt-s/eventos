@@ -60,7 +60,7 @@
         <p class="titulo">
           <span class="precio" title="{{e.price | twoDec}}€">{{e.price | round | int}}€</span>
           {% if e.url %}
-          <a href="{{e.url}}">{{e.title}}</a>{% for u in e.also_in %} [<a href="{{u}}">+{{loop.index}}</a>]{% endfor %}
+          <a href="{{e.url}}">{{e.title}}</a>{% for u in e.also_in %} <small>[<a href="{{u}}">+{{loop.index}}</a>]</small>{% endfor %}
           {% else %}
           {{e.title}}
           {% endif %}
