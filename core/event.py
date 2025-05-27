@@ -226,10 +226,10 @@ def unquote(s: str):
     bak = ''
     while bak != s:
         bak = str(s)
+        for q in quotes:
+            s = re.sub(rf'^{q}([^{q}]+: {q}[^{q}]+{q})$', r"\1", s)
         if len(s) > 2 and s[0] == s[-1] and s[0] in quotes:
             s = s[1:-1]
-        if (s.count('"'), s.count("'")) == (1, 1):
-            s = s.replace('"', "'")
         if len(s) > 2 and s[0] in quotes and s[0] not in s[1:]:
             s = s[1:]
         if len(s) > 2 and s[-1] in quotes and s[-1] not in s[:-1]:
@@ -245,6 +245,8 @@ def _clean_name(name: str, place: str):
     bak = ['']
     while bak[-1] != name:
         bak.append(str(name))
+        if "'" not in name:
+            name = re.sub(r'["`´”“]', "'", name)
         name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.IGNORECASE)
         name = re.sub(r"\.\s*(conferencia)\s*$", "", name, flags=re.IGNORECASE)
