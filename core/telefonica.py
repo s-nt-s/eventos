@@ -112,6 +112,8 @@ class Telefonica(Web):
         data, webpage = self.get_script_data(url)
 
         duration, session = self.__get_session(data)
+        if duration > (60*24):
+            return None
         return Event(
             id="tl"+to_uuid(url),
             url=url,

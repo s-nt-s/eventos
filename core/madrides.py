@@ -394,7 +394,6 @@ class MadridEs:
         dates: set[str] = set()
         for event in cal.events:
             if event.begin.strftime("%Y-%m-%d") != event.end.strftime("%Y-%m-%d"):
-                logger.debug(f"dura días: {url_event}")
                 continue
             s_date = self.__get_start(event.begin, url_event)
             dates.add(s_date)
