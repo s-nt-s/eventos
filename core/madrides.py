@@ -648,10 +648,14 @@ class MadridEs:
             return Category.CONFERENCE
 
         desc = self.__get_description(url_event)
+        if re_or(desc, "[mM]usical? infantil", "[Tt]eatro infantil", "relatos en familia", "concierto familiar", ("cuentacuentos", "en familia"), to_log=id, flags=re.IGNORECASE):
+            return Category.CHILDISH
         if re_or(desc, "zarzuela", "teatro", "espect[áa]culo (circense y )?teatral", to_log=id, flags=re.IGNORECASE):
             return Category.THEATER
         if re_or(desc, "itinerario .* kil[ó]metros", to_log=id, flags=re.IGNORECASE):
             return Category.SPORT
+        if re_or(desc, "Concierto", to_log=id):
+            return Category.MUSIC
         if desc.count("poesía") > 2:
             return Category.CONFERENCE
 

@@ -367,7 +367,15 @@ class Event:
         for txt in map(plain_text, soup.select("div.tramites-content div.tiny-text")):
             if txt is None:
                 continue
-            if re_or(txt, "actividad dirigida a familias", "para que menores y mayores aprendan"):
+            if re_or(
+                txt,
+                "actividad dirigida a familias",
+                "para que menores y mayores aprendan",
+                "musical? infantil",
+                "teatro infantil",
+                "concierto familiar",
+                "relatos en familia"
+            ):
                 return Category.CHILDISH
         return self.category
 
