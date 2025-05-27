@@ -11,6 +11,7 @@ from core.casaamerica import CasaAmerica
 from core.academiacine import AcademiaCine
 from core.caixaforum import CaixaForum
 from core.madrides import MadridEs
+from core.telefonica import Telefonica
 from core.j2 import Jnj2, toTag
 from datetime import datetime, timedelta
 from core.log import config_log
@@ -149,7 +150,8 @@ eventos = \
     CasaAmerica().events + \
     AcademiaCine().events + \
     CaixaForum().events + \
-    MadridEs().events
+    MadridEs().events + \
+    Telefonica().events
 logger.info(f"{len(eventos)} recuperados")
 
 eventos = tuple(filter(myfilter, eventos))

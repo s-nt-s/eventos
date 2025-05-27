@@ -200,6 +200,20 @@ class Web:
             raise WebException(f"{slc} NOT FOUND in {self.url}")
         return n
 
+    def select_one_txt(self, slc: str):
+        n = self.select_one(slc)
+        txt = get_text(n)
+        if txt is None:
+            raise WebException(f"{slc} IS EMPTY in {self.url}")
+        return txt
+
+    def select_one_json(self, slc: str) -> Union[Dict, List]:
+        txt = self.select_one_txt(slc)
+        try:
+            return json.loads(txt)
+        except json.JSONDecodeError:
+            raise WebException(f"{slc} no json in {self.url}")
+
     @cache
     def __cached_get(self, url: str):
         r = self._get(url)
