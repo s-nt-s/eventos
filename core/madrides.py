@@ -363,11 +363,11 @@ class MadridEs:
             if not isOkPlace(place):
                 continue
             url_event = a.attrs["href"]
-            cat = self.__find_category(id, div, url_event)
-            if cat is None:
-                continue
             duration, sessions = self.__get_sessions(url_event, div)
             if len(sessions) == 0:
+                continue
+            cat = self.__find_category(id, div, url_event)
+            if cat is None:
                 continue
             if duration is None:
                 duration = 120 if cat == Category.CINEMA else 60
@@ -393,14 +393,16 @@ class MadridEs:
         sessions: Set[Session] = set()
         dates: set[str] = set()
         for event in cal.events:
-            start = event.begin
-            s_date = self.__get_start(start, url_event)
+            if event.begin.strftime("%Y-%m-%d") != event.end.strftime("%Y-%m-%d"):
+                logger.debug(f"dura días: {url_event}")
+                continue
+            s_date = self.__get_start(event.begin, url_event)
             dates.add(s_date)
             sessions.add(Session(
                 date=s_date
             ))
             if event.end.strftime("%H:%M") != "23:59":
-                durations.add(int((event.end - start).seconds / 60))
+                durations.add(int((event.end - event.begin).seconds / 60))
         if len(sessions) == 0:
             return 0, tuple()
         duration = self.__get_duration(durations, url_event)
