@@ -285,6 +285,7 @@ KO_IMG = (
     'https://www.madrid.es/UnidadWeb/Contenidos/Ficheros/TemaCulturaYOcio/Bohemios.jpg',
     'https://www.madrid.es/UnidadWeb/Contenidos/Ficheros/canalcasareloj.png',
     'https://www.casamerica.es/themes/casamerica/images/cabecera_generica.jpg',
+    'https://cdn.lacasaencendida.es/storage/39522/conversions/stivijoes-6-adricuerdo-adria?n-cuerdojpg-detail.jpg',
 )
 
 
