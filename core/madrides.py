@@ -544,7 +544,7 @@ class MadridEs:
             return Category.CHILDISH
         if re_or(plain_name, "para mayores$"):
             return Category.SENIORS
-        if re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina"):
+        if re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros"):
             return Category.SPAM
         if re_and(plain_name, "ballet", ("repertorio", "clasico")):
             return Category.DANCE

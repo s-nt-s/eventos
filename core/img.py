@@ -105,7 +105,7 @@ class MyImage:
             return BytesIO(r.content)
         with Driver(browser="firefox") as f:
             f.get(url)
-            img = f.wait("img", by=By.CSS_SELECTOR)
+            img = f.safe_wait("img", by=By.CSS_SELECTOR)
             if img:
                 return BytesIO(img.screenshot_as_png)
         logger.critical(f"status_code={r.status_code} en {self.path}")
