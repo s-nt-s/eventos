@@ -114,10 +114,11 @@ class Telefonica(Web):
         duration, session = self.__get_session(data)
         if duration > (60*24):
             return None
+        name = get_text(self.soup.select_one("span.titulo"))
         return Event(
             id="tl"+to_uuid(url),
             url=url,
-            name=data['name'],
+            name=name or data['name'],
             img=data['image'],
             price=0,
             category=self.__find_category(data, webpage),

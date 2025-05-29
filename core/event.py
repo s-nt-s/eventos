@@ -247,6 +247,13 @@ def _clean_name(name: str, place: str):
         bak.append(str(name))
         if "'" not in name:
             name = re.sub(r'["`´”“]', "'", name)
+        for k, v in {
+            "A.I At War": "A.I. At War",
+            "AI At War": "A.I. At War",
+            "El sorprendente Dr.Clitterhouse": "El sorprendente Dr. Clitterhouse",
+            "El sorprendente Dr.Clitterhousem": "El sorprendente Dr. Clitterhouse"
+        }.items():
+            name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split("\s+", k))))+r"\s*$", v, name, flags=re.IGNORECASE)
         name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.IGNORECASE)
         name = re.sub(r"\.\s*(conferencia)\s*$", "", name, flags=re.IGNORECASE)
@@ -286,6 +293,7 @@ KO_IMG = (
     'https://www.madrid.es/UnidadWeb/Contenidos/Ficheros/canalcasareloj.png',
     'https://www.casamerica.es/themes/casamerica/images/cabecera_generica.jpg',
     'https://cdn.lacasaencendida.es/storage/39522/conversions/stivijoes-6-adricuerdo-adria?n-cuerdojpg-detail.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/EntidadesYOrganismos/CulturaYOcio/InstalacionesCulturales/CentrosCulturalesMunicipales/CCArganzuela/centrodotacionalArganzuela.png',
 )
 
 

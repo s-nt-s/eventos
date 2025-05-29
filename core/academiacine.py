@@ -112,6 +112,8 @@ class AcademiaCine(Web):
             return Category.CINEMA
         if re_or(cat, "podcast"):
             return Category.CONFERENCE
+        if re_or(tit, "jornada sobre"):
+            return Category.CONFERENCE
         desc = plain_text(get_text(self.select_one("div.session-desc")))
         if re_or(desc, "sesion informativa"):
             return Category.CONFERENCE
