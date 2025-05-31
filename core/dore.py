@@ -5,7 +5,6 @@ from functools import cached_property, cache
 import logging
 from .event import Event, Place, Session, Category, FieldNotFound, FieldUnknown, CategoryUnknown
 import re
-import time
 from bs4 import Tag
 
 logger = logging.getLogger(__name__)
@@ -127,7 +126,7 @@ class Dore(Web):
             url=url,
             name=get_text(self.soup.select_one("div.row h1")),
             category=self.__find_category(),
-            img=get_img(imgs),
+            img=get_img(*imgs),
             place=self.__find_place(),
             sessions=self.__find_sessions(),
             duration=duration,
