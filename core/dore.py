@@ -13,13 +13,15 @@ logger = logging.getLogger(__name__)
 months = ('ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic')
 
 
-def get_img(n: Union[None, Tag]):
-    if n is None:
-        return None
-    src = n.attrs.get("src")
-    if src in (None, 'https://entradasfilmoteca.gob.es//Contenido/ImagenesEspectaculos/00_4659/Lou-n'):
-        return None
-    return src
+def get_img(*imgs: Union[None, Tag]):
+    for n in imgs:
+        src = n.attrs.get("src")
+        if src not in (
+            None,
+            'https://entradasfilmoteca.gob.es//Contenido/ImagenesEspectaculos/00_4659/Lou-n',
+            'https://entradasfilmoteca.gob.es//Contenido/ImagenesEspectaculos/00_5007/#Love.jpg'
+        ):
+            return src
 
 
 class Dore(Web):
@@ -119,13 +121,13 @@ class Dore(Web):
         if duration is None:
             logger.warning(str(FieldNotFound("duration (#textoFicha)", self.url)))
             duration = 120
-        img = self.soup.select_one("div.item.active img")
+        imgs = self.soup.select("div.item img")
         return Event(
             id='fm'+url.split("=")[-1],
             url=url,
             name=get_text(self.soup.select_one("div.row h1")),
             category=self.__find_category(),
-            img=get_img(img),
+            img=get_img(imgs),
             place=self.__find_place(),
             sessions=self.__find_sessions(),
             duration=duration,
