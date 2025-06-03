@@ -488,7 +488,7 @@ class MadridEs:
                 return cat
         lg = div.select_one("a.event-location")
         lg = plain_text(lg.attrs["data-name"]) if lg else None
-        if re_or(lg, "titeres"):
+        if re_or(lg, "titeres", to_log=id):
             return Category.PUPPETRY
         plain_tp = plain_text(safe_get_text(div.select_one("p.event-type")))
         name = (get_text(div.select_one("a.event-link")) or "").lower()
@@ -501,20 +501,24 @@ class MadridEs:
             return Category.CHILDISH
         if re_or(tp_name, "concierto infantil", "en familia", to_log=id):
             return Category.CHILDISH
-        if re_or(plain_name, "^re vuelta al patio"):
+        if re_or(plain_name, "^re vuelta al patio", to_log=id):
             return Category.CHILDISH
-        if re_or(plain_name, "para mayores$"):
+        if re_or(plain_name, "para mayores$", to_log=id):
             return Category.SENIORS
-        if re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros"):
+        if re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros", to_log=id):
             return Category.SPAM
-        if re_and(plain_name, "ballet", ("repertorio", "clasico")):
+        if re_and(plain_name, "ballet", ("repertorio", "clasico"), to_log=id):
             return Category.DANCE
+        if re_or(plain_name, "certamen( de)? (pintura|decoracion)", "festival by olavide", to_log=id):
+            return Category.EXPO
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
         if re_or(name_tp, r"^conferencias?$", to_log=id):
             return Category.CONFERENCE
         if re_or(name_tp, r"^conciertos?$", to_log=id):
             return Category.MUSIC
+        if re_or(plain_name, "cañon del rio", "ruta a caballo", "cerro de", "actividad(es)? acuaticas? pantano", to_log=id):
+            return Category.SPORT
         if re_or(name_tp, r"^teatros?$", to_log=id):
             return Category.THEATER
         if re_or(name_tp, r"^danzas?$", to_log=id):
@@ -541,7 +545,7 @@ class MadridEs:
             return Category.VISIT
         if re_or(plain_name, "^concierto de", to_log=id):
             return Category.MUSIC
-        if re_or(tp_name, ("espectaculo", "magia")):
+        if re_or(tp_name, ("espectaculo", "magia"), to_log=id):
             return Category.MAGIC
         if re_or(tp_name, "cine", "proyeccion(es)?", "cortometrajes?", to_log=id):
             return Category.CINEMA
@@ -606,8 +610,14 @@ class MadridEs:
             return Category.VISIT
         if re_or(plain_name, r"visita a", to_log=id):
             return Category.VISIT
-        if re_or(plain_tp, "jornadas?", "congresos?"):
+        if re_or(plain_tp, "jornadas?", "congresos?", to_log=id):
             return Category.CONFERENCE
+        if re_or(plain_name, "actuacion coral", "recital coral", "taller de sevillanas", to_log=id):
+            return Category.MUSIC
+        if re_or(plain_name, "encuentro artistico", to_log=id):
+            return Category.EXPO
+        if re_or(plain_name, "^cantando", to_log=id):
+            return Category.MUSIC
 
         desc = self.__get_description(url_event)
         if re_or(desc, "[mM]usical? infantil", "[Tt]eatro infantil", "relatos en familia", "concierto familiar", ("cuentacuentos", "en familia"), to_log=id, flags=re.IGNORECASE):
@@ -661,7 +671,7 @@ class MadridEs:
                 id = MadridEs.get_id(lk)
                 if id is None:
                     continue
-                rt_arr["ms"+id] = (a, div)
+                rt_arr[id] = (a, div)
         logger.debug(f"{len(rt_arr)} TOTAL en {action}")
         return tuple((id, a, div) for id, (a, div) in rt_arr.items())
 

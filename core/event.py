@@ -8,7 +8,7 @@ from functools import cached_property
 from urllib.parse import quote_plus
 import re
 from datetime import date, datetime
-from core.web import Web, get_text, get_query
+from core.web import Web, get_text
 from core.filemanager import FM
 import logging
 from functools import cache
@@ -271,6 +271,10 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"Red de Escuelas Municipales del Ayuntamiento de Madrid", "red de Escuelas", name, flags=re.IGNORECASE)
         name = re.sub(r".*Ciclo de conferencias de la Sociedad Española de Retórica': (['\"])", r"\1", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*-\s*$", "", name)
+        name = re.sub(r"Asociación (de )?Jubilados( (del )?Ayuntamiento( de Madrid)?)?", "asociación de jubilados", name, flags=re.I)
+        name = re.sub(r"^Proyección de la película '([^']+)'", r"\1", name, flags=re.I)
+        name = re.sub(r"^Obra de teatro: ", r"", name, flags=re.I)
+        name = re.sub(r"^Noches? de Clásicos? - ", r"", name, flags=re.I)
         name = unquote(name.strip(". "))
         if len(name) < 2:
             name = bak[-1]
@@ -294,6 +298,7 @@ KO_IMG = (
     'https://www.casamerica.es/themes/casamerica/images/cabecera_generica.jpg',
     'https://cdn.lacasaencendida.es/storage/39522/conversions/stivijoes-6-adricuerdo-adria?n-cuerdojpg-detail.jpg',
     'https://www.madrid.es/UnidadWeb/UGBBDD/EntidadesYOrganismos/CulturaYOcio/InstalacionesCulturales/CentrosCulturalesMunicipales/CCArganzuela/centrodotacionalArganzuela.png',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/Cine_260x260.jpg'
 )
 
 

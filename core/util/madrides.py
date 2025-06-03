@@ -1,6 +1,7 @@
 from core.web import WEB, get_text
 from core.util import get_a_href, get_domain
 from functools import cache
+import re
 
 KO_MORE = (
     None,
@@ -17,7 +18,9 @@ def isOkMore(url: str):
     if get_domain(url) != "madrid.es":
         return True
     tt = get_text(WEB.get_cached_soup(url).select_one("title"))
-    if tt and tt.startswith("Actividades en "):
+    if not isinstance(tt, str):
+        return False
+    if re.search(r"^Actividades en |Actividades( de .*)? en el Distrito .*", tt):
         return False
     return True
 

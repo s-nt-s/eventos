@@ -229,6 +229,8 @@ class CasaAmerica(Web):
             return Category.MUSIC
         if cat == "literatura" and re_or(tit, "poesia"):
             return Category.POETRY
+        if cat == "literatura" and re_or(tit, "club(es)? de lectura"):
+            return Category.READING_CLUB
         w1 = content.split()[0]
         if w1 == "concierto":
             return Category.MUSIC
