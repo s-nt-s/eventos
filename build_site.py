@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from core.event import Event, Category, Session
+from core.event import Event, Category, Session, Place
 from core.ics import IcsEvent
 from core.casaencendida import CasaEncendida
 from core.dore import Dore
@@ -123,6 +123,14 @@ def myfilter(e: Event):
     return True
 
 
+def isMadridMusic(e: Event):
+    if get_domain(e.url) != "madrid.es" or e.category not in (Category.MUSIC, ):
+        return False
+    if get_domain(e.more) != "madrid.es":
+        return False
+    return True
+
+
 def sorted_and_fix(eventos: List[Event]):
     def _iter_fix(eventos: List[Event]):
         done: set[Event] = set()
@@ -133,8 +141,27 @@ def sorted_and_fix(eventos: List[Event]):
                 if myfilter(e):
                     PUBLISH[e.id] = e.publish
                     yield e
+    ok_events: Set[Event] = set()
+    data: Dict[Tuple[str, Place]] = defaultdict(set)
+    for e in _iter_fix(eventos):
+        if not isMadridMusic(e):
+            ok_events.add(e)
+            continue
+        data[(e.more, e.place)].add(e)
+
+    for (more, place), evs in data.items():
+        if len(evs) == 1:
+            ok_events = ok_events.union(evs)
+            continue
+        _id_ = MadridEs.get_id(more)
+        e = Event.fusion(*evs).merge(
+            name=None,
+            id=_id_,
+            url=more,
+        ).fix(publish=PUBLISH.get(_id_))
+        ok_events.add(e)
     arr1 = sorted(
-        _iter_fix(eventos),
+        ok_events,
         key=lambda e: (min(s.date for s in e.sessions), e.name, e.url)
     )
     return tuple(arr1)
@@ -251,7 +278,7 @@ def set_icons(html: str, **kwargs):
     return str(soup)
 
 
-PBLSH = sorted(set((e.publish for e in eventos)), reverse=True)
+PBLSH = sorted(set((e.publish for e in eventos if e.publish)), reverse=True)
 NEWS = PBLSH[0 if len(PBLSH) < 3 else 1]
 
 CLSS = defaultdict(list)

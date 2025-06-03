@@ -4,7 +4,7 @@ import re
 from typing import Set, Dict, List, Tuple, Union
 from urllib.parse import urlencode
 from .event import Event, Session, Place, Category, CategoryUnknown
-from .util import plain_text, re_or, re_and, getKm, my_filter, get_main_value, get_domain
+from .util import plain_text, re_or, re_and, getKm, my_filter, get_domain
 from ics import Calendar
 from arrow import Arrow
 import logging
@@ -286,48 +286,10 @@ class MadridEs:
         if len(all_events) == 0:
             return tuple()
 
-        def _merge(events: List[Event]):
-            if len(events) == 1:
-                return events[0]
-            logger.debug("Fusión: " + " + ".join(map(lambda e: f"{e.id} {e.duration}", events)))
-            sessions: Set[Session] = set()
-            sessions_with_url: Set[Session] = set()
-            categories: List[Category] = []
-            durations: List[float] = []
-            imgs: List[str] = []
-            seen_in: Set[str] = set()
-            for e in events:
-                if e.category not in (None, Category.UNKNOWN):
-                    categories.append(e.category)
-                if e.duration is not None:
-                    durations.append(e.duration)
-                if e.img is not None:
-                    imgs.append(e.img)
-                for s in e.sessions:
-                    sessions.add(s)
-                    sessions_with_url.add(s._replace(url=e.url))
-                seen_in.add(e.url)
-                for u in e.also_in:
-                    seen_in.add(u)
-            seen_in = tuple(sorted(seen_in))
-            url = seen_in[0]
-            also_in = seen_in[1:]
-            if len(sessions) > 1:
-                sessions = sessions_with_url
-                url = None
-                also_in = tuple()
-            return events[0].merge(
-                url=url,
-                also_in=also_in,
-                duration=get_main_value(durations),
-                img=get_main_value(imgs),
-                category=get_main_value(categories, default=Category.UNKNOWN),
-                sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
-            )
+        empty = {k: None for k in list(all_events)[0]._asdict().keys()}
 
         mrg_events: Set[Event] = set()
-        ko_events = sorted(all_events)
-        empty = {k: None for k in ko_events[0]._asdict().keys()}
+        ko_events: List[Event] = sorted(all_events)
 
         while ko_events:
             e = ko_events[0]
@@ -336,11 +298,10 @@ class MadridEs:
                 **{
                     'name': e.name,
                     'place': e.place,
-                    'category': None
                 }
             })
             ok, ko_events = my_filter(ko_events, lambda x: x.isSimilar(k))
-            mrg_events.add(_merge(ok))
+            mrg_events.add(Event.fusion(*ok))
         return tuple(sorted(mrg_events))
 
     def __get_ids(self, action: str, data: Dict = None):
@@ -666,6 +627,16 @@ class MadridEs:
         logger.critical(str(CategoryUnknown(url_event, f"{id}: type={plain_tp}, name={plain_name}")))
         return Category.UNKNOWN
 
+    @staticmethod
+    def get_id(lk: str):
+        if lk is None or get_domain(lk) != "madrid.es":
+            return None
+        qr = get_query(lk)
+        id = qr.get("vgnextoid")
+        if id is None:
+            return None
+        return "ms"+id
+
     def __get_soup_events(self, action: str, data=None):
         def _get(url: str):
             soup = self.get(url)
@@ -687,10 +658,7 @@ class MadridEs:
                 if a is None:
                     continue
                 lk = a.attrs.get("href")
-                if lk is None:
-                    continue
-                qr = get_query(lk)
-                id = qr.get("vgnextoid")
+                id = MadridEs.get_id(lk)
                 if id is None:
                     continue
                 rt_arr["ms"+id] = (a, div)

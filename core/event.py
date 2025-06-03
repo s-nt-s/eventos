@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict, fields
-from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional
-from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, get_a_href, re_or
+from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set
+from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, get_a_href, re_or, get_main_value
 from core.util.madrides import find_more_url as find_more_url_madrides
 from urllib.parse import quote
 from enum import IntEnum
@@ -8,7 +8,7 @@ from functools import cached_property
 from urllib.parse import quote_plus
 import re
 from datetime import date, datetime
-from core.web import Web, get_text
+from core.web import Web, get_text, get_query
 from core.filemanager import FM
 import logging
 from functools import cache
@@ -361,6 +361,14 @@ class Event:
         if self.more and self.more not in urls:
             yield self.more
 
+    def _fix_name(self):
+        if self.name is not None:
+            return self.name
+        if get_domain(self.url) == "madrid.es":
+            title = get_text(WEB.get_cached_soup(self.url).select_one("title"))
+            if title and " - " in title:
+                return title.split(" - ")[0].strip()
+
     def _fix_img(self):
         ko = (None, '') + KO_IMG
         if self.img not in ko:
@@ -473,6 +481,15 @@ class Event:
         return tuple(days.items())
 
     @property
+    def days(self):
+        days: Set[date] = set()
+        for e in self.sessions:
+            dh = e.date.split(" ")
+            dt = date(*map(int, dh[0].split("-")))
+            days.add(dt)
+        return tuple(sorted(days))
+
+    @property
     def end(self):
         if len(self.sessions) == 0:
             return None
@@ -516,3 +533,44 @@ class Event:
     def _asdict(self):
         return asdict(self)
 
+    @staticmethod
+    def fusion(*events: "Event"):
+        if len(events) == 0:
+            raise ValueError("len(events)==0")
+        if len(events) == 1:
+            return events[0]
+        logger.debug("Fusión: " + " + ".join(map(lambda e: f"{e.id} {e.duration}", events)))
+        sessions: Set[Session] = set()
+        sessions_with_url: Set[Session] = set()
+        categories: List[Category] = []
+        durations: List[float] = []
+        imgs: List[str] = []
+        seen_in: Set[str] = set()
+        for e in events:
+            if e.category not in (None, Category.UNKNOWN):
+                categories.append(e.category)
+            if e.duration is not None:
+                durations.append(e.duration)
+            if e.img is not None:
+                imgs.append(e.img)
+            for s in e.sessions:
+                sessions.add(s)
+                sessions_with_url.add(s._replace(url=e.url))
+            seen_in.add(e.url)
+            for u in e.also_in:
+                seen_in.add(u)
+        seen_in = tuple(sorted((u for u in seen_in if u is not None)))
+        url = seen_in[0]
+        also_in = seen_in[1:]
+        if len(sessions) > 1:
+            sessions = sessions_with_url
+            url = None
+            also_in = tuple()
+        return events[0].merge(
+            url=url,
+            also_in=also_in,
+            duration=get_main_value(durations),
+            img=get_main_value(imgs),
+            category=get_main_value(categories, default=Category.UNKNOWN),
+            sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
+        )
