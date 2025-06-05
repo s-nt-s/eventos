@@ -200,6 +200,18 @@ class Web:
             raise WebException(f"{slc} NOT FOUND in {self.url}")
         return n
 
+    def select_one_attr(self, slc: str, attr: str):
+        n = self.select_one(slc)
+        if attr not in n.attrs:
+            raise WebException(f"{slc} has not {attr} in {self.url}")
+        val = n.attrs[attr]
+        if not isinstance(val, str):
+            raise WebException(f"{slc} {attr}!=str in {self.url}")
+        val = val.strip()
+        if len(val) == 0:
+            raise WebException(f"{slc} {attr} IS EMPTY in {self.url}")
+        return val
+
     def select_one_txt(self, slc: str):
         n = self.select_one(slc)
         txt = get_text(n)

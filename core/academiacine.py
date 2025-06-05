@@ -59,14 +59,20 @@ class AcademiaCine(Web):
                 address="Calle de Zurbano, 3, Chamberí, 28010 Madrid"
             )
         )
-        # hay qu tener en cuenta que 2 entradas
+        # hay que tener en cuenta que 2 entradas
         # son para silla de ruedas
-        self.get(url+"/compra/?entradas=4")
-        error = tuple(filter(lambda x: x is not None, map(get_text, self.soup.select("ul.errorlist li"))))
+        error = self.__get_error_in_buy(url, 3)
         if len(error) > 0:
             logger.warning(f"{ev.id}: {ev.name}: {' - '.join(error)}")
             return None
         return ev
+
+    def __get_error_in_buy(self, url: str, entradas: int):
+        url = f"{url}/compra"
+        self.get(url)
+        csrfmiddlewaretoken = self.select_one_attr('input[name="csrfmiddlewaretoken"]', "value")
+        self.get(f"{url}?csrfmiddlewaretoken={csrfmiddlewaretoken}&entradas={entradas}")
+        return tuple(filter(lambda x: x is not None, map(get_text, self.soup.select("ul.errorlist li"))))
 
     def __find_session(self):
         months = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")

@@ -273,8 +273,8 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"\s*-\s*$", "", name)
         name = re.sub(r"Asociación (de )?Jubilados( (del )?Ayuntamiento( de Madrid)?)?", "asociación de jubilados", name, flags=re.I)
         name = re.sub(r"^Proyección de la película '([^']+)'", r"\1", name, flags=re.I)
-        name = re.sub(r"^Obra de teatro: ", r"", name, flags=re.I)
-        name = re.sub(r"^Noches? de Clásicos? - ", r"", name, flags=re.I)
+        name = re.sub(r"^(Obra de teatro|Noches? de Clásicos?|21 Distritos)\s*[:\-]\s*", r"", name, flags=re.I)
+        name = re.sub(r"Piano City (Madrid|Madrid \d+|\d+)", r"Piano City", name, flags=re.I)
         name = unquote(name.strip(". "))
         if len(name) < 2:
             name = bak[-1]
