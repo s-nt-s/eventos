@@ -67,7 +67,7 @@ class Telefonica(Web):
             ev = self.__url_to_event(url)
             if ev:
                 events.add(ev)
-        return sorted(events)
+        return tuple(sorted(events))
 
     @Cache("rec/telefonica/{}data.json")
     def __get_script_data(self, url: str):
