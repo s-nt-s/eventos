@@ -61,7 +61,7 @@ class AcademiaCine(Web):
         )
         # hay que tener en cuenta que 2 entradas
         # son para silla de ruedas
-        error = self.__get_error_in_buy(url, 3)
+        error = self.__get_error_in_buy(url, 4)
         if len(error) > 0:
             logger.warning(f"{ev.id}: {ev.name}: {' - '.join(error)}")
             return None
