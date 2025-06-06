@@ -621,6 +621,10 @@ class MadridEs:
             return Category.EXPO
         if re_or(plain_name, "^cantando", to_log=id):
             return Category.MUSIC
+        if re_and(plain_name, "dialogos?", "mac"):
+            return Category.CONFERENCE
+        if re_and(plain_name, "lengua de signos"):
+            return Category.WORKSHOP
 
         desc = self.__get_description(url_event)
         if re_or(desc, "[mM]usical? infantil", "[Tt]eatro infantil", "relatos en familia", "concierto familiar", ("cuentacuentos", "en familia"), to_log=id, flags=re.IGNORECASE):

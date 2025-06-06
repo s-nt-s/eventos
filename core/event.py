@@ -367,6 +367,12 @@ class Event:
         if self.more and self.more not in urls:
             yield self.more
 
+    def _fix_url(self):
+        if self.url:
+            return self.url
+        if get_domain(self.more) == "madrid.es":
+            return self.__dict__.pop("more")
+
     def _fix_name(self):
         if self.name is not None:
             return self.name
@@ -461,16 +467,17 @@ class Event:
             for a in WEB.soup.select("div.mc-title a"):
                 if get_text(a).lower() == lwtitle:
                     return a.attrs["href"]
-        for url in self.__get_urls():
+        urls = self.__get_urls()
+        for url in urls:
             dom = get_domain(url)
             if dom == "tienda.madrid-destino.com":
                 soup = WEB.get_cached_soup(url)
                 href = get_a_href(soup.select_one("a.c-mod-file-event__content-link"))
-                if href:
+                if href and href not in urls:
                     return href
             if dom == "madrid.es":
                 href = find_more_url_madrides(url)
-                if href:
+                if href and href not in urls:
                     return href
 
     @property

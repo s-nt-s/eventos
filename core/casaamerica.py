@@ -238,6 +238,8 @@ class CasaAmerica(Web):
             return Category.CINEMA
         if re.search(r"\b(conferencia|mesa redonda|debate|esta charla propone|seminario)\b", content) or w1 in ("presentación", "diálogo", "jornada"):
             return Category.CONFERENCE
+        if re.search("Desfile de moda", content, flags=re.I):
+            return Category.EXPO
         logger.critical(str(CategoryUnknown(self.url, cat)))
         return Category.UNKNOWN
 
