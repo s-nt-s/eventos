@@ -338,11 +338,15 @@ class Event:
         return self
 
     def __fix_field(self, name: str):
-        fnc = getattr(self, f'_fix_{name}', None)
-        if fnc is None or not callable(fnc):
-            return
+        fix_event = FIX_EVENT.get(self.id, {})
         old_val = getattr(self, name, None)
-        fix_val = fnc()
+        if name in fix_event:
+            fix_val = fix_event[name]
+        else:
+            fnc = getattr(self, f'_fix_{name}', None)
+            if fnc is None or not callable(fnc):
+                return
+            fix_val = fnc()
         if fix_val == old_val:
             return
         logger.debug(f"FIX: {name} {fix_val} <- {old_val}")
