@@ -483,18 +483,21 @@ class MadridEs:
             return None
 
     def __find_category(self, id: str, div: Tag, url_event: str):
-        for ids, cat in self.__category.items():
-            if id in ids:
-                return cat
-        lg = div.select_one("a.event-location")
-        lg = plain_text(lg.attrs["data-name"]) if lg else None
-        if re_or(lg, "titeres", to_log=id):
-            return Category.PUPPETRY
         plain_tp = plain_text(safe_get_text(div.select_one("p.event-type")))
         name = (get_text(div.select_one("a.event-link")) or "").lower()
         name_tp = re.split(r"\s*[:'\"\-]", name)[0].lower()
         plain_name = plain_text(name)
         tp_name = plain_text(((plain_tp or "")+" "+plain_name).strip())
+        maybeSPAM = re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros", to_log=id)
+        for ids, cat in self.__category.items():
+            if id in ids:
+                if maybeSPAM and cat == Category.CONFERENCE:
+                    return Category.SPAM 
+                return cat
+        lg = div.select_one("a.event-location")
+        lg = plain_text(lg.attrs["data-name"]) if lg else None
+        if re_or(lg, "titeres", to_log=id):
+            return Category.PUPPETRY
         if re_and(tp_name, "taller", ("animales", "pequeños"), to_log=id):
             return Category.CHILDISH
         if re_and(tp_name, "dia", "internacional", "familias?", to_log=id):
@@ -505,7 +508,7 @@ class MadridEs:
             return Category.CHILDISH
         if re_or(plain_name, "para mayores$", to_log=id):
             return Category.SENIORS
-        if re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros", to_log=id):
+        if maybeSPAM:
             return Category.SPAM
         if re_and(plain_name, "ballet", ("repertorio", "clasico"), to_log=id):
             return Category.DANCE

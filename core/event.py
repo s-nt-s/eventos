@@ -373,7 +373,7 @@ class Event:
         if get_domain(self.url) == "madrid.es":
             title = get_text(WEB.get_cached_soup(self.url).select_one("title"))
             if title and " - " in title:
-                return title.split(" - ")[0].strip()
+                return _clean_name(title.split(" - ")[0].strip(), self.place.name)
 
     def _fix_img(self):
         ko = (None, '') + KO_IMG
