@@ -51,7 +51,6 @@ class AcademiaCine(Web):
             category=self.__find_category(),
             duration=self.__find_duration(),
             sessions=tuple((Session(
-                url=url,
                 date=self.__find_session()
             ),)),
             place=Place(
