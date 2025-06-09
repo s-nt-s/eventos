@@ -261,7 +261,8 @@ def set_icons(html: str, **kwargs):
             "21distritos": "https://21distritos.es/CD_Favicon_generico.jpg",
             "centrodanzamatadero": "https://www.centrodanzamatadero.es/themes/custom/centro_danza/favicon.ico",
             "salaberlanga": "https://salaberlanga.com/wp-content/uploads/2023/09/cropped-cropped-favicon-berlanga-bn-300x300-1-32x32.png",
-            "cinetecamadrid": "https://www.cinetecamadrid.com/themes/custom/cineteca_theme/favicon.ico"
+            "cinetecamadrid": "https://www.cinetecamadrid.com/themes/custom/cineteca_theme/favicon.ico",
+            "imdb": "https://m.media-amazon.com/images/G/01/imdb/images-ANDW73HA/favicon_desktop_32x32._CB1582158068_.png"
         }.get(dom)
         if ico is None:
             continue
