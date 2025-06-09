@@ -1,7 +1,8 @@
 from dataclasses import dataclass, asdict, fields
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set
-from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, get_a_href, re_or, get_main_value
+from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, re_or, get_main_value
 from core.util.madrides import find_more_url as find_more_url_madrides
+from core.util.madriddestino import find_more_url as find_more_url_madriddestino
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
@@ -475,8 +476,7 @@ class Event:
         for url in urls:
             dom = get_domain(url)
             if dom == "tienda.madrid-destino.com":
-                soup = WEB.get_cached_soup(url)
-                href = get_a_href(soup.select_one("a.c-mod-file-event__content-link"))
+                href = find_more_url_madriddestino(url)
                 if href and href not in urls:
                     return href
             if dom == "madrid.es":
