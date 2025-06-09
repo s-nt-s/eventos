@@ -457,9 +457,9 @@ class Event:
 
     @cached_property
     def more(self):
-        fix_more = FIX_EVENT.get(self.id, {}).get("more")
-        if fix_more:
-            return fix_more
+        fix_event = FIX_EVENT.get(self.id, {})
+        if "more" in fix_event:
+            return fix_event["more"]
         if self.category == Category.CINEMA:
             title = re.sub(r"\s*\+\s*Coloquio\s*$", "", self.title, flags=re.IGNORECASE)
             title = re.sub(r"\s*,\s+de\s+[A-ZÁÉÍÓÚÑÜ]+.*$", "", title)
