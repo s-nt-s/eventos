@@ -128,7 +128,8 @@ class CaixaForum:
             sessions=sessions,
             place=Place(
                 name="Caixa Forum",
-                address="Paseo del Prado, 36, Centro, 28014 Madrid"
+                address="Paseo del Prado, 36, Centro, 28014 Madrid",
+                latlon="40.41134208472603,-3.6935713500263523"
             )
         )
 

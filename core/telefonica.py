@@ -139,7 +139,8 @@ class Telefonica(Web):
         if dir == "C/ Fuencarral, 3, Madrid":
             return Place(
                 name="Fundación Telefónica",
-                address="C/ Fuencarral, 3, Centro, 28004 Madrid"
+                address="C/ Fuencarral, 3, Centro, 28004 Madrid",
+                latlon="40.42058956643586,-3.7017498812379235"
             )
         raise FieldUnknown(self.url, "place", dir)
 

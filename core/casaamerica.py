@@ -161,7 +161,8 @@ class CasaAmerica(Web):
             sessions=None,
             place=Place(
                 name="La casa America",
-                address="Plaza Cibeles, s/n, Salamanca, 28014 Madrid"
+                address="Plaza Cibeles, s/n, Salamanca, 28014 Madrid",
+                latlon="40.419580635299525,-3.693332407512017"
             )
         )
 

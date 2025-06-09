@@ -24,7 +24,8 @@ class CasaEncendida:
     ACTIVITY = (2, 3)
     PLACE = Place(
         name="La casa encendida",
-        address="Rda. de Valencia, 2, Centro, 28012 Madrid"
+        address="Rda. de Valencia, 2, Centro, 28012 Madrid",
+        latlon="40.4062337055155,-3.6999346068731525"
     )
 
     def __init__(self):

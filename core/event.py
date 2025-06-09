@@ -221,6 +221,14 @@ class Place(NamedTuple):
         lt, ln = map(float, self.latlon.split(","))
         return getKm(lt, ln, lat, lon)
 
+    def get_alias(self):
+        name = plain_text(self.name)
+        if re_or(name, r"d?el retiro", ("biblioteca", "eugenio trias")):
+            return "El Retiro"
+        if re_or(name, "matadero", "cineteca"):
+            return "Matadero"
+        return self.name
+
 
 def unquote(s: str):
     quotes = ("'", '"')

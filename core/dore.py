@@ -170,7 +170,8 @@ class Dore(Web):
         if place == "cine doré":
             return Place(
                 name="Cine Doré",
-                address="C. de Santa Isabel, 3, Centro, 28012 Madrid"
+                address="C. de Santa Isabel, 3, Centro, 28012 Madrid",
+                latlon="40.411950735826316,-3.699066276358703"
             )
         raise FieldUnknown(self.url, "place", place)
 

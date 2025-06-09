@@ -73,7 +73,8 @@ class SalaEquis(Web):
             category=Category.CINEMA,
             place=Place(
                 name="Sala Equis",
-                address="C. del Duque de Alba, 4, Centro, 28012 Madrid, España"
+                address="C. del Duque de Alba, 4, Centro, 28012 Madrid, España",
+                latlon="40.412126715926796,-3.7059047815506396"
             ),
             duration=self.__find_duration(),
             sessions=sessions

@@ -193,7 +193,7 @@ lugares: Dict[str, int] = {}
 
 for e in eventos:
     categorias[e.category] = categorias.get(e.category, 0) + 1
-    lugares[e.place.name] = lugares.get(e.place.name, 0) + 1
+    lugares[e.place.get_alias()] = lugares.get(e.place.get_alias(), 0) + 1
     if len(e.sessions) == 0:
         sin_sesiones.add(e.id)
         continue
