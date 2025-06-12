@@ -2,11 +2,14 @@ import functools
 import os
 import time
 import logging
-from dataclasses import asdict, is_dataclass
+import hashlib
 
 from .filemanager import FM
 
 logger = logging.getLogger(__name__)
+
+def myhash(s: str) -> str:
+    return hashlib.sha256(s.encode('utf-8')).hexdigest()
 
 
 class Cache:
@@ -22,9 +25,9 @@ class Cache:
         self._kwargs = kwargs
         self.skip = skip
 
-    def parse_file_name(self, *args, slf=None, **kargv):
-        if args or kargv:
-            return self.file.format(*args, **kargv)
+    def parse_file_name(self, *args, slf=None, **kwargs):
+        if args or kwargs:
+            return self.file.format(*args, **kwargs)
         return self.file
 
     def read(self, file, *args, **kwargs):
@@ -95,9 +98,9 @@ class StaticCache(Cache):
             self.save(fl, data, *args, **kwargs)
         return data
 
-    def parse_file_name(self, *args, **kargv):
-        if args or kargv:
-            return self.file.format(*args, **kargv)
+    def parse_file_name(self, *args, **kwargs):
+        if args or kwargs:
+            return self.file.format(*args, **kwargs)
         return self.file
 
 
@@ -114,3 +117,11 @@ class TupleCache(Cache):
             return self.builder(data)
         return tuple((self.builder(d) for d in data))
 
+
+class HashCache(Cache):
+    def parse_file_name(self, *args, slf=None, **kwargs):
+        args = tuple(myhash(a) for a in args)
+        kwargs = {k: myhash(v) for k, v in kwargs.items()}
+        if args or kwargs:
+            return self.file.format(*args, **kwargs)
+        return self.file

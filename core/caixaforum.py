@@ -1,5 +1,5 @@
 from .web import get_text, Driver, WebException, MyTag
-from .cache import TupleCache
+from .cache import TupleCache, HashCache
 from typing import Set, Dict, Union, List, Tuple
 import logging
 from .event import Event, Place, Session, Category, FieldNotFound, CategoryUnknown
@@ -8,7 +8,7 @@ from bs4 import Tag
 from datetime import datetime
 from selenium.webdriver.common.by import By
 from .util import plain_text, re_or
-from functools import cached_property
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 NOW = datetime.now()
@@ -31,37 +31,46 @@ class CaixaForum:
 
     def __init__(self):
         self.__driver: Union[Driver, None] = None
+        self.__category = self.get__category()
 
-    @cached_property
-    def __category(self):
+    def get__category(self):
         done: Set[int] = set()
         category: Dict[Tuple[int, ...], Category] = {}
         with Driver(browser="firefox") as f:
+            self.__driver = f
             for cat, url in {
                 Category.CHILDISH: "https://caixaforum.org/es/madrid/familia?p=999",
             }.items():
-                ids = set(d.id for d in self.__get_div_events(f, url))
+                ids = set(d.id for d in self.__get_div_events(url))
                 category[tuple(sorted(ids.difference(done)))] = cat
                 done = done.union(ids)
         return category
 
-    def __visit(self, url: str):
+    @HashCache("rec/caixaforum/{}_sp.txt")
+    def __get_html(self, url: str):
         self.__driver.get(url)
         self.__driver.wait_ready()
         if re.search(r"_a\d+$", url):
             for slc in ("div.card-detail div.card-block-btn span", "#description-read"):
                 self.__driver.safe_wait(slc, by=By.CSS_SELECTOR)
+        return str(self.__driver.get_soup())
 
-    def __get_soup(self, url: str):
-        self.__visit(url)
-        return MyTag(url, self.__driver.get_soup())
+    @HashCache("rec/caixaforum/{}_ld.json")
+    def __get_ld_json(self, url: str) -> Dict:
+        return self.get_soup(url).select_one_json('script[type="application/ld+json"]')
 
-    def __get_json(self, url: str) -> Union[Dict, List]:
-        node = self.__get_soup(url)
+    def get_soup(self, url: str):
+        html = self.__get_html(url)
+        soup = BeautifulSoup(html, "lxml")
+        return MyTag(url, soup)
+
+    @HashCache("rec/caixaforum/{}_js.json")
+    def get_json(self, url: str) -> Union[Dict, List]:
+        node = self.get_soup(url)
         return node.select_one_json("body")
 
-    def __get_ld_json(self, url: str) -> Dict:
-        js = self.__get_soup(url).select_one_json('script[type="application/ld+json"]')
+    def get_ld_json(self, url: str) -> Dict:
+        js = self.__get_ld_json(url)
         for k in ("startDate", "endDate"):
             v = js.get(k)
             if v:
@@ -75,18 +84,16 @@ class CaixaForum:
         with Driver(browser="firefox") as f:
             self.__driver = f
             for url in CaixaForum.URLS:
-                divs = self.__get_div_events(f, url)
+                divs = self.__get_div_events(url)
                 for div in divs:
                     events.add(self.__div_to_event(div))
         if None in events:
             events.remove(None)
         return tuple(sorted(events))
 
-    def __get_div_events(self, f: Driver, url: str) -> Tuple[MyIdTag, ...]:
+    def __get_div_events(self, url: str) -> Tuple[MyIdTag, ...]:
         events: List[MyIdTag] = []
-        f.get(url)
-        f.wait_ready()
-        soup = f.get_soup()
+        soup = self.get_soup(url).node
         warn = get_text(soup.select_one("div.portlet-body div.title-warrings h2"))
         if warn is not None:
             logger.warning(warn+" "+url)
@@ -105,12 +112,12 @@ class CaixaForum:
     def __div_to_event(self, div: MyIdTag):
         h2 = div.select_one("a > h2")
         url = h2.find_parent("a").attrs["href"]
-        info = self.__get_ld_json(url)
+        info = self.get_ld_json(url)
         ficha = self.__get_ficha(div.id)
         sessions = self.__find_session(url, ficha, info)
         if len(sessions) == 0:
             return None
-        event_soup = self.__get_soup(url)
+        event_soup = self.get_soup(url)
         category = self.__find_category(div.id, div)
         return Event(
             id=f"cf{div.id}",
@@ -145,7 +152,7 @@ class CaixaForum:
 
     def __get_ficha(self, eid: int) -> Dict:
         url = "https://caixaforum.org/es/web/madrid/actividades?p_p_id=headersearch_INSTANCE_HeaderSearch&p_p_lifecycle=2&p_p_resource_id=%2Fsearch%2FoneBox&_headersearch_INSTANCE_HeaderSearch_cpDefinitionId="+str(eid)
-        js = self.__get_json(url)
+        js = self.get_json(url)
         return js
 
     def __find_session(self, event_url: str, ficha: Dict, info: Dict):
