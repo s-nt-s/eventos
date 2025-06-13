@@ -223,7 +223,7 @@ class CaixaForum:
             if eid in ids:
                 return cat
         try:
-            txt = div.select_one_txt("p.on-title")
+            txt = div.select_one_txt("p.on-title, div.pre-title")
         except WebException as e:
             logger.critical(str(CategoryUnknown(div.url, str(e))))
             return Category.UNKNOWN
@@ -244,7 +244,17 @@ class CaixaForum:
             return Category.VISIT
         if re_or(cat, "performance"):
             return Category.THEATER
-        logger.critical(str(CategoryUnknown(div.url, txt)))
+        try:
+            txt_tit = div.select_one_txt("#title-read")
+        except WebException as e:
+            logger.critical(str(CategoryUnknown(div.url, str(e))))
+            return Category.UNKNOWN
+        tit = plain_text(txt_tit.lower())
+        if re_or(tit, "magia"):
+            return Category.MAGIC
+        if re_or(tit, "muestra de moda"):
+            return Category.EXPO
+        logger.critical(str(CategoryUnknown(div.url, f"{txt} {txt_tit}")))
         return Category.UNKNOWN
 
 
