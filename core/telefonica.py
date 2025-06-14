@@ -162,7 +162,7 @@ class Telefonica(Web):
             "publicacion de su ultima",
             "acogemos un nuevo encuentro",
             "accesibilidad auditiva",
-            "una conversación entre"
+            "una conversacion entre"
         ):
             return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(self.url, cat)))

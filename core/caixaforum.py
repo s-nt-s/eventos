@@ -36,7 +36,7 @@ class CaixaForum:
     def get__category(self):
         done: Set[int] = set()
         category: Dict[Tuple[int, ...], Category] = {}
-        with Driver(browser="firefox") as f:
+        with Driver(browser="firefox", wait=5) as f:
             self.__driver = f
             for cat, url in {
                 Category.CHILDISH: "https://caixaforum.org/es/madrid/familia?p=999",
@@ -51,7 +51,11 @@ class CaixaForum:
         self.__driver.get(url)
         self.__driver.wait_ready()
         if re.search(r"_a\d+$", url):
-            for slc in ("div.card-detail div.card-block-btn span", "#description-read"):
+            for slc in (
+                "div.card-detail div.card-block-btn span",
+                "#description-read",
+                "div.card-detail div.reserva-ficha"
+            ):
                 self.__driver.safe_wait(slc, by=By.CSS_SELECTOR)
         return str(self.__driver.get_soup())
 
@@ -81,7 +85,7 @@ class CaixaForum:
     @TupleCache("rec/caixaforum.json", builder=Event.build)
     def events(self):
         events: Set[Event] = set()
-        with Driver(browser="firefox") as f:
+        with Driver(browser="firefox", wait=5) as f:
             self.__driver = f
             for url in CaixaForum.URLS:
                 divs = self.__get_div_events(url)
@@ -121,7 +125,7 @@ class CaixaForum:
         price = self.__find_price(div.id, event_soup)
         if price < 0:
             return None
-        category = self.__find_category(div)
+        category = self.__find_category(div, event_soup)
         return Event(
             id=f"cf{div.id}",
             url=url,
@@ -188,18 +192,21 @@ class CaixaForum:
             if m:
                 return int(m.group(1))
         price = (div.select_one_txt(
-            "div.card-detail div.card-block-btn span, div.card-detail div.reserva-ficha h2 p",
+            "div.card-detail div.card-block-btn span, div.card-detail div.reserva-ficha",
             warning=True
         ) or "").lower()
         if "gratuita" in price:
             return 0
+        if "reserva de entradas disponible próximamente" in price:
+            return -1
         prcs = tuple(map(int, re.findall(r"(\d+)\s*€", price)))
         if len(prcs) == 0:
             n = div.select_one("#description-read")
             prcs = tuple(map(int, re.findall(r"(\d+)\s*€", get_text(n))))
+        if div.url == "https://caixaforum.org/es/madrid/p/ndv-normalmente-o-viceversa_a172958300":
+            with open("/tmp/a.html", "w") as f:
+                f.write(str(div.node))
         if len(prcs) == 0:
-            if "reserva de entradas disponible próximamente" in price:
-                return -1
             logger.warning(str(FieldNotFound("price", div.url)))
             return 0
         return max(prcs)
@@ -222,10 +229,13 @@ class CaixaForum:
         logger.warning(f"duración no encontrada en {url_event}")
         return 60
 
-    def __find_category(self, div: MyIdTag):
+    def __find_category(self, div: MyIdTag, event_soup: MyTag):
         for ids, cat in self.__category.items():
             if div.id in ids:
                 return cat
+        for txt in event_soup.select_txt("div.activity-detail-block"):
+            if re_or(plain_text(txt), "los niños y niñas tienen que ir siempre acompañados de un adulto"):
+                return Category.CHILDISH
         try:
             txt = div.select_one_txt("p.on-title, div.pre-title")
         except WebException as e:
@@ -266,14 +276,17 @@ class CaixaForum:
         des = plain_text(txt_des.lower())
         if re_or(des, "encuentro coreografico", "danza tradicional"):
             return Category.DANCE
-        a = div.node.select_one("div.card-viewmore a")
-        if a and a.attrs.get("href"):
-            href = plain_text(a.attrs["href"]).lower()
-            if re_or(href, "circo"):
-                return Category.CIRCUS
-            if re_or(href, "danza"):
-                return Category.DANCE
-        logger.critical(str(CategoryUnknown(div.url, f"{txt} {txt_tit} {txt_des}")))
+        try:
+            href = div.select_one_attr("div.card-viewmore a", "href")
+        except WebException as e:
+            logger.critical(str(CategoryUnknown(div.url, str(e))))
+            return Category.UNKNOWN
+        plain_href = plain_text(href).lower()
+        if re_or(plain_href, "circo"):
+            return Category.CIRCUS
+        if re_or(plain_href, "danza"):
+            return Category.DANCE
+        logger.critical(str(CategoryUnknown(div.url, f"{txt} {txt_tit} {txt_des} {href}")))
         return Category.UNKNOWN
 
 

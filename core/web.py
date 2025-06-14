@@ -254,9 +254,30 @@ class MyTag:
 
     def select_one_txt(self, slc: str, warning: bool = False):
         n = self.select_one(slc, warning=warning)
+        if n is None and warning:
+            return None
         txt = get_text(n)
         if txt is None:
             ex = WebException(f"{slc} EMPTY in {self.__url}")
+            if warning:
+                logger.warning(str(ex))
+                return None
+            raise ex
+        return txt
+
+    def select_one_attr(self, slc: str, attr: str, warning: bool = False):
+        n = self.select_one(slc, warning=warning)
+        if n is None and warning:
+            return None
+        if attr not in n.attrs:
+            ex = WebException(f"{slc} has not {attr} in {self.__url}")
+            if warning:
+                logger.warning(str(ex))
+                return None
+            raise ex
+        txt = n.attrs[attr]
+        if txt is None:
+            ex = WebException(f"{slc}[{attr}] EMPTY in {self.__url}")
             if warning:
                 logger.warning(str(ex))
                 return None
@@ -278,8 +299,7 @@ class MyTag:
 
     def select_txt(self, slc: str):
         arr: List[str] = []
-        for n in self.select(slc):
-            txt = get_text(n)
+        for txt in map(get_text, self.select(slc)):
             if txt:
                 arr.append(txt)
         if len(arr) == 0:
