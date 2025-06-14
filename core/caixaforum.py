@@ -118,13 +118,16 @@ class CaixaForum:
         if len(sessions) == 0:
             return None
         event_soup = self.get_soup(url)
-        category = self.__find_category(div.id, div)
+        price = self.__find_price(div.id, event_soup)
+        if price < 0:
+            return None
+        category = self.__find_category(div)
         return Event(
             id=f"cf{div.id}",
             url=url,
             name=get_text(h2),
             img=self.__find_img(event_soup),
-            price=self.__find_price(div.id, event_soup),
+            price=price,
             category=category,
             duration=self.__find_duration(
                 url,
@@ -184,11 +187,10 @@ class CaixaForum:
             m = re.search(r"loadOneBoxTicketsDetailActivity\(['\"]" + str(id) + r"['\"], ['\"](\d+)", txt)
             if m:
                 return int(m.group(1))
-        span = div.select_one_txt(
-            "div.card-detail div.card-block-btn span",
+        price = (div.select_one_txt(
+            "div.card-detail div.card-block-btn span, div.card-detail div.reserva-ficha h2 p",
             warning=True
-        ) or ""
-        price = span.lower()
+        ) or "").lower()
         if "gratuita" in price:
             return 0
         prcs = tuple(map(int, re.findall(r"(\d+)\s*€", price)))
@@ -196,6 +198,8 @@ class CaixaForum:
             n = div.select_one("#description-read")
             prcs = tuple(map(int, re.findall(r"(\d+)\s*€", get_text(n))))
         if len(prcs) == 0:
+            if "reserva de entradas disponible próximamente" in price:
+                return -1
             logger.warning(str(FieldNotFound("price", div.url)))
             return 0
         return max(prcs)
@@ -218,9 +222,9 @@ class CaixaForum:
         logger.warning(f"duración no encontrada en {url_event}")
         return 60
 
-    def __find_category(self, eid: int, div: MyTag):
+    def __find_category(self, div: MyIdTag):
         for ids, cat in self.__category.items():
-            if eid in ids:
+            if div.id in ids:
                 return cat
         try:
             txt = div.select_one_txt("p.on-title, div.pre-title")
@@ -245,7 +249,7 @@ class CaixaForum:
         if re_or(cat, "performance"):
             return Category.THEATER
         try:
-            txt_tit = div.select_one_txt("#title-read")
+            txt_tit = div.select_one_txt("#title-read, div.card-txt-item h2")
         except WebException as e:
             logger.critical(str(CategoryUnknown(div.url, str(e))))
             return Category.UNKNOWN
@@ -254,7 +258,22 @@ class CaixaForum:
             return Category.MAGIC
         if re_or(tit, "muestra de moda"):
             return Category.EXPO
-        logger.critical(str(CategoryUnknown(div.url, f"{txt} {txt_tit}")))
+        try:
+            txt_des = div.select_one_txt("div.primary-text p")
+        except WebException as e:
+            logger.critical(str(CategoryUnknown(div.url, str(e))))
+            return Category.UNKNOWN
+        des = plain_text(txt_des.lower())
+        if re_or(des, "encuentro coreografico", "danza tradicional"):
+            return Category.DANCE
+        a = div.node.select_one("div.card-viewmore a")
+        if a and a.attrs.get("href"):
+            href = plain_text(a.attrs["href"]).lower()
+            if re_or(href, "circo"):
+                return Category.CIRCUS
+            if re_or(href, "danza"):
+                return Category.DANCE
+        logger.critical(str(CategoryUnknown(div.url, f"{txt} {txt_tit} {txt_des}")))
         return Category.UNKNOWN
 
 

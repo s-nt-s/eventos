@@ -161,7 +161,8 @@ class Telefonica(Web):
             "todopoderosos",
             "publicacion de su ultima",
             "acogemos un nuevo encuentro",
-            "accesibilidad auditiva"
+            "accesibilidad auditiva",
+            "una conversación entre"
         ):
             return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(self.url, cat)))
