@@ -415,10 +415,11 @@ class Event:
                 txt,
                 "actividad dirigida a familias",
                 "para que menores y mayores aprendan",
-                "musical? infantil",
                 "teatro infantil",
                 "concierto familiar",
-                "relatos en familia"
+                "relatos en familia",
+                r"musical? infantil",
+                r"actividad (diseñada )?para familias"
             ):
                 return Category.CHILDISH
         return self.category
