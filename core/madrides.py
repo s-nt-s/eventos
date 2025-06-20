@@ -603,7 +603,7 @@ class MadridEs:
             return Category.VISIT
         if re_or(plain_name, "^mercadea en el mercado", "^mercadea en los mercadillos", to_log=id):
             return Category.CONFERENCE
-        if re_or(plain_name, "^poesia rapidita", r"^\d+ poemas", to_log=id):
+        if re_or(plain_name, "^poesia rapidita", r"^\d+ poemas", "poesia o barbarie", to_log=id):
             return Category.POETRY
         if re_or(plain_name, "^hacer actuar", to_log=id):
             return Category.WORKSHOP
