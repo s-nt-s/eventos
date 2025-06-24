@@ -1,7 +1,6 @@
 query FetchShowGroupsForCinema(
   $cinemaId: ID
   $cinemaProximity: Proximity
-  $playing: Playing!
   $auditoriums: [ID!]
   $genres: [String!]
   $flags: [String!]
@@ -14,7 +13,6 @@ query FetchShowGroupsForCinema(
   $page: Int
 ) {
   showGroups(
-    playing: $playing
     cinemaId: $cinemaId
     cinemaProximity: $cinemaProximity
     auditoriums: $auditoriums
@@ -66,7 +64,7 @@ query FetchShowGroupsForCinema(
         }
         __typename
       }
-      shows(playing: $playing, flags: $flags) {
+      shows(flags: $flags) {
         data {
           ...ShowBaseAttributes
           ...ShowTimings

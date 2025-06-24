@@ -635,6 +635,8 @@ class MadridEs:
             return Category.SPORT
         if re_or(desc, "Concierto", to_log=id):
             return Category.MUSIC
+        if re_or(desc, r"intervienen l[oa]s", to_log=id):
+            return Category.CONFERENCE
         if desc.count("poesía") > 2:
             return Category.CONFERENCE
 
