@@ -149,7 +149,7 @@ class CaixaForum:
 
     def __find_img(self, div: MyTag):
         try:
-            nmg = div.select_one('figure img')
+            nmg = div.select_one('figure img, div.card-detail img')
         except WebException as e:
             logger.warning("Imagen no encontrada: " + str(e))
             return None
