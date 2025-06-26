@@ -48,11 +48,14 @@ def get_img_src(n: Tag):
     src = n.attrs.get('src')
     if not isinstance(src, str):
         return None
-    src = src.strip()
+    src = src.rstrip(" /").strip()
     if len(src) == 0:
         return None
     sch = src.split("://")[0].lower()
     if sch not in ("https", "http"):
+        return None
+    name = src.rsplit("/", 1)[-1]
+    if "." not in name:
         return None
     return src
 
