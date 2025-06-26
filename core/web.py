@@ -47,7 +47,7 @@ default_headers = {
     "Expires": "Thu, 01 Jan 1970 00:00:00 GMT",
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
-    'Accept-Encoding': 'gzip, deflate, br',
+    'Accept-Encoding': 'gzip, deflate',
     'DNT': '1',
     'Connection': 'keep-alive',
     'Upgrade-Insecure-Requests': '1',

@@ -15,11 +15,14 @@ months = ('ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 
 def get_img(*imgs: Union[None, Tag]):
     for n in imgs:
         src = n.attrs.get("src")
-        if src not in (
+        if src in (
             None,
             'https://entradasfilmoteca.gob.es//Contenido/ImagenesEspectaculos/00_4659/Lou-n',
             'https://entradasfilmoteca.gob.es//Contenido/ImagenesEspectaculos/00_5007/#Love.jpg'
         ):
+            continue
+        name = src.strip("/ ").rsplit("/")[-1]
+        if "." in name:
             return src
 
 
