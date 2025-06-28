@@ -106,7 +106,7 @@ class MadridDestino:
                 name=e['title'],
                 img=e['featuredImage']['url'],
                 price=e['highestPrice'],
-                duration=info['duration'],
+                duration=info['duration'] or 60,
                 category=self.__find_category(id, e, info),
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(url, e)
@@ -152,7 +152,7 @@ class MadridDestino:
             _id_ = id_session.get(dt)
             sessions.add(Session(
                 date=dt,
-                url=f"{url}/{_id_}/mapa" if _id_ else None
+                url=f"{url}/{_id_}" if _id_ else None
             ))
         return tuple(sorted(sessions, key=lambda s: s.date))
 
