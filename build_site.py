@@ -110,6 +110,10 @@ OK_CAT = (
 
 
 def myfilter(e: Event):
+    if e.place.name in (
+        "Espacio Abierto Quinta de los Molinos",
+    ):
+        return False
     if e.price > args.precio:
         return False
     if e.category not in OK_CAT:
