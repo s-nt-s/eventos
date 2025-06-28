@@ -9,7 +9,7 @@ from functools import cached_property
 from urllib.parse import quote_plus
 import re
 from datetime import date, datetime
-from core.web import Web, get_text
+from core.web import Web, get_text, Driver
 from core.filemanager import FM
 import logging
 from functools import cache
@@ -312,6 +312,25 @@ KO_IMG = (
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20JUNIO/CineVeranoRetiro25-001.jpg',
     'https://entradasfilmoteca.gob.es//Contenido/ImagenesEspectaculos/00_5077/Jazz%20On%20A%20Summer',
 )
+
+
+@cache
+def find_filmaffinity(title: str):
+    find_url = "https://www.filmaffinity.com/es/search.php?stext="+quote_plus(title)
+    WEB.get(find_url)
+    url, soup = WEB.url, WEB.soup
+    if WEB.response.status_code == 403:
+        with Driver(browser="firefox", wait=5) as f:
+            f.get(find_url)
+            f.wait_ready()
+            url = f.current_url
+            soup = f.get_soup()
+    if re_filmaffinity.match(url):
+        return url
+    lwtitle = title.lower()
+    for a in soup.select("div.mc-title a"):
+        if get_text(a).lower() == lwtitle:
+            return a.attrs["href"]
 
 
 @dataclass(frozen=True, order=True)
