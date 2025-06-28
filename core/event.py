@@ -14,6 +14,7 @@ from core.filemanager import FM
 import logging
 from functools import cache
 from .util import to_uuid
+from selenium.webdriver.common.by import By
 
 logger = logging.getLogger(__name__)
 
@@ -322,6 +323,7 @@ def find_filmaffinity(title: str):
     if WEB.response.status_code == 403:
         with Driver(browser="firefox", wait=5) as f:
             f.get(find_url)
+            f.safe_wait("div.mc-title a", by=By.CSS_SELECTOR)
             f.wait_ready()
             url = f.current_url
             soup = f.get_soup()
