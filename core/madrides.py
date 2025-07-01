@@ -619,7 +619,7 @@ class MadridEs:
             return Category.MUSIC
         if re_or(plain_name, "encuentro artistico", to_log=id):
             return Category.EXPO
-        if re_or(plain_name, "^cantando", to_log=id):
+        if re_or(plain_name, "^(cantando|banda municipal)", to_log=id):
             return Category.MUSIC
         if re_and(plain_name, "dialogos?", "mac"):
             return Category.CONFERENCE
