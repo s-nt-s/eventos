@@ -95,9 +95,11 @@ class MadridDestino:
                 continue
             if e['freeCapacity'] == 0:
                 continue
+            org = self.__find("organizations", e['organization_id'])
+            if org is None:
+                continue
             logger.debug("event.id="+str(e['id']))
             info = self.get_info(e['id'])
-            org = self.__find("organizations", e['organization_id'])
             url = MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
             id = "md"+str(e['id'])
             ev = Event(
@@ -186,7 +188,7 @@ class MadridDestino:
         for i in self.state[k]:
             if isinstance(i, dict) and i.get('id') == id:
                 return i
-        raise FieldNotFound(f"{k}.id={id}", self.state[k])
+        logger.warning(str(FieldNotFound(f"{k}.id={id}", self.state[k])))
 
     def __find_category(self, id: str, e: Dict, info: Dict):
         audience = plain_text(info['audience'])
