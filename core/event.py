@@ -317,6 +317,8 @@ KO_IMG = (
 
 @cache
 def find_filmaffinity(title: str):
+    title = re.sub(r"\s*\+\s*Coloquio\s*$", "", title, flags=re.IGNORECASE)
+    title = re.sub(r"\s*,\s+de\s+[A-ZÁÉÍÓÚÑÜ]+.*$", "", title)
     find_url = "https://www.filmaffinity.com/es/search.php?stext="+quote_plus(title)
     WEB.get(find_url)
     url, soup = WEB.url, WEB.soup
@@ -494,16 +496,9 @@ class Event:
         if "more" in fix_event:
             return fix_event["more"]
         if self.category == Category.CINEMA:
-            title = re.sub(r"\s*\+\s*Coloquio\s*$", "", self.title, flags=re.IGNORECASE)
-            title = re.sub(r"\s*,\s+de\s+[A-ZÁÉÍÓÚÑÜ]+.*$", "", title)
-            title = unquote(title)
-            WEB.get("https://www.filmaffinity.com/es/search.php?stext="+quote_plus(title))
-            if re_filmaffinity.match(WEB.url):
-                return WEB.url
-            lwtitle = title.lower()
-            for a in WEB.soup.select("div.mc-title a"):
-                if get_text(a).lower() == lwtitle:
-                    return a.attrs["href"]
+            furl = find_filmaffinity(self.title)
+            if furl:
+                return furl
         urls = self.__get_urls()
         for url in urls:
             dom = get_domain(url)
