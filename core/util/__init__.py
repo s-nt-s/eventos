@@ -435,6 +435,6 @@ def to_uuid(s: str):
 def uniq(*args: Union[str, None]):
     arr: List[str] = []
     for a in args:
-        if a not in (None, ''):
+        if a not in (None, '') and a not in arr:
             arr.append(a)
     return arr
