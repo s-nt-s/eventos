@@ -488,7 +488,10 @@ class MadridEs:
         name_tp = re.split(r"\s*[:'\"\-]", name)[0].lower()
         plain_name = plain_text(name)
         tp_name = plain_text(((plain_tp or "")+" "+plain_name).strip())
-        maybeSPAM = re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros", to_log=id)
+        maybeSPAM = any([
+            re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros", to_log=id),
+            re_and(plain_name, "actos? religios(os)?", ("santo rosario", "eucaristia", "procesion") to_log=id),
+        ])
         for ids, cat in self.__category.items():
             if id in ids:
                 if maybeSPAM and cat == Category.CONFERENCE:
@@ -633,6 +636,8 @@ class MadridEs:
             return Category.THEATER
         if re_or(desc, "itinerario .* kil[ó]metros", to_log=id, flags=re.IGNORECASE):
             return Category.SPORT
+        if re_or(plant_name, "actuacion", "vebena") and re_or(desc, "música", "concierto", "canciones", "pop", "rock", "baila", "bailable", "cantante", to_log=id, flags=re.IGNORECASE):
+            return Category.MUSIC
         if re_or(desc, "Concierto", to_log=id):
             return Category.MUSIC
         if re_or(desc, r"intervienen l[oa]s", to_log=id):
