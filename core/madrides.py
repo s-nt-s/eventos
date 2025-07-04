@@ -490,7 +490,7 @@ class MadridEs:
         tp_name = plain_text(((plain_tp or "")+" "+plain_name).strip())
         maybeSPAM = any([
             re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros", to_log=id),
-            re_and(plain_name, "actos? religios(os)?", ("santo rosario", "eucaristia", "procesion") to_log=id),
+            re_and(plain_name, "actos? religios(os)?", ("santo rosario", "eucaristia", "procesion"), to_log=id),
         ])
         for ids, cat in self.__category.items():
             if id in ids:
