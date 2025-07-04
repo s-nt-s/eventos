@@ -1,4 +1,4 @@
-from dataclasses import dataclass, asdict, fields
+from dataclasses import dataclass, asdict, fields, replace, is_dataclass
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set
 from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, re_or, get_main_value
 from core.util.madrides import find_more_url as find_more_url_madrides
@@ -15,6 +15,10 @@ import logging
 from functools import cache
 from .util import to_uuid
 from selenium.webdriver.common.by import By
+from core.dblite import DB
+from typing import TypeVar, Type
+
+T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +30,15 @@ MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", 
 re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
 
 WEB = Web()
+
+
+def new_dataclass(cls: Type[T], obj: dict) -> T:
+    if not is_dataclass(cls):
+        raise TypeError(f"{cls} no es un dataclass")
+    ks = tuple(f.name for f in fields(cls))
+    obj = {k: v for k, v in obj.items() if k in ks}
+    return cls(**obj)
+
 
 @cache
 def get_festivos(year: int):
@@ -151,11 +164,11 @@ class Category(IntEnum):
 
 
 class Session(NamedTuple):
-    url: str = None
+    url: Optional[str] = None
     date: str = None
 
     def merge(self, **kwargs):
-        return Session(**{**self._asdict(), **kwargs})
+        return self._replace(**kwargs)
 
     @staticmethod
     def build(*args, **kwargs):
@@ -261,7 +274,8 @@ def _clean_name(name: str, place: str):
             "A.I At War": "A.I. At War",
             "AI At War": "A.I. At War",
             "El sorprendente Dr.Clitterhouse": "El sorprendente Dr. Clitterhouse",
-            "El sorprendente Dr.Clitterhousem": "El sorprendente Dr. Clitterhouse"
+            "El sorprendente Dr.Clitterhousem": "El sorprendente Dr. Clitterhouse",
+            "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split("\s+", k))))+r"\s*$", v, name, flags=re.IGNORECASE)
         name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.IGNORECASE)
@@ -286,6 +300,8 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"^(Obra de teatro|Noches? de Clásicos?|21 Distritos)\s*[:\-]\s*", r"", name, flags=re.I)
         name = re.sub(r"Piano City (Madrid *'?\d+|Madrid|'?\d+)", r"Piano City", name, flags=re.I)
         name = re.sub(r"CinePlaza:.*?> (Proyección|Cine)[^:]*:\s+", "", name, flags=re.I)
+        #name = re.sub(r".*\bFCM\b.*\bSECCI[OÓ]N\b.*\bCORTOMETRAJES\b.*", "Festival de cine de Madrid: Cortometrajes", name, flags=re.I)
+        #name = re.sub(r"^Sesión de cortometrajes \d+$", "Cortometrajes", name, flags=re.I)
         name = unquote(name.strip(". "))
         if len(name) < 2:
             name = bak[-1]
@@ -337,7 +353,7 @@ def find_filmaffinity(title: str):
             return a.attrs["href"]
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class Event:
     id: str
     url: str
@@ -350,34 +366,56 @@ class Event:
     img: Optional[str] = None
     also_in: Tuple[str] = tuple()
     sessions: Tuple[Session] = tuple()
+    more: str = None
+
+    def __lt__(self, other):
+        if not isinstance(other, Event):
+            return NotImplemented
+        flds = fields(Event)
+        a = asdict(self)
+        b = asdict(other)
+        tp_a = tuple(a[f.name] for f in flds)
+        tp_b = tuple(b[f.name] for f in flds)
+        return tp_a < tp_b
+
+    def fix_type(self):
+        if self.category == Category.CINEMA:
+            return new_dataclass(Cinema, self._asdict())
+        return new_dataclass(Event, self._asdict())
 
     def __post_init__(self):
         new_name = _clean_name(self.name, self.place.name)
         if new_name != self.name:
             logger.debug(f"FIX: {new_name} <- {self.name}")
             object.__setattr__(self, 'name', new_name)
+        fix_event = FIX_EVENT.get(self.id, {})
         for f in fields(self):
-            v = getattr(self, f.name, None)
+            v = fix_event.get(f.name) or getattr(self, f.name, None)
             if isinstance(v, list):
-                object.__setattr__(self, f.name, tuple(v))
+                v = tuple(v)
             elif isinstance(v, str) and len(v) == 0:
-                object.__setattr__(self, f.name, None)
+                v = None
+            object.__setattr__(self, f.name, v)
 
     def fix(self, **kwargs):
         for k, v in kwargs.items():
             if v is not None:
                 object.__setattr__(self, k, v)
         for f in fields(self):
-            self.__fix_field(f.name)
+            self._fix_field(f.name)
+        if self.url is None and get_domain(self.more) == "madrid.es":
+            object.__setattr__(self, "url", self.more)
+            object.__setattr__(self, "more", None)
         return self
 
-    def __fix_field(self, name: str):
+    def _fix_field(self, name: str, fnc=None):
         fix_event = FIX_EVENT.get(self.id, {})
         old_val = getattr(self, name, None)
         if name in fix_event:
             fix_val = fix_event[name]
         else:
-            fnc = getattr(self, f'_fix_{name}', None)
+            if fnc is None:
+                fnc = getattr(self, f'_fix_{name}', None)
             if fnc is None or not callable(fnc):
                 return
             fix_val = fnc()
@@ -405,12 +443,6 @@ class Event:
         if self.more and self.more not in urls:
             yield self.more
 
-    def _fix_url(self):
-        if self.url:
-            return self.url
-        if get_domain(self.more) == "madrid.es":
-            return self.__dict__.pop("more")
-
     def _fix_name(self):
         if self.name is not None:
             return self.name
@@ -424,7 +456,7 @@ class Event:
         if self.img not in ko:
             return self.img
         for url in self.iter_urls():
-            src = self.__get_img_from_url(url)
+            src = self._get_img_from_url(url)
             if src not in ko:
                 return src
 
@@ -449,22 +481,18 @@ class Event:
                 return Category.CHILDISH
         return self.category
 
-    def __get_img_from_url(self, url: str):
+    def _get_img_from_url(self, url: str):
         if url is None:
             return None
         if get_domain(url) == "madrid.es":
             soup = WEB.get_cached_soup(url)
-            for src in map(get_img_src, soup.select("div.image-content img, div.tramites-content div.tiny-text img")):
+            nodes = soup.select("div.image-content img, div.tramites-content div.tiny-text img, div.detalle img")
+            for src in map(get_img_src, nodes):
                 if src:
                     return src
-        if re_filmaffinity.match(url):
-            soup = WEB.get_cached_soup(self.more)
-            img = get_img_src(soup.select_one("#right-column a.lightbox img"))
-            if img:
-                return img
 
     def merge(self, **kwargs):
-        return Event(**{**asdict(self), **kwargs})
+        return replace(self, **kwargs)
 
     @staticmethod
     def build(*args, **kwargs):
@@ -477,7 +505,12 @@ class Event:
             obj['place'] = Place.build(obj['place'])
         if isinstance(obj['sessions'], (list, tuple)) and len(obj['sessions']) > 0 and isinstance(obj['sessions'][0], dict):
             obj['sessions'] = tuple(map(Session.build, obj['sessions']))
-        return Event(**obj)
+        for k, v in list(obj.items()):
+            if isinstance(v, list):
+                obj[k] = tuple(v)
+        if obj["category"] == Category.CINEMA:
+            return new_dataclass(Cinema, obj)
+        return new_dataclass(Event, obj)
 
     @cached_property
     def title(self):
@@ -490,15 +523,9 @@ class Event:
                 txt = _txt
         return txt
 
-    @cached_property
-    def more(self):
-        fix_event = FIX_EVENT.get(self.id, {})
-        if "more" in fix_event:
-            return fix_event["more"]
-        if self.category == Category.CINEMA:
-            furl = find_filmaffinity(self.title)
-            if furl:
-                return furl
+    def _fix_more(self):
+        if self.more:
+            return self.more
         urls = self.__get_urls()
         for url in urls:
             dom = get_domain(url)
@@ -578,7 +605,7 @@ class Event:
         return asdict(self)
 
     @staticmethod
-    def fusion(*events: "Event"):
+    def fusion(*events: "Event", firstEventUrl: bool = False):
         if len(events) == 0:
             raise ValueError("len(events)==0")
         if len(events) == 1:
@@ -599,7 +626,11 @@ class Event:
                 imgs.append(e.img)
             for s in e.sessions:
                 sessions.add(s)
-                sessions_with_url.add(s._replace(url=e.url))
+                if firstEventUrl:
+                    s = s._replace(url=e.url or s.url)
+                else:
+                    s = s._replace(url=s.url or e.url)
+                sessions_with_url.add(s)
             seen_in.add(e.url)
             for u in e.also_in:
                 seen_in.add(u)
@@ -618,3 +649,84 @@ class Event:
             category=get_main_value(categories, default=Category.UNKNOWN),
             sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
         )
+
+
+@dataclass(frozen=True)
+class Cinema(Event):
+    year: int = None
+    director: tuple[str, ...] = tuple()
+    aka: tuple[str, ...] = tuple()
+    imdb: str = None
+    filmaffinity: int = None
+    shorts: bool = None
+
+    def fix(self, **kwargs):
+        self._fix_field('shorts')
+        self._fix_field('imdb', self.__find_imdb)
+        super().fix(**kwargs)
+        return self
+
+    def get_full_aka(self):
+        aka = [self.name]
+        for t in (self.aka or []):
+            if t not in aka:
+                aka.append(t)
+        m = re.match(r"^([^\(\)]+) \(([^\(\)\d]+)\)$", self.name)
+        if m:
+            for t in m.groups():
+                if t not in aka:
+                    aka.append(t)
+        return tuple(aka)
+
+    def __find_imdb(self):
+        if self.shorts:
+            return None
+        for t in self.get_full_aka():
+            imdb = DB.search_imdb_id(
+                t,
+                year=self.year,
+                director=self.director,
+                duration=self.duration
+            )
+            if imdb:
+                return imdb
+
+    def _fix_filmaffinity(self) -> int:
+        if self.filmaffinity or self.imdb is None:
+            return self.filmaffinity
+        return DB.one("select filmaffinity from EXTRA where movie = ?", self.imdb)
+
+    def _fix_shorts(self):
+        if isinstance(self.shorts, bool):
+            return self.shorts
+        if re.search(r"\b(cortometrajes?)\b", self.name, flags=re.I):
+            return True
+
+    def _fix_more(self):
+        if self.more:
+            return self.more
+        if self.filmaffinity:
+            return f"https://www.filmaffinity.com/es/film{self.filmaffinity}.html"
+        if self.imdb:
+            return f"https://www.imdb.com/es-es/title/{self.imdb}"
+        return super()._fix_more()
+
+    def _fix_duration(self):
+        imdb_duration = None
+        if self.imdb:
+            imdb_duration = DB.one("select duration from MOVIE where id = ?", self.imdb)
+        if imdb_duration is not None and (self.duration or 0) < imdb_duration:
+            return imdb_duration
+        return self.duration
+
+    def _get_img_from_url(self, url: str):
+        img = super()._get_img_from_url(url)
+        if img is not None:
+            return img
+        if url is None:
+            return None
+        if re_filmaffinity.match(url):
+            soup = WEB.get_cached_soup(url)
+            img = get_img_src(soup.select_one("#right-column a.lightbox img"))
+            if img:
+                return img

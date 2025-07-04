@@ -1,10 +1,12 @@
+import stat
 import os
+from os.path import join, dirname, isfile
 import re
 import time
 from urllib.parse import parse_qsl, urljoin, urlsplit
-from typing import List, Tuple, Dict
 import json
 from functools import cache
+import cloudscraper
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -16,7 +18,8 @@ from selenium import webdriver
 from selenium.common.exceptions import (ElementNotInteractableException,
                                         ElementNotVisibleException,
                                         StaleElementReferenceException,
-                                        TimeoutException, WebDriverException)
+                                        TimeoutException, WebDriverException,
+                                        JavascriptException)
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options as CMoptions
 from selenium.webdriver.common.by import By
@@ -29,6 +32,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 import logging
 from typing import Union
+from core.util import get_domain
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +49,9 @@ default_headers = {
     "Cache-Control": "no-cache",
     "Pragma": "no-cache",
     "Expires": "Thu, 01 Jan 1970 00:00:00 GMT",
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
-    'Accept-Encoding': 'gzip, deflate',
+    'Accept-Encoding': 'gzip, deflate, br',
     'DNT': '1',
     'Connection': 'keep-alive',
     'Upgrade-Insecure-Requests': '1',
@@ -64,7 +68,7 @@ def get_query(url):
 def iterhref(soup: BeautifulSoup):
     """Recorre los atributos href o src de los tags"""
     n: Tag
-    for n in soup.findAll(["img", "form", "a", "iframe", "frame", "link", "script", "input"]):
+    for n in soup.find_all(["img", "form", "a", "iframe", "frame", "link", "script", "input"]):
         attrs = ("href", ) if n.name in ("a", "link") else ("src", "data-src")
         if n.name == "form":
             attrs = ("action", )
@@ -102,8 +106,8 @@ def get_text(node: Tag, default: str = None):
     return txt
 
 
-def refind(tag: Tag, slc: str, rgx: str) -> Tuple[Tag]:
-    arr: List[Tag] = []
+def refind(tag: Tag, slc: str, rgx: str) -> tuple[Tag]:
+    arr: list[Tag] = []
     for n in tag.select(slc):
         txt = n.get_text().strip()
         if re.match(rgx, txt):
@@ -117,33 +121,52 @@ class WebException(Exception):
 
 class Web:
     def __init__(self, refer=None, verify=True):
-        self.s = requests.Session()
+        self.s = cloudscraper.create_scraper()
         self.s.headers = default_headers
         self.response = None
         self.soup = None
         self.form = None
-        self.refer = refer
         self.verify = verify
+        self.__alt: dict[str, requests.Session] = {
+            "madrid.es": Driver.to_session("firefox", "https://www.madrid.es", cloudscraper.create_scraper())
+        }
+        self.__refer: dict[str, str] = {}
+        r_dom = get_domain(refer)
+        if r_dom in self.__alt:
+            self.__refer[r_dom] = refer
+        else:
+            self.refer = refer
 
     def _get(self, url, allow_redirects=True, auth=None, **kwargs):
+        session = self.__alt.get(get_domain(url)) or self.s
+        verify = kwargs.get('verify', self.verify)
         if kwargs:
-            return self.s.post(url, data=kwargs, allow_redirects=allow_redirects, verify=self.verify, auth=auth)
-        return self.s.get(url, allow_redirects=allow_redirects, verify=self.verify, auth=auth)
+            return session.post(url, data=kwargs, allow_redirects=allow_redirects, verify=verify, auth=auth)
+        return session.get(url, allow_redirects=allow_redirects, verify=verify, auth=auth)
 
     def get_soup(self, url, auth=None, parser="lxml", **kwargs):
         r = self._get(url, auth=auth, **kwargs)
         return buildSoup(url, r.content, parser=parser)
 
     def get(self, url, auth=None, parser="lxml", **kwargs):
-        if self.refer:
+        u_dom = get_domain(url)
+        refer = self.__refer.get(u_dom) if u_dom in self.__alt else self.refer
+        if u_dom in self.__alt:
+            refer = self.__refer.get(u_dom)
+            if refer:
+                self.__alt[u_dom].headers.update({'referer': refer})
+        elif self.refer:
             self.s.headers.update({'referer': self.refer})
         self.response = self._get(url, auth=auth, **kwargs)
-        self.refer = self.response.url
+        if u_dom in self.__alt:
+            self.__refer[u_dom] = self.response.url
+        else:
+            self.refer = self.response.url
         self.soup = buildSoup(url, self.response.content, parser=parser)
         return self.soup
 
     def prepare_submit(self, slc, silent_in_fail=False, **kwargs):
-        data: Dict[str, Union[str, int, float, None]] = {}
+        data: dict[str, Union[str, int, float, None]] = {}
         self.form = self.soup.select_one(slc)
         if silent_in_fail and self.form is None:
             return None, None
@@ -219,7 +242,7 @@ class Web:
             raise WebException(f"{slc} IS EMPTY in {self.url}")
         return txt
 
-    def select_one_json(self, slc: str) -> Union[Dict, List]:
+    def select_one_json(self, slc: str) -> Union[dict, list]:
         txt = self.select_one_txt(slc)
         try:
             return json.loads(txt)
@@ -284,7 +307,7 @@ class MyTag:
             raise ex
         return txt
 
-    def select_one_json(self, slc: str) -> Union[Dict, List]:
+    def select_one_json(self, slc: str) -> Union[dict, list]:
         txt = self.select_one_txt(slc)
         try:
             return json.loads(txt)
@@ -298,7 +321,7 @@ class MyTag:
         return nds
 
     def select_txt(self, slc: str):
-        arr: List[str] = []
+        arr: list[str] = []
         for txt in map(get_text, self.select(slc)):
             if txt:
                 arr.append(txt)
@@ -313,6 +336,7 @@ class MyTag:
     @property
     def node(self):
         return self.__node
+
 
 FF_DEFAULT_PROFILE = {
     "browser.tabs.drawInTitlebar": True,
@@ -333,13 +357,21 @@ class Driver:
                         path+" --version",
                         PATTERN[ChromeType.CHROMIUM]
                     )
-            Driver.DRIVER_PATH = ChromeDriverManager(
+            path = ChromeDriverManager(
                 driver_version=get_version("/usr/bin/chromium"),
                 chrome_type=ChromeType.CHROMIUM
             ).install()
+            aux = join(dirname(path), 'chromedriver')
+            if isfile(aux):
+                path = aux
+            if not os.access(path, os.X_OK):
+                p = os.stat(path).st_mode
+                p = p | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+                os.chmod(path, p)
+            Driver.DRIVER_PATH = path
         return Driver.DRIVER_PATH
 
-    def __init__(self, browser=None, wait=60, useragent=None):
+    def __init__(self, browser="firefox", wait=60, useragent=None):
         # Driver.find_driver_path()
         self._driver: WebDriver = None
         self.visible = (os.environ.get("DRIVER_VISIBLE") == "1")
@@ -355,7 +387,8 @@ class Driver:
 
     def _create_firefox(self):
         options = FFoptions()
-        options.headless = not self.visible
+        if not self.visible:
+            options.add_argument("--headless")
         profile = webdriver.FirefoxProfile()
         if self.useragent:
             profile.set_preference(
@@ -364,8 +397,8 @@ class Driver:
             profile.set_preference(k, v)
             profile.DEFAULT_PREFERENCES['frozen'][k] = v
         profile.update_preferences()
-        driver = webdriver.Firefox(
-            options=options, firefox_profile=profile)
+        options.profile = profile
+        driver = webdriver.Firefox(options=options)
         driver.maximize_window()
         driver.implicitly_wait(5)
         return driver
@@ -405,7 +438,7 @@ class Driver:
         driver.implicitly_wait(5)
         return driver
 
-    def get_dirver(self):
+    def get_dirver(self) -> WebDriver:
         if self._driver is None:
             crt = getattr(self, "_create_" + str(self.browser), None)
             if crt is None:
@@ -498,12 +531,12 @@ class Driver:
         else:
             wait.until(ec.visibility_of_element_located((by, id)))
         if by == By.CLASS_NAME:
-            return self._driver.find_element_by_class_name(id)
+            return self._driver.find_element(By.CLASS_NAME, id)
         if by == By.CSS_SELECTOR:
-            return self._driver.find_element_by_css_selector(id)
+            return self._driver.find_element(By.CSS_SELECTOR, id)
         if by == By.XPATH:
-            return self._driver.find_element_by_xpath(id)
-        return self._driver.find_element_by_id(id)
+            return self._driver.find_element(By.XPATH, id)
+        return self._driver.find_element(By.ID, id)
 
     def waitjs(self, js: str, val=True, seconds=None):
         if seconds is None:
@@ -548,8 +581,11 @@ class Driver:
         if isinstance(n, str):
             n = self.wait(n, **kvarg)
         if n.is_displayed():
-            ActionChains(self._driver).move_to_element(n).click(n).perform()
-            # n.click()
+            self._driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", n)
+            try:
+                ActionChains(self._driver).move_to_element(n).click(n).perform()
+            except JavascriptException:
+                n.click()
         else:
             n.send_keys(Keys.RETURN)
         return True
@@ -586,7 +622,8 @@ class Driver:
         if session is None:
             session = requests.Session()
         for cookie in self._driver.get_cookies():
-            session.cookies.set(cookie['name'], cookie['value'])
+            session.cookies.set(cookie['name'], cookie['value'], domain=cookie.get("domain"))
+        session.headers.update({"User-Agent": self._driver.execute_script("return navigator.userAgent;")})
         return session
 
     def wait_ready(self):
@@ -601,6 +638,12 @@ class Driver:
         with open(file, "r") as f:
             js = f.read()
         return self.execute_script(js)
+
+    @staticmethod
+    def to_session(browser: str, url: str, session: requests.Session = None):
+        with Driver(browser=browser) as d:
+            d.get(url)
+            return d.pass_cookies(session)
 
 
 WEB = Web()

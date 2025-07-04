@@ -13,7 +13,7 @@ def myhash(s: str) -> str:
 
 
 class Cache:
-    def __init__(self, file: str, *args, kwself=None, reload: bool = False, skip: bool = False, maxOld=1, loglevel=None, **kwargs):
+    def __init__(self, file: str, *args, kwself=None, reload: bool = False, skip: bool = False, maxOld=3, loglevel=None, **kwargs):
         self.file = file
         self.func = None
         self.reload = reload

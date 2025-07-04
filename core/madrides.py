@@ -1,4 +1,4 @@
-from .web import Web, WebException, WEB
+from .web import Web, WebException, WEB, Driver
 from bs4 import Tag, BeautifulSoup
 import re
 from typing import Set, Dict, List, Tuple, Union
@@ -13,6 +13,7 @@ from urllib.parse import urlparse, parse_qs
 from functools import cached_property, cache
 from collections import defaultdict
 from core.util.madrides import find_more_url
+from html import unescape
 
 
 logger = logging.getLogger(__name__)
@@ -31,10 +32,14 @@ def safe_get_text(n: Tag):
 
 
 def get_text(n: Tag):
+    if n is None:
+        return None
     t = n.get_text()
     t = re_sp.sub(" ", t)
     t = re.sub(r'[“”]', '"', t)
-    return t.strip()
+    t = t.strip()
+    if len(t):
+        return t
 
 
 def clean_lugar(s: str):
@@ -148,8 +153,8 @@ class MadridEs:
     def __category(self):
         action, data_form = self.prepare_search()
         category: Dict[Category, Set[str]] = defaultdict(set)
-        tipos = {plain_text(v): k for k, v in self.tipos.items()}
-        usuarios = {plain_text(v): k for k, v in self.usuarios.items()}
+        tipos = {plain_text(unescape(v)): k for k, v in self.tipos.items()}
+        usuarios = {plain_text(unescape(v)): k for k, v in self.usuarios.items()}
 
         def _set_cats(key: str, data_key: Dict[str, str], data_cat: Dict[Category, Tuple[str, ...]]):
             data_val: Set[str] = set()
@@ -267,14 +272,21 @@ class MadridEs:
     def get(self, url, *args, **kwargs) -> BeautifulSoup:
         if self.w.url != url:
             logger.debug(url)
-            return self.w.get(url, *args, **kwargs)
+            self.w.get(url, *args, **kwargs)
+        title = get_text(self.w.soup.select_one("title"))
+        if title == "Access Denied":
+            body = get_text(self.w.soup.select_one("body"))
+            body = re.sub(r"^Access Denied\s+", "", body or "")
+            raise ValueError(f"{url} {title} {body}".strip())
         return self.w.soup
 
     @cache
     def __get_description(self, url: str):
-        w = Web()
-        w.get(url)
-        txt = get_text(w.select_one("div.tramites-content div.tiny-text"))
+        WEB.get_cached_soup(url)
+        n = WEB.soup.select_one("div.tramites-content div.tiny-text")
+        if n is None:
+            return None
+        txt = get_text(n)
         return txt
 
     @property
@@ -330,8 +342,6 @@ class MadridEs:
             cat = self.__find_category(id, div, url_event)
             if cat is None:
                 continue
-            if duration is None:
-                duration = 120 if cat == Category.CINEMA else 60
             ev = Event(
                 id=id,
                 url=url_event,
@@ -488,7 +498,10 @@ class MadridEs:
         name_tp = re.split(r"\s*[:'\"\-]", name)[0].lower()
         plain_name = plain_text(name)
         tp_name = plain_text(((plain_tp or "")+" "+plain_name).strip())
-        maybeSPAM = re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros", to_log=id)
+        maybeSPAM = any([
+            re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros", to_log=id),
+            re_and(plain_name, "actos? religios(os)?", ("santo rosario", "eucaristia", "procesion"), to_log=id),
+        ])
         for ids, cat in self.__category.items():
             if id in ids:
                 if maybeSPAM and cat == Category.CONFERENCE:
@@ -516,7 +529,7 @@ class MadridEs:
             return Category.EXPO
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
-        if re_or(name_tp, r"^conferencias?$", to_log=id):
+        if re_or(name_tp, r"^conferencias?$", r"^pregon$", to_log=id):
             return Category.CONFERENCE
         if re_or(name_tp, r"^conciertos?$", to_log=id):
             return Category.MUSIC
@@ -584,6 +597,7 @@ class MadridEs:
             "^salida multiaventura",
             r"(paseo|itinerario) ornitologico",
             r"^entreparques",
+            ("deportes?", "torneo"),
             to_log=id
         ):
             return Category.SPORT
@@ -633,12 +647,14 @@ class MadridEs:
             return Category.THEATER
         if re_or(desc, "itinerario .* kil[ó]metros", to_log=id, flags=re.IGNORECASE):
             return Category.SPORT
+        if re_or(plain_name, "actuacion", "verbena") and re_or(desc, "música", "concierto", "canciones", "pop", "rock", "baila", "bailable", "cantante", " d[ée]cada prodigiosa", to_log=id, flags=re.IGNORECASE):
+            return Category.MUSIC
         if re_or(desc, "Concierto", to_log=id):
             return Category.MUSIC
         if re_or(desc, r"intervienen l[oa]s", to_log=id):
             return Category.CONFERENCE
-        if desc.count("poesía") > 2:
-            return Category.CONFERENCE
+        if desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", flags=re.I):
+            return Category.POETRY
 
         if re_and(lg, "ambiental", ("casa de campo", "retiro"), to_log=id):
             return Category.VISIT

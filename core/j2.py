@@ -221,14 +221,14 @@ class Jnj2():
             return html
         html = minify(
             html,
-            do_not_minify_doctype=True,
-            ensure_spec_compliant_unquoted_attribute_values=True,
-            keep_spaces_between_attributes=True,
             keep_html_and_head_opening_tags=True,
             keep_closing_tags=True,
             minify_js=True,
             minify_css=True,
-            remove_processing_instructions=True
+            remove_processing_instructions=True,
+            minify_doctype=False,
+            allow_noncompliant_unquoted_attribute_values=False,
+            allow_removing_spaces_between_attributes=False
         )
         blocks = ("html", "head", "body", "style", "script", "meta", "p", "div", "main", "header", "footer", "table", "tr", "tbody", "thead", "tfoot" "ol", "li", "ul", "h1", "h2", "h3", "h4", "h5", "h6")
         html = re.sub(r"<(" + "|".join(blocks) + "\b)([^>]*)>", r"\n<\1\2>\n", html)

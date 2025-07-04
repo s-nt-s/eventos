@@ -5,9 +5,10 @@ import logging
 import json
 from .web import Web, WebException
 from .cache import Cache, TupleCache
-from .event import Event, Session, Place, Category, FieldNotFound
+from .event import Event, Session, Place, Category, FieldNotFound, Cinema
 from .filemanager import FM
 from .util import re_or, re_and
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +101,7 @@ class CineEntradas:
         city = dt['city']['urlSlug']
         root = f"https://cine.entradas.com/cine/{city}/{cinema}"
         logger.debug(root)
+
         def __get(slc: str, *urls):
             w = Web()
             for i, url in enumerate(urls):
@@ -168,7 +170,7 @@ class CineEntradas:
             elif re_and(name.lower(), "conciertos", ("territorios", "jazz", "duo", "trio", "charla"), to_log=id):
                 category = Category.MUSIC
             root = f"https://cine.entradas.com/cine/{city}/{cinema}"
-            events.add(Event(
+            e = Event(
                 id=id,
                 url=f"{root}/sesiones?showGroups={movie}",
                 name=name,
@@ -181,7 +183,8 @@ class CineEntradas:
                     address=f"{self.info['address']}"
                 ),
                 sessions=self.__find_sessions(root, i['shows']['data'])
-            ))
+            )
+            events.add(e)
         return tuple(sorted(events))
 
     def __find_sessions(self, root: str, shows: List[Dict]):
@@ -196,6 +199,6 @@ class CineEntradas:
 
 if __name__ == "__main__":
     from .log import config_log
-    import json
+
     config_log("log/cineentradas.log", log_level=(logging.DEBUG))
     print(CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).events)

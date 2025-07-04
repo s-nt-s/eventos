@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-from core.event import Event, Category, Session, Place
+from core.event import Event, Category, Session, Place, Cinema
 from core.ics import IcsEvent
 from core.casaencendida import CasaEncendida
 from core.dore import Dore
 from core.madriddestino import MadridDestino
-from core.cineentradas import CineEntradas
+from core.salaberlanga import SalaBerlanga
 from core.salaequis import SalaEquis
 from core.casaamerica import CasaAmerica
 from core.academiacine import AcademiaCine
@@ -16,7 +16,7 @@ from core.j2 import Jnj2, toTag
 from datetime import datetime, timedelta
 from core.log import config_log
 from core.img import MyImage
-from core.util import dict_add, get_domain, to_datetime, uniq
+from core.util import dict_add, get_domain, to_datetime, uniq, to_uuid
 import logging
 from os import environ
 from os.path import isfile
@@ -139,6 +139,7 @@ def sorted_and_fix(eventos: List[Event]):
     def _iter_fix(eventos: List[Event]):
         done: set[Event] = set()
         for e in eventos:
+            e = e.fix_type()
             e = e.fix(publish=PUBLISH.get(e.id))
             if e not in done:
                 done.add(e)
@@ -158,10 +159,27 @@ def sorted_and_fix(eventos: List[Event]):
             ok_events = ok_events.union(evs)
             continue
         _id_ = MadridEs.get_id(more)
-        e = Event.fusion(*evs).merge(
+        e = Event.fusion(*evs, firstEventUrl=False).merge(
             name=None,
             id=_id_,
             url=more,
+        ).fix(publish=PUBLISH.get(_id_))
+        ok_events.add(e)
+    data: Dict[Tuple[Place, int], Set[Event]] = defaultdict(set)
+    for e in tuple(ok_events):
+        if isinstance(e, Cinema) and len(e.sessions) == 1 and e.shorts:
+            data[(e.place, e.price)].add(e)
+            ok_events.remove(e)
+    for cortos in data.values():
+        if len(cortos) == 1:
+            ok_events.add(cortos.pop())
+            continue
+        _id_ = to_uuid("".join(e.id for e in cortos))
+        e = Event.fusion(*cortos, firstEventUrl=True).merge(
+            name="Cortometrajes",
+            id=_id_,
+            url=None,
+            more=None
         ).fix(publish=PUBLISH.get(_id_))
         ok_events.add(e)
     arr1 = sorted(
@@ -173,10 +191,10 @@ def sorted_and_fix(eventos: List[Event]):
 
 logger.info("Recuperar eventos")
 eventos = \
-    MadridDestino().events + \
     Dore().events + \
+    MadridDestino().events + \
     CasaEncendida().events + \
-    CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).events + \
+    SalaBerlanga().events + \
     SalaEquis().events + \
     CasaAmerica().events + \
     AcademiaCine().events + \
@@ -212,7 +230,7 @@ def event_to_ics(e: Event, s: Session):
         uniq(e.url, *e.also_in, s.url, e.more)
     )).strip()
     dtstart = to_datetime(s.date)
-    dtend = dtstart + timedelta(minutes=e.duration)
+    dtend = dtstart + timedelta(minutes=(e.duration or 120))
     return IcsEvent(
         uid=f"{e.id}_{s.id}",
         dtstamp=NOW,
@@ -248,7 +266,7 @@ logger.info("Creando web")
 def set_icons(html: str, **kwargs):
     a: bs4.Tag
     soup = bs4.BeautifulSoup(html, 'html.parser')
-    for a in soup.findAll("a", string=re.compile(r"\s*🔗\s*")):
+    for a in soup.find_all("a", string=re.compile(r"\s*🔗\s*")):
         txt = a.get_text().strip()
         href = a.attrs["href"]
         dom = get_domain(href)
@@ -327,6 +345,6 @@ EventosRss(
     eventos=eventos
 ).save("eventos.rss")
 
-FM.dump(OUT+"eventos.json", eventos)
+FM.dump(OUT+"eventos.json", eventos, compact=True)
 FM.dump(OUT+"publish.json", PUBLISH)
 logger.info("Fin")

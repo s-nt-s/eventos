@@ -9,6 +9,11 @@ from functools import cached_property, cache
 from os.path import isfile
 from core.web import Driver
 from selenium.webdriver.common.by import By
+import warnings
+from core.util import get_domain
+from time import sleep
+
+warnings.filterwarnings("ignore", module="PIL")
 
 logger = logging.getLogger(__name__)
 
@@ -100,11 +105,16 @@ class MyImage:
         return None
 
     def __get(self, url: str):
-        r = requests.get(url)
-        if r.status_code != 403 and r.content:
-            return BytesIO(r.content)
+        isSalaBerlanga = get_domain(url) == "salaberlanga.com"
+        if not isSalaBerlanga:
+            r = requests.get(url)
+            if r.status_code != 403 and r.content:
+                return BytesIO(r.content)
         with Driver(browser="firefox") as f:
             f.get(url)
+            f.wait_ready()
+            if isSalaBerlanga:
+                sleep(6)
             img = f.safe_wait("img", by=By.CSS_SELECTOR)
             if img:
                 return BytesIO(img.screenshot_as_png)

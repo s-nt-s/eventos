@@ -3,7 +3,7 @@ from .cache import TupleCache
 from typing import Set
 from functools import cached_property
 import logging
-from .event import Event, Place, Session, Category, FieldNotFound, CategoryUnknown
+from .event import Cinema, Event, Place, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from datetime import datetime
 from .util import plain_text, re_or
@@ -99,7 +99,7 @@ class AcademiaCine(Web):
         td = self.soup.find("td", string=re.compile(r"^\s*\d+\s+minutos\s*$"))
         if td is None:
             logger.warning(str(FieldNotFound("duration", self.url)))
-            return 60
+            return None
         txt = get_text(td)
         return int(txt.split()[0])
 

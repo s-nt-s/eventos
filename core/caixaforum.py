@@ -154,6 +154,9 @@ class CaixaForum:
             logger.warning("Imagen no encontrada: " + str(e))
             return None
         img = nmg.attrs.get("data-src") or nmg.attrs.get("src")
+        if img is None:
+            logger.warning("Imagen sin data-src o src: " + str(nmg))
+            return None
         img = re.sub(r"(\.jpe?g)/.*$", r"\1", img)
         return img
 

@@ -5,7 +5,7 @@ from functools import cached_property, cache
 import logging
 from .cache import Cache
 import json
-from .event import Event, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown
+from .event import Event, Cinema, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown
 from .cache import TupleCache
 from datetime import datetime
 import re
@@ -108,17 +108,46 @@ class MadridDestino:
                 name=e['title'],
                 img=e['featuredImage']['url'],
                 price=e['highestPrice'],
-                duration=info['duration'] or 60,
+                duration=info['duration'],
                 category=self.__find_category(id, e, info),
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(url, e)
             )
-            if all(s.url for s in ev.sessions):
-                new_url = find_more_url_madriddestino(ev.url)
-                if new_url:
-                    ev = ev.merge(url=new_url)
+            ev = self.__complete(ev, info)
             events.add(ev)
         return tuple(sorted(events))
+
+    def __complete(self, ev: Event, info: dict):
+        ev = ev.fix_type()
+        original_url = str(ev.url)
+        if all(s.url for s in ev.sessions):
+            new_url = find_more_url_madriddestino(original_url)
+            if new_url:
+                ev = ev.merge(url=new_url)
+        if not isinstance(ev, Cinema):
+            return ev
+        new_url = find_more_url_madriddestino(original_url)
+        if new_url and new_url.startswith("https://www.cinetecamadrid.com/programacion/"):
+            soup = WEB.get_cached_soup(new_url)
+            director: list[str] = []
+            dir_txt = get_text(soup.select_one("div.field--name-field-director")) or ''
+            for d in map(str.strip, re.split(r", ", dir_txt)):
+                if d not in ('', 'Varios/as directores/as', 'Varios/as autores/as', 'Varias autoras') and d not in director:
+                    director.append(d)
+            year = get_text(soup.select_one("div.field--name-field-ano-filmacion"))
+            ev = ev.merge(
+                director=tuple(director),
+                year=int(year) if year and year.isdecimal() else None
+            )
+        if not ev.director:
+            director: list[str] = []
+            for d in map(str.strip, re.findall(r"\b[Dd]irigida por( [A-Z][a-z]+(?: [A-Z][a-z]+))", info['description'])):
+                if d and d not in director:
+                    director.append(d)
+            ev = ev.merge(
+                director=tuple(director)
+            )
+        return ev
 
     def __find_place(self, e: Dict):
         space_id = set()
@@ -296,4 +325,5 @@ class MadridDestino:
 if __name__ == "__main__":
     from .log import config_log
     config_log("log/madriddestino.log", log_level=(logging.DEBUG))
-    print(MadridDestino().events)
+    evs = MadridDestino().events
+    #print(evs)

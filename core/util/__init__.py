@@ -1,7 +1,6 @@
 import re
 from typing import List, Dict, Union, Set, Tuple, Optional
 from bs4 import Tag, BeautifulSoup
-from minify_html import minify
 import unicodedata
 import requests
 import logging
@@ -20,6 +19,8 @@ UUID_NAMESPACE = uuid.UUID('00000000-0000-0000-0000-000000000000')
 T = TypeVar('T')
 
 logger = logging.getLogger(__name__)
+
+MONTH = ('ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic')
 
 re_sp = re.compile(r"\s+")
 
@@ -124,59 +125,6 @@ def clean_html(html: str):
                flags=re.MULTILINE | re.DOTALL | re.UNICODE)
     h = r.sub(r"\n", h)
     return h
-
-
-def simplify_html(html: str):
-    while True:
-        new_html = __simplify_html(html)
-        if new_html == html:
-            return new_html
-        html = new_html
-
-
-def __simplify_html(html: str):
-    html = re_sp.sub(" ", html)
-    html = minify(
-        html,
-        do_not_minify_doctype=True,
-        ensure_spec_compliant_unquoted_attribute_values=True,
-        keep_spaces_between_attributes=True,
-        keep_html_and_head_opening_tags=True,
-        keep_closing_tags=True,
-        minify_js=True,
-        minify_css=True,
-        remove_processing_instructions=True
-    )
-    blocks = ("html", "head", "body", "style", "script", "meta", "p", "div", "main", "header", "footer",
-              "table", "tr", "tbody", "thead", "tfoot" "ol", "li", "ul", "h1", "h2", "h3", "h4", "h5", "h6")
-    html = re.sub(r"<(" + "|".join(blocks) +
-                  "\b)([^>]*)>", r"\n<\1\2>\n", html)
-    html = re.sub(r"</(" + "|".join(blocks) + ")>", r"\n</\1>\n", html)
-    html = re.sub(r"\n\n+", r"\n", html).strip()
-    soup = BeautifulSoup("<faketag>"+html+"<faketag>", "html.parser")
-    for n in soup.findAll(["span", "font"]):
-        n.unwrap()
-    for a in soup.findAll("a"):
-        href = a.attrs.get("href")
-        if href in (None, "", "#"):
-            a.unwrap()
-    useful = ("href", "src", "alt", "title")
-    for n in tuple(soup.select(":scope *")):
-        if n.attrs:
-            n.attrs = {k: v for k, v in n.attrs.items() if k in useful}
-    for n in soup.findAll(block + inline):
-        chls = n.select(":scope > *")
-        if len(chls) != 1:
-            continue
-        c = chls[0]
-        if c.name != n.name or get_text(c) != get_text(n):
-            continue
-        n.unwrap()
-    for br in soup.select("p br"):
-        br.replace_with(" ")
-    for n in soup.findAll("faketag"):
-        n.unwrap()
-    return clean_html(str(soup))
 
 
 def clean_js_obj(obj: Union[List, Dict, str]):
