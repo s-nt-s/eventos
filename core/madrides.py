@@ -637,7 +637,7 @@ class MadridEs:
             return Category.THEATER
         if re_or(desc, "itinerario .* kil[ó]metros", to_log=id, flags=re.IGNORECASE):
             return Category.SPORT
-        if re_or(plant_name, "actuacion", "vebena") and re_or(desc, "música", "concierto", "canciones", "pop", "rock", "baila", "bailable", "cantante", to_log=id, flags=re.IGNORECASE):
+        if re_or(plain_name, "actuacion", "vebena") and re_or(desc, "música", "concierto", "canciones", "pop", "rock", "baila", "bailable", "cantante", to_log=id, flags=re.IGNORECASE):
             return Category.MUSIC
         if re_or(desc, "Concierto", to_log=id):
             return Category.MUSIC
