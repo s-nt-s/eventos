@@ -587,6 +587,7 @@ class MadridEs:
             "^salida multiaventura",
             r"(paseo|itinerario) ornitologico",
             r"^entreparques",
+            ("deportes?", "torneo"),
             to_log=id
         ):
             return Category.SPORT
