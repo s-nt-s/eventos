@@ -519,7 +519,7 @@ class MadridEs:
             return Category.EXPO
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
-        if re_or(name_tp, r"^conferencias?$", to_log=id):
+        if re_or(name_tp, r"^conferencias?$", r"^pregon$", to_log=id):
             return Category.CONFERENCE
         if re_or(name_tp, r"^conciertos?$", to_log=id):
             return Category.MUSIC
@@ -637,7 +637,7 @@ class MadridEs:
             return Category.THEATER
         if re_or(desc, "itinerario .* kil[ó]metros", to_log=id, flags=re.IGNORECASE):
             return Category.SPORT
-        if re_or(plain_name, "actuacion", "vebena") and re_or(desc, "música", "concierto", "canciones", "pop", "rock", "baila", "bailable", "cantante", to_log=id, flags=re.IGNORECASE):
+        if re_or(plain_name, "actuacion", "verbena") and re_or(desc, "música", "concierto", "canciones", "pop", "rock", "baila", "bailable", "cantante", " d[ée]cada prodigiosa", to_log=id, flags=re.IGNORECASE):
             return Category.MUSIC
         if re_or(desc, "Concierto", to_log=id):
             return Category.MUSIC
