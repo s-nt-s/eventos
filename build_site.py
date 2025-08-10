@@ -172,9 +172,9 @@ def sorted_and_fix(eventos: List[Event]):
 
 
 logger.info("Recuperar eventos")
+#    Dore().events + \
 eventos = \
     MadridDestino().events + \
-    Dore().events + \
     CasaEncendida().events + \
     CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).events + \
     SalaEquis().events + \
