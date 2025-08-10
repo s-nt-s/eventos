@@ -274,7 +274,10 @@ class MadridEs:
     def __get_description(self, url: str):
         w = Web()
         w.get(url)
-        txt = get_text(w.select_one("div.tramites-content div.tiny-text"))
+        n = w.soup.select_one("div.tramites-content div.tiny-text")
+        if n is None:
+            return None
+        txt = get_text(n)
         return txt
 
     @property
