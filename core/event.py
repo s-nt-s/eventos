@@ -1,4 +1,4 @@
-from dataclasses import dataclass, asdict, fields
+from dataclasses import dataclass, asdict, fields, replace
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set
 from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, re_or, get_main_value
 from core.util.madrides import find_more_url as find_more_url_madrides
@@ -15,6 +15,7 @@ import logging
 from functools import cache
 from .util import to_uuid
 from selenium.webdriver.common.by import By
+from core.dblite import DB
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +156,7 @@ class Session(NamedTuple):
     date: str = None
 
     def merge(self, **kwargs):
-        return Session(**{**self._asdict(), **kwargs})
+        return replace(self, **kwargs)
 
     @staticmethod
     def build(*args, **kwargs):
@@ -286,6 +287,8 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"^(Obra de teatro|Noches? de Clásicos?|21 Distritos)\s*[:\-]\s*", r"", name, flags=re.I)
         name = re.sub(r"Piano City (Madrid *'?\d+|Madrid|'?\d+)", r"Piano City", name, flags=re.I)
         name = re.sub(r"CinePlaza:.*?> (Proyección|Cine)[^:]*:\s+", "", name, flags=re.I)
+        #name = re.sub(r".*\bFCM\b.*\bSECCI[OÓ]N\b.*\bCORTOMETRAJES\b.*", "Festival de cine de Madrid: Cortometrajes", name, flags=re.I)
+        #name = re.sub(r"^Sesión de cortometrajes \d+$", "Cortometrajes", name, flags=re.I)
         name = unquote(name.strip(". "))
         if len(name) < 2:
             name = bak[-1]
@@ -350,18 +353,26 @@ class Event:
     img: Optional[str] = None
     also_in: Tuple[str] = tuple()
     sessions: Tuple[Session] = tuple()
+    more: str = None
+
+    def fix_type(self):
+        if self.category == Category.CINEMA:
+            return Cinema(**self._asdict())
+        return self
 
     def __post_init__(self):
         new_name = _clean_name(self.name, self.place.name)
         if new_name != self.name:
             logger.debug(f"FIX: {new_name} <- {self.name}")
             object.__setattr__(self, 'name', new_name)
+        fix_event = FIX_EVENT.get(self.id, {})
         for f in fields(self):
-            v = getattr(self, f.name, None)
+            v = fix_event.get(f.name) or getattr(self, f.name, None)
             if isinstance(v, list):
-                object.__setattr__(self, f.name, tuple(v))
+                v = tuple(v)
             elif isinstance(v, str) and len(v) == 0:
-                object.__setattr__(self, f.name, None)
+                v = None
+            object.__setattr__(self, f.name, v)
 
     def fix(self, **kwargs):
         for k, v in kwargs.items():
@@ -424,7 +435,7 @@ class Event:
         if self.img not in ko:
             return self.img
         for url in self.iter_urls():
-            src = self.__get_img_from_url(url)
+            src = self._get_img_from_url(url)
             if src not in ko:
                 return src
 
@@ -449,7 +460,7 @@ class Event:
                 return Category.CHILDISH
         return self.category
 
-    def __get_img_from_url(self, url: str):
+    def _get_img_from_url(self, url: str):
         if url is None:
             return None
         if get_domain(url) == "madrid.es":
@@ -457,14 +468,9 @@ class Event:
             for src in map(get_img_src, soup.select("div.image-content img, div.tramites-content div.tiny-text img")):
                 if src:
                     return src
-        if re_filmaffinity.match(url):
-            soup = WEB.get_cached_soup(self.more)
-            img = get_img_src(soup.select_one("#right-column a.lightbox img"))
-            if img:
-                return img
 
     def merge(self, **kwargs):
-        return Event(**{**asdict(self), **kwargs})
+        return replace(self, **kwargs)
 
     @staticmethod
     def build(*args, **kwargs):
@@ -477,6 +483,11 @@ class Event:
             obj['place'] = Place.build(obj['place'])
         if isinstance(obj['sessions'], (list, tuple)) and len(obj['sessions']) > 0 and isinstance(obj['sessions'][0], dict):
             obj['sessions'] = tuple(map(Session.build, obj['sessions']))
+        for k, v in list(obj.items()):
+            if isinstance(v, list):
+                obj[k] = tuple(v)
+        if obj["category"] == Category.CINEMA:
+            return Cinema(**obj)
         return Event(**obj)
 
     @cached_property
@@ -490,15 +501,9 @@ class Event:
                 txt = _txt
         return txt
 
-    @cached_property
-    def more(self):
-        fix_event = FIX_EVENT.get(self.id, {})
-        if "more" in fix_event:
-            return fix_event["more"]
-        if self.category == Category.CINEMA:
-            furl = find_filmaffinity(self.title)
-            if furl:
-                return furl
+    def _fix_more(self):
+        if self.more:
+            return self.more
         urls = self.__get_urls()
         for url in urls:
             dom = get_domain(url)
@@ -618,3 +623,60 @@ class Event:
             category=get_main_value(categories, default=Category.UNKNOWN),
             sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
         )
+
+
+@dataclass(frozen=True, order=True)
+class Cinema(Event):
+    year: int = None
+    director: tuple[str, ...] = tuple()
+    aka: tuple[str, ...] = tuple()
+    imdb: str = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.imdb is None:
+            object.__setattr__(self, "imdb", self.__find_imdb())
+
+    def __find_imdb(self):
+        aka = [self.name]
+        if self.aka:
+            aka = self.aka
+        return DB.search_imdb_id(
+            *aka,
+            year=self.year,
+            director=self.director,
+            duration=self.duration
+        )
+
+    @cached_property
+    def filmaffinity(self) -> int:
+        if self.imdb is None:
+            return None
+        return DB.one("select filmaffinity from EXTRA where movie = ?", self.imdb)
+
+    def _fix_more(self):
+        if self.more:
+            return self.more
+        if self.filmaffinity:
+            return f"https://www.filmaffinity.com/es/film{self.filmaffinity}.html"
+        if self.imdb:
+            return f"https://www.imdb.com/es-es/title/{self.imdb}"
+        return super()._fix_more()
+
+    def _fix_duration(self):
+        if self.duration:
+            return self.duration
+        if self.imdb:
+            return DB.one("select duration from MOVIE where id = ?", self.imdb)
+
+    def _get_img_from_url(self, url: str):
+        img = super()._get_img_from_url(url)
+        if img is not None:
+            return img
+        if url is None:
+            return None
+        if re_filmaffinity.match(url):
+            soup = WEB.get_cached_soup(url)
+            img = get_img_src(soup.select_one("#right-column a.lightbox img"))
+            if img:
+                return img

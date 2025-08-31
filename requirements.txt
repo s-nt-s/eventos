@@ -10,3 +10,4 @@ Pillow==10.2.0
 pytz==2022.1
 rfeed==1.1.1
 ics==0.7.2
+cloudscraper==1.2.71

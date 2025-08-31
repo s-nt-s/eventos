@@ -3,7 +3,7 @@ from .cache import TupleCache
 from typing import Set, Dict, Union
 from functools import cached_property, cache
 import logging
-from .event import Event, Place, Session, Category, FieldNotFound, FieldUnknown, CategoryUnknown
+from .event import Event, Cinema, Place, Session, Category, FieldNotFound, FieldUnknown, CategoryUnknown
 import re
 from bs4 import Tag
 from core.util import to_uuid
@@ -83,10 +83,18 @@ class Dore(Web):
     def __div_to_event(self, url: str, div: Tag):
         name = get_text(div.select_one("h2"))
         m = re.match(r"^([^\(\)]+)\s+(\([^\(\)]*(\d{4})\))$", name)
+        year = None
+        aka: list[str] = []
         if m:
             name, ori, year = m.groups()
-            name = f"{name} ({year})"
-        return Event(
+            aka.append(name)
+            ori = re.sub(r"^\(|[, ]*"+year+"\)$", "", ori).strip()
+            if ori:
+                aka.append(ori)
+            year = int(year)
+        else:
+            aka.append(name)
+        ev = Cinema(
             id='fm'+to_uuid(url),
             url=url,
             name=name,
@@ -94,9 +102,12 @@ class Dore(Web):
             img=div.select_one("img").attrs["data-src"],
             place=Dore.PLACE,
             sessions=self.__find_sessions(div),
-            duration=120,
-            price=Dore.PRICE
+            price=Dore.PRICE,
+            aka=tuple(aka),
+            year=year,
+            duration=None,
         )
+        return ev
 
     def __find_sessions(self, div: Tag):
         txt = get_text(div.select_one("div.descripcion"))

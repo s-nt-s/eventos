@@ -44,6 +44,7 @@ jobs:
       - name: RM and WGET
         run: |
           rm -rf ./rec/
+          ./dwn.sh
           ./wget.sh publish.json '{}'
       - name: BUILD
         continue-on-error: false

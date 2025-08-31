@@ -3,7 +3,7 @@ from .cache import TupleCache
 from typing import Set
 from functools import cached_property
 import logging
-from .event import Event, Place, Session, Category, FieldNotFound, CategoryUnknown
+from .event import Cinema, Event, Place, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from datetime import datetime
 from .util import plain_text, re_or

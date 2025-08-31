@@ -6,6 +6,8 @@ from typing import List, Tuple, Dict
 import json
 from functools import cache
 
+import cloudscraper
+
 import requests
 from bs4 import BeautifulSoup, Tag
 from webdriver_manager.chrome import ChromeDriverManager
@@ -117,7 +119,7 @@ class WebException(Exception):
 
 class Web:
     def __init__(self, refer=None, verify=True):
-        self.s = requests.Session()
+        self.s = cloudscraper.create_scraper()
         self.s.headers = default_headers
         self.response = None
         self.soup = None

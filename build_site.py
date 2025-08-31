@@ -139,6 +139,7 @@ def sorted_and_fix(eventos: List[Event]):
     def _iter_fix(eventos: List[Event]):
         done: set[Event] = set()
         for e in eventos:
+            e = e.fix_type()
             e = e.fix(publish=PUBLISH.get(e.id))
             if e not in done:
                 done.add(e)
@@ -212,7 +213,7 @@ def event_to_ics(e: Event, s: Session):
         uniq(e.url, *e.also_in, s.url, e.more)
     )).strip()
     dtstart = to_datetime(s.date)
-    dtend = dtstart + timedelta(minutes=e.duration)
+    dtend = dtstart + timedelta(minutes=(e.duration or 120))
     return IcsEvent(
         uid=f"{e.id}_{s.id}",
         dtstamp=NOW,
