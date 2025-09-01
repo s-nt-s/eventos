@@ -82,6 +82,7 @@ class Dore(Web):
 
     def __div_to_event(self, url: str, div: Tag):
         name = get_text(div.select_one("h2"))
+        name = name.rstrip(" .,")
         m = re.match(r"^([^\(\)]+)\s+(\([^\(\)]*(\d{4})\))$", name)
         year = None
         aka: list[str] = []
@@ -105,9 +106,20 @@ class Dore(Web):
             price=Dore.PRICE,
             aka=tuple(aka),
             year=year,
-            duration=None,
+            duration=None #self.__find_duration(txt),
         )
         return ev
+
+    def __find_duration(self, txt: str):
+        if txt is None:
+            return None
+        m = re.search(r"Total sesión: (\d+)['’]", txt, re.IGNORECASE)
+        if m:
+            return int(m.group(1))
+        duration = tuple(map(int, re.findall(r"(\d+)['’]", txt)))
+        if len(duration) == 0:
+            return None
+        return sum(duration)
 
     def __find_sessions(self, div: Tag):
         txt = get_text(div.select_one("div.descripcion"))

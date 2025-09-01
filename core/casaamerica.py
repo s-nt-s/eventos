@@ -195,8 +195,9 @@ class CasaAmerica(Web):
     def __find_duration(self, category: Category, content: str):
         durations = set()
         for p in map(get_text, self.soup.select("article p")):
-            if p is not None:
-                durations = durations.union(map(int, re.findall(r"(\d+)['’]", p)))
+            for d in map(int, re.findall(r"(\d+)['’]", p or '')):
+                if d < (60*5):
+                    durations.add(d)
         if len(durations) > 0:
             return sum(durations)
         if re.search(r"1 hora y 20 minutos", content):

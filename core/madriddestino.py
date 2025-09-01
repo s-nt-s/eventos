@@ -5,7 +5,7 @@ from functools import cached_property, cache
 import logging
 from .cache import Cache
 import json
-from .event import Event, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown
+from .event import Event, Cinema, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown
 from .cache import TupleCache
 from datetime import datetime
 import re

@@ -5,9 +5,10 @@ import logging
 import json
 from .web import Web, WebException
 from .cache import Cache, TupleCache
-from .event import Event, Session, Place, Category, FieldNotFound
+from .event import Event, Session, Place, Category, FieldNotFound, Cinema
 from .filemanager import FM
 from .util import re_or, re_and
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +169,7 @@ class CineEntradas:
             elif re_and(name.lower(), "conciertos", ("territorios", "jazz", "duo", "trio", "charla"), to_log=id):
                 category = Category.MUSIC
             root = f"https://cine.entradas.com/cine/{city}/{cinema}"
-            events.add(Event(
+            e = Event(
                 id=id,
                 url=f"{root}/sesiones?showGroups={movie}",
                 name=name,
@@ -181,7 +182,8 @@ class CineEntradas:
                     address=f"{self.info['address']}"
                 ),
                 sessions=self.__find_sessions(root, i['shows']['data'])
-            ))
+            )
+            events.add(e)
         return tuple(sorted(events))
 
     def __find_sessions(self, root: str, shows: List[Dict]):

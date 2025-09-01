@@ -156,7 +156,7 @@ class Session(NamedTuple):
     date: str = None
 
     def merge(self, **kwargs):
-        return replace(self, **kwargs)
+        return self._replace(**kwargs)
 
     @staticmethod
     def build(*args, **kwargs):
@@ -340,7 +340,7 @@ def find_filmaffinity(title: str):
             return a.attrs["href"]
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class Event:
     id: str
     url: str
@@ -354,6 +354,16 @@ class Event:
     also_in: Tuple[str] = tuple()
     sessions: Tuple[Session] = tuple()
     more: str = None
+
+    def __lt__(self, other):
+        if not isinstance(other, Event):
+            return NotImplemented
+        flds = fields(Event)
+        a = asdict(self)
+        b = asdict(other)
+        tp_a = tuple(a[f.name] for f in flds)
+        tp_b = tuple(b[f.name] for f in flds)
+        return tp_a < tp_b
 
     def fix_type(self):
         if self.category == Category.CINEMA:
@@ -625,7 +635,7 @@ class Event:
         )
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class Cinema(Event):
     year: int = None
     director: tuple[str, ...] = tuple()
@@ -641,12 +651,24 @@ class Cinema(Event):
         aka = [self.name]
         if self.aka:
             aka = self.aka
-        return DB.search_imdb_id(
+        imdb = DB.search_imdb_id(
             *aka,
             year=self.year,
             director=self.director,
             duration=self.duration
         )
+        if imdb:
+            return imdb
+        m = re.match(r"^([^\(\)]+) \(([^\(\)\d]+)\)$", self.name)
+        if m:
+            imdb = DB.search_imdb_id(
+                *m.groups(),
+                year=self.year,
+                director=self.director,
+                duration=self.duration
+            )
+            if imdb:
+                return imdb
 
     @cached_property
     def filmaffinity(self) -> int:

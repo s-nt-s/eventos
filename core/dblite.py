@@ -127,7 +127,7 @@ class DBlite:
             year: int,
             director: tuple[str, ...] = None,
             duration: int = None,
-            year_gap: int = 5,
+            year_gap: int = 1,
             full_match: bool = False
     ) -> str | None:
         if director is None:
