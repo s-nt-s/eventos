@@ -333,8 +333,6 @@ class MadridEs:
             cat = self.__find_category(id, div, url_event)
             if cat is None:
                 continue
-            if duration is None:
-                duration = 120 if cat == Category.CINEMA else 60
             ev = Event(
                 id=id,
                 url=url_event,

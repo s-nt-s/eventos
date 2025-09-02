@@ -9,6 +9,9 @@ from functools import cached_property, cache
 from os.path import isfile
 from core.web import Driver
 from selenium.webdriver.common.by import By
+import warnings
+
+warnings.filterwarnings("ignore", module="PIL")
 
 logger = logging.getLogger(__name__)
 

@@ -262,7 +262,8 @@ def _clean_name(name: str, place: str):
             "A.I At War": "A.I. At War",
             "AI At War": "A.I. At War",
             "El sorprendente Dr.Clitterhouse": "El sorprendente Dr. Clitterhouse",
-            "El sorprendente Dr.Clitterhousem": "El sorprendente Dr. Clitterhouse"
+            "El sorprendente Dr.Clitterhousem": "El sorprendente Dr. Clitterhouse",
+            "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split("\s+", k))))+r"\s*$", v, name, flags=re.IGNORECASE)
         name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.IGNORECASE)
@@ -389,16 +390,20 @@ class Event:
             if v is not None:
                 object.__setattr__(self, k, v)
         for f in fields(self):
-            self.__fix_field(f.name)
+            self._fix_field(f.name)
+        if self.url is None and get_domain(self.more) == "madrid.es":
+            object.__setattr__(self, "url", self.more)
+            object.__setattr__(self, "more", None)
         return self
 
-    def __fix_field(self, name: str):
+    def _fix_field(self, name: str, fnc=None):
         fix_event = FIX_EVENT.get(self.id, {})
         old_val = getattr(self, name, None)
         if name in fix_event:
             fix_val = fix_event[name]
         else:
-            fnc = getattr(self, f'_fix_{name}', None)
+            if fnc is None:
+                fnc = getattr(self, f'_fix_{name}', None)
             if fnc is None or not callable(fnc):
                 return
             fix_val = fnc()
@@ -425,12 +430,6 @@ class Event:
             yield url
         if self.more and self.more not in urls:
             yield self.more
-
-    def _fix_url(self):
-        if self.url:
-            return self.url
-        if get_domain(self.more) == "madrid.es":
-            return self.__dict__.pop("more")
 
     def _fix_name(self):
         if self.name is not None:
@@ -642,10 +641,10 @@ class Cinema(Event):
     aka: tuple[str, ...] = tuple()
     imdb: str = None
 
-    def __post_init__(self):
-        super().__post_init__()
-        if self.imdb is None:
-            object.__setattr__(self, "imdb", self.__find_imdb())
+    def fix(self, **kwargs):
+        self._fix_field('imdb', self.__find_imdb)
+        super().fix(**kwargs)
+        return self
 
     def __find_imdb(self):
         aka = [self.name]
@@ -680,10 +679,12 @@ class Cinema(Event):
         return super()._fix_more()
 
     def _fix_duration(self):
-        if self.duration:
-            return self.duration
+        imdb_duration = None
         if self.imdb:
-            return DB.one("select duration from MOVIE where id = ?", self.imdb)
+            imdb_duration = DB.one("select duration from MOVIE where id = ?", self.imdb)
+        if imdb_duration is not None and (self.duration or 0) < imdb_duration:
+            return imdb_duration
+        return self.duration
 
     def _get_img_from_url(self, url: str):
         img = super()._get_img_from_url(url)

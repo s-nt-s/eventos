@@ -175,12 +175,11 @@ class DBlite:
         main_sql = "select distinct movie from (" + (" union ".join(sql)) + ")"
         where = []
         if duration:
-            where.append(f"duration is null or (duration < {duration+15})")
-            where.append(f"duration is null or (duration > {duration-15})")
+            where.append(f"(duration is null or (duration < {duration+15} and duration > {duration-15}))")
         if min_year:
-            where.append(f"year > {min_year}")
+            where.append(f"year >= {min_year}")
         if max_year:
-            where.append(f"year < {max_year}")
+            where.append(f"year <= {max_year}")
         if where:
             main_sql = main_sql+" where movie in (select id from movie where " 
             main_sql = main_sql+(" and ".join(where)) + ")"
@@ -213,12 +212,11 @@ class DBlite:
         main_sql = "select distinct movie from director where person in (" + (" union ".join(sql)) + ")"
         where = []
         if duration:
-            where.append(f"duration is null or (duration < {duration+15})")
-            where.append(f"duration is null or (duration > {duration-15})")
+            where.append(f"(duration is null or (duration < {duration+15} and duration > {duration-15}))")
         if min_year:
-            where.append(f"year > {min_year}")
+            where.append(f"year >= {min_year}")
         if max_year:
-            where.append(f"year < {max_year}")
+            where.append(f"year <= {max_year}")
         if where:
             main_sql = main_sql+" and movie in (select id from movie where "
             main_sql = main_sql+(" and ".join(where)) + ")"

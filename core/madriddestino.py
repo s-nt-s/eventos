@@ -113,11 +113,11 @@ class MadridDestino:
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(url, e)
             )
-            ev = self.__complete(ev)
+            ev = self.__complete(ev, info)
             events.add(ev)
         return tuple(sorted(events))
 
-    def __complete(self, ev: Event):
+    def __complete(self, ev: Event, info: dict):
         ev = ev.fix_type()
         original_url = str(ev.url)
         if all(s.url for s in ev.sessions):
@@ -129,17 +129,19 @@ class MadridDestino:
         new_url = find_more_url_madriddestino(original_url)
         if new_url and new_url.startswith("https://www.cinetecamadrid.com/programacion/"):
             soup = WEB.get_cached_soup(new_url)
-            director = get_text(soup.select_one("div.field--name-field-director"))
-            year = get_text(soup.select_one("field--name-field-ano-filmacion"))
+            director: list[str] = []
+            dir_txt = get_text(soup.select_one("div.field--name-field-director")) or ''
+            for d in map(str.strip, re.split(r", ", dir_txt)):
+                if d not in ('', 'Varios/as directores/as', 'Varios/as autores/as', 'Varias autoras') and d not in director:
+                    director.append(d)
+            year = get_text(soup.select_one("div.field--name-field-ano-filmacion"))
             ev = ev.merge(
-                director=(director, ) if director else tuple(),
+                director=tuple(director),
                 year=int(year) if year and year.isdecimal() else None
             )
         if not ev.director:
-            soup = WEB.get_soup(original_url)
-            text = get_text(soup.select_one("div.c-mod-file-event_description")) or ''
             director: list[str] = []
-            for d in map(str.strip, re.findall(r"\b[Dd]irigida por( [A-Z][a-z]+(?: [A-Z][a-z]+))", text)):
+            for d in map(str.strip, re.findall(r"\b[Dd]irigida por( [A-Z][a-z]+(?: [A-Z][a-z]+))", info['description'])):
                 if d and d not in director:
                     director.append(d)
             ev = ev.merge(
@@ -323,4 +325,5 @@ class MadridDestino:
 if __name__ == "__main__":
     from .log import config_log
     config_log("log/madriddestino.log", log_level=(logging.DEBUG))
-    print(MadridDestino().events)
+    evs = MadridDestino().events
+    #print(evs)
