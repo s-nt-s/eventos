@@ -108,17 +108,44 @@ class MadridDestino:
                 name=e['title'],
                 img=e['featuredImage']['url'],
                 price=e['highestPrice'],
-                duration=info['duration'] or 60,
+                duration=info['duration'],
                 category=self.__find_category(id, e, info),
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(url, e)
             )
-            if all(s.url for s in ev.sessions):
-                new_url = find_more_url_madriddestino(ev.url)
-                if new_url:
-                    ev = ev.merge(url=new_url)
+            ev = self.__complete(ev)
             events.add(ev)
         return tuple(sorted(events))
+
+    def __complete(self, ev: Event):
+        ev = ev.fix_type()
+        original_url = str(ev.url)
+        if all(s.url for s in ev.sessions):
+            new_url = find_more_url_madriddestino(original_url)
+            if new_url:
+                ev = ev.merge(url=new_url)
+        if not isinstance(ev, Cinema):
+            return ev
+        new_url = find_more_url_madriddestino(original_url)
+        if new_url and new_url.startswith("https://www.cinetecamadrid.com/programacion/"):
+            soup = WEB.get_cached_soup(new_url)
+            director = get_text(soup.select_one("div.field--name-field-director"))
+            year = get_text(soup.select_one("field--name-field-ano-filmacion"))
+            ev = ev.merge(
+                director=(director, ) if director else tuple(),
+                year=int(year) if year and year.isdecimal() else None
+            )
+        if not ev.director:
+            soup = WEB.get_soup(original_url)
+            text = get_text(soup.select_one("div.c-mod-file-event_description")) or ''
+            director: list[str] = []
+            for d in map(str.strip, re.findall(r"\b[Dd]irigida por( [A-Z][a-z]+(?: [A-Z][a-z]+))", text)):
+                if d and d not in director:
+                    director.append(d)
+            ev = ev.merge(
+                director=tuple(director)
+            )
+        return ev
 
     def __find_place(self, e: Dict):
         space_id = set()

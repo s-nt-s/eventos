@@ -651,18 +651,12 @@ class Cinema(Event):
         aka = [self.name]
         if self.aka:
             aka = self.aka
-        imdb = DB.search_imdb_id(
-            *aka,
-            year=self.year,
-            director=self.director,
-            duration=self.duration
-        )
-        if imdb:
-            return imdb
         m = re.match(r"^([^\(\)]+) \(([^\(\)\d]+)\)$", self.name)
         if m:
+            aka.extend(m.groups())
+        for t in aka:
             imdb = DB.search_imdb_id(
-                *m.groups(),
+                t,
                 year=self.year,
                 director=self.director,
                 duration=self.duration

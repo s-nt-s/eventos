@@ -95,6 +95,8 @@ class Dore(Web):
             year = int(year)
         else:
             aka.append(name)
+
+        director = get_text(div.select_one("h3.subtitulo"))
         ev = Cinema(
             id='fm'+to_uuid(url),
             url=url,
@@ -106,6 +108,7 @@ class Dore(Web):
             price=Dore.PRICE,
             aka=tuple(aka),
             year=year,
+            director=(director, ) if director else tuple(),
             duration=None #self.__find_duration(txt),
         )
         return ev

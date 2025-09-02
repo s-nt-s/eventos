@@ -131,7 +131,7 @@ class DBlite:
             full_match: bool = False
     ) -> str | None:
         if director is None:
-            director = None
+            director = tuple()
         id_titles = self.__search_movie_by_title(
             *titles,
             min_year=year-year_gap if year else None,
@@ -175,8 +175,8 @@ class DBlite:
         main_sql = "select distinct movie from (" + (" union ".join(sql)) + ")"
         where = []
         if duration:
-            where.append(f"duration < {duration+10}")
-            where.append(f"duration > {duration-10}")
+            where.append(f"duration is null or (duration < {duration+15})")
+            where.append(f"duration is null or (duration > {duration-15})")
         if min_year:
             where.append(f"year > {min_year}")
         if max_year:
@@ -213,8 +213,8 @@ class DBlite:
         main_sql = "select distinct movie from director where person in (" + (" union ".join(sql)) + ")"
         where = []
         if duration:
-            where.append(f"duration < {duration+10}")
-            where.append(f"duration > {duration-10}")
+            where.append(f"duration is null or (duration < {duration+15})")
+            where.append(f"duration is null or (duration > {duration-15})")
         if min_year:
             where.append(f"year > {min_year}")
         if max_year:
