@@ -283,8 +283,8 @@ class MadridEs:
 
     @cache
     def __get_description(self, url: str):
-        WEB.get_cached_soup(url)
-        n = WEB.soup.select_one("div.tramites-content div.tiny-text")
+        soup = WEB.get_cached_soup(url)
+        n = soup.select_one("div.tramites-content div.tiny-text")
         if n is None:
             return None
         txt = get_text(n)
