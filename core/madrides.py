@@ -148,6 +148,7 @@ class MadridEs:
 
     def __init__(self):
         self.w = Web()
+        self.w.s = Driver.to_session("firefox", "https://www.madrid.es", self.w.s)
 
     @cached_property
     def __category(self):

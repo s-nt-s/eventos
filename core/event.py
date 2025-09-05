@@ -421,6 +421,8 @@ class Event:
             fix_val = fnc()
         if fix_val == old_val:
             return
+        if name == "category" and isinstance(fix_val, str):
+            fix_val = Category[fix_val]
         logger.debug(f"FIX: {name} {fix_val} <- {old_val}")
         object.__setattr__(self, name, fix_val)
 
