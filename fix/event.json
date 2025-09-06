@@ -55,6 +55,12 @@
     "md6645": {
         "shorts": true
     },
+    "md6600": {
+        "shorts": true
+    },
+    "ce15346": {
+        "shorts": true
+    },
     "md6542": {
         "imdb": "tt20720210"
     },
@@ -63,5 +69,12 @@
     },
     "am45667": {
         "category": "SPAM"
+    },
+    "md6601": {
+        "imdb": null
+    },
+    "am45717": {
+        "imdb": "tt34499565",
+        "filmaffinity": 587362
     }
 }
