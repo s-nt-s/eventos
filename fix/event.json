@@ -44,16 +44,22 @@
         "img": "https://salaberlanga.com/wp-content/uploads/2025/07/salt-pepper-cine-sordo-724x1024.jpg"
     },
     "md6667": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "md6758": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "sb9861": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "md6645": {
-        "shorts": true
+        "cycle": "Cortometrajes"
+    },
+    "md6600": {
+        "cycle": "Cortometrajes"
+    },
+    "ce15346": {
+        "cycle": "Cortometrajes"
     },
     "md6542": {
         "imdb": "tt20720210"
@@ -63,5 +69,106 @@
     },
     "am45667": {
         "category": "SPAM"
+    },
+    "md6601": {
+        "imdb": null
+    },
+    "am45717": {
+        "imdb": "tt34499565",
+        "filmaffinity": 587362
+    },
+    "md6626": {
+        "more": "https://tienda.madrid-destino.com/es/cineteca/seminario-tipologias-del-apocalipsis-cinematografico/"
+    },
+    "md6660": {
+        "url": "https://www.teatroespanol.es/la-puesta-en-escena-de-luces-de-bohemia",
+        "img": "https://www.teatroespanol.es/sites/default/files/styles/imagen_destacada_ficha_large_1100_550/public/media/image/2025/07/ramon_del_valle_inclan_2ok.jpg.webp"
+    },
+    "sb9905": {
+        "filmaffinity": 397455
+    },
+    "md6809": {
+        "cycle": "Cortometrajes"
+    },
+    "md6810": {
+        "cycle": "Cortometrajes"
+    },
+    "sb9892": {
+        "filmaffinity": 385993
+    },
+    "md6625": {
+        "cycle": "Cortometrajes"
+    },
+    "md6494": {
+        "category": "CONFERENCE"
+    },
+    "md6560": {
+        "url": "https://www.condeduquemadrid.es/actividades/tatoo-tarot-dos-viejos-nuevos-fenomenos-culturales",
+        "category": "CONFERENCE"
+    },
+    "md6797": {
+        "filmaffinity": 606854
+    },
+    "md6783": {
+        "filmaffinity": 748016
+    },
+    "md6744": {
+        "filmaffinity": 702370
+    },
+    "md6561": {
+        "category": "CONFERENCE"
+    },
+    "md6568": {
+        "category": "CONFERENCE"
+    },
+    "md6570": {
+        "category": "CONFERENCE"
+    },
+    "md6571": {
+        "category": "CONFERENCE"
+    },
+    "md6562": {
+        "category": "EXPO"
+    },
+    "am45677": {
+        "category": "CONFERENCE"
+    },
+    "am45732": {
+        "category": "CONFERENCE"
+    },
+    "cf173691418": {
+        "category": "CONFERENCE"
+    },
+    "md6773": {
+        "imdb": "tt0073028",
+        "filmaffinity": 924966
+    },
+    "ac668": {
+        "imdb": "tt0276863",
+        "filmaffinity": 739265
+    },
+    "ac667": {
+        "imdb": "tt21278500",
+        "filmaffinity": 611674
+    },
+    "am45747": {
+        "category": "CONFERENCE"
+    },
+    "md6838": {
+        "cycle": "Cortometrajes"
+    },
+    "md6845": {
+        "imdb": "tt23837538"
+    },
+    "md6853":{
+        "imdb": "tt18163368"
+    },
+    "md6858": {
+        "imdb": "tt31841789",
+        "filmaffinity": 127989
+    },
+    "am45745": {
+        "imdb": "tt33111403",
+        "filmaffinity": 263343
     }
 }

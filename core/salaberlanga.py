@@ -39,7 +39,7 @@ class SalaBerlanga:
     PRICE = 4.40
     CINE_ENTRADAS = 2369
     HOME = "https://salaberlanga.com/programacion-de-actividades/"
-    ACTIVIDADES = "https://salaberlanga.com/wp-json/wp/v2/actividad/?per_page=25"
+    ACTIVIDADES = "https://salaberlanga.com/wp-json/wp/v2/actividad/?per_page=100"
     PLACE = Place(
         name="Sala Berlanga",
         address="C. de Andrés Mellado, 53, Chamberí, 28015 Madrid"

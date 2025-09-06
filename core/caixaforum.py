@@ -103,13 +103,18 @@ class CaixaForum:
             logger.warning(warn+" "+url)
             return tuple()
         slc = "div.card-item:has(a > h2)"
-        for div in soup.select(slc):
+        divs = soup.select(slc)
+        if len(divs) == 0:
+            raise WebException(f"{slc} NOT FOUND in {url}")
+        for div in divs:
             h2 = div.select_one("a > h2")
             url = h2.find_parent("a").attrs["href"]
-            eid = int(url.split("_a")[-1])
+            m = re.match(r".*_a(\d+)$", url)
+            if not m:
+                logger.warning(f"ID not found in {url}")
+                continue
+            eid = int(m.group(1))
             events.append(MyIdTag(id=eid, url=url, node=div))
-        if len(events) == 0:
-            raise WebException(f"{slc} NOT FOUND in {url}")
         logger.debug(f"{len(events)} {slc}")
         return tuple(events)
 

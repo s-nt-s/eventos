@@ -366,6 +366,7 @@ class Event:
     img: Optional[str] = None
     also_in: Tuple[str] = tuple()
     sessions: Tuple[Session] = tuple()
+    cycle: Optional[str] = None
     more: str = None
 
     def __lt__(self, other):
@@ -660,10 +661,9 @@ class Cinema(Event):
     aka: tuple[str, ...] = tuple()
     imdb: str = None
     filmaffinity: int = None
-    shorts: bool = None
 
     def fix(self, **kwargs):
-        self._fix_field('shorts')
+        self._fix_field('cycle')
         self._fix_field('imdb', self.__find_imdb)
         self._fix_field('filmaffinity')
         super().fix(**kwargs)
@@ -699,11 +699,13 @@ class Cinema(Event):
             return self.filmaffinity
         return DB.one("select filmaffinity from EXTRA where movie = ?", self.imdb)
 
-    def _fix_shorts(self):
-        if isinstance(self.shorts, bool):
-            return self.shorts
+    def _fix_cycle(self):
+        if isinstance(self.cycle, str):
+            return self.cycle
         if re.search(r"\b(cortometrajes?)\b", self.name, flags=re.I):
-            return True
+            return "Cortometrajes"
+        if re.search(r"Juventud líquida.*Sesión \d+", self.name, flags=re.I):
+            return "Juventud líquida"
 
     def _fix_more(self):
         if self.more:

@@ -167,16 +167,17 @@ def sorted_and_fix(eventos: List[Event]):
         ok_events.add(e)
     data: Dict[Tuple[Place, int], Set[Event]] = defaultdict(set)
     for e in tuple(ok_events):
-        if isinstance(e, Cinema) and len(e.sessions) == 1 and e.shorts:
-            data[(e.place, e.price)].add(e)
+        if len(e.sessions) == 1 and e.cycle:
+            data[(e.cycle, e.place, e.price)].add(e)
             ok_events.remove(e)
-    for cortos in data.values():
-        if len(cortos) == 1:
-            ok_events.add(cortos.pop())
+    for (cycle, _, _), evs in data.items():
+        if len(evs) == 1:
+            ok_events.add(evs.pop())
             continue
-        _id_ = to_uuid("".join(e.id for e in cortos))
-        e = Event.fusion(*cortos, firstEventUrl=True).merge(
-            name="Cortometrajes",
+        _id_ = to_uuid("".join(e.id for e in evs))
+        e = Event.fusion(*evs, firstEventUrl=True).merge(
+            name=cycle,
+            cycle=cycle,
             id=_id_,
             url=None,
             more=None
