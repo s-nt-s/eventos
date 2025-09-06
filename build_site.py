@@ -188,6 +188,8 @@ def sorted_and_fix(eventos: List[Event]):
     )
     return tuple(arr1)
 
+#    MadridEs().events + \
+
 
 logger.info("Recuperar eventos")
 eventos = \
@@ -199,7 +201,6 @@ eventos = \
     CasaAmerica().events + \
     AcademiaCine().events + \
     CaixaForum().events + \
-    MadridEs().events + \
     Telefonica().events
 logger.info(f"{len(eventos)} recuperados")
 
