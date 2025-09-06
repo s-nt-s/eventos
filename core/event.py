@@ -665,6 +665,7 @@ class Cinema(Event):
     def fix(self, **kwargs):
         self._fix_field('shorts')
         self._fix_field('imdb', self.__find_imdb)
+        self._fix_field('filmaffinity')
         super().fix(**kwargs)
         return self
 
@@ -681,7 +682,7 @@ class Cinema(Event):
         return tuple(aka)
 
     def __find_imdb(self):
-        if self.shorts:
+        if self.shorts is True:
             return None
         for t in self.get_full_aka():
             imdb = DB.search_imdb_id(
@@ -694,7 +695,7 @@ class Cinema(Event):
                 return imdb
 
     def _fix_filmaffinity(self) -> int:
-        if self.filmaffinity or self.imdb is None:
+        if self.filmaffinity is not None or self.imdb is None:
             return self.filmaffinity
         return DB.one("select filmaffinity from EXTRA where movie = ?", self.imdb)
 
