@@ -235,6 +235,8 @@ class CasaAmerica(Web):
             return Category.READING_CLUB
         if cat == "literatura" and content.count("Diálogo") > 2:
             return Category.CONFERENCE
+        if cat == "literatura" and re_or(plain_content, "lectura performatica", flags=re.I):
+            return Category.THEATER
         w1 = content.split()[0]
         if w1 == "concierto":
             return Category.MUSIC
