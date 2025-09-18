@@ -682,7 +682,7 @@ class Cinema(Event):
         return tuple(aka)
 
     def __find_imdb(self):
-        if self.shorts is True:
+        if isinstance(self.cycle, str):
             return None
         for t in self.get_full_aka():
             imdb = DB.search_imdb_id(
