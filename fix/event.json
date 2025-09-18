@@ -44,22 +44,22 @@
         "img": "https://salaberlanga.com/wp-content/uploads/2025/07/salt-pepper-cine-sordo-724x1024.jpg"
     },
     "md6667": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "md6758": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "sb9861": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "md6645": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "md6600": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "ce15346": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "md6542": {
         "imdb": "tt20720210"
@@ -88,16 +88,16 @@
         "filmaffinity": 397455
     },
     "md6809": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "md6810": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "sb9892": {
         "filmaffinity": 385993
     },
     "md6625": {
-        "shorts": true
+        "cycle": "Cortometrajes"
     },
     "md6494": {
         "category": "CONFERENCE"
@@ -142,5 +142,33 @@
     "md6773": {
         "imdb": "tt0073028",
         "filmaffinity": 924966
+    },
+    "ac668": {
+        "imdb": "tt0276863",
+        "filmaffinity": 739265
+    },
+    "ac667": {
+        "imdb": "tt21278500",
+        "filmaffinity": 611674
+    },
+    "am45747": {
+        "category": "CONFERENCE"
+    },
+    "md6838": {
+        "cycle": "Cortometrajes"
+    },
+    "md6845": {
+        "imdb": "tt23837538"
+    },
+    "md6853":{
+        "imdb": "tt18163368"
+    },
+    "md6858": {
+        "imdb": "tt31841789",
+        "filmaffinity": 127989
+    },
+    "am45745": {
+        "imdb": "tt33111403",
+        "filmaffinity": 263343
     }
 }
