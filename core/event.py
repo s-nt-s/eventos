@@ -487,7 +487,8 @@ class Event:
     def _get_img_from_url(self, url: str):
         if url is None:
             return None
-        if get_domain(url) == "madrid.es":
+        dom = get_domain(url)
+        if dom == "madrid.es":
             soup = WEB.get_cached_soup(url)
             nodes = soup.select("div.image-content img, div.tramites-content div.tiny-text img, div.detalle img")
             for src in map(get_img_src, nodes):
@@ -728,10 +729,15 @@ class Cinema(Event):
         img = super()._get_img_from_url(url)
         if img is not None:
             return img
-        if url is None:
-            return None
-        if re_filmaffinity.match(url):
+        if self.filmaffinity is not None:
+            url = f"https://www.filmaffinity.com/es/film{self.filmaffinity}.html"
             soup = WEB.get_cached_soup(url)
             img = get_img_src(soup.select_one("#right-column a.lightbox img"))
+            if img:
+                return img
+        if self.imdb is not None:
+            url = f"https://www.imdb.com/title/{self.imdb}/"
+            soup = WEB.get_cached_soup(url)
+            img = get_img_src(soup.select_one("div.ipc-media img"))
             if img:
                 return img
