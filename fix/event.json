@@ -173,5 +173,55 @@
     },
     "ce15333": {
         "price": 3
+    },
+    "md6841": {
+        "category": "YOUTH"
+    },
+    "sb9939": {
+        "category": "THEATER",
+        "cycle": "Homenaje a Ana Diosdado"
+    },
+    "sb9944": {
+        "category": "THEATER",
+        "cycle": "Homenaje a Ana Diosdado"
+    },
+    "sb9927": {
+        "category": "THEATER",
+        "cycle": "Homenaje a Ana Diosdado"
+    },
+    "md6805": {
+        "cycle": "Misterios de Lisboa",
+        "filmaffinity": 887252
+    },
+    "md6806": {
+        "cycle": "Misterios de Lisboa",
+        "filmaffinity": 887252
+    },
+    "ac672": {
+        "filmaffinity": 320033
+    },
+    "fm88B90D82-960D-5C3D-BF9E-715CFE79D5B6": {
+        "filmaffinity": 830195
+    },
+    "am45766": {
+        "filmaffinity": 354096
+    },
+    "ce15362": {
+        "filmaffinity": 365421
+    },
+    "ce15361": {
+        "filmaffinity": 747811
+    },
+    "ac670": {
+        "filmaffinity": 399102
+    },
+    "ce15369": {
+        "filmaffinity": 741724
+    },
+    "am45780": {
+        "category": "SPAM"
+    },
+    "md6789": {
+        "imdb": null
     }
 }
