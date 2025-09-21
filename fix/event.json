@@ -173,5 +173,17 @@
     },
     "ce15333": {
         "price": 3
+    },
+    "sb9939": {
+        "category": "THEATER",
+        "cycle": "Homenaje a Ana Diosdado"
+    },
+    "sb9944": {
+        "category": "THEATER",
+        "cycle": "Homenaje a Ana Diosdado"
+    },
+    "sb9927": {
+        "category": "THEATER",
+        "cycle": "Homenaje a Ana Diosdado"
     }
 }

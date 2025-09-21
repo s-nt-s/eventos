@@ -653,6 +653,13 @@ class Event:
             category=get_main_value(categories, default=Category.UNKNOWN),
             sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
         )
+    
+    def _fix_cycle(self):
+        if self.cycle:
+            return self.cycle
+        if re.search(r"^Derechos [dD]igitales: ", self.name):
+            return "Derechos digitales"
+        return None
 
 
 @dataclass(frozen=True)
@@ -707,6 +714,7 @@ class Cinema(Event):
             return "Cortometrajes"
         if re.search(r"Juventud líquida.*Sesión \d+", self.name, flags=re.I):
             return "Juventud líquida"
+        return super()._fix_cycle()
 
     def _fix_more(self):
         if self.more:
