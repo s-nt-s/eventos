@@ -700,7 +700,7 @@ class Event:
             e = e.merge(
                 more=e.also_in[0],
                 also_in=tuple()
-            )
+        )
         return e
 
     def _fix_cycle(self):
