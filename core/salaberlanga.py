@@ -163,6 +163,8 @@ class SalaBerlanga:
             ev = ev.merge(category=Category.CINEMA)
         elif re_or("Música", cat, flags=re.I):
             ev = ev.merge(category=Category.MUSIC)
+        elif re_or("Artes escénicas", cat, flags=re.I):
+            ev = ev.merge(category=Category.THEATER)
         if ev.img is None:
             ev = ev.merge(img=get_attr(item.tag.select_one("img"), "src"))
         ev = ev.fix_type()
