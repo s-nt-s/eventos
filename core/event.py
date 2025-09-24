@@ -661,6 +661,8 @@ class Event:
             return "Derechos digitales"
         if re.search(r"^Nuevos [Ii]maginarios: ", self.name):
             return "Nuevos imaginarios"
+        if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", self.name):
+            return "Teatro en la Berlanga"
         return None
 
 
