@@ -659,6 +659,8 @@ class Event:
             return self.cycle
         if re.search(r"^Derechos [dD]igitales: ", self.name):
             return "Derechos digitales"
+        if re.search(r"^Nuevos [Ii]maginarios: ", self.name):
+            return "Nuevos imaginarios"
         return None
 
 
