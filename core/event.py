@@ -277,7 +277,7 @@ def _clean_name(name: str, place: str):
             "El sorprendente Dr.Clitterhousem": "El sorprendente Dr. Clitterhouse",
             "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
-            name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split("\s+", k))))+r"\s*$", v, name, flags=re.IGNORECASE)
+            name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.IGNORECASE)
         name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.IGNORECASE)
         name = re.sub(r"\.\s*(conferencia)\s*$", "", name, flags=re.IGNORECASE)
@@ -659,6 +659,10 @@ class Event:
             return self.cycle
         if re.search(r"^Derechos [dD]igitales: ", self.name):
             return "Derechos digitales"
+        if re.search(r"^Nuevos [Ii]maginarios: ", self.name):
+            return "Nuevos imaginarios"
+        if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", self.name):
+            return "Teatro en la Berlanga"
         return None
 
 
