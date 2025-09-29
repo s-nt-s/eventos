@@ -246,6 +246,10 @@ class CasaAmerica(Web):
             return Category.CONFERENCE
         if re.search("Desfile de moda", content, flags=re.I):
             return Category.EXPO
+        if re.search(r"Programa:.*\d+:\d+\.?\s+Diálogo (con|sobre)", content, flags=re.I):
+            return Category.CONFERENCE
+        if re.search(r"Bienvenida:.*Participantes:", content, flags=re.I):
+            return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(self.url, cat)))
         return Category.UNKNOWN
 
