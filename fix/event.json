@@ -229,5 +229,44 @@
     },
     "ac682": {
         "filmaffinity": 957271
+    },
+    "am45782": {
+        "category": "CONFERENCE"
+    },
+    "am45796": {
+        "imdb": "tt27717667",
+        "filmaffinity": 451119
+    },
+    "sb9990": {
+        "imdb": "tt29520741",
+        "filmaffinity": 963150
+    },
+    "sb9994": {
+        "imdb": "tt25813918",
+        "filmaffinity": 660412
+    },
+    "sb9998": {
+        "imdb": "tt33036017",
+        "filmaffinity": 934423
+    },
+    "sb10007": {
+        "imdb": "tt26923797",
+        "filmaffinity": 132739
+    },
+    "md6804": {
+        "filmaffinity": 763831
+    },
+    "sb10022": {
+        "filmaffinity": 513809
+    },
+    "sb10026": {
+        "filmaffinity": 584300
+    },
+    "sb10030":{
+        "imdb": "tt34678593",
+        "filmaffinity": 111461
+    },
+    "sb10053": {
+        "filmaffinity": 162277
     }
 }
