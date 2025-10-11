@@ -112,7 +112,9 @@ class CineEntradas:
                     if i == len(urls)-1:
                         raise
         n = __get('script[type="application/ld+json"]', root, root+"/sesiones")
-        js = json.loads(n.get_text())
+        js = n.get_text()
+        while isinstance(js, str):
+            js = json.loads(js)
         ad = js['address']
         dt['address'] = ", ".join((
             ad['streetAddress'].title(),
