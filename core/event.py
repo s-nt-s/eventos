@@ -716,8 +716,13 @@ class Cinema(Event):
             return self.cycle
         if re.search(r"\b(cortometrajes?)\b", self.name, flags=re.I):
             return "Cortometrajes"
+        if re.search(r"\bCortos (nacionales|internacionales|disidentes)\b", self.name, flags=re.I):
+            return "Cortometrajes"
         if re.search(r"Juventud líquida.*Sesión \d+", self.name, flags=re.I):
             return "Juventud líquida"
+        if re.search(r"Futuros raros.*Sesión \d+", self.name, flags=re.I):
+            return "Futuros raros"
+
         return super()._fix_cycle()
 
     def _fix_more(self):
