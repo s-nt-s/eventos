@@ -14,6 +14,7 @@ from functools import cached_property, cache
 from collections import defaultdict
 from core.util.madrides import find_more_url
 from html import unescape
+from tatsu.exceptions import FailedParse
 
 
 logger = logging.getLogger(__name__)
@@ -489,7 +490,7 @@ class MadridEs:
         r = self.w._get(url)
         try:
             return Calendar(r.text)
-        except NotImplementedError as e:
+        except (NotImplementedError, FailedParse) as e:
             logger.error(str(e)+" "+url)
             return None
 
@@ -778,7 +779,7 @@ class MadridEs:
     def tipos(self):
         data: Dict[str, str] = {}
         soup = self.get(MadridEs.TAXONOMIA, parser="xml")
-        for n in soup.findAll('item'):
+        for n in soup.find_all('item'):
             value = n.find('value').string.strip()
             text = re_sp.sub(" ", n.find('text').string).strip()
             data[value] = text

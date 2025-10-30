@@ -11,6 +11,9 @@ from core.filemanager import FM
 from collections import defaultdict
 from core.util import re_or, MONTH
 from datetime import date
+import logging
+
+logger = logging.getLogger(__name__)
 
 url = "https://salaberlanga.com/wp-json/wp/v2/actividad/?per_page=1"
 
@@ -84,10 +87,13 @@ class SalaBerlanga:
             if len(tags) == 0:
                 raise ValueError(f"No se encuentra casilla para {url} en {SalaBerlanga.HOME}")
             tag: str = '<div>' + "\n".join(tags) + '</div>'
+            inf = self.__get_ficha(act, url)
+            if inf is None:
+                continue
             items.append(Item(
                 url=url,
                 tag=buildSoup(SalaBerlanga.HOME, tag),
-                inf=self.__get_ficha(act, url)
+                inf=inf
             ))
         FM.dump("rec/salaberlanga/fichas.json", [i.inf for i in items])
         return tuple(items)
@@ -96,7 +102,7 @@ class SalaBerlanga:
         for a in act:
             if a['link'] == url:
                 return a
-        raise ValueError(f"{url} not found in {SalaBerlanga.ACTIVIDADES}")
+        logger.warning(f"{url} not found in {SalaBerlanga.ACTIVIDADES}")
 
     def __get_cine_entrada(self, url: str, name: str):
         ok_name: set[Event] = set()

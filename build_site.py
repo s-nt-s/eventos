@@ -191,7 +191,6 @@ def sorted_and_fix(eventos: List[Event]):
 
 #    MadridEs().events + \
 
-
 logger.info("Recuperar eventos")
 eventos = \
     Dore().events + \
