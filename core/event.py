@@ -663,6 +663,9 @@ class Event:
             return "Nuevos imaginarios"
         if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", self.name):
             return "Teatro en la Berlanga"
+        m = re.mathc(r"^(Interautor 20\d+)\b.*", self.name)
+        if m:
+            return m.group(1)
         return None
 
 
