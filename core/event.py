@@ -674,8 +674,8 @@ class Cinema(Event):
     year: int = None
     director: tuple[str, ...] = tuple()
     aka: tuple[str, ...] = tuple()
-    imdb: str = None
-    filmaffinity: int = None
+    imdb: Optional[str] = None
+    filmaffinity: Optional[int] = None
 
     def fix(self, **kwargs):
         self._fix_field('cycle')
@@ -710,9 +710,12 @@ class Cinema(Event):
                 return imdb
 
     def _fix_filmaffinity(self) -> int:
-        if self.filmaffinity is not None or self.imdb is None:
+        if self.filmaffinity is not None:
             return self.filmaffinity
-        return DB.one("select filmaffinity from EXTRA where movie = ?", self.imdb)
+        if self.imdb is not None:
+            _id_ = DB.one("select filmaffinity from EXTRA where movie = ?", self.imdb)
+            if _id_:
+                return _id_
 
     def _fix_cycle(self):
         if isinstance(self.cycle, str):
@@ -729,12 +732,16 @@ class Cinema(Event):
         return super()._fix_cycle()
 
     def _fix_more(self):
+        imdb_url = f"https://www.imdb.com/es-es/title/{self.imdb}"
+        film_url = f"https://www.filmaffinity.com/es/film{self.filmaffinity}.html"
+        if self.filmaffinity and self.more in (None, imdb_url):
+            return film_url
         if self.more:
             return self.more
         if self.filmaffinity:
-            return f"https://www.filmaffinity.com/es/film{self.filmaffinity}.html"
+            return film_url
         if self.imdb:
-            return f"https://www.imdb.com/es-es/title/{self.imdb}"
+            return imdb_url
         return super()._fix_more()
 
     def _fix_duration(self):

@@ -10,6 +10,7 @@ import pytz
 from datetime import datetime
 from math import radians, sin, cos, sqrt, atan2
 from collections import Counter
+from os import environ
 
 from typing import TypeVar, Callable, Iterable
 import uuid
@@ -386,3 +387,24 @@ def uniq(*args: Union[str, None]):
         if a not in (None, '') and a not in arr:
             arr.append(a)
     return arr
+
+
+def iter_chunk(size: int, args: list):
+    arr = []
+    for a in args:
+        arr.append(a)
+        if len(arr) == size:
+            yield arr
+            arr = []
+    if arr:
+        yield arr
+
+
+def get_env(*args: str, default: str = None) -> str | None:
+    for a in args:
+        v = environ.get(a)
+        if isinstance(v, str):
+            v = v.strip()
+            if len(v):
+                return v
+    return default
