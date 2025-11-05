@@ -28,6 +28,9 @@ import re
 import pytz
 from core.rss import EventosRss
 from collections import defaultdict
+from core.wiki import WIKI
+from core.filmaffinity import FilmAffinityApi
+from core.dblite import DB
 
 import argparse
 
@@ -135,6 +138,28 @@ def isMadridMusic(e: Event):
     return True
 
 
+def find_filmaffinity_if_needed(imdb_film: dict[str, int], e: Cinema):
+    if not isinstance(e, Cinema):
+        return None
+    if e.filmaffinity:
+        return None
+    _id_ = imdb_film.get(e.imdb)
+    if _id_:
+        return _id_
+    if e.cycle:
+        return None
+    if e.imdb:
+        _id_ = FilmAffinityApi.search(
+            e.year or DB.one("select year from MOVIE where id = ?", e.imdb),
+            *DB.to_tuple("select title from TITLE where movie = ?", e.imdb)
+        )
+        if _id_:
+            return _id_
+    _id_ = FilmAffinityApi.search(e.year, *e.get_full_aka())
+    if _id_:
+        return _id_
+
+
 def sorted_and_fix(eventos: List[Event]):
     def _iter_fix(eventos: List[Event]):
         done: set[Event] = set()
@@ -146,7 +171,7 @@ def sorted_and_fix(eventos: List[Event]):
                 if myfilter(e):
                     PUBLISH[e.id] = e.publish
                     yield e
-    ok_events: Set[Event] = set()
+    ok_events: Set[Cinema | Event] = set()
     data: Dict[Tuple[str, Place]] = defaultdict(set)
     for e in _iter_fix(eventos):
         if not isMadridMusic(e):
@@ -183,10 +208,22 @@ def sorted_and_fix(eventos: List[Event]):
             more=None
         ).fix(publish=PUBLISH.get(_id_))
         ok_events.add(e)
+
     arr1 = sorted(
         ok_events,
         key=lambda e: (min(s.date for s in e.sessions), e.name, e.url)
     )
+    imdb: set[str] = set()
+    for a in arr1:
+        if isinstance(a, Cinema) and a.imdb and a.filmaffinity is None:
+            imdb.add(a.imdb)
+    imdb_film = WIKI.get_filmaffinity(*imdb)
+    for i, a in enumerate(arr1):
+        filmaffinity = find_filmaffinity_if_needed(imdb_film, e)
+        if filmaffinity:
+            logger.debug(f"FIND FilmAffinity: {filmaffinity}")
+            arr1[i] = a.merge(filmaffinity=filmaffinity).fix()
+
     return tuple(arr1)
 
 #    MadridEs().events + \
@@ -208,6 +245,7 @@ eventos = tuple(filter(myfilter, eventos))
 eventos = sorted_and_fix(eventos)
 
 logger.info(f"{len(eventos)} filtrados")
+
 
 sesiones: Dict[str, Set[int]] = {}
 sin_sesiones: Set[int] = set()
