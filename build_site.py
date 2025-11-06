@@ -146,6 +146,8 @@ def find_filmaffinity_if_needed(imdb_film: dict[str, int], e: Cinema):
     _id_ = imdb_film.get(e.imdb)
     if _id_:
         return _id_
+    if e.cycle:
+        return None
     if e.imdb:
         _id_ = FilmAffinityApi.search(
             e.year or DB.one("select year from MOVIE where id = ?", e.imdb),
