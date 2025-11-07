@@ -339,5 +339,14 @@
     },
     "am45850": {
         "category": "SPAM"
+    },
+    "ce15393": {
+        "category": "CONFERENCE"
+    },
+    "ce15388": {
+        "filmaffinity": 124761
+    },
+    "ce15389": {
+        "filmaffinity": 110692
     }
 }
