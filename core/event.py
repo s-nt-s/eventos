@@ -702,7 +702,8 @@ class Event:
                 also_in=tuple()
         )
         return e
-
+    
+==== BASE ====
     def _fix_cycle(self):
         if self.cycle:
             return self.cycle
