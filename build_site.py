@@ -193,9 +193,9 @@ def sorted_and_fix(eventos: List[Event]):
     data: Dict[Tuple[Place, int], Set[Event]] = defaultdict(set)
     for e in tuple(ok_events):
         if len(e.sessions) == 1 and e.cycle:
-            data[(e.cycle, e.place, e.price)].add(e)
+            data[(e.cycle, e.category, e.place, e.price)].add(e)
             ok_events.remove(e)
-    for (cycle, _, _), evs in data.items():
+    for (cycle, _, _, _), evs in data.items():
         if len(evs) == 1:
             ok_events.add(evs.pop())
             continue

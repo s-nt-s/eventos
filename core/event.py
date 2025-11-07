@@ -653,7 +653,7 @@ class Event:
             category=get_main_value(categories, default=Category.UNKNOWN),
             sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
         )
-    
+
     def _fix_cycle(self):
         if self.cycle:
             return self.cycle
