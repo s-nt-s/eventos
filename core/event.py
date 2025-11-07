@@ -665,6 +665,8 @@ class Event:
             return "Teatro en la Berlanga"
         m = re.match(r"^(Interautor 20\d+)\b.*", self.name)
         if m:
+            if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
+                return "Teatro en la Berlanga"
             return m.group(1)
         return None
 
