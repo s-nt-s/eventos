@@ -334,7 +334,7 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"^Representaci[óo]n teatral:?\s+'([^']+)'$", r"\1", name, flags=re.I)
         name = re.sub(r"^Obra de teatro\.\s+", "", name, flags=re.I)
         name = unquote(name.strip(". "))
-        if re.search(r"^Visitas dialogadas Matadero"):
+        if re.search(r"^Visitas dialogadas Matadero", name):
             name = "Visitas dialogadas Matadero"
         if len(name) < 2:
             name = bak[-1]
