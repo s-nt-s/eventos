@@ -84,6 +84,7 @@ class CaixaForum:
     @property
     @TupleCache("rec/caixaforum.json", builder=Event.build)
     def events(self):
+        logger.info("Caixa Forum: Buscando eventos")
         events: Set[Event] = set()
         with Driver(browser="firefox", wait=5) as f:
             self.__driver = f

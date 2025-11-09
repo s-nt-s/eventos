@@ -1,14 +1,11 @@
 from .web import Web, get_text
 from .cache import TupleCache, Cache
-from typing import Set, Dict, List, NamedTuple
-from functools import cached_property, cache
+from typing import Set, Dict, List
+from functools import cached_property
 import logging
-from .event import Event, Place, Session, Category, FieldNotFound, CategoryUnknown, FieldUnknown
-import re
-from bs4 import Tag
-from datetime import datetime, date, timedelta
-from .util import plain_text, re_or, get_a_href, to_uuid, get_img_src
-import json
+from .event import Event, Place, Session, Category, CategoryUnknown, FieldUnknown
+from datetime import datetime
+from .util import plain_text, re_or, get_a_href, to_uuid
 
 
 logger = logging.getLogger(__name__)
@@ -62,6 +59,7 @@ class Telefonica(Web):
     @property
     @TupleCache("rec/telefonica.json", builder=Event.build)
     def events(self):
+        logger.info("Telefonica: Buscando eventos")
         events: Set[Event] = set()
         for url in self.url_events:
             ev = self.__url_to_event(url)

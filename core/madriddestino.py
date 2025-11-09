@@ -89,6 +89,7 @@ class MadridDestino:
     @property
     @TupleCache("rec/madriddestino.json", builder=Event.build)
     def events(self):
+        logger.info("Madrid Destino: Buscando eventos")
         events: Set[Event] = set()
         for e in self.state['events']:
             if len(e['eventCategories']) == 0:

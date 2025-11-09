@@ -61,6 +61,7 @@ class CasaAmerica(Web):
     @property
     @TupleCache("rec/casaamerica.json", builder=Event.build)
     def events(self):
+        logger.info("Casa America: Buscando eventos")
         events: Set[Event] = set()
         for url in self.calendar:
             events = events.union(self.__url_to_events(url))

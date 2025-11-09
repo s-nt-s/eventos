@@ -49,6 +49,8 @@ jobs:
       - name: BUILD
         continue-on-error: false
         uses: nick-fields/retry@v2
+        env:
+          SPAIN_PROXY: ${{ secrets.SPAIN_PROXY }}
         with:
           timeout_minutes: 50
           retry_wait_seconds: 60

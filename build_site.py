@@ -141,22 +141,24 @@ def isMadridMusic(e: Event):
 def find_filmaffinity_if_needed(imdb_film: dict[str, int], e: Cinema):
     if not isinstance(e, Cinema):
         return None
-    if e.filmaffinity:
+    if isinstance(e.filmaffinity, int):
         return None
     _id_ = imdb_film.get(e.imdb)
-    if _id_:
+    if isinstance(_id_, int):
         return _id_
-    if e.cycle:
+    if isinstance(e.cycle, str):
         return None
-    if e.imdb:
+    if isinstance(e.imdb, str):
+        db_year = e.year or DB.one("select year from MOVIE where id = ?", e.imdb)
+        db_title = DB.to_tuple("select title from TITLE where movie = ?", e.imdb)
         _id_ = FilmAffinityApi.search(
-            e.year or DB.one("select year from MOVIE where id = ?", e.imdb),
-            *DB.to_tuple("select title from TITLE where movie = ?", e.imdb)
+            db_year,
+            *db_title
         )
-        if _id_:
+        if isinstance(_id_, int):
             return _id_
     _id_ = FilmAffinityApi.search(e.year, *e.get_full_aka())
-    if _id_:
+    if isinstance(_id_, int):
         return _id_
 
 
@@ -210,26 +212,26 @@ def sorted_and_fix(eventos: List[Event]):
         ok_events.add(e)
 
     arr1 = sorted(
-        ok_events,
+        (e.fix_type().fix() for e in ok_events),
         key=lambda e: (min(s.date for s in e.sessions), e.name, e.url)
     )
     imdb: set[str] = set()
-    for a in arr1:
-        if isinstance(a, Cinema) and a.imdb and a.filmaffinity is None:
-            imdb.add(a.imdb)
+    for e in arr1:
+        if isinstance(e, Cinema) and e.imdb and e.filmaffinity is None:
+            imdb.add(e.imdb)
     imdb_film = WIKI.get_filmaffinity(*imdb)
-    for i, a in enumerate(arr1):
+    for i, e in enumerate(arr1):
         filmaffinity = find_filmaffinity_if_needed(imdb_film, e)
         if filmaffinity:
             logger.debug(f"FIND FilmAffinity: {filmaffinity}")
-            arr1[i] = a.merge(filmaffinity=filmaffinity).fix()
+            arr1[i] = e.merge(filmaffinity=filmaffinity).fix()
 
     return tuple(arr1)
 
-#    MadridEs().events + \
 
 logger.info("Recuperar eventos")
 eventos = \
+    MadridEs().get_safe_events() + \
     Dore().events + \
     MadridDestino().events + \
     CasaEncendida().events + \
@@ -324,7 +326,10 @@ def set_icons(html: str, **kwargs):
             "salaberlanga": "https://salaberlanga.com/wp-content/uploads/2023/09/cropped-cropped-favicon-berlanga-bn-300x300-1-32x32.png",
             "cinetecamadrid": "https://www.cinetecamadrid.com/themes/custom/cineteca_theme/favicon.ico",
             "imdb": "https://m.media-amazon.com/images/G/01/imdb/images-ANDW73HA/favicon_desktop_32x32._CB1582158068_.png",
-            "teatroreal": "https://www.teatroreal.es/themes/custom/teatro_real/favicon.ico"
+            "teatroreal": "https://www.teatroreal.es/themes/custom/teatro_real/favicon.ico",
+            "semanacienciamadrid": "https://www.semanacienciamadrid.org/themes/custom/bs5fmmd/favicon.ico",
+            "condeduquemadrid": "https://www.condeduquemadrid.es/themes/custom/condebase_theme/icon_app/favicon-16x16.png",
+            "docs.google": "https://ssl.gstatic.com/docs/spreadsheets/forms/favicon_qp2.png"
         }.get(dom)
         if ico is None:
             continue

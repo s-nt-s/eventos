@@ -372,5 +372,33 @@
         "imdb": "tt4083038",
         "img": "https://m.media-amazon.com/images/M/MV5BN2EyYTYyZTYtZTg0NS00MTBhLWFiNDItZTFjYjE2MDIwZTc4XkEyXkFqcGc@._V1_.jpg",
         "category": "CINEMA"
+    },
+    "ms0bb3292c8ed5a910VgnVCM100000891ecb1aRCRD": {
+        "category": "CONFERENCE"
+    },
+    "msc3a9a0020be5a910VgnVCM100000891ecb1aRCRD": {
+        "category": "CONFERENCE"
+    },
+    "msab9fc9a280e4a910VgnVCM100000891ecb1aRCRD": {
+        "filmaffinity": 964888
+    },
+    "ms340546f354599910VgnVCM200000f921e388RCRD": {
+        "category": "MUSIC"
+    },
+    "ms2e6236485a589910VgnVCM200000f921e388RCRD": {
+        "category": "CONFERENCE",
+        "more": "https://www.condeduquemadrid.es/actividades/bienal-ciudad-y-ciencia"
+    },
+    "msa4e5d868ae33a910VgnVCM200000f921e388RCRD": {
+        "filmaffinity": 156332
+    },
+    "msa768cce6dee2a910VgnVCM200000f921e388RCRD": {
+        "category": "CONFERENCE"
+    },
+    "ac707": {
+        "filmaffinity": 699169
+    },
+    "ms4333c9a280e4a910VgnVCM100000891ecb1aRCRD": {
+        "filmaffinity": 744246
     }
 }

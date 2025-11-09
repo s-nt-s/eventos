@@ -12,10 +12,12 @@ from selenium.webdriver.common.by import By
 import warnings
 from core.util import get_domain
 from time import sleep
+from core.my_session import buildSession
 
 warnings.filterwarnings("ignore", module="PIL")
 
 logger = logging.getLogger(__name__)
+S = buildSession()
 
 
 class CornerColor(NamedTuple):
@@ -105,9 +107,10 @@ class MyImage:
         return None
 
     def __get(self, url: str):
-        isSalaBerlanga = get_domain(url) == "salaberlanga.com"
+        dom = get_domain(url)
+        isSalaBerlanga = dom == "salaberlanga.com"
         if not isSalaBerlanga:
-            r = requests.get(url)
+            r = S.get(url)
             if r.status_code != 403 and r.content:
                 return BytesIO(r.content)
         with Driver(browser="firefox") as f:

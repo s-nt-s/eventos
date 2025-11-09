@@ -44,6 +44,7 @@ class Dore(Web):
     @property
     @TupleCache("rec/dore.json", builder=Event.build)
     def events(self):
+        logger.info("Dore: Buscando eventos")
         events: Set[Event] = set()
         for url_info, div in self.__iter_divs():
             events.add(self.__div_to_event(url_info, div))
