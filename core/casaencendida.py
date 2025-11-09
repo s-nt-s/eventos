@@ -1,18 +1,21 @@
-from .web import Web, get_text
+from .web import get_text, Driver, MyTag
 from typing import Set, Dict, List, Union
 from functools import cache
 from .cache import TupleCache
 import logging
 from .event import Event, Session, Place, Category, CategoryUnknown
 import re
-import json
 from datetime import datetime
 from .filemanager import FM
-from .web import get_text, Driver, MyTag
 
 logger = logging.getLogger(__name__)
 
 months = ('ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic')
+
+SESSION_BAN = (
+    'https://www.lacasaencendida.es/cine/poetas-2025-cine?eventId=7986',
+    'https://www.lacasaencendida.es/cine/poetas-2025-cine?eventId=7987'
+)
 
 
 class CasaEncendidaException(Exception):
@@ -114,14 +117,19 @@ class CasaEncendida:
 
     def __find_sessions(self, url: str, info: List[Dict]):
         if len(info) == 1:
+            if url in SESSION_BAN:
+                return tuple()
             return tuple((Session(
                 url=url,
                 date=info[0]["startDate"][:16].replace("T", " ")
             ), ))
         sessions: Set[Session] = set()
         for i in info[1:]:
+            s_url = i['location']['url']
+            if s_url in SESSION_BAN:
+                continue
             sessions.add(Session(
-                url=i['location']['url'],
+                url=s_url,
                 date=i["startDate"][:16].replace("T", " ")
             ))
         return tuple(sorted(sessions))
