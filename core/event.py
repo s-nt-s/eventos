@@ -264,6 +264,8 @@ def unquote(s: str):
 def _clean_name(name: str, place: str):
     if name is None:
         return None
+    if re.search(r"Visitas? dialogadas? Matadero", name):
+        return "Visita dialogada Matadero"
     place = plain_text((place or "").lower())
     bak = ['']
     while bak[-1] != name:
@@ -303,8 +305,6 @@ def _clean_name(name: str, place: str):
         #name = re.sub(r".*\bFCM\b.*\bSECCI[OÓ]N\b.*\bCORTOMETRAJES\b.*", "Festival de cine de Madrid: Cortometrajes", name, flags=re.I)
         #name = re.sub(r"^Sesión de cortometrajes \d+$", "Cortometrajes", name, flags=re.I)
         name = unquote(name.strip(". "))
-        if re.search(r"^Visitas dialogadas Matadero", name):
-            name = "Visitas dialogadas Matadero"
         if len(name) < 2:
             name = bak[-1]
     name = unquote(name)
@@ -398,6 +398,8 @@ class Event:
                 v = tuple(v)
             elif isinstance(v, str) and len(v) == 0:
                 v = None
+            if f.name == "category" and isinstance(v, str):
+                v = Category[v]
             object.__setattr__(self, f.name, v)
 
     def fix(self, **kwargs):
@@ -422,10 +424,10 @@ class Event:
             if fnc is None or not callable(fnc):
                 return
             fix_val = fnc()
-        if fix_val == old_val:
-            return
         if name == "category" and isinstance(fix_val, str):
             fix_val = Category[fix_val]
+        if fix_val == old_val:
+            return
         logger.debug(f"FIX: {name} {fix_val} <- {old_val}")
         object.__setattr__(self, name, fix_val)
 
