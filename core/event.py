@@ -303,6 +303,8 @@ def _clean_name(name: str, place: str):
         #name = re.sub(r".*\bFCM\b.*\bSECCI[OÓ]N\b.*\bCORTOMETRAJES\b.*", "Festival de cine de Madrid: Cortometrajes", name, flags=re.I)
         #name = re.sub(r"^Sesión de cortometrajes \d+$", "Cortometrajes", name, flags=re.I)
         name = unquote(name.strip(". "))
+        if re.search(r"^Visitas dialogadas Matadero"):
+            name = "Visitas dialogadas Matadero"
         if len(name) < 2:
             name = bak[-1]
     name = unquote(name)

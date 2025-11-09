@@ -339,5 +339,15 @@
     },
     "am45850": {
         "category": "SPAM"
+    },
+    "am45819": {
+        "img": "https://www.casamerica.es/sites/default/files/styles/articulo_cab_1270x460/public/2025-03/HOME_032525%20Cien%20dias%20Trump%2C%20vision%20ambos%20lados%20%EF%80%A7%2029%20abr.jpg"
+    },
+    "ce15364": {
+        "url": "https://www.lacasaencendida.es/cine/poetas-2025-cine?eventId=7985",
+        "name": "Outrider",
+        "imdb": "tt4083038",
+        "img": "https://m.media-amazon.com/images/M/MV5BN2EyYTYyZTYtZTg0NS00MTBhLWFiNDItZTFjYjE2MDIwZTc4XkEyXkFqcGc@._V1_.jpg",
+        "category": "CINEMA"
     }
 }
