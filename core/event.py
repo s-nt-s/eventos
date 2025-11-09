@@ -6,15 +6,13 @@ from core.util.madriddestino import find_more_url as find_more_url_madriddestino
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
-from urllib.parse import quote_plus
 import re
 from datetime import date, datetime
-from core.web import Web, get_text, Driver
+from core.web import Web, get_text
 from core.filemanager import FM
 import logging
 from functools import cache
 from .util import to_uuid
-from selenium.webdriver.common.by import By
 from core.dblite import DB
 from typing import TypeVar, Type
 
@@ -22,7 +20,8 @@ T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 
-NOW = date.today().strftime("%Y-%m-%d")
+TODAY = date.today()
+NOW = TODAY.strftime("%Y-%m-%d")
 FIX_EVENT: Dict[str, Dict[str, Any]] = FM.load("fix/event.json")
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
@@ -280,11 +279,13 @@ def _clean_name(name: str, place: str):
             "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.IGNORECASE)
+        name = re.sub(r"^[Pp]el[íi]cula[:\.]\s+", "", name)
         name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.IGNORECASE)
         name = re.sub(r"\.\s*(conferencia)\s*$", "", name, flags=re.IGNORECASE)
         name = re.sub(r"Visita a la exposición '([^']+)'\. .*", r"\1", name, flags=re.IGNORECASE)
         name = re.sub(r"^(lectura dramatizada|presentación del libro|Cinefórum[^:]*|^Madrid, plató de cine)\s*[\.:]\s+", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"^conferencia\s+y\s+audiovisual:\s+", "", name, flags=re.I)
         name = re.sub(r"^(conferencia|visita[^'\"]*)[\s:]+(['\"])", r"\2", name, flags=re.IGNORECASE)
         name = re.sub(r"^(conferencia|concierto|espect[aá]culo|proyección( película)?)\s*[\-:\.]\s*", "", name, flags=re.IGNORECASE)
         name = re.sub(r"^(conferencia)\s*", "", name, flags=re.IGNORECASE)
@@ -302,8 +303,9 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"^(Obra de teatro|Noches? de Clásicos?|21 Distritos)\s*[:\-]\s*", r"", name, flags=re.I)
         name = re.sub(r"Piano City (Madrid *'?\d+|Madrid|'?\d+)", r"Piano City", name, flags=re.I)
         name = re.sub(r"CinePlaza:.*?> (Proyección|Cine)[^:]*:\s+", "", name, flags=re.I)
-        #name = re.sub(r".*\bFCM\b.*\bSECCI[OÓ]N\b.*\bCORTOMETRAJES\b.*", "Festival de cine de Madrid: Cortometrajes", name, flags=re.I)
-        #name = re.sub(r"^Sesión de cortometrajes \d+$", "Cortometrajes", name, flags=re.I)
+        name = re.sub(r"^Teatro:?\s+'([^']+)'$", r"\1", name, flags=re.I)
+        name = re.sub(r"^Representaci[óo]n teatral:?\s+'([^']+)'$", r"\1", name, flags=re.I)
+        name = re.sub(r"^Obra de teatro\.\s+", "", name, flags=re.I)
         name = unquote(name.strip(". "))
         if len(name) < 2:
             name = bak[-1]
@@ -330,29 +332,8 @@ KO_IMG = (
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/Cine_260x260.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20JUNIO/CineVeranoRetiro25-001.jpg',
     'https://entradasfilmoteca.gob.es//Contenido/ImagenesEspectaculos/00_5077/Jazz%20On%20A%20Summer',
+    'https://www.madrid.es/UnidadesDescentralizadas/MuseosMunicipales/DepartamentoExposiciones/Actividades/Ciclo%20Cine%20Una%20tarde%20con%20%20Marilyn/Cartel%20Marilyn%20jpg.jpg',
 )
-
-
-@cache
-def find_filmaffinity(title: str):
-    title = re.sub(r"\s*\+\s*Coloquio\s*$", "", title, flags=re.IGNORECASE)
-    title = re.sub(r"\s*,\s+de\s+[A-ZÁÉÍÓÚÑÜ]+.*$", "", title)
-    find_url = "https://www.filmaffinity.com/es/search.php?stext="+quote_plus(title)
-    WEB.get(find_url)
-    url, soup = WEB.url, WEB.soup
-    if WEB.response.status_code == 403:
-        with Driver(browser="firefox", wait=5) as f:
-            f.get(find_url)
-            f.safe_wait("div.mc-title a", by=By.CSS_SELECTOR)
-            f.wait_ready()
-            url = f.current_url
-            soup = f.get_soup()
-    if re_filmaffinity.match(url):
-        return url
-    lwtitle = title.lower()
-    for a in soup.select("div.mc-title a"):
-        if get_text(a).lower() == lwtitle:
-            return a.attrs["href"]
 
 
 @dataclass(frozen=True)
@@ -685,10 +666,65 @@ class Cinema(Event):
 
     def fix(self, **kwargs):
         self._fix_field('cycle')
+        self._fix_field('year')
+        self._fix_name_director()
         self._fix_field('imdb', self.__find_imdb)
         self._fix_field('filmaffinity')
         super().fix(**kwargs)
         return self
+
+    def _fix_name_director(self):
+        def _mk_re(dr: str):
+            return re.compile(r"\s*,?\s*\bde\s+"+re.escape(dr)+"$", flags=re.I)
+
+        if self.director:
+            if len(self.director) == 1:
+                new_name = _mk_re(self.director[0]).sub("", self.name).strip()
+                if new_name and new_name != self.name:
+                    object.__setattr__(self, "name", new_name)
+            return
+        for d in (
+            'James Ward Byrkit',
+            'Angela Schanelec',
+            'Stephen Daldry',
+            'Woody Allen',
+            'Albert Serra'
+        ):
+            new_name = _mk_re(d).sub("", self.name).strip()
+            if new_name and new_name != self.name:
+                logger.debug(f"FIX: director={d} name={new_name} <- {self.name}")
+                object.__setattr__(self, "director", (d, ))
+                object.__setattr__(self, "name", new_name)
+                return
+
+    def _fix_year(self):
+        if self.year is not None:
+            return self.year
+        yrs: set[int] = set()
+        for url in self.iter_urls():
+            dom = get_domain(url)
+            if dom == "madrid.es":
+                soup = WEB.get_cached_soup(url)
+                desc = get_text(soup.select_one("div.tramites-content div.tiny-text"))
+                for y in map(int, re.findall(r"Año:?\s*((?:19|20)\d+)", desc or "")):
+                    if y >= 1900 and y <= (TODAY.year+1):
+                        yrs.add(y)
+        if len(yrs) == 1:
+            return yrs.pop()
+        if len(yrs) > 1:
+            return None
+        for url in self.iter_urls():
+            dom = get_domain(url)
+            if dom == "madrid.es":
+                soup = WEB.get_cached_soup(url)
+                desc = get_text(soup.select_one("div.tramites-content div.tiny-text"))
+                for y in map(int, re.findall(r"\([^\(\)\d]*((?:19|20)\d+)\)", desc or "")):
+                    if y >= 1900 and y <= (TODAY.year+1):
+                        yrs.add(y)
+        if len(yrs) == 1:
+            return yrs.pop()
+        if self.imdb:
+            return DB.one("select year from MOVIE where id = ?", self.imdb)
 
     def get_full_aka(self):
         aka = [self.name]
@@ -738,16 +774,15 @@ class Cinema(Event):
         return super()._fix_cycle()
 
     def _fix_more(self):
-        imdb_url = f"https://www.imdb.com/es-es/title/{self.imdb}"
-        film_url = f"https://www.filmaffinity.com/es/film{self.filmaffinity}.html"
-        if self.filmaffinity and self.more in (None, imdb_url):
-            return film_url
+        fix_more = FIX_EVENT.get(self.id, {}).get("more")
+        if fix_more:
+            return fix_more
+        if self.filmaffinity:
+            return f"https://www.filmaffinity.com/es/film{self.filmaffinity}.html"
+        if self.imdb:
+            return f"https://www.imdb.com/es-es/title/{self.imdb}"
         if self.more:
             return self.more
-        if self.filmaffinity:
-            return film_url
-        if self.imdb:
-            return imdb_url
         return super()._fix_more()
 
     def _fix_duration(self):

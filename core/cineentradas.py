@@ -5,10 +5,9 @@ import logging
 import json
 from .web import Web, WebException
 from .cache import Cache, TupleCache
-from .event import Event, Session, Place, Category, FieldNotFound, Cinema
+from .event import Event, Session, Place, Category, FieldNotFound
 from .filemanager import FM
 from .util import re_or, re_and
-import re
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +158,7 @@ class CineEntradas:
     @property
     @CinemaEventCache("rec/cineentradas{cinema}.json")
     def events(self):
+        logger.info("Cine Entradas: Buscando eventos")
         events: Set[Event] = set()
         for i in self.get_sessions():
             category = Category.CINEMA

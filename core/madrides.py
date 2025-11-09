@@ -15,6 +15,7 @@ from collections import defaultdict
 from core.util.madrides import find_more_url
 from html import unescape
 from tatsu.exceptions import FailedParse
+from os import environ
 
 
 logger = logging.getLogger(__name__)
@@ -149,7 +150,18 @@ class MadridEs:
 
     def __init__(self):
         self.w = Web()
-        self.w.s = Driver.to_session("firefox", "https://www.madrid.es", self.w.s)
+        self.w.s = Driver.to_session(
+            "firefox",
+            "https://www.madrid.es",
+            self.w.s,
+        )
+
+    def get_safe_events(self):
+        try:
+            return self.events
+        except Exception as e:
+            logger.critical(str(e), stack_info=True)
+        return tuple()
 
     @cached_property
     def __category(self):
@@ -294,6 +306,7 @@ class MadridEs:
     @property
     @TupleCache("rec/madrides.json", builder=Event.build)
     def events(self) -> Tuple[Event, ...]:
+        logger.info("Madrid Es: Buscando eventos")
         all_events: Set[Event] = set()
         for action, data in self.iter_submit():
             all_events = all_events.union(self.__get_events(action, data))
@@ -488,8 +501,21 @@ class MadridEs:
         url = cal.attrs["href"]
         logger.debug(url)
         r = self.w._get(url)
+        valid_lines: list[str] = []
+        for line in r.text.splitlines():
+            if not line.strip():
+                continue
+            if line.startswith(("BEGIN", "END", " ")):
+                valid_lines.append(line)
+                continue
+            if ":" not in line:
+                continue
+            field = re.split(r"[;:]", line)[0].strip()
+            if len(field)==0 or field != field.upper():
+                continue
+            valid_lines.append(line)
         try:
-            return Calendar(r.text)
+            return Calendar("\n".join(valid_lines))
         except (NotImplementedError, FailedParse) as e:
             logger.error(str(e)+" "+url)
             return None
@@ -507,7 +533,7 @@ class MadridEs:
         for ids, cat in self.__category.items():
             if id in ids:
                 if maybeSPAM and cat == Category.CONFERENCE:
-                    return Category.SPAM 
+                    return Category.SPAM
                 return cat
         lg = div.select_one("a.event-location")
         lg = plain_text(lg.attrs["data-name"]) if lg else None
@@ -517,7 +543,7 @@ class MadridEs:
             return Category.CHILDISH
         if re_and(tp_name, "dia", "internacional", "familias?", to_log=id):
             return Category.CHILDISH
-        if re_or(tp_name, "concierto infantil", "en familia", to_log=id):
+        if re_or(tp_name, "concierto infantil", "en familia", r"[Ee]laboraci[óo]n de comederos de aves", r"[Ll]os [\d\.]+ primeros d[ií]as no se repiten", to_log=id):
             return Category.CHILDISH
         if re_or(plain_name, "^re vuelta al patio", to_log=id):
             return Category.CHILDISH
@@ -525,10 +551,14 @@ class MadridEs:
             return Category.SENIORS
         if maybeSPAM:
             return Category.SPAM
+        if re_or(plain_name, "recital de piano", "Cuartero de C[áa]mara", "Arias de [Óo]pera", to_log=id, flags=re.IGNORECASE):
+            return Category.MUSIC
         if re_and(plain_name, "ballet", ("repertorio", "clasico"), to_log=id):
             return Category.DANCE
         if re_or(plain_name, "certamen( de)? (pintura|decoracion)", "festival by olavide", to_log=id):
             return Category.EXPO
+        if re_or(plain_name, r"Representaci[óo]n(es)? teatral(es)?", to_log=id, flags=re.I):
+            return Category.THEATER
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
         if re_or(name_tp, r"^conferencias?$", r"^pregon$", to_log=id):
@@ -643,7 +673,7 @@ class MadridEs:
             return Category.WORKSHOP
 
         desc = self.__get_description(url_event)
-        if re_or(desc, "[mM]usical? infantil", "[Tt]eatro infantil", "relatos en familia", "concierto familiar", ("cuentacuentos", "en familia"), to_log=id, flags=re.IGNORECASE):
+        if re_or(desc, "[mM]usical? infantil", "[Tt]eatro infantil", "relatos en familia", "concierto familiar", "bienestar de niños y niñas", ("cuentacuentos", "en familia"), to_log=id, flags=re.IGNORECASE):
             return Category.CHILDISH
         if re_or(desc, "zarzuela", "teatro", "espect[áa]culo (circense y )?teatral", to_log=id, flags=re.IGNORECASE):
             return Category.THEATER
@@ -651,12 +681,14 @@ class MadridEs:
             return Category.SPORT
         if re_or(plain_name, "actuacion", "verbena") and re_or(desc, "música", "concierto", "canciones", "pop", "rock", "baila", "bailable", "cantante", " d[ée]cada prodigiosa", to_log=id, flags=re.IGNORECASE):
             return Category.MUSIC
-        if re_or(desc, "Concierto", to_log=id):
+        if re_or(desc, "Concierto", "[Uu]n concierto de", to_log=id):
             return Category.MUSIC
         if re_or(desc, r"intervienen l[oa]s", to_log=id):
             return Category.CONFERENCE
-        if desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", flags=re.I):
+        if desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", "presenta su poemario", flags=re.I):
             return Category.POETRY
+        if re_or(desc, "propuesta creativa y participativa que combina lectura, escritura y expresión", r"Se organizará un '?escape room'?", to_log=id, flags=re.IGNORECASE):
+            return Category.WORKSHOP
 
         if re_and(lg, "ambiental", ("casa de campo", "retiro"), to_log=id):
             return Category.VISIT

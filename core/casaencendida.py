@@ -76,6 +76,7 @@ class CasaEncendida:
     @property
     @TupleCache("rec/casaencendida.json", builder=Event.build)
     def events(self):
+        logger.info("Casa Encendida: Buscando eventos")
         events: Set[Event] = set()
         for url in self.get_links():
             events.add(self.__url_to_event(url))

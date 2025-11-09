@@ -206,6 +206,7 @@ class SalaBerlanga:
     @property
     @TupleCache("rec/salaberlanga.json", builder=Event.build)
     def events(self):
+        logger.info("Sala Berlanga: Buscando eventos")
         events: set[Event] = set()
         for item in self.items:
             ev = self._to_event(item)

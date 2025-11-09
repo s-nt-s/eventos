@@ -5,7 +5,6 @@ from typing import Set, Dict, List
 from .cache import TupleCache
 import logging
 from .event import Event, Session, Place, Category, FieldNotFound
-import logging
 import re
 from .util import plain_text
 
@@ -44,6 +43,7 @@ class SalaEquis(Web):
     @property
     @TupleCache("rec/salaequis.json", builder=Event.build)
     def events(self):
+        logger.info("Sala Equis: Buscando eventos")
         events: Set[Event] = set()
         for url in self.get_links():
             events.add(self.__url_to_event(url))
@@ -116,6 +116,7 @@ class SalaEquis(Web):
         for k, v in encuentros.items():
             if k.endswith(" "+name):
                 return v
+
 
 if __name__ == "__main__":
     from .log import config_log

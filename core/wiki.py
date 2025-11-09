@@ -1,7 +1,6 @@
 from textwrap import dedent
 import logging
 from typing import Any
-from functools import cache
 import re
 from time import sleep
 from functools import wraps

@@ -4,6 +4,7 @@ import re
 import cloudscraper
 import logging
 from urllib.parse import quote
+from functools import cache
 
 
 logger = logging.getLogger(__name__)
@@ -39,8 +40,13 @@ class FilmAffinityApi:
     ACTIVE = True
 
     @staticmethod
+    @cache
     def search(year: int, *titles: str):
-        if not FilmAffinityApi.ACTIVE or not isinstance(year, int) or len(titles)==0:
+        if not isinstance(year, int):
+            year = None
+        if not FilmAffinityApi.ACTIVE or len(titles) == 0:
+            return None
+        if len(titles) > 1 and year is None:
             return None
         try:
             ids: set[int] = set()
@@ -50,6 +56,9 @@ class FilmAffinityApi:
                 link = soup.select_one('link[rel="alternate"][hreflang="es"][href]')
                 _id_ = FilmAffinityApi.__extract_id_from_link(link)
                 if _id_:
+                    if year is None and len(titles) == 1:
+                        logger.debug(f"FilmAffinityApi.search = {_id_} = {titles[0]}")
+                        return _id_
                     yr = FilmAffinityApi.__get_year(soup)
                     if yr == year:
                         ids.add(_id_)
@@ -61,6 +70,7 @@ class FilmAffinityApi:
                     _id_ = FilmAffinityApi.__extract_id_from_link(link)
                     if _id_:
                         ids.add(_id_)
+            logger.debug(f"FilmAffinityApi.search = {tuple(sorted(ids))} = {year} + {titles}")
             if len(ids) == 1:
                 return ids.pop()
         except FilmAffinityError as e:

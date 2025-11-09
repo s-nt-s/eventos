@@ -33,6 +33,7 @@ class AcademiaCine(Web):
     @property
     @TupleCache("rec/academiacine.json", builder=Event.build)
     def events(self):
+        logger.info("Academia Cine: Buscando eventos")
         events: Set[Event] = set()
         for url, img in self.calendar:
             events.add(self.__url_to_event(url, img))

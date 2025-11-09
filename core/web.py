@@ -6,7 +6,7 @@ import time
 from urllib.parse import parse_qsl, urljoin, urlsplit
 import json
 from functools import cache
-import cloudscraper
+from core.my_session import buildScraper, buildSession
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -58,7 +58,7 @@ default_headers = {
 }
 
 
-def get_query(url):
+def get_query(url: str):
     q = urlsplit(url)
     q = parse_qsl(q.query)
     q = dict(q)
@@ -121,47 +121,29 @@ class WebException(Exception):
 
 class Web:
     def __init__(self, refer=None, verify=True):
-        self.s = cloudscraper.create_scraper()
+        self.s = buildScraper()
         self.s.headers = default_headers
         self.response = None
         self.soup = None
         self.form = None
         self.verify = verify
-        self.__alt: dict[str, requests.Session] = {
-            "madrid.es": Driver.to_session("firefox", "https://www.madrid.es", cloudscraper.create_scraper())
-        }
-        self.__refer: dict[str, str] = {}
-        r_dom = get_domain(refer)
-        if r_dom in self.__alt:
-            self.__refer[r_dom] = refer
-        else:
-            self.refer = refer
+        self.refer = refer
 
     def _get(self, url, allow_redirects=True, auth=None, **kwargs):
-        session = self.__alt.get(get_domain(url)) or self.s
         verify = kwargs.get('verify', self.verify)
         if kwargs:
-            return session.post(url, data=kwargs, allow_redirects=allow_redirects, verify=verify, auth=auth)
-        return session.get(url, allow_redirects=allow_redirects, verify=verify, auth=auth)
+            return self.s.post(url, data=kwargs, allow_redirects=allow_redirects, verify=verify, auth=auth)
+        return self.s.get(url, allow_redirects=allow_redirects, verify=verify, auth=auth)
 
     def get_soup(self, url, auth=None, parser="lxml", **kwargs):
         r = self._get(url, auth=auth, **kwargs)
         return buildSoup(url, r.content, parser=parser)
 
     def get(self, url, auth=None, parser="lxml", **kwargs):
-        u_dom = get_domain(url)
-        refer = self.__refer.get(u_dom) if u_dom in self.__alt else self.refer
-        if u_dom in self.__alt:
-            refer = self.__refer.get(u_dom)
-            if refer:
-                self.__alt[u_dom].headers.update({'referer': refer})
-        elif self.refer:
+        if self.refer:
             self.s.headers.update({'referer': self.refer})
         self.response = self._get(url, auth=auth, **kwargs)
-        if u_dom in self.__alt:
-            self.__refer[u_dom] = self.response.url
-        else:
-            self.refer = self.response.url
+        self.refer = self.response.url
         self.soup = buildSoup(url, self.response.content, parser=parser)
         return self.soup
 
@@ -251,6 +233,12 @@ class Web:
 
     @cache
     def __cached_get(self, url: str):
+        if get_domain(url) == "madrid.es":
+            s = Driver.cached_session(
+                "firefox",
+                "https://www.madrid.es",
+            )
+            return s.get(url).content
         r = self._get(url)
         return r.content
 
@@ -620,7 +608,7 @@ class Driver:
         if self._driver is None:
             return session
         if session is None:
-            session = requests.Session()
+            session = buildSession()
         for cookie in self._driver.get_cookies():
             session.cookies.set(cookie['name'], cookie['value'], domain=cookie.get("domain"))
         session.headers.update({"User-Agent": self._driver.execute_script("return navigator.userAgent;")})
@@ -645,7 +633,13 @@ class Driver:
             d.get(url)
             time.sleep(5)
             d.wait_ready()
-            return d.pass_cookies(session)
+            s = d.pass_cookies(session)
+            return s
+
+    @staticmethod
+    @cache
+    def cached_session(browser: str, url: str):
+        return Driver.to_session(browser, url)
 
 
 WEB = Web()
