@@ -115,6 +115,7 @@ OK_CAT = (
 def myfilter(e: Event):
     if e.place.name in (
         "Espacio Abierto Quinta de los Molinos",
+        #"Centro Sociocultural Ágata"
     ):
         return False
     if e.price > args.precio:
@@ -122,10 +123,21 @@ def myfilter(e: Event):
     if e.category not in OK_CAT:
         return False
 
+    #if "madrid.es" in map(get_domain, e.iter_urls()):
+    #    if e.place.name in (
+    #        "Faro de Moncloa"
+    #    ):
+    #        # Ya registrado en madrid-destino
+    #        return False
+
     e.remove_old_sessions(NOW)
     e.remove_working_sessions()
 
-    if len(e.sessions) == 0:
+    count_session = len(e.sessions)
+    if count_session == 0:
+        return False
+    if count_session > 20:
+        logger.warning(f"{e.id} tiene {count_session} sesiones {e.url}")
         return False
     return True
 
@@ -329,7 +341,8 @@ def set_icons(html: str, **kwargs):
             "teatroreal": "https://www.teatroreal.es/themes/custom/teatro_real/favicon.ico",
             "semanacienciamadrid": "https://www.semanacienciamadrid.org/themes/custom/bs5fmmd/favicon.ico",
             "condeduquemadrid": "https://www.condeduquemadrid.es/themes/custom/condebase_theme/icon_app/favicon-16x16.png",
-            "docs.google": "https://ssl.gstatic.com/docs/spreadsheets/forms/favicon_qp2.png"
+            "docs.google": "https://ssl.gstatic.com/docs/spreadsheets/forms/favicon_qp2.png",
+            "forms.office": "https://cdn.forms.office.net/images/favicon.ico"
         }.get(dom)
         if ico is None:
             continue

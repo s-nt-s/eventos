@@ -68,6 +68,7 @@ def clean_lugar(s: str):
     s = re.sub(r"^Centro (cultural|sociocultural)\b", "Centro cultural", s, flags=re.IGNORECASE)
     s = re.sub(r"\s+de\s+Madrid$", "", s, flags=re.IGNORECASE)
     s = re.sub(r"^Centro dotacional integrado", "Centro dotacional integrado", s, flags=re.IGNORECASE)
+    s = re.sub(r"\bFaro de la Moncloa\b", "Faro de Moncloa", s, flags=re.I)
     lw = plain_text(s).lower()
     if lw.startswith("museo de san isidro"):
         return "Museo San Isidro"
@@ -543,7 +544,7 @@ class MadridEs:
             return Category.CHILDISH
         if re_and(tp_name, "dia", "internacional", "familias?", to_log=id):
             return Category.CHILDISH
-        if re_or(tp_name, "concierto infantil", "en familia", r"[Ee]laboraci[óo]n de comederos de aves", r"[Ll]os [\d\.]+ primeros d[ií]as no se repiten", to_log=id):
+        if re_or(tp_name, "concierto infantil", "en familia", r"[Ee]laboraci[óo]n de comederos de aves", r"[Ll]os [\d\. ]+ primeros d[íi]as no se repiten", to_log=id):
             return Category.CHILDISH
         if re_or(plain_name, "^re vuelta al patio", to_log=id):
             return Category.CHILDISH
@@ -551,7 +552,9 @@ class MadridEs:
             return Category.SENIORS
         if maybeSPAM:
             return Category.SPAM
-        if re_or(plain_name, "recital de piano", "Cuartero de C[áa]mara", "Arias de [Óo]pera", to_log=id, flags=re.IGNORECASE):
+        if re_or(plain_name, "Mejora tu ingl[eé]s con charlas", to_log=id, flags=re.I):
+            return Category.WORKSHOP
+        if re_or(plain_name, "recital de piano", r"Cuartero de C[áa]mara", r"Arias de [Óo]pera", to_log=id, flags=re.IGNORECASE):
             return Category.MUSIC
         if re_and(plain_name, "ballet", ("repertorio", "clasico"), to_log=id):
             return Category.DANCE
@@ -559,6 +562,8 @@ class MadridEs:
             return Category.EXPO
         if re_or(plain_name, r"Representaci[óo]n(es)? teatral(es)?", to_log=id, flags=re.I):
             return Category.THEATER
+        if re_or(plain_name, r"d[íi]a mundial de la poes[íi]a", r"encuentro po[ée]tico", to_log=id, flags=re.I):
+            return Category.POETRY
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
         if re_or(name_tp, r"^conferencias?$", r"^pregon$", to_log=id):
