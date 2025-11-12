@@ -136,7 +136,7 @@ class SalaBerlanga:
                 dt.replace(year=dt.year+1)
             html_sessions.add(Session(date=f"{dt.isoformat()} {hm}"))
         html_name = get_text(item.tag.select_one("h5"))
-        html_sessions = tuple(sorted(html_sessions, key=lambda s: (s.date, s.url)))
+        tup_html_sessions = tuple(sorted(html_sessions, key=lambda s: (s.date, s.url)))
         cine_entradas = self.__get_cine_entrada(url_compra, html_name)
         if cine_entradas:
             old_url = cine_entradas.url
@@ -151,6 +151,8 @@ class SalaBerlanga:
                 sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url)))
             )
         else:
+            if url_compra and len(tup_html_sessions) == 1 and tup_html_sessions[0].url is None:
+                tup_html_sessions = (tup_html_sessions[0]._replace(url=url_compra), )
             ev = Event(
                 id=_id_,
                 url=item.url,
@@ -159,7 +161,7 @@ class SalaBerlanga:
                 place=SalaBerlanga.PLACE,
                 price=SalaBerlanga.PRICE,
                 duration=int(card_text.group(3)) if card_text else None,
-                sessions=html_sessions,
+                sessions=tup_html_sessions,
                 img=None, #item.inf.get('yoast_head_json', {}).get('og_image', [{}])[0].get('url'),
             )
         if isGratis:
@@ -173,9 +175,12 @@ class SalaBerlanga:
             ev = ev.merge(category=Category.THEATER)
         if ev.img is None:
             ev = ev.merge(img=get_attr(item.tag.select_one("img"), "src"))
+        content = buildSoup(item.inf['link'], item.inf['content']['rendered'])
+        #txt_content = (ev.name+' '+(get_text(content) or '')).strip()
+        #if re_or(txt_content, r"\bInterautor Teatro\b") or re_or(ev.name, r"\s*\-\s*Teatro en la [Bb]erlanga$"):
+        #    ev = ev.merge(category=Category.THEATER, cycle="Teatro en la Berlanga")
         ev = ev.fix_type()
         if isinstance(ev, Cinema):
-            content = buildSoup(item.inf['link'], item.inf['content']['rendered'])
             aka = self.__find_p_strong(content, "Título original")
             if aka:
                 ev = ev.merge(aka=(ev.name, aka))

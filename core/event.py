@@ -96,6 +96,8 @@ class Category(IntEnum):
     ONLINE = 24
     HIKING = 35 # senderismo
     MAGIC = 36
+    VIEW_POINT = 37
+    NO_EVENT = 38
 
     def __str__(self):
         #if self == Category.OTHERS:
@@ -242,6 +244,27 @@ class Place(NamedTuple):
             return "Matadero"
         return self.name
 
+    def fix(self):
+        if re.match(r"^Faro de (la )?Moncloa$", self.name, flags=re.I):
+            return Place(
+                name="Faro de Moncloa",
+                address="Av. de la Memoria, 2, 28040 Madrid",
+                latlon="40.43727075977316,-3.721682694006853"
+            )
+        if re.match(r"^Conde Duque$", self.name, flags=re.I):
+            return Place(
+                name="Conde Duque",
+                address="Calle del Conde Duque, 11, 28015 Madrid",
+                latlon="40.42739911262292,-3.710589286287491"
+            )
+        if re.match(r"^Sala Berlanga$", self.name, flags=re.I) and re.search(r"Andr[ée]s Mellado.*53", self.address or "", flags=re.I):
+            return Place(
+                name="Sala Berlanga",
+                address="Calle de Andrés Mellado, 53, 28015 Madrid",
+                latlon="40.428087092339986,-3.7107698133958547"
+            )
+        return self
+
 
 def unquote(s: str):
     quotes = ("'", '"')
@@ -279,6 +302,10 @@ def _clean_name(name: str, place: str):
             "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.IGNORECASE)
+        name = re.sub(r"^Semana de la Ciencia 2025:\s*", "", name, flags=re.I)
+        name = re.sub(r"^[a-zA-ZáéÁÉ]+ con Historia[\.\s]+[vV]isitas guiadas tem[aá]ticas a la colecci[oó]n[\.\s]+[a-zA-Z]+", "Visitas guiadas temáticas a la colección", name)
+        name = re.sub(r"^Charlas con altura:\s+", "", name)
+        name = re.sub(r"[\s\-]+Encuentro con el público$", "", name)
         name = re.sub(r"^[Pp]el[íi]cula[:\.]\s+", "", name)
         name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.IGNORECASE)
         name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.IGNORECASE)
@@ -368,6 +395,7 @@ class Event:
         return new_dataclass(Event, self._asdict())
 
     def __post_init__(self):
+        object.__setattr__(self, 'place', self.place.fix())
         new_name = _clean_name(self.name, self.place.name)
         if new_name != self.name:
             logger.debug(f"FIX: {new_name} <- {self.name}")
@@ -387,12 +415,20 @@ class Event:
         for k, v in kwargs.items():
             if v is not None:
                 object.__setattr__(self, k, v)
-        for f in fields(self):
-            self._fix_field(f.name)
-        if self.url is None and get_domain(self.more) == "madrid.es":
-            object.__setattr__(self, "url", self.more)
-            object.__setattr__(self, "more", None)
+        self.__fix()
         return self
+
+    def __fix(self):
+        doit = True
+        while doit:
+            doit = False
+            for f in fields(self):
+                if self._fix_field(f.name):
+                    doit = True
+            if self.url is None and get_domain(self.more) == "madrid.es":
+                object.__setattr__(self, "url", self.more)
+                object.__setattr__(self, "more", None)
+                doit = True
 
     def _fix_field(self, name: str, fnc=None):
         fix_event = FIX_EVENT.get(self.id, {})
@@ -403,14 +439,15 @@ class Event:
             if fnc is None:
                 fnc = getattr(self, f'_fix_{name}', None)
             if fnc is None or not callable(fnc):
-                return
+                return False
             fix_val = fnc()
         if name == "category" and isinstance(fix_val, str):
             fix_val = Category[fix_val]
         if fix_val == old_val:
-            return
+            return False
         logger.debug(f"FIX: {name} {fix_val} <- {old_val}")
         object.__setattr__(self, name, fix_val)
+        return True
 
     def __get_urls(self):
         arr: List[str] = [None, ]
@@ -646,13 +683,23 @@ class Event:
             return "Derechos digitales"
         if re.search(r"^Nuevos [Ii]maginarios: ", self.name):
             return "Nuevos imaginarios"
-        if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", self.name):
+        if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
             return "Teatro en la Berlanga"
+        #if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", self.name):
+        #    return "Teatro en la Berlanga"
         m = re.match(r"^(Interautor 20\d+)\b.*", self.name)
         if m:
-            if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
-                return "Teatro en la Berlanga"
+            #if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
+            #    return "Teatro en la Berlanga"
             return m.group(1)
+        if self.category == Category.VISIT:
+            if self.more == "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Itinerarios-guiados-por-El-Retiro/?vgnextfmt=default&vgnextoid=e7b01130a93b1810VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD":
+                return "Itinerarios guiados por El Retiro"
+        if self.category == Category.CONFERENCE:
+            if self.more == "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Los-Clasicos-en-el-Museo-V-Ciclo-de-Conferencias-/?vgnextfmt=default&vgnextoid=3a7136c30d489910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD":
+                return "Los Clásicos en el Museo"
+            if self.more == "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Codigo-eterno-codigo-secreto-Las-lenguas-clasicas-y-sus-misterios-XXXIII-Ciclo-de-Conferencias-de-Otono-/?vgnextfmt=default&vgnextoid=abf8a70a5ac39910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD":
+                return "Las lenguas clásicas y sus misterios"
         return None
 
 

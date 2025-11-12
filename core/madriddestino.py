@@ -92,8 +92,8 @@ class MadridDestino:
         logger.info("Madrid Destino: Buscando eventos")
         events: Set[Event] = set()
         for e in self.state['events']:
-            if len(e['eventCategories']) == 0:
-                continue
+            #if len(e['eventCategories']) == 0:
+            #    continue
             if e['freeCapacity'] == 0:
                 continue
             org = self.__find("organizations", e['organization_id'])
@@ -268,6 +268,8 @@ class MadridDestino:
                 logger.debug(f"{id} cumple {', '.join(sorted(ok))}")
                 return True
 
+        if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", to_log=id, flags=re.I):
+            return Category.VIEW_POINT
         if re_or(pt, "taller infantil", "concierto matinal familiar", to_log=id):
             return Category.CHILDISH
         if not is_cat("cine") and is_cat("en familia", "infantil"):
@@ -319,6 +321,15 @@ class MadridDestino:
 
         if is_cat("juvenil"):
             return Category.YOUTH
+
+        if re_or(pt, "parking", to_log=id, flags=re.I):
+            return Category.NO_EVENT
+        if re_or(pt, r"Charlas con altura", to_log=id, flags=re.I):
+            return Category.CONFERENCE
+        psub = plain_text(e.get('subtitle'))
+        if re_or(psub, r"^Taller de", to_log=id, flags=re.I):
+            return Category.WORKSHOP
+
         logger.critical(str(CategoryUnknown(MadridDestino.URL, f"{e['id']} {pt}: " + ", ".join(sorted(cats)))))
         return Category.UNKNOWN
 
