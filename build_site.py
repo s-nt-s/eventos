@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from core.event import Event, Category, Session, Cinema
+from core.event import Event, Category, Session, Place, Cinema
 from core.ics import IcsEvent
 from core.casaencendida import CasaEncendida
 from core.dore import Dore
@@ -16,11 +16,11 @@ from core.j2 import Jnj2, toTag
 from datetime import datetime, timedelta
 from core.log import config_log
 from core.img import MyImage
-from core.util import dict_add, get_domain, to_datetime, uniq, to_uuid, find_duplicates
+from core.util import dict_add, get_domain, to_datetime, uniq, to_uuid
 import logging
 from os import environ
 from os.path import isfile
-from typing import Tuple, Dict, Set, List
+from typing import Dict, Set, Tuple, List
 from core.filemanager import FM
 import math
 import bs4
@@ -142,6 +142,14 @@ def myfilter(e: Event):
     return True
 
 
+def isMadridMusic(e: Event):
+    if get_domain(e.url) != "madrid.es" or e.category not in (Category.MUSIC, ):
+        return False
+    if get_domain(e.more) != "madrid.es":
+        return False
+    return True
+
+
 def find_filmaffinity_if_needed(imdb_film: dict[str, int], e: Cinema):
     if not isinstance(e, Cinema):
         return None
@@ -177,23 +185,18 @@ def sorted_and_fix(eventos: List[Event]):
                 if myfilter(e):
                     PUBLISH[e.id] = e.publish
                     yield e
+    ok_events: Set[Cinema | Event] = set()
+    data: Dict[Tuple[str, Place]] = defaultdict(set)
+    for e in _iter_fix(eventos):
+        if not isMadridMusic(e):
+            ok_events.add(e)
+            continue
+        data[(e.more, e.place)].add(e)
 
-    ok_events = set(_iter_fix(eventos))
-
-    def _mk_key_madrid_music(e: Event):
-        if e.category != Category.MUSIC:
-            return None
-        if ("madrid.es", "madrid.es") != tuple(map(get_domain, (e.url, e.more))):
-            return None
-        return (e.more, e.place, e.price)
-
-    for evs in find_duplicates(
-        ok_events,
-        _mk_key_madrid_music
-    ):
-        for e in evs:
-            ok_events.remove(e)
-        more = evs[0].more
+    for (more, place), evs in data.items():
+        if len(evs) == 1:
+            ok_events = ok_events.union(evs)
+            continue
         _id_ = MadridEs.get_id(more)
         e = Event.fusion(*evs, firstEventUrl=False).merge(
             name=None,
@@ -201,18 +204,15 @@ def sorted_and_fix(eventos: List[Event]):
             url=more,
         ).fix(publish=PUBLISH.get(_id_))
         ok_events.add(e)
-
-    def _mk_key_cycle(e: Event | Cinema):
+    data: Dict[Tuple[Place, int], Set[Event]] = defaultdict(set)
+    for e in tuple(ok_events):
         if len(e.sessions) == 1 and e.cycle:
-            return (e.cycle, e.category, e.place, e.price)
-
-    for evs in find_duplicates(
-        ok_events,
-        _mk_key_cycle
-    ):
-        for e in evs:
+            data[(e.cycle, e.category, e.place, e.price)].add(e)
             ok_events.remove(e)
-        cycle = evs[0].cycle
+    for (cycle, _, _, _), evs in data.items():
+        if len(evs) == 1:
+            ok_events.add(evs.pop())
+            continue
         _id_ = to_uuid("".join(e.id for e in evs))
         e = Event.fusion(*evs, firstEventUrl=True).merge(
             name=cycle,
@@ -223,24 +223,9 @@ def sorted_and_fix(eventos: List[Event]):
         ).fix(publish=PUBLISH.get(_id_))
         ok_events.add(e)
 
-    def _mk_place_name_session(e: Event | Category):
-        return (e.place, e.category, e.name, e.price, tuple((s.date for s in e.sessions)))
-
-    for evs in find_duplicates(
-        ok_events,
-        _mk_place_name_session
-    ):
-        for e in evs:
-            ok_events.remove(e)
-        _id_ = to_uuid("".join(e.id for e in evs))
-        e = Event.fusion(*evs).merge(
-            id=_id_,
-        ).fix(publish=PUBLISH.get(_id_))
-        ok_events.add(e)
-
     arr1 = sorted(
         (e.fix_type().fix() for e in ok_events),
-        key=lambda e: (min(s.date for s in e.sessions), e.name, e.url or '')
+        key=lambda e: (min(s.date for s in e.sessions), e.name, e.url)
     )
     imdb: set[str] = set()
     for e in arr1:

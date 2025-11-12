@@ -334,8 +334,6 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"^Representaci[óo]n teatral:?\s+'([^']+)'$", r"\1", name, flags=re.I)
         name = re.sub(r"^Obra de teatro\.\s+", "", name, flags=re.I)
         name = unquote(name.strip(". "))
-        if re.search(r"^Visitas dialogadas Matadero", name):
-            name = "Visitas dialogadas Matadero"
         if len(name) < 2:
             name = bak[-1]
     name = unquote(name)
@@ -379,7 +377,7 @@ class Event:
     also_in: Tuple[str] = tuple()
     sessions: Tuple[Session] = tuple()
     cycle: Optional[str] = None
-    more: Optional[str] = None
+    more: str = None
 
     def __lt__(self, other):
         if not isinstance(other, Event):
@@ -418,13 +416,6 @@ class Event:
             if v is not None:
                 object.__setattr__(self, k, v)
         self.__fix()
-        nil = []
-        if self.name is None:
-            nil.append("name")
-        if self.place is None:
-            nil.append("place")
-        if nil:
-            raise ValueError(f"[{self.id}] Missing required fields: {', '.join(nil)}")
         return self
 
     def __fix(self):
@@ -640,22 +631,12 @@ class Event:
         return asdict(self)
 
     @staticmethod
-    def fusion(*evs: "Event", firstEventUrl: bool = False):
-        if len(evs) == 0:
+    def fusion(*events: "Event", firstEventUrl: bool = False):
+        if len(events) == 0:
             raise ValueError("len(events)==0")
-        if len(evs) == 1:
-            return evs[0]
-        logger.debug("Fusión: " + " + ".join(map(lambda e: f"{e.id} {e.duration}", evs)))
-        dates_with_url: Set[str] = set()
-        for e in evs:
-            for s in e.sessions:
-                if s.url is not None:
-                    dates_with_url.add(s.date)
-        events = list(evs)
-        for i, e in enumerate(events):
-            sessions = tuple((s for s in e.sessions if s.url or s.date not in dates_with_url))
-            events[i] = e.merge(sessions=sessions)
-
+        if len(events) == 1:
+            return events[0]
+        logger.debug("Fusión: " + " + ".join(map(lambda e: f"{e.id} {e.duration}", events)))
         sessions: Set[Session] = set()
         sessions_with_url: Set[Session] = set()
         categories: List[Category] = []
@@ -683,42 +664,30 @@ class Event:
         url = seen_in[0]
         also_in = seen_in[1:]
         if len(sessions) > 1:
-            sessions_url = set(s.url for s in sessions_with_url)
             sessions = sessions_with_url
-            also_in = tuple((u for u in also_in if u not in sessions_url))
             url = None
-            if len(also_in) == 1:
-                url = also_in[0]
-                also_in = tuple()
-        e = events[0].merge(
+            also_in = tuple()
+        return events[0].merge(
             url=url,
             also_in=also_in,
             duration=get_main_value(durations),
             img=get_main_value(imgs),
             category=get_main_value(categories, default=Category.UNKNOWN),
             sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
-        ).fix()
-        if e.category != Category.CINEMA and e.more is None and len(e.also_in) == 1:
-            e = e.merge(
-                more=e.also_in[0],
-                also_in=tuple()
         )
-        return e
-    
-==== BASE ====
+
     def _fix_cycle(self):
         if self.cycle:
             return self.cycle
-        name = self.name or ''
-        if re.search(r"^Derechos [dD]igitales: ", name):
+        if re.search(r"^Derechos [dD]igitales: ", self.name):
             return "Derechos digitales"
-        if re.search(r"^Nuevos [Ii]maginarios: ", name):
+        if re.search(r"^Nuevos [Ii]maginarios: ", self.name):
             return "Nuevos imaginarios"
         if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
             return "Teatro en la Berlanga"
-        #if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", name):
+        #if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", self.name):
         #    return "Teatro en la Berlanga"
-        m = re.match(r"^(Interautor 20\d+)\b.*", name)
+        m = re.match(r"^(Interautor 20\d+)\b.*", self.name)
         if m:
             #if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
             #    return "Teatro en la Berlanga"
