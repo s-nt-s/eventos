@@ -688,7 +688,7 @@ class MadridEs:
             return Category.MUSIC
         if re_or(desc, "Concierto", "[Uu]n concierto de", to_log=id):
             return Category.MUSIC
-        if re_or(desc, r"intervienen l[oa]s", to_log=id):
+        if re_or(desc, r"intervienen l[oa]s", "una mesa redonda con", to_log=id):
             return Category.CONFERENCE
         if desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", "presenta su poemario", flags=re.I):
             return Category.POETRY
