@@ -377,7 +377,7 @@ class Event:
     also_in: Tuple[str] = tuple()
     sessions: Tuple[Session] = tuple()
     cycle: Optional[str] = None
-    more: str = None
+    more: Optional[str] = None
 
     def __lt__(self, other):
         if not isinstance(other, Event):
@@ -638,12 +638,22 @@ class Event:
         return asdict(self)
 
     @staticmethod
-    def fusion(*events: "Event", firstEventUrl: bool = False):
-        if len(events) == 0:
+    def fusion(*evs: "Event", firstEventUrl: bool = False):
+        if len(evs) == 0:
             raise ValueError("len(events)==0")
-        if len(events) == 1:
-            return events[0]
-        logger.debug("Fusión: " + " + ".join(map(lambda e: f"{e.id} {e.duration}", events)))
+        if len(evs) == 1:
+            return evs[0]
+        logger.debug("Fusión: " + " + ".join(map(lambda e: f"{e.id} {e.duration}", evs)))
+        dates_with_url: Set[str] = set()
+        for e in evs:
+            for s in e.sessions:
+                if s.url is not None:
+                    dates_with_url.add(s.date)
+        events = list(evs)
+        for i, e in enumerate(events):
+            sessions = tuple((s for s in e.sessions if s.url or s.date not in dates_with_url))
+            events[i] = e.merge(sessions=sessions)
+
         sessions: Set[Session] = set()
         sessions_with_url: Set[Session] = set()
         categories: List[Category] = []
@@ -671,17 +681,27 @@ class Event:
         url = seen_in[0]
         also_in = seen_in[1:]
         if len(sessions) > 1:
+            sessions_url = set(s.url for s in sessions_with_url)
             sessions = sessions_with_url
+            also_in = tuple((u for u in also_in if u not in sessions_url))
             url = None
-            also_in = tuple()
-        return events[0].merge(
+            if len(also_in) == 1:
+                url = also_in[0]
+                also_in = tuple()
+        e = events[0].merge(
             url=url,
             also_in=also_in,
             duration=get_main_value(durations),
             img=get_main_value(imgs),
             category=get_main_value(categories, default=Category.UNKNOWN),
             sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
-        )
+        ).fix()
+        if e.category != Category.CINEMA and e.more is None and len(e.also_in) == 1:
+            e = e.merge(
+                more=e.also_in[0],
+                also_in=tuple()
+            )
+        return e
 
     def _fix_cycle(self):
         if self.cycle:
