@@ -416,6 +416,13 @@ class Event:
             if v is not None:
                 object.__setattr__(self, k, v)
         self.__fix()
+        nil = []
+        if self.name is None:
+            nil.append("name")
+        if self.place is None:
+            nil.append("place")
+        if nil:
+            raise ValueError(f"[{self.id}] Missing required fields: {', '.join(nil)}")
         return self
 
     def __fix(self):
