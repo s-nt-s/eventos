@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from core.event import Event, Category, Session, Place, Cinema
+from core.event import Event, Category, Session, Cinema
 from core.ics import IcsEvent
 from core.casaencendida import CasaEncendida
 from core.dore import Dore
@@ -240,7 +240,7 @@ def sorted_and_fix(eventos: List[Event]):
 
     arr1 = sorted(
         (e.fix_type().fix() for e in ok_events),
-        key=lambda e: (min(s.date for s in e.sessions), e.name, e.url)
+        key=lambda e: (min(s.date for s in e.sessions), e.name, e.url or '')
     )
     imdb: set[str] = set()
     for e in arr1:
