@@ -183,7 +183,7 @@ def sorted_and_fix(eventos: List[Event]):
     def _mk_key_madrid_music(e: Event):
         if e.category != Category.MUSIC:
             return None
-        if "madrid.es" not in (get_domain(e.url),  get_domain(e.more)):
+        if ("madrid.es", "madrid.es") != tuple(map(get_domain, (e.url, e.more))):
             return None
         return (e.more, e.place, e.price)
 
