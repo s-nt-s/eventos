@@ -16,11 +16,11 @@ from core.j2 import Jnj2, toTag
 from datetime import datetime, timedelta
 from core.log import config_log
 from core.img import MyImage
-from core.util import dict_add, get_domain, to_datetime, uniq, to_uuid
+from core.util import dict_add, get_domain, to_datetime, uniq, to_uuid, find_duplicates
 import logging
 from os import environ
 from os.path import isfile
-from typing import Dict, Set, Tuple, List
+from typing import Tuple, Dict, Set, List
 from core.filemanager import FM
 import math
 import bs4
@@ -142,14 +142,6 @@ def myfilter(e: Event):
     return True
 
 
-def isMadridMusic(e: Event):
-    if get_domain(e.url) != "madrid.es" or e.category not in (Category.MUSIC, ):
-        return False
-    if get_domain(e.more) != "madrid.es":
-        return False
-    return True
-
-
 def find_filmaffinity_if_needed(imdb_film: dict[str, int], e: Cinema):
     if not isinstance(e, Cinema):
         return None
@@ -185,18 +177,23 @@ def sorted_and_fix(eventos: List[Event]):
                 if myfilter(e):
                     PUBLISH[e.id] = e.publish
                     yield e
-    ok_events: Set[Cinema | Event] = set()
-    data: Dict[Tuple[str, Place]] = defaultdict(set)
-    for e in _iter_fix(eventos):
-        if not isMadridMusic(e):
-            ok_events.add(e)
-            continue
-        data[(e.more, e.place)].add(e)
 
-    for (more, place), evs in data.items():
-        if len(evs) == 1:
-            ok_events = ok_events.union(evs)
-            continue
+    ok_events = set(_iter_fix(eventos))
+
+    def _mk_key_madrid_music(e: Event):
+        if e.category != Category.MUSIC:
+            return None
+        if "madrid.es" not in (get_domain(e.url),  get_domain(e.more)):
+            return None
+        return (e.more, e.place, e.price)
+
+    for evs in find_duplicates(
+        ok_events,
+        _mk_key_madrid_music
+    ):
+        for e in evs:
+            ok_events.remove(e)
+        more = evs[0].more
         _id_ = MadridEs.get_id(more)
         e = Event.fusion(*evs, firstEventUrl=False).merge(
             name=None,
@@ -204,15 +201,18 @@ def sorted_and_fix(eventos: List[Event]):
             url=more,
         ).fix(publish=PUBLISH.get(_id_))
         ok_events.add(e)
-    data: Dict[Tuple[Place, int], Set[Event]] = defaultdict(set)
-    for e in tuple(ok_events):
+
+    def _mk_key_cycle(e: Event | Cinema):
         if len(e.sessions) == 1 and e.cycle:
-            data[(e.cycle, e.category, e.place, e.price)].add(e)
+            return (e.cycle, e.category, e.place, e.price)
+
+    for evs in find_duplicates(
+        ok_events,
+        _mk_key_cycle
+    ):
+        for e in evs:
             ok_events.remove(e)
-    for (cycle, _, _, _), evs in data.items():
-        if len(evs) == 1:
-            ok_events.add(evs.pop())
-            continue
+        cycle = evs[0].cycle
         _id_ = to_uuid("".join(e.id for e in evs))
         e = Event.fusion(*evs, firstEventUrl=True).merge(
             name=cycle,
@@ -220,6 +220,21 @@ def sorted_and_fix(eventos: List[Event]):
             id=_id_,
             url=None,
             more=None
+        ).fix(publish=PUBLISH.get(_id_))
+        ok_events.add(e)
+
+    def _mk_place_name_session(e: Event | Category):
+        return (e.place, e.category, e.name, e.price, tuple((s.date for s in e.sessions)))
+
+    for evs in find_duplicates(
+        ok_events,
+        _mk_place_name_session
+    ):
+        for e in evs:
+            ok_events.remove(e)
+        _id_ = to_uuid("".join(e.id for e in evs))
+        e = Event.fusion(*evs).merge(
+            id=_id_,
         ).fix(publish=PUBLISH.get(_id_))
         ok_events.add(e)
 

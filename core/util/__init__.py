@@ -9,15 +9,17 @@ from urllib.parse import urlparse, ParseResult
 import pytz
 from datetime import datetime
 from math import radians, sin, cos, sqrt, atan2
-from collections import Counter
+from collections import Counter, defaultdict
 from os import environ
 
-from typing import TypeVar, Callable, Iterable
+from typing import Callable, TypeVar, Optional, Tuple, Dict, Set, List, Iterable
 import uuid
 
 UUID_NAMESPACE = uuid.UUID('00000000-0000-0000-0000-000000000000')
 
 T = TypeVar('T')
+KeyTuple = TypeVar("KeyTuple", bound=tuple)
+ValObject = TypeVar("ValObject", bound=object)
 
 logger = logging.getLogger(__name__)
 
@@ -408,3 +410,19 @@ def get_env(*args: str, default: str = None) -> str | None:
             if len(v):
                 return v
     return default
+
+
+def find_duplicates(
+    evs: Iterable[ValObject],
+    mk_key: Callable[[ValObject], Optional[KeyTuple]],
+) -> Tuple[Tuple[ValObject, ...], ...]:
+    data_set: Dict[KeyTuple, List[ValObject]] = defaultdict(list)
+    for e in evs:
+        k = mk_key(e)
+        if k is not None and e not in data_set[k]:
+            data_set[k].append(e)
+    data: list[Tuple[ValObject, ...]] = []
+    for k, v in data_set.items():
+        if len(v) > 1:
+            data.append(tuple(v))
+    return tuple(data)

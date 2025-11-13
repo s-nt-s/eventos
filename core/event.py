@@ -679,15 +679,16 @@ class Event:
     def _fix_cycle(self):
         if self.cycle:
             return self.cycle
-        if re.search(r"^Derechos [dD]igitales: ", self.name):
+        name = self.name or ''
+        if re.search(r"^Derechos [dD]igitales: ", name):
             return "Derechos digitales"
-        if re.search(r"^Nuevos [Ii]maginarios: ", self.name):
+        if re.search(r"^Nuevos [Ii]maginarios: ", name):
             return "Nuevos imaginarios"
         if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
             return "Teatro en la Berlanga"
-        #if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", self.name):
+        #if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", name):
         #    return "Teatro en la Berlanga"
-        m = re.match(r"^(Interautor 20\d+)\b.*", self.name)
+        m = re.match(r"^(Interautor 20\d+)\b.*", name)
         if m:
             #if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
             #    return "Teatro en la Berlanga"
