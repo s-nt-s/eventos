@@ -15,6 +15,7 @@ CRITICAL = (
     'PIL.Image',
     'PIL.PngImagePlugin',
     'PIL.TiffImagePlugin',
+    'selenium.webdriver.common.service',
 )
 
 
