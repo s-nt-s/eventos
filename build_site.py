@@ -357,7 +357,8 @@ def set_icons(html: str, **kwargs):
             "semanacienciamadrid": "https://www.semanacienciamadrid.org/themes/custom/bs5fmmd/favicon.ico",
             "condeduquemadrid": "https://www.condeduquemadrid.es/themes/custom/condebase_theme/icon_app/favicon-16x16.png",
             "docs.google": "https://ssl.gstatic.com/docs/spreadsheets/forms/favicon_qp2.png",
-            "forms.office": "https://cdn.forms.office.net/images/favicon.ico"
+            "forms.office": "https://cdn.forms.office.net/images/favicon.ico",
+            "goodreads": "https://www.goodreads.com/favicon.ico"
         }.get(dom)
         if ico is None:
             continue
