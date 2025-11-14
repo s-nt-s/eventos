@@ -167,9 +167,13 @@ class MadridDestino:
                 if a:
                     address.add(a)
             if len(address) != 1:
-                raise FieldUnknown(MadridDestino.URL, "place", f"{e['id']}: " + ", ".join(
+                logger.critical(FieldUnknown(MadridDestino.URL, "place", f"{e['id']}: " + ", ".join(
                     map(str, sorted(space_id))
-                ))
+                )))
+                return Place(
+                    name="¿?",
+                    address="¿?"
+                )
         space = self.__find("spaces", sorted(space_id).pop())
         return Place(
             name=re.sub(r"\s+Madrid$", "", space['name']),

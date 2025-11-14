@@ -419,8 +419,6 @@ class Event:
         nil = []
         if self.name is None:
             nil.append("name")
-        if self.place is None:
-            nil.append("place")
         if nil:
             raise ValueError(f"[{self.id}] Missing required fields: {', '.join(nil)}")
         return self
