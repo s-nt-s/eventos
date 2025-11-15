@@ -451,6 +451,18 @@ class Event:
                 object.__setattr__(self, "url", self.more)
                 object.__setattr__(self, "more", None)
                 doit = True
+            s_changed = False
+            sessions = list(self.sessions)
+            for i, s in enumerate(sessions):
+                s_id = f"{self.id}_{s.date}"
+                url = FIX_EVENT.get(s_id)
+                if url is not None and s.url is None:
+                    logger.debug(f"FIX: sessions {s_id} url = {url}")
+                    sessions[i] = s.merge(url=url)
+                    s_changed = True
+            if s_changed:
+                object.__setattr__(self, "sessions", tuple(sessions))
+                doit = True
 
     def _fix_field(self, name: str, fnc=None):
         fix_event = FIX_EVENT.get(self.id, {})
