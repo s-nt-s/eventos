@@ -31,6 +31,7 @@ re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
 WEB = Web()
 
 
+
 def new_dataclass(cls: Type[T], obj: dict) -> T:
     if not is_dataclass(cls):
         raise TypeError(f"{cls} no es un dataclass")
@@ -177,6 +178,20 @@ class Session(NamedTuple):
         if obj is None:
             return None
         return Session(**obj)
+
+    @staticmethod
+    def parse_list(obj) -> Optional[Tuple['Session', ...]]:
+        if obj is None:
+            return None
+        if not isinstance(obj, (list, tuple)):
+            raise ValueError(obj)
+        if len(obj) == 0:
+            return tuple()
+        if isinstance(obj[0], Session):
+            return tuple(obj)
+        if isinstance(obj[0], dict):
+            return tuple(map(Session.build, obj))
+        raise ValueError(obj)
 
     @property
     def hour(self):
@@ -403,6 +418,8 @@ class Event:
         fix_event = FIX_EVENT.get(self.id, {})
         for f in fields(self):
             v = fix_event.get(f.name) or getattr(self, f.name, None)
+            if f.name == "sessions":
+                v = Session.parse_list(v)
             if isinstance(v, list):
                 v = tuple(v)
             elif isinstance(v, str) and len(v) == 0:
@@ -446,6 +463,8 @@ class Event:
             if fnc is None or not callable(fnc):
                 return False
             fix_val = fnc()
+        if name == "sessions":
+            fix_val = Session.parse_list(fix_val)
         if name == "category" and isinstance(fix_val, str):
             fix_val = Category[fix_val]
         if fix_val == old_val:
