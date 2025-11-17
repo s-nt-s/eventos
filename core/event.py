@@ -757,7 +757,7 @@ class Event:
                 return "Los Clásicos en el Museo"
             if self.more == "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Codigo-eterno-codigo-secreto-Las-lenguas-clasicas-y-sus-misterios-XXXIII-Ciclo-de-Conferencias-de-Otono-/?vgnextfmt=default&vgnextoid=abf8a70a5ac39910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD":
                 return "Las lenguas clásicas y sus misterios"
-        if self.category == Category.CINEMA and self.place.name == "Cineteca Madrid":
+        if self.category == Category.CINEMA and self.place.name == "Cineteca":
             if re.search(r"^(Esc[áa]ner|Mrgente) \d+$", name, flags=re.I):
                 return "Cortometrajes"
         return None

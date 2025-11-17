@@ -562,7 +562,7 @@ class MadridEs:
             return Category.EXPO
         if re_or(plain_name, r"Representaci[óo]n(es)? teatral(es)?", to_log=id, flags=re.I):
             return Category.THEATER
-        if re_or(plain_name, r"d[íi]a mundial de la poes[íi]a", r"encuentro po[ée]tico", to_log=id, flags=re.I):
+        if re_or(plain_name, r"d[íi]a mundial de la poes[íi]a", r"encuentro po[ée]tico", "Recital de poes[íi]a", "Versos entrevistados", to_log=id, flags=re.I):
             return Category.POETRY
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
@@ -694,6 +694,8 @@ class MadridEs:
             return Category.POETRY
         if re_or(desc, "propuesta creativa y participativa que combina lectura, escritura y expresión", r"Se organizará un '?escape room'?", to_log=id, flags=re.IGNORECASE):
             return Category.WORKSHOP
+        if re_and(desc, r"presentaci[oó]n", (r"libros?", r"novelas?"), (r"autore(es)?", r"autoras?"), to_log=id):
+            return Category.CONFERENCE
 
         if re_and(lg, "ambiental", ("casa de campo", "retiro"), to_log=id):
             return Category.VISIT
