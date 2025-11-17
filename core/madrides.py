@@ -562,7 +562,7 @@ class MadridEs:
             return Category.EXPO
         if re_or(plain_name, r"Representaci[óo]n(es)? teatral(es)?", to_log=id, flags=re.I):
             return Category.THEATER
-        if re_or(plain_name, r"d[íi]a mundial de la poes[íi]a", r"encuentro po[ée]tico", to_log=id, flags=re.I):
+        if re_or(plain_name, r"d[íi]a mundial de la poes[íi]a", r"encuentro po[ée]tico", "Recital de poes[íi]a", "Versos entrevistados", to_log=id, flags=re.I):
             return Category.POETRY
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
