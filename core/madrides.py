@@ -694,6 +694,8 @@ class MadridEs:
             return Category.POETRY
         if re_or(desc, "propuesta creativa y participativa que combina lectura, escritura y expresión", r"Se organizará un '?escape room'?", to_log=id, flags=re.IGNORECASE):
             return Category.WORKSHOP
+        if re_and(desc, r"presentaci[oó]n", (r"libros?", r"novelas?"), (r"autore(es)?", r"autoras?"), to_log=id):
+            return Category.CONFERENCE
 
         if re_and(lg, "ambiental", ("casa de campo", "retiro"), to_log=id):
             return Category.VISIT
