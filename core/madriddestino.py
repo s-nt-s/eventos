@@ -331,7 +331,7 @@ class MadridDestino:
         if re_or(pt, r"Charlas con altura", to_log=id, flags=re.I):
             return Category.CONFERENCE
         psub = plain_text(e.get('subtitle'))
-        if re_or(psub, r"^Taller de", to_log=id, flags=re.I):
+        if re_or(psub, r"^Taller de", to_log=id, flags=re.I) or re_or(audience, "Taller", to_log=id, flags=re.I):
             return Category.WORKSHOP
 
         logger.critical(str(CategoryUnknown(MadridDestino.URL, f"{e['id']} {pt}: " + ", ".join(sorted(cats)))))
