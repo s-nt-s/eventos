@@ -10,6 +10,10 @@ from .util import plain_text
 
 logger = logging.getLogger(__name__)
 
+FREE = (
+    "https://salaequis.es/ciclos/tejiendo-un-contrarrelato-consentimiento-deseo-e-intimidad-en-el-cine/",
+)
+
 
 class SalaEquis(Web):
     TAQUILLA = "https://salaequis.es/taquilla/"
@@ -47,13 +51,12 @@ class SalaEquis(Web):
         events: Set[Event] = set()
         for url in self.get_links():
             events.add(self.__url_to_event(url))
-        if None in events:
-            events.remove(None)
+        events.discard(None)
         return tuple(sorted(events))
 
     def __url_to_event(self, url):
         self.get(url)
-        if self.soup.find("a", string="Comprar"):
+        if url not in FREE and self.soup.find("a", string=re.compile(r"^\s*Comprar\s*$", re.I)):
             return None
         div = self.soup.find("div", attrs={"id": re.compile("^product-\d+$")})
         if div is None:
@@ -80,15 +83,16 @@ class SalaEquis(Web):
             sessions=sessions
         )
         return event
-    
+
     def __find_duration(self):
         duration = set()
         for txt in map(get_text, self.soup.select("div.shortDescription p")):
             duration = duration.union(map(int, re.findall(r"(\d+)\s*min\b", txt)))
         if len(duration) == 0:
-            raise FieldNotFound("div.shortDescription p[\\d+ min]", self.url)
+            logger.critical(str(FieldNotFound("div.shortDescription p[\\d+ min]", self.url)))
+            return 120
         return sum(duration)
-    
+
     def __find_session(self, name: str):
         tags = self.__find_encuentro(name)
         if tags is None or len(tags) == 0:
@@ -105,7 +109,7 @@ class SalaEquis(Web):
                 date=f"{y}-{m:02d}-{d:02d} {h:02d}:{mm:02d}"
             ))
         return tuple(sorted(sessions))
-    
+
     def __find_encuentro(self, name: str):
         name = plain_text(name)
         if name is None:
@@ -115,6 +119,9 @@ class SalaEquis(Web):
             return encuentros[name]
         for k, v in encuentros.items():
             if k.endswith(" "+name):
+                return v
+        for k, v in encuentros.items():
+            if name.startswith(k+": "):
                 return v
 
 
