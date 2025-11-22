@@ -15,6 +15,7 @@ from functools import cache
 from .util import to_uuid
 from core.dblite import DB
 from typing import TypeVar, Type
+from core.goodreads import GR
 
 T = TypeVar("T")
 
@@ -596,6 +597,10 @@ class Event:
                 if href and href not in urls:
                     return href
             if dom == "madrid.es":
+                if self.category == Category.CONFERENCE:
+                    books = GR.find(self.name)
+                    if books:
+                        return books[0].url
                 href = find_more_url_madrides(url)
                 if href and href not in urls:
                     return href
