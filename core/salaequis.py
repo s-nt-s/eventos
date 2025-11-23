@@ -74,6 +74,7 @@ class SalaEquis(Web):
                     e = e.merge(
                         also_in=e.also_in + (url, )
                     )
+            e = e.merge(id="se"+e.id)
             events.add(e)
         return tuple(sorted(events))
 
