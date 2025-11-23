@@ -37,7 +37,14 @@ class GoodReads:
                 reviews=int(m.group(2).replace(",", ""))
             )
             books.add(book)
-        return tuple(sorted(books, key=lambda b: (-b.reviews, -b.rate, b)))
+        rtn = tuple(sorted(books, key=lambda b: (
+            -b.reviews,
+            -b.rate,
+            b.title,
+            b.url,
+            b
+        )))
+        return rtn
 
     def search(self, title: str, author: str) -> tuple[Book, ...]:
         re_dot = re.compile(r"[:,] ")
@@ -79,8 +86,10 @@ class GoodReads:
 
     def find(self, title_author: str):
         for r in (
-            re.compile(r"^'(.+)',?\s*de (.+)$"),
-            re.compile(r"^(.+),? de (.+)$"),
+            re.compile(r"^'(.+)',\s*de (.+)$"),
+            re.compile(r"^'(.+)'\s*de (.+)$"),
+            re.compile(r"^(.+),\s*de (.+)$"),
+            re.compile(r"^(.+) de (.+)$"),
         ):
             m = r.match(title_author)
             if m:
