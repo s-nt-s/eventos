@@ -7,17 +7,19 @@ import logging
 from .event import Event, Session, Place, Category, FieldNotFound
 import re
 from .util import plain_text
+from core.kinetike import KineTike
 
 logger = logging.getLogger(__name__)
-
-FREE = (
-    "https://salaequis.es/ciclos/tejiendo-un-contrarrelato-consentimiento-deseo-e-intimidad-en-el-cine/",
-)
 
 
 class SalaEquis(Web):
     TAQUILLA = "https://salaequis.es/taquilla/"
     ENCUENTROS = "https://salaequis.es/encuentros/"
+    PLACE = Place(
+        name="Sala Equis",
+        address="C. del Duque de Alba, 4, Centro, 28012 Madrid, España",
+        latlon="40.412126715926796,-3.7059047815506396"
+    )
 
     def get(self, url, auth=None, parser="lxml", **kwargs):
         logger.debug(url)
@@ -48,7 +50,7 @@ class SalaEquis(Web):
     @TupleCache("rec/salaequis.json", builder=Event.build)
     def events(self):
         logger.info("Sala Equis: Buscando eventos")
-        events: Set[Event] = set()
+        events: Set[Event] = set(KineTike(KineTike.SALA_EQUIS, SalaEquis.PLACE).events)
         for url in self.get_links():
             events.add(self.__url_to_event(url))
         events.discard(None)
@@ -56,7 +58,7 @@ class SalaEquis(Web):
 
     def __url_to_event(self, url):
         self.get(url)
-        if url not in FREE and self.soup.find("a", string=re.compile(r"^\s*Comprar\s*$", re.I)):
+        if self.soup.find("a", string=re.compile(r"^\s*Comprar\s*$", re.I)):
             return None
         div = self.soup.find("div", attrs={"id": re.compile("^product-\d+$")})
         if div is None:
@@ -74,11 +76,7 @@ class SalaEquis(Web):
             img=self.select_one("#productImage img").attrs["src"],
             price=0,
             category=Category.CINEMA,
-            place=Place(
-                name="Sala Equis",
-                address="C. del Duque de Alba, 4, Centro, 28012 Madrid, España",
-                latlon="40.412126715926796,-3.7059047815506396"
-            ),
+            place=SalaEquis.PLACE,
             duration=self.__find_duration(),
             sessions=sessions
         )
