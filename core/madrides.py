@@ -154,7 +154,7 @@ class MadridEs:
         self.w.s = Driver.to_session(
             "firefox",
             "https://www.madrid.es",
-            self.w.s,
+            session=self.w.s,
         )
 
     def get_safe_events(self):

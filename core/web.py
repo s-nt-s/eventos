@@ -628,11 +628,12 @@ class Driver:
         return self.execute_script(js)
 
     @staticmethod
-    def to_session(browser: str, url: str, session: requests.Session = None):
+    def to_session(browser: str, *urls: str, session: requests.Session = None):
         with Driver(browser=browser) as d:
-            d.get(url)
-            time.sleep(5)
-            d.wait_ready()
+            for url in urls:
+                d.get(url)
+                time.sleep(5)
+                d.wait_ready()
             s = d.pass_cookies(session)
             return s
 

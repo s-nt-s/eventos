@@ -100,6 +100,7 @@ class Category(IntEnum):
     MAGIC = 36
     VIEW_POINT = 37
     NO_EVENT = 38
+    PARTY = 39
 
     def __str__(self):
         #if self == Category.OTHERS:
