@@ -49,17 +49,39 @@ class SalaEquis(Web):
     @property
     @TupleCache("rec/salaequis.json", builder=Event.build)
     def events(self):
+        buy_url: dict[str, str] = dict()
+        k_events = KineTike(KineTike.SALA_EQUIS, SalaEquis.PLACE).events
         logger.info("Sala Equis: Buscando eventos")
-        events: Set[Event] = set(KineTike(KineTike.SALA_EQUIS, SalaEquis.PLACE).events)
+        events: Set[Event] = set()
         for url in self.get_links():
-            events.add(self.__url_to_event(url))
+            ev_or_buy = self.__url_to_event(url)
+            if isinstance(ev_or_buy, str):
+                buy_url[ev_or_buy] = url
+            elif isinstance(ev_or_buy, Event):
+                events.add(ev_or_buy)
         events.discard(None)
+        for e in k_events:
+            url = buy_url.get(e.url)
+            if url:
+                if len(e.sessions) == 1 and e.sessions[0].url is None:
+                    e = e.merge(
+                        url=url,
+                        sessions=(
+                            e.sessions[0].merge(url=e.url),
+                        )
+                    )
+                elif url not in e.also_in:
+                    e = e.merge(
+                        also_in=e.also_in + (url, )
+                    )
+            events.add(e)
         return tuple(sorted(events))
 
     def __url_to_event(self, url):
         self.get(url)
-        if self.soup.find("a", string=re.compile(r"^\s*Comprar\s*$", re.I)):
-            return None
+        a_buy = self.soup.find("a", string=re.compile(r"^\s*Comprar\s*$", re.I))
+        if a_buy:
+            return a_buy.attrs["href"]
         div = self.soup.find("div", attrs={"id": re.compile("^product-\d+$")})
         if div is None:
             raise FieldNotFound("product-\\d+", self.url)
