@@ -1,5 +1,5 @@
 from .web import get_text, Driver, MyTag
-from typing import Set, Dict, List, Union
+from typing import Set, Dict, List, Union, Optional
 from functools import cache
 from .cache import TupleCache
 import logging
@@ -7,6 +7,7 @@ from .event import Event, Session, Place, Category, CategoryUnknown
 import re
 from datetime import datetime
 from .filemanager import FM
+from selenium.webdriver.common.by import By
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +35,15 @@ class CasaEncendida:
     def __init__(self):
         self.__driver: Union[Driver, None] = None
 
-    def __visit(self, url: str):
+    def __visit(self, url: str, wait_css: Optional[str] = None):
         if url != self.__driver.current_url:
             self.__driver.get(url)
             self.__driver.wait_ready()
+            if wait_css:
+                self.__driver.safe_wait(wait_css, by=By.CLASS_NAME)
 
-    def __get_soup(self, url: str):
-        self.__visit(url)
+    def __get_soup(self, url: str, wait_css: Optional[str] = None):
+        self.__visit(url, wait_css=wait_css)
         return MyTag(url, self.__driver.get_soup())
 
     def __get_json(self, url: str) -> Union[Dict, List]:
@@ -48,7 +51,8 @@ class CasaEncendida:
         return node.select_one_json("body")
 
     def __get_ld_json(self, url: str) -> Dict:
-        js = self.__get_soup(url).select_one_json('script[type="application/ld+json"]')
+        css_script = 'script[type="application/ld+json"]'
+        js = self.__get_soup(url, wait_css=css_script).select_one_json(css_script)
         return js
 
     @cache
@@ -61,12 +65,13 @@ class CasaEncendida:
         return tuple(sorted(urls))
 
     def __get_links(self, url_cat):
+        css_list = "div.results-list"
         urls: Set[str] = set()
         page = 0
         while True:
             page = page + 1
-            soup = self.__get_soup(url_cat+f"&page={page}")
-            rsls = soup.select_one("div.results-list")
+            soup = self.__get_soup(url_cat+f"&page={page}", wait_css=css_list)
+            rsls = soup.select_one(css_list)
             links = rsls.select("a.results-list__link")
             for a in links:
                 urls.add(a.attrs["href"])
