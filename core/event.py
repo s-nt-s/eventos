@@ -454,6 +454,7 @@ class Event:
                 if self._fix_field(f.name):
                     doit = True
             if self.url is None and get_domain(self.more) == "madrid.es":
+                logger.debug(f"FIX: more=None url={self.more}")
                 object.__setattr__(self, "url", self.more)
                 object.__setattr__(self, "more", None)
                 doit = True
@@ -712,7 +713,7 @@ class Event:
         categories: List[Category] = []
         durations: List[float] = []
         imgs: List[str] = []
-        seen_in: Set[str] = set()
+        set_seen_in: Set[str] = set()
         for e in events:
             if e.category not in (None, Category.UNKNOWN):
                 categories.append(e.category)
@@ -727,10 +728,11 @@ class Event:
                 else:
                     s = s._replace(url=s.url or e.url)
                 sessions_with_url.add(s)
-            seen_in.add(e.url)
+            set_seen_in.add(e.url)
             for u in e.also_in:
-                seen_in.add(u)
-        seen_in = tuple(sorted((u for u in seen_in if u is not None)))
+                set_seen_in.add(u)
+        set_seen_in.discard(None)
+        seen_in = tuple(sorted(set_seen_in))
         url = seen_in[0]
         also_in = seen_in[1:]
         sessions_url = set(s.url for s in sessions_with_url if s.url is not None)
