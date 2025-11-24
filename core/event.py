@@ -101,6 +101,7 @@ class Category(IntEnum):
     VIEW_POINT = 37
     NO_EVENT = 38
     PARTY = 39
+    LITERATURA = 40
 
     def __str__(self):
         #if self == Category.OTHERS:
@@ -157,6 +158,8 @@ class Category(IntEnum):
             return "spam"
         if self == Category.MAGIC:
             return "magia"
+        if self == Category.LITERATURA:
+            return "literatura"
         raise ValueError(self.value)
 
     def __lt__(self, other):
@@ -319,6 +322,7 @@ def _clean_name(name: str, place: str):
             "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.IGNORECASE)
+        name = re.sub(r"^Música:\s*", "", name, flags=re.I)
         name = re.sub(r"^Semana de la Ciencia 2025:\s*", "", name, flags=re.I)
         name = re.sub(r"^[a-zA-ZáéÁÉ]+ con Historia[\.\s]+[vV]isitas guiadas tem[aá]ticas a la colecci[oó]n[\.\s]+[a-zA-Z]+", "Visitas guiadas temáticas a la colección", name)
         name = re.sub(r"^Charlas con altura:\s+", "", name)
@@ -524,24 +528,38 @@ class Event:
                 return src
 
     def _fix_category(self):
-        dom = get_domain(self.url)
-        if self.category == Category.CHILDISH or dom != "madrid.es":
+        if self.category == Category.CHILDISH:
             return self.category
-        soup = WEB.get_cached_soup(self.url)
-        for txt in map(plain_text, soup.select("div.tramites-content div.tiny-text")):
-            if txt is None:
+        if self.category == Category.CONFERENCE and get_domain(self.more) == "goodreads.com":
+            return Category.LITERATURA
+        for url in self.iter_urls():
+            if get_domain(url) != "madrid.es":
                 continue
-            if re_or(
-                txt,
-                "actividad dirigida a familias",
-                "para que menores y mayores aprendan",
-                "teatro infantil",
-                "concierto familiar",
-                "relatos en familia",
-                r"musical? infantil",
-                r"actividad (diseñada )?para familias"
-            ):
-                return Category.CHILDISH
+            soup = WEB.get_cached_soup(url)
+            for txt in map(plain_text, soup.select("div.tramites-content div.tiny-text")):
+                if re_or(
+                    txt,
+                    "actividad dirigida a familias",
+                    "para que menores y mayores aprendan",
+                    "teatro infantil",
+                    "concierto familiar",
+                    "relatos en familia",
+                    r"musical? infantil",
+                    r"actividad (diseñada )?para familias",
+                    flags=re.I
+                ):
+                    return Category.CHILDISH
+                #if re_or(
+                #    txt,
+                #    "Presentación de la novela",
+                #    "presentación del libro",
+                #    "la autora firmar[áa]",
+                #    "el autor firmar[áa]",
+                #    "Publica la editorial Edelvives",
+                #    ("encuentro literario", "el autor conversar[áa] sobre su novela")
+                #    flags=re.I
+                #):
+                #    return Category.LITERATURA
         return self.category
 
     def _get_img_from_url(self, url: str):
@@ -598,7 +616,7 @@ class Event:
                 if href and href not in urls:
                     return href
             if dom == "madrid.es":
-                if self.category == Category.CONFERENCE:
+                if self.category in (Category.CONFERENCE, Category.LITERATURA):
                     books = GR.find(self.name)
                     if books:
                         return books[0].url
@@ -766,6 +784,8 @@ class Event:
         if self.category == Category.CINEMA and self.place.name == "Cineteca":
             if re.search(r"^(Esc[áa]ner|Mrgente) \d+$", name, flags=re.I):
                 return "Cortometrajes"
+        if re.search(r"c[aá]talogo.*Madrid entre libros", self.name, flags=re.I):
+            return "Madrid entre libros"
         return None
 
 
