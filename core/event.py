@@ -717,10 +717,8 @@ class Event:
         for e in events:
             if e.category not in (None, Category.UNKNOWN):
                 categories.append(e.category)
-            if e.duration is not None:
-                durations.append(e.duration)
-            if e.img is not None:
-                imgs.append(e.img)
+            durations.append(e.duration)
+            imgs.append(e.img)
             for s in e.sessions:
                 sessions.add(s)
                 if firstEventUrl:
@@ -731,7 +729,9 @@ class Event:
             set_seen_in.add(e.url)
             for u in e.also_in:
                 set_seen_in.add(u)
-        set_seen_in.discard(None)
+        for st in (categories, set_seen_in, imgs, durations):
+            if None in st:
+                st.remove(None)
         seen_in = tuple(sorted(set_seen_in))
         url = seen_in[0]
         also_in = seen_in[1:]
@@ -739,10 +739,8 @@ class Event:
         if len(sessions) > 1:
             sessions = sessions_with_url
             also_in = tuple((u for u in also_in if u not in sessions_url))
-            url = None
-            if len(also_in) == 1:
-                url = also_in[0]
-                also_in = tuple()
+            url = also_in[0] if also_in else None
+            also_in = also_in[1:]
         e = events[0].merge(
             url=url,
             also_in=also_in,
