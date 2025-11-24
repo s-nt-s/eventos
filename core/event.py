@@ -784,7 +784,7 @@ class Event:
         if self.category == Category.CINEMA and self.place.name == "Cineteca":
             if re.search(r"^(Esc[áa]ner|Mrgente) \d+$", name, flags=re.I):
                 return "Cortometrajes"
-        if re.search(r"c[aá]talogo.*Madrid entre libros", self.name, flags=re.I):
+        if re.search(r"cat[áa]logo.*Madrid entre libros", self.name, flags=re.I):
             return "Madrid entre libros"
         return None
 
