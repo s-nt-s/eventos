@@ -165,7 +165,7 @@ class MadridEs:
         return tuple()
 
     @cached_property
-    def __category(self):
+    def _category(self):
         action, data_form = self.prepare_search()
         category: Dict[Category, Set[str]] = defaultdict(set)
         tipos = {plain_text(unescape(v)): k for k, v in self.tipos.items()}
@@ -186,13 +186,13 @@ class MadridEs:
                         data_txt.add(k)
                 if len(data_val) == 0:
                     logger.warning(f"No encontrado {key} que cumpla {key_vals}, disponible = {tuple(data_key.keys())}")
-                    return
+                    continue
                 logger.debug(f"{cat} = {key} in {tuple(sorted(data_txt))}")
                 for v in sorted(data_val):
                     data[key] = v
-                    category[cat] = category[cat].union(
-                        self.__get_ids(action, data)
-                    )
+                    ids = self.__get_ids(action, data)
+                    logger.debug(f"{len(ids)} ids en {key}={v}")
+                    category[cat] = category[cat].union(ids)
 
         _set_cats('usuario', usuarios, {
             Category.CHILDISH: (
@@ -263,14 +263,17 @@ class MadridEs:
             Category.SPORT: (
                 r'deportivas',
             ),
+            Category.LITERATURA: (
+                r'recital(es)?',
+                r'presentacion(es)?',
+                r'actos? literarios?',
+            ),
             Category.CINEMA: (
                 r'(documental|ficcion|cine experimental)\b.*cine',
             ),
             Category.CONFERENCE: (
                 r'congresos?',
                 r'jornadas?',
-                r'presentacion(es)?',
-                r'actos? literarios?',
                 r'conferencias?',
                 r'coloquios?s'
             )
@@ -531,10 +534,11 @@ class MadridEs:
             re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros", to_log=id),
             re_and(plain_name, "actos? religios(os)?", ("santo rosario", "eucaristia", "procesion"), to_log=id),
         ])
-        for ids, cat in self.__category.items():
+        for ids, cat in self._category.items():
             if id in ids:
                 if maybeSPAM and cat == Category.CONFERENCE:
                     return Category.SPAM
+                logger.debug(f"{id} en {cat}")
                 return cat
         lg = div.select_one("a.event-location")
         lg = plain_text(lg.attrs["data-name"]) if lg else None

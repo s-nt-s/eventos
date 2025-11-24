@@ -109,6 +109,7 @@ OK_CAT = (
     Category.VISIT,
     Category.MAGIC,
     Category.UNKNOWN,
+    Category.LITERATURA
 )
 
 
@@ -405,7 +406,7 @@ j.save(
     session_ics=session_ics,
     lugares=lugares,
     count=len(eventos),
-    precio=max(e.price for e in eventos),
+    precio=round(max(e.price for e in eventos)),
     fecha=dict(
         ini=min(sesiones.keys()),
         fin=max(sesiones.keys())
