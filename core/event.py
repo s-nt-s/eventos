@@ -733,8 +733,8 @@ class Event:
         seen_in = tuple(sorted((u for u in seen_in if u is not None)))
         url = seen_in[0]
         also_in = seen_in[1:]
+        sessions_url = set(s.url for s in sessions_with_url if s.url is not None)
         if len(sessions) > 1:
-            sessions_url = set(s.url for s in sessions_with_url)
             sessions = sessions_with_url
             also_in = tuple((u for u in also_in if u not in sessions_url))
             url = None
