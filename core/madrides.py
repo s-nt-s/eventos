@@ -534,25 +534,31 @@ class MadridEs:
             return None
 
     def __find_category(self, id: str, div: Tag, url_event: str):
-        plain_tp = plain_text(safe_get_text(div.select_one("p.event-type")))
+        plain_type = plain_text(safe_get_text(div.select_one("p.event-type")))
         name = (get_text(div.select_one("a.event-link")) or "").lower()
-        name_tp = re.split(r"\s*[:'\"\-]", name)[0].lower()
         plain_name = plain_text(name)
-        tp_name = plain_text(((plain_tp or "")+" "+plain_name).strip())
+        if re_or(plain_name, r"d[íi]a mundial de la poes[íi]a", r"encuentro po[ée]tico", r"Recital de poes[íi]a", r"Versos entrevistados", to_log=id, flags=re.I):
+            return Category.POETRY
+
+        note_place = div.select_one("a.event-location")
+        plain_place = plain_text(note_place.attrs["data-name"]) if note_place else None
+        if re_or(plain_place, "titeres", to_log=id):
+            return Category.PUPPETRY
+    
+        name_tp = re.split(r"\s*[:'\"\-]", name)[0].lower()
+        tp_name = plain_text(((plain_type or "")+" "+plain_name).strip())
         maybeSPAM = any([
             re_or(plain_name, "el mundo de los toros", "el mundo del toro", "federacion taurina", "tertulia de toros", to_log=id),
             re_and(plain_name, "actos? religios(os)?", ("santo rosario", "eucaristia", "procesion"), to_log=id),
         ])
+
         for ids, cat in self._category.items():
             if id in ids:
                 if maybeSPAM and cat == Category.CONFERENCE:
                     return Category.SPAM
                 logger.debug(f"{id} en {cat}")
                 return cat
-        lg = div.select_one("a.event-location")
-        lg = plain_text(lg.attrs["data-name"]) if lg else None
-        if re_or(lg, "titeres", to_log=id):
-            return Category.PUPPETRY
+
         if re_and(tp_name, "taller", ("animales", "pequeños"), to_log=id):
             return Category.CHILDISH
         if re_and(tp_name, "dia", "internacional", "familias?", to_log=id):
@@ -577,15 +583,13 @@ class MadridEs:
             return Category.EXPO
         if re_or(plain_name, r"Representaci[óo]n(es)? teatral(es)?", to_log=id, flags=re.I):
             return Category.THEATER
-        if re_or(plain_name, r"d[íi]a mundial de la poes[íi]a", r"encuentro po[ée]tico", "Recital de poes[íi]a", "Versos entrevistados", to_log=id, flags=re.I):
-            return Category.POETRY
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
         if re_or(name_tp, r"^conferencias?$", r"^pregon$", to_log=id):
             return Category.CONFERENCE
         if re_or(name_tp, r"^conciertos?$", to_log=id):
             return Category.MUSIC
-        if re_or(plain_name, "cañon del rio", "ruta a caballo", "cerro de", "actividad(es)? acuaticas? pantano", to_log=id):
+        if re_or(plain_name, "cañon del rio", "ruta a caballo", "cerro de", r"actividad(es)? acuaticas? pantano", to_log=id):
             return Category.SPORT
         if re_or(name_tp, r"^teatros?$", to_log=id):
             return Category.THEATER
@@ -595,15 +599,15 @@ class MadridEs:
             return Category.CINEMA
         if re_or(name_tp, r"^visitas? guiadas?$", to_log=id):
             return Category.VISIT
-        if re_or(plain_name, "^exposicion y (charla|coloquio)", "europa ilustra", to_log=id):
+        if re_or(plain_name, r"^exposicion y (charla|coloquio)", r"europa ilustra", to_log=id):
             return Category.EXPO
-        if re_or(plain_name, "^conferencia y (charla|coloquio)", to_log=id):
+        if re_or(plain_name, r"^conferencia y (charla|coloquio)", to_log=id):
             return Category.CONFERENCE
         if re_or(
             plain_name,
             r"^taller",
             "tertulias en latin",
-            "taller(es)? de calidad del aire",
+            r"taller(es)? de calidad del aire",
             "compostagram",
             "esquejodromo",
             to_log=id
@@ -623,7 +627,7 @@ class MadridEs:
             return Category.THEATER
         if re_or(tp_name, "exposicion(es)?", "noche de los museos", to_log=id):
             return Category.EXPO
-        if re_or(plain_tp, "danza", "baile", to_log=id):
+        if re_or(plain_type, "danza", "baile", to_log=id):
             return Category.DANCE
         if re_or(tp_name, "conferencias?", "coloquios?", "presentacion(es)?", to_log=id):
             return Category.CONFERENCE
@@ -633,11 +637,11 @@ class MadridEs:
             return Category.READING_CLUB
         if re_or(tp_name, ("elaboracion", "artesanal"), to_log=id):
             return Category.WORKSHOP
-        if re_or(plain_tp, "cursos?", "taler(es)?", "capacitacion", to_log=id):
+        if re_or(plain_type, "cursos?", "taler(es)?", "capacitacion", to_log=id):
             return Category.WORKSHOP
-        if re_or(plain_tp, "concursos?", "certamen(es)?", to_log=id):
+        if re_or(plain_type, "concursos?", "certamen(es)?", to_log=id):
             return Category.CONTEST
-        if re_or(plain_tp, "actividades deportivas", to_log=id):
+        if re_or(plain_type, "actividades deportivas", to_log=id):
             return Category.SPORT
         if re_or(
             plain_name,
@@ -653,9 +657,9 @@ class MadridEs:
             to_log=id
         ):
             return Category.SPORT
-        if re_or(lg, "educacion ambiental") and re_or(plain_name, "^arroyo", to_log=id):
+        if re_or(plain_place, "educacion ambiental") and re_or(plain_name, "^arroyo", to_log=id):
             return Category.SPORT
-        if re_or(lg, "imprenta") and re_or(tp_name, "demostracion(es)?", "museos?", to_log=id):
+        if re_or(plain_place, "imprenta") and re_or(tp_name, "demostracion(es)?", "museos?", to_log=id):
             return Category.EXPO
         if re_or(plain_name, "^(danza|chotis)", to_log=id):
             return Category.DANCE
@@ -675,11 +679,11 @@ class MadridEs:
             return Category.WORKSHOP
         if re_or(plain_name, "^concentracion", to_log=id):
             return Category.ACTIVISM
-        if re_or(plain_tp, r"visitas?", to_log=id):
+        if re_or(plain_type, r"visitas?", to_log=id):
             return Category.VISIT
         if re_or(plain_name, r"visita a", to_log=id):
             return Category.VISIT
-        if re_or(plain_tp, "jornadas?", "congresos?", to_log=id):
+        if re_or(plain_type, "jornadas?", "congresos?", to_log=id):
             return Category.CONFERENCE
         if re_or(plain_name, "actuacion coral", "recital coral", "taller de sevillanas", to_log=id):
             return Category.MUSIC
@@ -712,10 +716,10 @@ class MadridEs:
         if re_and(desc, r"presentaci[oó]n", (r"libros?", r"novelas?"), (r"autore(es)?", r"autoras?"), to_log=id):
             return Category.CONFERENCE
 
-        if re_and(lg, "ambiental", ("casa de campo", "retiro"), to_log=id):
+        if re_and(plain_place, "ambiental", ("casa de campo", "retiro"), to_log=id):
             return Category.VISIT
 
-        logger.critical(str(CategoryUnknown(url_event, f"{id}: type={plain_tp}, name={plain_name}")))
+        logger.critical(str(CategoryUnknown(url_event, f"{id}: type={plain_type}, name={plain_name}")))
         return Category.UNKNOWN
 
     @staticmethod
