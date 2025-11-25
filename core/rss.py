@@ -5,8 +5,11 @@ from xml.dom.minidom import parseString as parseXml
 import re
 import os
 from typing import List
+import logging
 
 from .event import Event
+
+logger = logging.getLogger(__name__)
 
 re_last_modified = re.compile(
     r'^\s*<lastBuildDate>[^>]+</lastBuildDate>\s*$',
@@ -64,15 +67,24 @@ class EventosRss:
 
     def iter_items(self):
         for e in self.eventos:
-            link = e.url or e.sessions[0].url
-            yield rfeed.Item(
-                title=f'{e.name}',
-                link=link,
-                guid=rfeed.Guid(link),
-                categories=rfeed.Category(str(e.category)),
-                description=dedent(f'''
-                    {int(round(e.price))}€ {e.category},
-                    <a href="{e.place.url}">{e.place.name} ({e.place.address})</a>
-                ''').strip().replace("\n", "<br/>"),
-                pubDate=NOW
-            )
+            links = list(e.iter_urls()) + [s.url for s in e.sessions if e.url]
+            if len(links) == 0:
+                logger.critical(f"URL NOT FOUND in {e}")
+                continue
+            try:
+                link = links[0]
+                i = rfeed.Item(
+                    title=f'{e.name}',
+                    link=link,
+                    guid=rfeed.Guid(link),
+                    categories=rfeed.Category(str(e.category)),
+                    description=dedent(f'''
+                        {int(round(e.price))}€ {e.category},
+                        <a href="{e.place.url}">{e.place.name} ({e.place.address})</a>
+                    ''').strip().replace("\n", "<br/>"),
+                    pubDate=NOW
+                )
+                yield i
+            except rfeed.ElementRequiredError as e:
+                logger.critical(str(e), exc_info=True)
+                continue
