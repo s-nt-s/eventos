@@ -697,7 +697,8 @@ class Event:
             raise ValueError("len(events)==0")
         if len(evs) == 1:
             return evs[0]
-        logger.debug("Fusión: " + " + ".join(map(lambda e: f"{e.id} {e.duration}", evs)))
+        logger.debug("Fusión: " + " + ".join(map(lambda e: e.id, evs)))
+        logger.debug("Fusión: " + " + ".join(map(str, evs)))
         dates_with_url: Set[str] = set()
         for e in evs:
             for s in e.sessions:
@@ -754,6 +755,7 @@ class Event:
                 more=e.also_in[0],
                 also_in=tuple()
             )
+        logger.debug(f"=== {e}")
         return e
 
     def _fix_cycle(self):
@@ -764,6 +766,8 @@ class Event:
             return "Derechos digitales"
         if re.search(r"^Nuevos [Ii]maginarios: ", name):
             return "Nuevos imaginarios"
+        if re.search(r"^Los artesanos de la tumba", name):
+            return "Los artesanos de la tumba"
         if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
             return "Teatro en la Berlanga"
         #if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", name):

@@ -219,9 +219,9 @@ def sorted_and_fix(eventos: List[Event]):
             name=cycle,
             cycle=cycle,
             id=_id_,
-            url=None,
-            more=None
         ).fix(publish=PUBLISH.get(_id_))
+        if all(s.url for s in e.sessions):
+            e = e.merge(url=None, more=None)
         ok_events.add(e)
 
     def _mk_place_name_session(e: Event | Category):

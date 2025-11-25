@@ -251,17 +251,23 @@ class MadridEs:
             Category.THEATER: (
                 r"(clasico|drama)\b.*teatro",
                 r"(zarzuela)\bmusica",
+                r"teatro perfomance",
             ),
             Category.MUSIC: (
                 r"(opera)\b.*teatro",
                 r"flamenco\b.*danza",
                 r"(rap|jazz|soul|funky|swing|reagge|flamenco|clasica|batucada|latina|española|electronica|rock|pop|folk|country)\bmusica",
+                r"^musica$",
             ),
             Category.DANCE: (
+                r"danza y baile",
                 r"(clasica|tango|breakdance|contemporane(a|o))\b.*danza",
             ),
             Category.SPORT: (
                 r'deportivas',
+            ),
+            Category.EXPO : (
+                r"^exposicion(es)?$",
             ),
             Category.LITERATURA: (
                 r'recital(es)?',
@@ -269,7 +275,10 @@ class MadridEs:
                 r'actos? literarios?',
             ),
             Category.CINEMA: (
-                r'(documental|ficcion|cine experimental)\b.*cine',
+                r'\b(documental|cine experimental)\b',
+                r"\b(ficcion)\b.*cine",
+                r"cine\b.*(ficcion)\b",
+                r"^cine$"
             ),
             Category.CONFERENCE: (
                 r'congresos?',
@@ -558,6 +567,8 @@ class MadridEs:
             return Category.SPAM
         if re_or(plain_name, "Mejora tu ingl[eé]s con charlas", to_log=id, flags=re.I):
             return Category.WORKSHOP
+        if re_or(plain_name, "Salida medioambiental", to_log=id, flags=re.I):
+            return Category.HIKING
         if re_or(plain_name, "recital de piano", r"Cuartero de C[áa]mara", r"Arias de [Óo]pera", to_log=id, flags=re.IGNORECASE):
             return Category.MUSIC
         if re_and(plain_name, "ballet", ("repertorio", "clasico"), to_log=id):
@@ -598,7 +609,7 @@ class MadridEs:
             to_log=id
         ):
             return Category.WORKSHOP
-        if re_or(plain_name, "visitas guiadas para", to_log=id):
+        if re_or(plain_name, "visitas guiadas para", "Recorrido por la Iluminaci[óo]n", to_log=id, flags=re.I):
             return Category.VISIT
         if re_or(plain_name, "^concierto de", to_log=id):
             return Category.MUSIC
