@@ -186,7 +186,7 @@ def sorted_and_fix(eventos: List[Event]):
             return None
         if ("madrid.es", "madrid.es") != tuple(map(get_domain, (e.url, e.more))):
             return None
-        return (e.more, e.place, e.price)
+        return (e.more or e.url, e.place, e.price)
 
     for evs in find_duplicates(
         ok_events,
