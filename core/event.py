@@ -263,7 +263,7 @@ class Place(NamedTuple):
         if re_or(name, "matadero", "cineteca"):
             return "Matadero"
         if re_or(name, "Casa del Reloj", flags=re.I):
-            return "Centro Cultural Casa del Reloj"
+            return "Centro cultural Casa del Reloj"
         return self.name
 
     def fix(self):
