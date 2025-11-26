@@ -51,7 +51,8 @@ PUBLISH: dict[str, str] = FM.load(OUT+"publish.json")
 def round_to_even(x):
     up = int((x + 2) // 2) * 2
     down = int(x // 2) * 2
-
+    if x == int(x):
+        return down
     if abs(x - down) < abs(x - up):
         return down
     return up

@@ -45,9 +45,8 @@ def get_text(n: Tag):
 
 
 def clean_lugar(s: str):
-    m = re.search(r".*Nave\s+(.*)\s+.*Centro Cultural Casa del Reloj.*", s, flags=re.I)
-    if m:
-        return f"Centro cultural Casa del Reloj (nave {m.group(1)})"
+    if re.search(r".*Nave.*\bTerneras\b.*\bCentro Cultural Casa del Reloj.*", s, flags=re.I):
+        return "Centro cultural Casa del Reloj (nave Terneras)"
     if re.search(r"Centro Cultural Casa del Reloj", s, flags=re.I):
         return "Centro cultural Casa del Reloj"
     s = re.sub(r"\bCentro de Información y Educación Ambiental\b", "CIEA", s, flags=re.I)
