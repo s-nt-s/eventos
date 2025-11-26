@@ -48,6 +48,15 @@ NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 PUBLISH: dict[str, str] = FM.load(OUT+"publish.json")
 
 
+def round_to_even(x):
+    up = int((x + 2) // 2) * 2
+    down = int(x // 2) * 2
+
+    if abs(x - down) < abs(x - up):
+        return down
+    return up
+
+
 def distance_to_white(*color) -> Tuple[int]:
     arr = []
     for c in color:
@@ -184,8 +193,11 @@ def sorted_and_fix(eventos: List[Event]):
     def _mk_key_madrid_music(e: Event):
         if e.category != Category.MUSIC:
             return None
-        if ("madrid.es", "madrid.es") != tuple(map(get_domain, (e.url, e.more))):
+        doms = set(map(get_domain, (e.url, e.more)))
+        doms.discard(None)
+        if len(doms) != 1 or doms.pop() != "madrid.es":
             return None
+
         return (e.more or e.url, e.place, e.price)
 
     for evs in find_duplicates(
@@ -205,7 +217,7 @@ def sorted_and_fix(eventos: List[Event]):
 
     def _mk_key_cycle(e: Event | Cinema):
         if len(e.sessions) == 1 and e.cycle:
-            return (e.cycle, e.category, e.place, e.price)
+            return (e.cycle, e.category, e.place, round_to_even(e.price))
 
     for evs in find_duplicates(
         ok_events,

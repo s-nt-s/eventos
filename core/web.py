@@ -37,7 +37,7 @@ from core.util import get_domain
 logger = logging.getLogger(__name__)
 
 re_sp = re.compile(r"\s+")
-re_emb = re.compile(r"^image/[^;]+;base64,.*", re.IGNORECASE)
+re_emb = re.compile(r"^image/[^;]+;base64,.*", re.I)
 is_s5h = os.environ.get('http_proxy', "").startswith("socks5h://")
 if is_s5h:
     proxy_ip, proxy_port = os.environ['http_proxy'].split(

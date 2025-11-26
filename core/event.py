@@ -262,6 +262,8 @@ class Place(NamedTuple):
             return "El Retiro"
         if re_or(name, "matadero", "cineteca"):
             return "Matadero"
+        if re_or(name, "Casa del Reloj"):
+            return "Centro Cultural Casa del Reloj"
         return self.name
 
     def fix(self):
@@ -321,30 +323,30 @@ def _clean_name(name: str, place: str):
             "El sorprendente Dr.Clitterhousem": "El sorprendente Dr. Clitterhouse",
             "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
-            name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.IGNORECASE)
+            name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.I)
         name = re.sub(r"^Música:\s*", "", name, flags=re.I)
         name = re.sub(r"^Semana de la Ciencia 2025:\s*", "", name, flags=re.I)
         name = re.sub(r"^[a-zA-ZáéÁÉ]+ con Historia[\.\s]+[vV]isitas guiadas tem[aá]ticas a la colecci[oó]n[\.\s]+[a-zA-Z]+", "Visitas guiadas temáticas a la colección", name)
         name = re.sub(r"^Charlas con altura:\s+", "", name)
         name = re.sub(r"[\s\-]+Encuentro con el público$", "", name)
         name = re.sub(r"^[Pp]el[íi]cula[:\.]\s+", "", name)
-        name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.IGNORECASE)
-        name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"\.\s*(conferencia)\s*$", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"Visita a la exposición '([^']+)'\. .*", r"\1", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(lectura dramatizada|presentación del libro|Cinefórum[^:]*|^Madrid, plató de cine)\s*[\.:]\s+", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.I)
+        name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.I)
+        name = re.sub(r"\.\s*(conferencia)\s*$", "", name, flags=re.I)
+        name = re.sub(r"Visita a la exposición '([^']+)'\. .*", r"\1", name, flags=re.I)
+        name = re.sub(r"^(lectura dramatizada|presentación del libro|Cinefórum[^:]*|^Madrid, plató de cine)\s*[\.:]\s+", "", name, flags=re.I)
         name = re.sub(r"^conferencia\s+y\s+audiovisual:\s+", "", name, flags=re.I)
-        name = re.sub(r"^(conferencia|visita[^'\"]*)[\s:]+(['\"])", r"\2", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(conferencia|concierto|espect[aá]culo|proyección( película)?)\s*[\-:\.]\s*", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(conferencia)\s*", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"^visita (comentada|guiada)(:| -)\s+", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"^Proyección del documental:\s+", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(Cine .*)?Proyección de (['\"])", r"\2", name, flags=re.IGNORECASE)
-        name = re.sub(r"^Cineclub con .* '([^']+)'.*", r"\1", name, flags=re.IGNORECASE)
-        name = re.sub(r"\s*-\s*(moncloa|arganzuela|retiro|chamberi)\s*$", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(Exposición|Danza|Música):? ([\"'`])(.+)\2$", r"\3", name, flags=re.IGNORECASE)
-        name = re.sub(r"Red de Escuelas Municipales del Ayuntamiento de Madrid", "red de Escuelas", name, flags=re.IGNORECASE)
-        name = re.sub(r".*Ciclo de conferencias de la Sociedad Española de Retórica': (['\"])", r"\1", name, flags=re.IGNORECASE)
+        name = re.sub(r"^(conferencia|visita[^'\"]*)[\s:]+(['\"])", r"\2", name, flags=re.I)
+        name = re.sub(r"^(conferencia|concierto|espect[aá]culo|proyección( película)?)\s*[\-:\.]\s*", "", name, flags=re.I)
+        name = re.sub(r"^(conferencia)\s*", "", name, flags=re.I)
+        name = re.sub(r"^visita (comentada|guiada)(:| -)\s+", "", name, flags=re.I)
+        name = re.sub(r"^Proyección del documental:\s+", "", name, flags=re.I)
+        name = re.sub(r"^(Cine .*)?Proyección de (['\"])", r"\2", name, flags=re.I)
+        name = re.sub(r"^Cineclub con .* '([^']+)'.*", r"\1", name, flags=re.I)
+        name = re.sub(r"\s*-\s*(moncloa|arganzuela|retiro|chamberi)\s*$", "", name, flags=re.I)
+        name = re.sub(r"^(Exposición|Danza|Música):? ([\"'`])(.+)\2$", r"\3", name, flags=re.I)
+        name = re.sub(r"Red de Escuelas Municipales del Ayuntamiento de Madrid", "red de Escuelas", name, flags=re.I)
+        name = re.sub(r".*Ciclo de conferencias de la Sociedad Española de Retórica': (['\"])", r"\1", name, flags=re.I)
         name = re.sub(r"\s*-\s*$", "", name)
         name = re.sub(r"Asociación (de )?Jubilados( (del )?Ayuntamiento( de Madrid)?)?", "asociación de jubilados", name, flags=re.I)
         name = re.sub(r"^Proyección de la película '([^']+)'", r"\1", name, flags=re.I)
@@ -749,6 +751,7 @@ class Event:
             img=get_main_value(imgs),
             category=get_main_value(categories, default=Category.UNKNOWN),
             sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
+            price=max(x.price for x in events)
         ).fix()
         if e.category != Category.CINEMA and e.more is None and len(e.also_in) == 1:
             e = e.merge(

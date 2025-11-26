@@ -131,15 +131,23 @@ class MadridDestino:
         if new_url and new_url.startswith("https://www.cinetecamadrid.com/programacion/"):
             soup = WEB.get_cached_soup(new_url)
             director: list[str] = []
+            isVarios = False
             dir_txt = get_text(soup.select_one("div.field--name-field-director")) or ''
             for d in map(str.strip, re.split(r", ", dir_txt)):
-                if d not in ('', 'Varios/as directores/as', 'Varios/as autores/as', 'Varias autoras') and d not in director:
-                    director.append(d)
+                if not d or d in director:
+                    continue
+                if d in ('Varios/as directores/as', 'Varios/as autores/as', 'Varias autoras'):
+                    isVarios = True
+                    continue
+                director.append(d)
+            desc = get_text(soup.select_one('div.wrap-desc'))
             year = get_text(soup.select_one("div.field--name-field-ano-filmacion"))
             ev = ev.merge(
                 director=tuple(director),
                 year=int(year) if year and year.isdecimal() else None
             )
+            if not director and isVarios and len(re.findall(r"\d+'", desc)) > 2:
+                ev = ev.merge(cycle="Cortometrajes")
         if not ev.director:
             director: list[str] = []
             for d in map(str.strip, re.findall(r"\b[Dd]irigida por( [A-Z][a-z]+(?: [A-Z][a-z]+))", info['description'])):

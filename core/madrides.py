@@ -45,29 +45,32 @@ def get_text(n: Tag):
 
 
 def clean_lugar(s: str):
-    if re.search(r"Centro Cultural Casa del Reloj", s, flags=re.IGNORECASE):
+    m = re.search(r".*Nave\s+(.*)\s+.*Centro Cultural Casa del Reloj.*", s, flags=re.I)
+    if m:
+        return f"Centro cultural Casa del Reloj (nave {m.group(1)})"
+    if re.search(r"Centro Cultural Casa del Reloj", s, flags=re.I):
         return "Centro cultural Casa del Reloj"
-    s = re.sub(r"\bCentro de Información y Educación Ambiental\b", "CIEA", s, flags=re.IGNORECASE)
+    s = re.sub(r"\bCentro de Información y Educación Ambiental\b", "CIEA", s, flags=re.I)
     s = re.sub(r"^Biblioteca Pública( Municipal)?", "Biblioteca", s)
     s = re.sub(r"\s+\(.*?\)\s*$", "", s)
-    s = re.sub(r"^Mercado municipal de ", "Mercado ", s, flags=re.IGNORECASE)
+    s = re.sub(r"^Mercado municipal de ", "Mercado ", s, flags=re.I)
     s = re.sub(
         r"^Espacio de igualdad ([^\.]+)\..*$", r"Espacio de igualdad \1",
         s,
-        flags=re.IGNORECASE
+        flags=re.I
     )
     s = re.sub(
         r"^Centro de Información y Educación Ambiental de (.*)$",
         r"Centro de información y educación ambiental de \1",
         s,
-        flags=re.IGNORECASE
+        flags=re.I
     )
-    s = re.sub(r"^(Matadero) (Medialab|Madrid)$", r"\1", s, flags=re.IGNORECASE)
-    s = re.sub(r"^(Cineteca) Madrid$", r"\1", s, flags=re.IGNORECASE)
-    s = re.sub(r"^(Imprenta Municipal)\s.*$", r"\1", s, flags=re.IGNORECASE)
-    s = re.sub(r"^Centro (cultural|sociocultural)\b", "Centro cultural", s, flags=re.IGNORECASE)
-    s = re.sub(r"\s+de\s+Madrid$", "", s, flags=re.IGNORECASE)
-    s = re.sub(r"^Centro dotacional integrado", "Centro dotacional integrado", s, flags=re.IGNORECASE)
+    s = re.sub(r"^(Matadero) (Medialab|Madrid)$", r"\1", s, flags=re.I)
+    s = re.sub(r"^(Cineteca) Madrid$", r"\1", s, flags=re.I)
+    s = re.sub(r"^(Imprenta Municipal)\s.*$", r"\1", s, flags=re.I)
+    s = re.sub(r"^Centro (cultural|sociocultural)\b", "Centro cultural", s, flags=re.I)
+    s = re.sub(r"\s+de\s+Madrid$", "", s, flags=re.I)
+    s = re.sub(r"^Centro dotacional integrado", "Centro dotacional integrado", s, flags=re.I)
     s = re.sub(r"\bFaro de la Moncloa\b", "Faro de Moncloa", s, flags=re.I)
     lw = plain_text(s).lower()
     if lw.startswith("museo de san isidro"):
@@ -130,7 +133,7 @@ OK_ZONE = {
 
 @cache
 def isOkPlace(p: Place):
-    if re.search(r"\bcentro juvenil\b", p.name, flags=re.IGNORECASE):
+    if re.search(r"\bcentro juvenil\b", p.name, flags=re.I):
         return False
     if p.latlon is None:
         return True
@@ -440,7 +443,7 @@ class MadridEs:
         for r in (
             r"\bDuraci[óo]n[:\s]+(\d+) min",
         ):
-            m = re.search(r, desc, flags=re.IGNORECASE)
+            m = re.search(r, desc, flags=re.I)
             if m is None:
                 continue
             duration = int(m.group(1))
@@ -450,7 +453,7 @@ class MadridEs:
             r"\bcelebraci[oó]n[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h",
             r"\bhorario[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h"
         ):
-            m = re.search(r, desc, flags=re.IGNORECASE)
+            m = re.search(r, desc, flags=re.I)
             if m is None:
                 continue
             h1 = str_to_arrow_hour(m.group(1))
@@ -497,7 +500,7 @@ class MadridEs:
             r"\bhorario[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h",
             r"\bdar[áa]n? comienzo a las (\d+(?::\d+)?) h",
         ):
-            m = re.search(r, desc, flags=re.IGNORECASE)
+            m = re.search(r, desc, flags=re.I)
             if m is None:
                 continue
             h = str_to_arrow_hour(m.group(1))
@@ -575,7 +578,7 @@ class MadridEs:
             return Category.WORKSHOP
         if re_or(plain_name, "Salida medioambiental", to_log=id, flags=re.I):
             return Category.HIKING
-        if re_or(plain_name, "recital de piano", r"Cuartero de C[áa]mara", r"Arias de [Óo]pera", to_log=id, flags=re.IGNORECASE):
+        if re_or(plain_name, "recital de piano", r"Cuartero de C[áa]mara", r"Arias de [Óo]pera", to_log=id, flags=re.I):
             return Category.MUSIC
         if re_and(plain_name, "ballet", ("repertorio", "clasico"), to_log=id):
             return Category.DANCE
@@ -697,13 +700,13 @@ class MadridEs:
             return Category.WORKSHOP
 
         desc = self.__get_description(url_event)
-        if re_or(desc, "[mM]usical? infantil", "[Tt]eatro infantil", "relatos en familia", "concierto familiar", "bienestar de niños y niñas", ("cuentacuentos", "en familia"), to_log=id, flags=re.IGNORECASE):
+        if re_or(desc, "[mM]usical? infantil", "[Tt]eatro infantil", "relatos en familia", "concierto familiar", "bienestar de niños y niñas", ("cuentacuentos", "en familia"), to_log=id, flags=re.I):
             return Category.CHILDISH
-        if re_or(desc, "zarzuela", "teatro", "espect[áa]culo (circense y )?teatral", to_log=id, flags=re.IGNORECASE):
+        if re_or(desc, "zarzuela", "teatro", "espect[áa]culo (circense y )?teatral", to_log=id, flags=re.I):
             return Category.THEATER
-        if re_or(desc, "itinerario .* kil[ó]metros", to_log=id, flags=re.IGNORECASE):
+        if re_or(desc, "itinerario .* kil[ó]metros", to_log=id, flags=re.I):
             return Category.SPORT
-        if re_or(plain_name, "actuacion", "verbena") and re_or(desc, "música", "concierto", "canciones", "pop", "rock", "baila", "bailable", "cantante", " d[ée]cada prodigiosa", to_log=id, flags=re.IGNORECASE):
+        if re_or(plain_name, "actuacion", "verbena") and re_or(desc, "música", "concierto", "canciones", "pop", "rock", "baila", "bailable", "cantante", " d[ée]cada prodigiosa", to_log=id, flags=re.I):
             return Category.MUSIC
         if re_or(desc, "Concierto", "[Uu]n concierto de", to_log=id):
             return Category.MUSIC
@@ -711,7 +714,7 @@ class MadridEs:
             return Category.CONFERENCE
         if desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", "presenta su poemario", flags=re.I):
             return Category.POETRY
-        if re_or(desc, "propuesta creativa y participativa que combina lectura, escritura y expresión", r"Se organizará un '?escape room'?", to_log=id, flags=re.IGNORECASE):
+        if re_or(desc, "propuesta creativa y participativa que combina lectura, escritura y expresión", r"Se organizará un '?escape room'?", to_log=id, flags=re.I):
             return Category.WORKSHOP
         if re_and(desc, r"presentaci[oó]n", (r"libros?", r"novelas?"), (r"autore(es)?", r"autoras?"), to_log=id):
             return Category.CONFERENCE
