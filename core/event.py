@@ -262,7 +262,7 @@ class Place(NamedTuple):
             return "El Retiro"
         if re_or(name, "matadero", "cineteca"):
             return "Matadero"
-        if re_or(name, "Casa del Reloj"):
+        if re_or(name, "Casa del Reloj", flags=re.I):
             return "Centro Cultural Casa del Reloj"
         return self.name
 
