@@ -284,6 +284,7 @@ eventos = \
     Telefonica().events
 logger.info(f"{len(eventos)} recuperados")
 
+NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 eventos = tuple(filter(myfilter, eventos))
 eventos = sorted_and_fix(eventos)
 
