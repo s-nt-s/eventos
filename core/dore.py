@@ -117,7 +117,7 @@ class Dore(Web):
     def __find_duration(self, txt: str):
         if txt is None:
             return None
-        m = re.search(r"Total sesión: (\d+)['’]", txt, re.IGNORECASE)
+        m = re.search(r"Total sesión: (\d+)['’]", txt, re.I)
         if m:
             return int(m.group(1))
         duration = tuple(map(int, re.findall(r"(\d+)['’]", txt)))
