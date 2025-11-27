@@ -86,6 +86,7 @@ class GoodReads:
 
     def find(self, title_author: str):
         for r in (
+            re.compile(r"^'(.+)',?\s*escrito por (.+)$"),
             re.compile(r"^'(.+)',\s*de (.+)$"),
             re.compile(r"^'(.+)'\s*de (.+)$"),
             re.compile(r"^(.+),\s*de (.+)$"),

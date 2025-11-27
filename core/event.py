@@ -263,6 +263,9 @@ class Place(NamedTuple):
             return "El Retiro"
         if re_or(name, "matadero", "cineteca", "Casa del Reloj", "Nave Terneras", "La Lonja", flags=re.I):
             return "Matadero"
+        if self.latlon:
+            if self.getKmFrom(40.352672, -3.684576)<=1:
+                return "Villaverde bajo"
         return self.name
 
     def fix(self):
@@ -804,8 +807,13 @@ class Event:
         if self.category == Category.CINEMA and self.place.name == "Cineteca":
             if re.search(r"^(Esc[áa]ner|Mrgente|Sesi[oó]n) \d+$", name, flags=re.I) or re.search("Stop Motion exquisito|Alzo mi voz.*realidades animadas", name, flags=re.I):
                 return "Cortometrajes"
+        if self.category == Category.CINEMA:
+            if re.search(r"SGAE en corto", name, flags=re.I):
+                return "Cortometrajes"
         if re.search(r"cat[áa]logo.*Madrid entre libros", self.name, flags=re.I):
             return "Madrid entre libros"
+        if self.category == Category.CONFERENCE and self.img in ("https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Arganzuela/Eventos/ficheros/Roma.png", ):
+            return "Tardes romanas"
         return None
 
 
