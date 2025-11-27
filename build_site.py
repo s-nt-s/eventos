@@ -217,7 +217,13 @@ def sorted_and_fix(eventos: List[Event]):
         ok_events.add(e)
 
     def _mk_key_cycle(e: Event | Cinema):
-        if len(e.sessions) == 1 and e.cycle:
+        if not e.cycle:
+            return None
+        urls: set[str] = set()
+        for s in e.sessions:
+            if s.url:
+                urls.add(s.url)
+        if len(e.sessions) == 1 or len(urls) == 0:
             return (e.cycle, e.category, e.place, round_to_even(e.price))
 
     for evs in find_duplicates(

@@ -7,7 +7,7 @@ from .event import Event, Place, Session, Category, FieldNotFound, CategoryUnkno
 import re
 from bs4 import Tag
 from datetime import datetime
-from .util import plain_text, re_or
+from .util import plain_text, re_or, re_and
 import json
 
 
@@ -250,6 +250,8 @@ class CasaAmerica(Web):
         if re.search(r"Programa:.*\d+:\d+\.?\s+Diálogo (con|sobre)", content, flags=re.I | re.S):
             return Category.CONFERENCE
         if re.search(r"Bienvenida:.*Participantes:", content, flags=re.I | re.S):
+            return Category.CONFERENCE
+        if re_and(content, "mesa \d+", "entrevista", flags=re.I):
             return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(self.url, cat)))
         return Category.UNKNOWN

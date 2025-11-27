@@ -129,6 +129,8 @@ OK_ZONE = {
     (40.414912, -3.669639): 1,
     # Oporto
     (40.388966, -3.731448): 1
+    # Vista Alegre
+    (40.388721, -3.739912): 1
 }
 
 
@@ -567,7 +569,7 @@ class MadridEs:
             return Category.CHILDISH
         if re_and(tp_name, "dia", "internacional", "familias?", to_log=id):
             return Category.CHILDISH
-        if re_or(tp_name, "concierto infantil", "en familia", r"[Ee]laboraci[óo]n de comederos de aves", r"[Ll]os [\d\. ]+ primeros d[íi]as no se repiten", to_log=id):
+        if re_or(tp_name, "concierto infantil", "en familia", r"[Ee]laboraci[óo]n de comederos de aves", r"[Ll]os [\d\. ]+ primeros d[íi]as no se repiten", "[pP]hotocall hinchable", to_log=id):
             return Category.CHILDISH
         if re_or(plain_name, "^re vuelta al patio", to_log=id):
             return Category.CHILDISH
@@ -621,7 +623,7 @@ class MadridEs:
             return Category.VISIT
         if re_or(plain_name, "^concierto de", to_log=id):
             return Category.MUSIC
-        if re_or(tp_name, ("espectaculo", "magia"), to_log=id):
+        if re_or(tp_name, ("espectaculo", "magia"), r"\b[Ll]a magia de", to_log=id):
             return Category.MAGIC
         if re_or(tp_name, "cine", "proyeccion(es)?", "cortometrajes?", to_log=id):
             return Category.CINEMA
@@ -697,11 +699,11 @@ class MadridEs:
             return Category.MUSIC
         if re_and(plain_name, "dialogos?", "mac"):
             return Category.CONFERENCE
-        if re_and(plain_name, "lengua de signos"):
+        if re_or(plain_name, "lengua de signos", r"^[Tt]alleres"):
             return Category.WORKSHOP
 
         desc = self.__get_description(url_event)
-        if re_or(desc, "[mM]usical? infantil", "[Tt]eatro infantil", "relatos en familia", "concierto familiar", "bienestar de niños y niñas", ("cuentacuentos", "en familia"), to_log=id, flags=re.I):
+        if re_or(desc, "[mM]usical? infantil", r"[Tt]eatro infantil", "relatos en familia", "concierto familiar", "bienestar de niños y niñas", ("cuentacuentos", "en familia"), to_log=id, flags=re.I):
             return Category.CHILDISH
         if re_or(desc, "zarzuela", "teatro", "espect[áa]culo (circense y )?teatral", to_log=id, flags=re.I):
             return Category.THEATER
@@ -709,7 +711,7 @@ class MadridEs:
             return Category.SPORT
         if re_or(plain_name, "actuacion", "verbena") and re_or(desc, "música", "concierto", "canciones", "pop", "rock", "baila", "bailable", "cantante", " d[ée]cada prodigiosa", to_log=id, flags=re.I):
             return Category.MUSIC
-        if re_or(desc, "Concierto", "[Uu]n concierto de", to_log=id):
+        if re_or(desc, "Concierto", r"\b[Uu]n concierto de", r"\b[Gg][oó]spel", to_log=id):
             return Category.MUSIC
         if re_or(desc, r"intervienen l[oa]s", "una mesa redonda con", " encuentro del ciclo Escritores", to_log=id, flags=re.I):
             return Category.CONFERENCE
