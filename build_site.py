@@ -319,7 +319,7 @@ def event_to_ics(e: Event, s: Session):
         dtstamp=NOW,
         url=(s.url or e.url),
         categories=str(e.category),
-        summary=e.title,
+        summary=s.title or e.title,
         description=description,
         location=e.place.address,
         organizer=e.place.name,

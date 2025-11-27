@@ -171,8 +171,9 @@ class Category(IntEnum):
 
 
 class Session(NamedTuple):
+    date: str
     url: Optional[str] = None
-    date: str = None
+    title: Optional[str] = None
 
     def merge(self, **kwargs):
         return self._replace(**kwargs)
@@ -260,10 +261,8 @@ class Place(NamedTuple):
         name = plain_text(self.name)
         if re_or(name, r"d?el retiro", ("biblioteca", "eugenio trias")):
             return "El Retiro"
-        if re_or(name, "matadero", "cineteca"):
+        if re_or(name, "matadero", "cineteca", "Casa del Reloj", "Nave Terneras", "La Lonja", flags=re.I):
             return "Matadero"
-        if re_or(name, "Casa del Reloj", flags=re.I):
-            return "Centro cultural Casa del Reloj"
         return self.name
 
     def fix(self):
@@ -699,6 +698,13 @@ class Event:
             raise ValueError("len(events)==0")
         if len(evs) == 1:
             return evs[0]
+        url_title: dict[str, str] = dict()
+        for e in evs:
+            if e.title and e.url and e.url not in url_title:
+                url_title[e.url] = e.title
+            for s in e.sessions:
+                if s.title and s.url and e.url not in url_title:
+                    url_title[s.url] = s.title
         logger.debug("Fusión: " + " + ".join(map(lambda e: e.id, evs)))
         logger.debug("Fusión: " + " + ".join(map(str, evs)))
         dates_with_url: Set[str] = set()
@@ -723,6 +729,7 @@ class Event:
             durations.append(e.duration)
             imgs.append(e.img)
             for s in e.sessions:
+                s = s._replace(title=None)
                 sessions.add(s)
                 if firstEventUrl:
                     s = s._replace(url=e.url or s.url)
@@ -758,6 +765,12 @@ class Event:
                 more=e.also_in[0],
                 also_in=tuple()
             )
+        sessions = list(e.sessions)
+        for i, s in enumerate(sessions):
+            title = url_title.get(s.url)
+            if title:
+                sessions[i] = s._replace(title=title)
+        e = e.merge(sessions=sessions)
         logger.debug(f"=== {e}")
         return e
 
