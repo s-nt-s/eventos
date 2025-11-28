@@ -3,7 +3,7 @@ from .cache import TupleCache
 from typing import Set
 from functools import cached_property
 import logging
-from .event import Cinema, Event, Place, Session, Category, FieldNotFound, CategoryUnknown
+from .event import Places, Event, Place, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from datetime import datetime
 from .util import plain_text, re_or
@@ -54,11 +54,7 @@ class AcademiaCine(Web):
             sessions=tuple((Session(
                 date=self.__find_session()
             ),)),
-            place=Place(
-                name="Academia de cine",
-                address="Calle de Zurbano, 3, Chamberí, 28010 Madrid",
-                latlon="40.427566448169316,-3.6939387798888634"
-            )
+            place=Places.ACADEMIA_CINE.value
         )
         # hay que tener en cuenta que 2 entradas
         # son para silla de ruedas

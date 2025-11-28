@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict, fields, replace, is_dataclass
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set
-from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, re_or, get_main_value
+from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, re_or, re_and, get_main_value
 from core.util.madrides import find_more_url as find_more_url_madrides
 from core.util.madriddestino import find_more_url as find_more_url_madriddestino
 from urllib.parse import quote
@@ -16,6 +16,8 @@ from .util import to_uuid
 from core.dblite import DB
 from typing import TypeVar, Type
 from core.goodreads import GR
+from core.zone import Zones
+from enum import Enum
 
 T = TypeVar("T")
 
@@ -30,7 +32,6 @@ MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", 
 re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
 
 WEB = Web()
-
 
 
 def new_dataclass(cls: Type[T], obj: dict) -> T:
@@ -102,6 +103,7 @@ class Category(IntEnum):
     NO_EVENT = 38
     PARTY = 39
     LITERATURA = 40
+    MATERNITY = 41
 
     def __str__(self):
         #if self == Category.OTHERS:
@@ -229,17 +231,80 @@ class Session(NamedTuple):
         return datetime(*dt_int)
 
 
-class Place(NamedTuple):
+def safe_lt(a: str | None, b: str | None):
+    if (a, b) == (None, None):
+        return None
+    if a is None and b is not None:
+        return True
+    if a is not None and b is None:
+        return False
+    if a.__eq__(b):
+        return None
+    return a.__lt__(b)
+
+
+@dataclass(frozen=True)
+class Place:
     name: str
     address: str
     latlon: str = None
+    zone: str = None
 
-    @staticmethod
-    def build(*args, **kwargs):
+    def _asdict(self):
+        return asdict(self)
+
+    def __lt__(self, o):
+        if not isinstance(o, Place):
+            return NotImplemented
+        for lt in (
+            safe_lt(self.zone, o.zone),
+            safe_lt(self.name, o.name),
+            safe_lt(self.address, o.address),
+            safe_lt(self.latlon, o.latlon),
+        ):
+            if lt is not None:
+                return lt
+        return False
+
+    @classmethod
+    def build(cls, *args, **kwargs):
         obj = get_obj(*args, **kwargs)
         if obj is None:
             return None
+        ks = set(f.name for f in fields(cls))
+        obj = {k: v for k, v in obj.items() if k in ks}
         return Place(**obj)
+
+    def __post_init__(self):
+        for f in fields(self):
+            v = getattr(self, f.name, None)
+            if isinstance(v, list):
+                v = tuple(v)
+            elif isinstance(v, str) and len(v) == 0:
+                v = None
+            object.__setattr__(self, f.name, v)
+        self.__fix()
+
+    def __fix(self):
+        doit = True
+        while doit:
+            doit = False
+            for f in fields(self):
+                if self._fix_field(f.name):
+                    doit = True
+
+    def _fix_field(self, name: str, fnc=None):
+        old_val = getattr(self, name, None)
+        if fnc is None:
+            fnc = getattr(self, f'_fix_{name}', None)
+        if fnc is None or not callable(fnc):
+            return False
+        fix_val = fnc()
+        if fix_val == old_val:
+            return False
+        logger.debug(f"FIX: {name} {fix_val} <- {old_val}")
+        object.__setattr__(self, name, fix_val)
+        return True
 
     @property
     def url(self):
@@ -251,43 +316,105 @@ class Place(NamedTuple):
             return "https://www.google.com/maps?q=" + self.address
         return "https://www.google.com/maps/place/" + quote(self.address)
 
-    def getKmFrom(self, lat: float, lon: float):
-        if self.latlon is None:
-            return None
-        lt, ln = map(float, self.latlon.split(","))
-        return getKm(lt, ln, lat, lon)
-
-    def get_alias(self):
-        name = plain_text(self.name)
-        if re_or(name, r"d?el retiro", ("biblioteca", "eugenio trias")):
+    def _fix_zone(self):
+        if self.zone is not None:
+            return self.zone
+        name = plain_text(self.name) or ''
+        addr = plain_text(self.address) or ''
+        if re_or(name, r"d?el retiro", ("biblioteca", "eugenio trias"), "casa de vacas"):
             return "El Retiro"
         if re_or(name, "matadero", "cineteca", "Casa del Reloj", "Nave Terneras", "La Lonja", flags=re.I):
             return "Matadero"
+        if re_and(addr, "conde duque", "28015"):
+            return "Conde Duque"
         if self.latlon:
-            if self.getKmFrom(40.352672, -3.684576)<=1:
-                return "Villaverde bajo"
+            lat, lon = map(float, self.latlon.split(","))
+            for z in (
+                Zones.CARABANCHEL.value,
+                Zones.VILLAVERDE_BAJO.value,
+                Zones.PACIFICO.value,
+                Zones.TRIBUNAL.value,
+                Zones.MONCLOA.value,
+                Zones.LA_LATINA.value,
+                Zones.LAVAPIES.value,
+                Zones.DELICIAS.value
+            ):
+                if z.is_in(lat, lon):
+                    return z.name
         return self.name
 
-    def fix(self):
-        if re.match(r"^Faro de (la )?Moncloa$", self.name, flags=re.I):
-            return Place(
-                name="Faro de Moncloa",
-                address="Av. de la Memoria, 2, 28040 Madrid",
-                latlon="40.43727075977316,-3.721682694006853"
-            )
-        if re.match(r"^Conde Duque$", self.name, flags=re.I):
-            return Place(
-                name="Conde Duque",
-                address="Calle del Conde Duque, 11, 28015 Madrid",
-                latlon="40.42739911262292,-3.710589286287491"
-            )
-        if re.match(r"^Sala Berlanga$", self.name, flags=re.I) and re.search(r"Andr[ée]s Mellado.*53", self.address or "", flags=re.I):
-            return Place(
-                name="Sala Berlanga",
-                address="Calle de Andrés Mellado, 53, 28015 Madrid",
-                latlon="40.428087092339986,-3.7107698133958547"
-            )
+    @property
+    def alias(self):
+        return self.zone or self.name
+
+    def normalize(self):
+        name = self.name or ''
+        address = self.address or ''
+        if re.match(r"^Faro de (la )?Moncloa$", name, flags=re.I):
+            return Places.FARO_MONCLOA.value
+        if re.match(r"^Conde Duque$", name, flags=re.I):
+            return Places.CONDE_DUQUE.value
+        if re.match(r"^Sala Berlanga$", name, flags=re.I) and re.search(r"Andr[ée]s Mellado.*53", address, flags=re.I):
+            return Places.SALA_BERLANGA.value
         return self
+
+
+class Places(Enum):
+    ACADEMIA_CINE = Place(
+        name="Academia de cine",
+        address="C/ de Zurbano, 3, Chamberí, 28010 Madrid",
+        latlon="40.427566448169316,-3.6939387798888634",
+    )
+    CAIXA_FORUM = Place(
+        name="Caixa Forum",
+        address="Paseo del Prado, 36, Centro, 28014 Madrid",
+        latlon="40.41134208472603,-3.6935713500263523",
+    )
+    CASA_AMERICA = Place(
+        name="La casa America",
+        address="Plaza Cibeles, s/n, Salamanca, 28014 Madrid",
+        latlon="40.419580635299525,-3.693332407512017",
+    )
+    CASA_ENCENDIDA = Place(
+        name="La casa encendida",
+        address="Rda. de Valencia, 2, Centro, 28012 Madrid",
+        latlon="40.4062337055155,-3.6999346068731525",
+    )
+    CIRCULO_BELLAS_ARTES = Place(
+        name="Circulo de Bellas Artes",
+        address="C/ Alcalá, 42, Centro, 28014 Madrid, España",
+        latlon="40.4183042,-3.6991136",
+    )
+    DORE = Place(
+        name="Cine Doré",
+        address="C/ de Santa Isabel, 3, Centro, 28012 Madrid",
+        latlon="40.411950735826316,-3.699066276358703",
+    )
+    SALA_BERLANGA = Place(
+        name="Sala Berlanga",
+        address="C/ de Andrés Mellado, 53, Chamberí, 28015 Madrid",
+        latlon="40.428087092339986,-3.7107698133958547"
+    )
+    SALA_EQUIS = Place(
+        name="Sala Equis",
+        address="C/ del Duque de Alba, 4, Centro, 28012 Madrid, España",
+        latlon="40.412126715926796,-3.7059047815506396",
+    )
+    FUNDACION_TELEFONICA = Place(
+        name="Fundación Telefónica",
+        address="C/ Fuencarral, 3, Centro, 28004 Madrid",
+        latlon="40.42058956643586,-3.7017498812379235",
+    )
+    CONDE_DUQUE = Place(
+        name="Conde Duque",
+        address="C/ del Conde Duque, 11, 28015 Madrid",
+        latlon="40.42739911262292,-3.710589286287491",
+    )
+    FARO_MONCLOA = Place(
+        name="Faro de Moncloa",
+        address="Av. de la Memoria, 2, 28040 Madrid",
+        latlon="40.43727075977316,-3.721682694006853",
+    )
 
 
 def unquote(s: str):
@@ -420,7 +547,12 @@ class Event:
         return new_dataclass(Event, self._asdict())
 
     def __post_init__(self):
-        object.__setattr__(self, 'place', self.place.fix())
+        plc = self.place
+        if isinstance(plc, dict):
+            plc = Place.build(plc)
+        if isinstance(plc, Place):
+            plc = plc.normalize()
+        object.__setattr__(self, 'place', plc)
         new_name = _clean_name(self.name, self.place.name)
         if new_name != self.name:
             logger.debug(f"FIX: {new_name} <- {self.name}")

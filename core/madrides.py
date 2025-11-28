@@ -4,7 +4,7 @@ import re
 from typing import Set, Dict, List, Tuple, Union
 from urllib.parse import urlencode
 from .event import Event, Session, Place, Category, CategoryUnknown
-from .util import plain_text, re_or, re_and, getKm, my_filter, get_domain
+from .util import plain_text, re_or, re_and, my_filter, get_domain
 from ics import Calendar
 from arrow import Arrow
 import logging
@@ -15,7 +15,7 @@ from collections import defaultdict
 from core.util.madrides import find_more_url
 from html import unescape
 from tatsu.exceptions import FailedParse
-from os import environ
+from core.zone import Circles
 
 
 logger = logging.getLogger(__name__)
@@ -45,6 +45,8 @@ def get_text(n: Tag):
 
 
 def clean_lugar(s: str):
+    if re.search(r"Centro cultural Clara del Rey", s, flags=re.I):
+        return "Centro cultural Clara del Rey"
     if re.search(r".*Nave.*\bTerneras\b.*\bCasa del Reloj.*", s, flags=re.I):
         return "Nave Terneras"
     if re.search(r".*La Lonja\b.*\bCasa del Reloj.*", s, flags=re.I):
@@ -112,28 +114,6 @@ def str_to_arrow_hour(h: str):
         return Arrow.strptime(h, "%H:%M")
 
 
-OK_ZONE = {
-    # Villaverde Bajo
-    (40.352672, -3.684576): 1,
-    # Legazpi
-    (40.391225, -3.695124): 2,
-    # Delicias
-    (40.400400, -3.692774): 2,
-    # Banco de España
-    (40.419529, -3.693949): 3,
-    # Moncloa
-    (40.434616, -3.719097): 1,
-    # Pacifico
-    (40.401874, -3.674703): 1,
-    # Sainz de Baranda
-    (40.414912, -3.669639): 1,
-    # Oporto
-    (40.388966, -3.731448): 1
-    # Vista Alegre
-    (40.388721, -3.739912): 1
-}
-
-
 @cache
 def isOkPlace(p: Place):
     if re.search(r"\bcentro juvenil\b", p.name, flags=re.I):
@@ -142,9 +122,9 @@ def isOkPlace(p: Place):
         return True
     kms: list[float] = []
     lat, lon = map(float, p.latlon.split(","))
-    for (lt, ln), km in OK_ZONE.items():
-        kms.append(getKm(lat, lon, lt, ln))
-        if kms[-1] <= km:
+    for c in Circles:
+        kms.append(c.value.get_km(lat, lon))
+        if kms[-1] <= c.value.kms:
             return True
     k = round(min(kms))
     logger.debug(f"Lugar descartado {k}km {p.name} {p.url}")

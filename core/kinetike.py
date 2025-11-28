@@ -3,13 +3,14 @@ from bs4 import Tag
 from functools import cached_property
 from urllib.parse import urljoin
 import re
-from core.event import Event, Category, Place, Session
+from core.event import Event, Category, Places, Session, Place
 from core.util import re_or, plain_text
 
 
 re_num = re.compile(r"\d+")
 re_date = re.compile(r"^\d{1,2}/\d{1,2}/20\d{2}$")
 re_hour = re.compile(r"^\d{2}:\d{2}$")
+
 
 def _get_date(s: str):
     if s is None or not re_date.match(s):
@@ -177,9 +178,5 @@ class KineTike:
 
 
 if __name__ == "__main__":
-    k = KineTike(KineTike.SALA_EQUIS, Place(
-        name="Sala Equis",
-        address="C. del Duque de Alba, 4, Centro, 28012 Madrid, España",
-        latlon="40.412126715926796,-3.7059047815506396"
-    ))
+    k = KineTike(KineTike.SALA_EQUIS, Places.SALA_EQUIS.value)
     print(*k.events, sep="\n")

@@ -45,7 +45,7 @@
       </select>
     </p>
     {% for (img, e) in eventos %}
-    <div id="{{e.id}}" class="evento {{e.category | simplify}} {{e.place.get_alias() | simplify}} {{ clss[e.id]|join(' ') }}" data-publish="{{e.publish}}">
+    <div id="{{e.id}}" class="evento {{e.category | simplify}} {{e.place.alias | simplify}} {{ clss[e.id]|join(' ') }}" data-publish="{{e.publish}}">
       <div class="img" {%if img.background%} style="--back: rgb{{img.background}}" {%endif%}>
         {% if img %}
         <div><img src="{{img.url}}" alt="{{e.titulo}}" class="cartel {{img.orientation}}" loading="lazy" /></div>
@@ -54,7 +54,7 @@
         <div class="noimg"></div>
         {% endif %}
         <span class="categoria">{% if e.more %}<a class="more" href="{{e.more}}">🔗</a> {% endif %}{{(e.category|string).title()}}</span>
-        <a class="lugar" href="{{e.place.url}}">{{e.place.name}}</a>
+        <a class="lugar" href="{{e.place.url}}"{%if e.place.address%} title="{{e.place.address}}"{%endif%}>{{e.place.name}}</a>
       </div>
       <div class="info">
         <p class="titulo">

@@ -304,7 +304,7 @@ lugares: Dict[str, int] = {}
 
 for e in eventos:
     categorias[e.category] = categorias.get(e.category, 0) + 1
-    lugares[e.place.get_alias()] = lugares.get(e.place.get_alias(), 0) + 1
+    lugares[e.place.alias] = lugares.get(e.place.alias, 0) + 1
     if len(e.sessions) == 0:
         sin_sesiones.add(e.id)
         continue
@@ -439,6 +439,6 @@ EventosRss(
     eventos=eventos
 ).save("eventos.rss")
 
-FM.dump(OUT+"eventos.json", eventos, compact=True)
+FM.dump(OUT+"eventos.json", eventos, compact=True, rm_key=('avoid_alias', ))
 FM.dump(OUT+"publish.json", PUBLISH)
 logger.info("Fin")

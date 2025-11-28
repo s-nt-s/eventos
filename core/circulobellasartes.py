@@ -1,6 +1,6 @@
 from core.web import Web, get_text
 from functools import cached_property
-from core.event import Event, Cinema, Place, Category
+from core.event import Event, Cinema, Places, Category
 import re
 from datetime import date
 
@@ -19,11 +19,6 @@ def _det_date(s: str):
 
 class CirculoBellasArtes:
     URL_PELICULAS = "https://www.circulobellasartes.com/ciclos-cine/peliculas/"
-    PLACE = Place(
-        name="Circulo de Bellas Artes",
-        address="C. Alcalá, 42, Centro, 28014 Madrid, España",
-        latlon="40.4183042,-3.6991136"
-    )
 
     def __init__(self):
         self.__w = Web()
@@ -66,7 +61,7 @@ class CirculoBellasArtes:
         ev = Event(
             url=url,
             name=get_text(soup.select_one("div[data-post-id] h1")),
-            place=CirculoBellasArtes.PLACE
+            place=Places.CIRCULO_BELLAS_ARTES.value
         )
 
     def __get_event_from_url_cine(self, url: str):
@@ -83,7 +78,7 @@ class CirculoBellasArtes:
             name=get_text(h1),
             director=(get_text(h3),),
             price=8,
-            place=CirculoBellasArtes.PLACE,
+            place=Places.CIRCULO_BELLAS_ARTES.value,
             category=Category.CINEMA,
         )
 
