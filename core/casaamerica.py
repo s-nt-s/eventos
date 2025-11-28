@@ -3,7 +3,7 @@ from .cache import TupleCache
 from typing import Set, Dict, List
 from functools import cached_property, cache
 import logging
-from .event import Event, Place, Session, Category, FieldNotFound, CategoryUnknown
+from .event import Event, Places, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from bs4 import Tag
 from datetime import datetime
@@ -160,12 +160,7 @@ class CasaAmerica(Web):
             category=category,
             duration=self.__find_duration(category, content),
             sessions=None,
-            place=Place(
-                name="La casa America",
-                address="Plaza Cibeles, s/n, Salamanca, 28014 Madrid",
-                latlon="40.419580635299525,-3.693332407512017",
-                avoid_alias=True
-            )
+            place=Places.CASA_AMERICA.value
         )
 
     def __is_block(self):

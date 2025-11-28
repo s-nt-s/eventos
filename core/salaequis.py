@@ -4,7 +4,7 @@ from bs4 import Tag
 from typing import Set, Dict, List
 from .cache import TupleCache
 import logging
-from .event import Event, Session, Place, Category, FieldNotFound
+from .event import Event, Session, Places, Category, FieldNotFound
 import re
 from .util import plain_text
 from core.kinetike import KineTike
@@ -15,12 +15,6 @@ logger = logging.getLogger(__name__)
 class SalaEquis(Web):
     TAQUILLA = "https://salaequis.es/taquilla/"
     ENCUENTROS = "https://salaequis.es/encuentros/"
-    PLACE = Place(
-        name="Sala Equis",
-        address="C. del Duque de Alba, 4, Centro, 28012 Madrid, España",
-        latlon="40.412126715926796,-3.7059047815506396",
-        avoid_alias=True
-    )
 
     def get(self, url, auth=None, parser="lxml", **kwargs):
         logger.debug(url)
@@ -51,7 +45,7 @@ class SalaEquis(Web):
     @TupleCache("rec/salaequis.json", builder=Event.build)
     def events(self):
         buy_url: dict[str, str] = dict()
-        k_events = KineTike(KineTike.SALA_EQUIS, SalaEquis.PLACE).events
+        k_events = KineTike(KineTike.SALA_EQUIS, Places.SALA_EQUIS.value).events
         logger.info("Sala Equis: Buscando eventos")
         events: Set[Event] = set()
         for url in self.get_links():
@@ -100,7 +94,7 @@ class SalaEquis(Web):
             img=self.select_one("#productImage img").attrs["src"],
             price=0,
             category=Category.CINEMA,
-            place=SalaEquis.PLACE,
+            place=Places.SALA_EQUIS.value,
             duration=self.__find_duration(),
             sessions=sessions
         )

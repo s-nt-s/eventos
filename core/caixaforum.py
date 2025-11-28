@@ -2,7 +2,7 @@ from .web import get_text, Driver, WebException, MyTag
 from .cache import TupleCache, HashCache
 from typing import Set, Dict, Union, List, Tuple
 import logging
-from .event import Event, Place, Session, Category, FieldNotFound, CategoryUnknown
+from .event import Event, Places, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from bs4 import Tag
 from datetime import datetime
@@ -146,12 +146,7 @@ class CaixaForum:
                 info
             ),
             sessions=sessions,
-            place=Place(
-                name="Caixa Forum",
-                address="Paseo del Prado, 36, Centro, 28014 Madrid",
-                latlon="40.41134208472603,-3.6935713500263523",
-                avoid_alias=True
-            )
+            place=Places.CAIXA_FORUM.value
         )
 
     def __find_img(self, div: MyTag):

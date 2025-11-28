@@ -3,7 +3,7 @@ from .cache import TupleCache, Cache
 from typing import Set, Dict, List
 from functools import cached_property
 import logging
-from .event import Event, Place, Session, Category, CategoryUnknown, FieldUnknown
+from .event import Event, Places, Session, Category, CategoryUnknown, FieldUnknown
 from datetime import datetime
 from .util import plain_text, re_or, get_a_href, to_uuid
 
@@ -135,12 +135,7 @@ class Telefonica(Web):
     def __find_place(self):
         dir = self.select_one_txt("span.direccion")
         if dir == "C/ Fuencarral, 3, Madrid":
-            return Place(
-                name="Fundación Telefónica",
-                address="C/ Fuencarral, 3, Centro, 28004 Madrid",
-                latlon="40.42058956643586,-3.7017498812379235",
-                avoid_alias=True
-            )
+            return Places.FUNDACION_TELEFONICA.value
         raise FieldUnknown(self.url, "place", dir)
 
     def __find_category(self, data: Dict, webpage: Dict):

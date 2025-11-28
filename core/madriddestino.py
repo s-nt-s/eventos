@@ -307,7 +307,7 @@ class MadridDestino:
         if is_cat("concierto"):
             return Category.MUSIC
 
-        if re_or(pt, "visitas dialogadas", to_log=id):
+        if re_or(pt, "visitas dialogadas", "guided conversations", to_log=id):
             return Category.VISIT
 
         if re_or(pt, "^taller", to_log=id):

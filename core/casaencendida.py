@@ -3,7 +3,7 @@ from typing import Set, Dict, List, Union, Optional
 from functools import cache
 from .cache import TupleCache
 import logging
-from .event import Event, Session, Place, Category, CategoryUnknown
+from .event import Event, Session, Places, Category, CategoryUnknown
 import re
 from datetime import datetime
 from .filemanager import FM
@@ -26,12 +26,6 @@ class CasaEncendidaException(Exception):
 class CasaEncendida:
     URL = "https://www.lacasaencendida.es/actividades?t[0]=activity_"
     ACTIVITY = (2, 3)
-    PLACE = Place(
-        name="La casa encendida",
-        address="Rda. de Valencia, 2, Centro, 28012 Madrid",
-        latlon="40.4062337055155,-3.6999346068731525",
-        avoid_alias=True
-    )
 
     def __init__(self):
         self.__driver: Union[Driver, None] = None
@@ -100,7 +94,7 @@ class CasaEncendida:
             name=info[0]['name'],
             category=self.__find_category(soup, info),
             img=info[0]['image'],
-            place=CasaEncendida.PLACE,
+            place=Places.CASA_ENCENDIDA.value,
             sessions=self.__find_sessions(url, info),
             price=self.__find_price(info),
             duration=self.__find_duration(info)

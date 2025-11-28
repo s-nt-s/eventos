@@ -1,6 +1,6 @@
 from core.web import Driver, Web, get_text, buildSoup
 from functools import cached_property
-from core.event import Cinema, Event, Category, Place, Session
+from core.event import Cinema, Event, Category, Places, Session
 from core.cineentradas import CineEntradas
 from bs4 import Tag
 import re
@@ -43,11 +43,6 @@ class SalaBerlanga:
     CINE_ENTRADAS = 2369
     HOME = "https://salaberlanga.com/programacion-de-actividades/"
     ACTIVIDADES = "https://salaberlanga.com/wp-json/wp/v2/actividad/?per_page=100"
-    PLACE = Place(
-        name="Sala Berlanga",
-        address="C. de Andrés Mellado, 53, Chamberí, 28015 Madrid",
-        avoid_alias=True
-    )
 
     def __init__(self):
         self.w = Web()
@@ -159,7 +154,7 @@ class SalaBerlanga:
                 url=item.url,
                 name=html_name,
                 category=Category.UNKNOWN,
-                place=SalaBerlanga.PLACE,
+                place=Places.SALA_BERLANGA.value,
                 price=SalaBerlanga.PRICE,
                 duration=int(card_text.group(3)) if card_text else None,
                 sessions=tup_html_sessions,

@@ -4,7 +4,7 @@ import re
 from typing import Set, Dict, List, Tuple, Union
 from urllib.parse import urlencode
 from .event import Event, Session, Place, Category, CategoryUnknown
-from .util import plain_text, re_or, re_and, getKm, my_filter, get_domain
+from .util import plain_text, re_or, re_and, my_filter, get_domain
 from ics import Calendar
 from arrow import Arrow
 import logging
@@ -15,7 +15,7 @@ from collections import defaultdict
 from core.util.madrides import find_more_url
 from html import unescape
 from tatsu.exceptions import FailedParse
-from core.zone import Zones
+from core.zone import Circles
 
 
 logger = logging.getLogger(__name__)
@@ -45,6 +45,8 @@ def get_text(n: Tag):
 
 
 def clean_lugar(s: str):
+    if re.search(r"Centro cultural Clara del Rey", s, flags=re.I):
+        return "Centro cultural Clara del Rey"
     if re.search(r".*Nave.*\bTerneras\b.*\bCasa del Reloj.*", s, flags=re.I):
         return "Nave Terneras"
     if re.search(r".*La Lonja\b.*\bCasa del Reloj.*", s, flags=re.I):
@@ -120,11 +122,10 @@ def isOkPlace(p: Place):
         return True
     kms: list[float] = []
     lat, lon = map(float, p.latlon.split(","))
-    for z in Zones:
-        for c in z.value.area:
-            kms.append(c.get_km(lat, lon))
-            if kms[-1] <= c.kms:
-                return True
+    for c in Circles:
+        kms.append(c.value.get_km(lat, lon))
+        if kms[-1] <= c.value.kms:
+            return True
     k = round(min(kms))
     logger.debug(f"Lugar descartado {k}km {p.name} {p.url}")
     return False

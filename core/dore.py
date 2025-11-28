@@ -1,9 +1,7 @@
-from .web import Web, refind, get_text
+from .web import Web, get_text
 from .cache import TupleCache
-from typing import Set, Dict, Union
-from functools import cached_property, cache
 import logging
-from .event import Event, Cinema, Place, Session, Category, FieldNotFound, FieldUnknown, CategoryUnknown
+from .event import Event, Cinema, Places, Session, Category
 import re
 from bs4 import Tag
 from core.util import to_uuid
@@ -19,12 +17,6 @@ RE_SESSION = re.compile(r"(\d+)(?:\s+de)?\s+(" + "|".join(months) + r")\S+\s+a\s
 class Dore(Web):
     URL = "https://entradasfilmoteca.sacatuentrada.es/es/busqueda?precio_desde=0&precio_hasta=5&pagina="
     PRICE = 3
-    PLACE = Place(
-        name="Cine Doré",
-        address="C. de Santa Isabel, 3, Centro, 28012 Madrid",
-        latlon="40.411950735826316,-3.699066276358703",
-        avoid_alias=True
-    )
 
     def __iter_divs(self):
         page = 0
@@ -46,29 +38,29 @@ class Dore(Web):
     @TupleCache("rec/dore.json", builder=Event.build)
     def events(self):
         logger.info("Dore: Buscando eventos")
-        events: Set[Event] = set()
+        events: set[Event] = set()
         for url_info, div in self.__iter_divs():
             events.add(self.__div_to_event(url_info, div))
         events = self.__clean_events(events)
         return tuple(events)
 
-    def __clean_events(self, all_events: Set[Event]):
-        data: Dict[str, Set[Event]] = {}
+    def __clean_events(self, all_events: set[Event]):
+        data: dict[str, set[Event]] = {}
         for e in all_events:
             if e.title not in data:
                 data[e.title] = set()
             data[e.title].add(e)
-        vnts: Set[Event] = set()
+        vnts: set[Event] = set()
         for arr in map(sorted, data.values()):
             if len(arr) == 1:
                 vnts.add(arr[0])
                 continue
-            sessions: Set[Session] = set()
+            sessions: set[Session] = set()
             for e in arr:
                 for s in e.sessions:
                     sessions.add(s.merge(url=(s.url or e.url)))
             vnts.add(e.merge(sessions=tuple(sorted(sessions))))
-        events: Set[Event] = set()
+        events: set[Event] = set()
         for e in vnts:
             surl = set(s.url for s in e.sessions if s.url)
             if len(surl) > 0:
@@ -105,7 +97,7 @@ class Dore(Web):
             name=name,
             category=Category.CINEMA,
             img=div.select_one("img").attrs["data-src"],
-            place=Dore.PLACE,
+            place=Places.DORE.value,
             sessions=self.__find_sessions(div),
             price=Dore.PRICE,
             aka=tuple(aka),
@@ -130,7 +122,7 @@ class Dore(Web):
         txt = get_text(div.select_one("div.descripcion"))
         if txt is None:
             return tuple()
-        sessions: Set[Session] = set()
+        sessions: set[Session] = set()
         for d, m, hm in RE_SESSION.findall(txt):
             d = int(d)
             m = months.index(m.lower())+1

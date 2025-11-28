@@ -50,8 +50,8 @@ class Zone(NamedTuple):
 
 
 class Circles(Enum):
+    CENTRO_SOL = Circle(lat=40.416776435516745, lon=-3.7033224277568415, kms=2)
     LEGAZPI = Circle(lat=40.391225, lon=-3.695124, kms=2)
-    DELICIAS = Circle(lat=40.391225, lon=-3.695124, kms=2)
     BANCO_ESPANA = Circle(lat=40.419529, lon=-3.693949, kms=3)
     MONCLOA = Circle(lat=40.434616, lon=-3.719097, kms=1)
     PACIFICO = Circle(lat=40.401874, lon=-3.674703, kms=1)
@@ -61,6 +61,8 @@ class Circles(Enum):
     VISTA_ALEGRE = Circle(lat=40.388721, lon=-3.739912, kms=1)
     TRIBUNAL = Circle(lat=40.42643799145984, lon=-3.7012786845904095, kms=0.5)
     SAN_ISIDRO = Circle(lat=40.41271801132734, lon=-3.7073444235919695, kms=0.5)
+    LAVAPIES = Circle(lat=40.40897556386815, lon=-3.7010840545616155, kms=0.3)
+    DELICIAS = Circle(lat=40.40006636655174, lon=-3.6939322883846866, kms=0.5)
 
 
 class Zones(Enum):
@@ -104,4 +106,8 @@ class Zones(Enum):
     LA_LATINA = Zone.build(
         "La Latina",
         Circles.SAN_ISIDRO
+    )
+    LAVAPIES = Zone.build(
+        "Lavapies",
+        Circles.LAVAPIES
     )
