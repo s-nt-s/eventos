@@ -22,7 +22,8 @@ class Dore(Web):
     PLACE = Place(
         name="Cine Doré",
         address="C. de Santa Isabel, 3, Centro, 28012 Madrid",
-        latlon="40.411950735826316,-3.699066276358703"
+        latlon="40.411950735826316,-3.699066276358703",
+        avoid_alias=True
     )
 
     def __iter_divs(self):

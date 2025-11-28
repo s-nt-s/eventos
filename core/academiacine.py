@@ -57,7 +57,8 @@ class AcademiaCine(Web):
             place=Place(
                 name="Academia de cine",
                 address="Calle de Zurbano, 3, Chamberí, 28010 Madrid",
-                latlon="40.427566448169316,-3.6939387798888634"
+                latlon="40.427566448169316,-3.6939387798888634",
+                avoid_alias=True
             )
         )
         # hay que tener en cuenta que 2 entradas

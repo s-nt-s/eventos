@@ -439,6 +439,6 @@ EventosRss(
     eventos=eventos
 ).save("eventos.rss")
 
-FM.dump(OUT+"eventos.json", eventos, compact=True)
+FM.dump(OUT+"eventos.json", eventos, compact=True, rm_key=('avoid_alias', ))
 FM.dump(OUT+"publish.json", PUBLISH)
 logger.info("Fin")

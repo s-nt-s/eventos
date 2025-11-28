@@ -22,7 +22,8 @@ class CirculoBellasArtes:
     PLACE = Place(
         name="Circulo de Bellas Artes",
         address="C. Alcalá, 42, Centro, 28014 Madrid, España",
-        latlon="40.4183042,-3.6991136"
+        latlon="40.4183042,-3.6991136",
+        avoid_alias=True
     )
 
     def __init__(self):

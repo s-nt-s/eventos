@@ -18,7 +18,8 @@ class SalaEquis(Web):
     PLACE = Place(
         name="Sala Equis",
         address="C. del Duque de Alba, 4, Centro, 28012 Madrid, España",
-        latlon="40.412126715926796,-3.7059047815506396"
+        latlon="40.412126715926796,-3.7059047815506396",
+        avoid_alias=True
     )
 
     def get(self, url, auth=None, parser="lxml", **kwargs):

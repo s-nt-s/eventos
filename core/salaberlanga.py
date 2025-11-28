@@ -45,7 +45,8 @@ class SalaBerlanga:
     ACTIVIDADES = "https://salaberlanga.com/wp-json/wp/v2/actividad/?per_page=100"
     PLACE = Place(
         name="Sala Berlanga",
-        address="C. de Andrés Mellado, 53, Chamberí, 28015 Madrid"
+        address="C. de Andrés Mellado, 53, Chamberí, 28015 Madrid",
+        avoid_alias=True
     )
 
     def __init__(self):

@@ -148,9 +148,9 @@ class FileManager:
             except JSONDecodeError as e:
                 raise myex(e, str(file))
 
-    def dump_json(self, file, obj, *args, indent=2, compact=False, **kwargs):
+    def dump_json(self, file, obj, *args, indent=2, compact=False, rm_key: tuple[str,...] = None, **kwargs):
         with open(file, "w") as f:
-            json.dump(self.__parse(obj, compact), f, *args, indent=indent, **kwargs)
+            json.dump(self.__parse(obj, compact, rm_key), f, *args, indent=indent, **kwargs)
 
     def load_html(self, file, *args, parser="lxml", **kwargs):
         with open(file, "r") as f:
@@ -175,15 +175,19 @@ class FileManager:
         with open(file, "w") as f:
             f.write(txt)
 
-    def __parse(self, obj, compact: bool):
+    def __parse(self, obj, compact: bool, rm_key: tuple[str, ...] = None):
+        if rm_key is None:
+            rm_key = tuple()
         if getattr(obj, "_asdict", None) is not None:
             obj = obj._asdict()
         if is_dataclass(obj):
             obj = asdict(obj)
         if isinstance(obj, (list, tuple, set)):
-            obj = list(map(lambda x: self.__parse(x, compact), obj))
+            obj = list(map(lambda x: self.__parse(x, compact, rm_key), obj))
         if isinstance(obj, dict):
-            obj = {k: self.__parse(v, compact) for k, v in obj.items()}
+            obj = {k: self.__parse(v, compact, rm_key) for k, v in obj.items()}
+        if isinstance(obj, dict):
+            obj = {k: v for k, v in obj.items() if k not in rm_key}
         if compact:
             if isinstance(obj, str):
                 obj = obj.strip()

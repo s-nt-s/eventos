@@ -16,6 +16,7 @@ from .util import to_uuid
 from core.dblite import DB
 from typing import TypeVar, Type
 from core.goodreads import GR
+from core.zone import Zones
 
 T = TypeVar("T")
 
@@ -102,6 +103,7 @@ class Category(IntEnum):
     NO_EVENT = 38
     PARTY = 39
     LITERATURA = 40
+    MATERNITY = 41
 
     def __str__(self):
         #if self == Category.OTHERS:
@@ -233,6 +235,7 @@ class Place(NamedTuple):
     name: str
     address: str
     latlon: str = None
+    avoid_alias: bool = False
 
     @staticmethod
     def build(*args, **kwargs):
@@ -258,14 +261,27 @@ class Place(NamedTuple):
         return getKm(lt, ln, lat, lon)
 
     def get_alias(self):
+        if self.avoid_alias:
+            return None
         name = plain_text(self.name)
-        if re_or(name, r"d?el retiro", ("biblioteca", "eugenio trias")):
+        if re_or(name, r"d?el retiro", ("biblioteca", "eugenio trias"), "casa de vacas"):
             return "El Retiro"
         if re_or(name, "matadero", "cineteca", "Casa del Reloj", "Nave Terneras", "La Lonja", flags=re.I):
             return "Matadero"
+        if re_or(name, "conde duque", ("biblioteca", "victor espinos"), ("biblioteca", "benito perez galdos")):
+            return "Conde Duque"
         if self.latlon:
-            if self.getKmFrom(40.352672, -3.684576)<=1:
-                return "Villaverde bajo"
+            lat, lon = map(float, self.latlon.split(","))
+            for z in (
+                Zones.CARABANCHEL.value,
+                Zones.VILLAVERDE_BAJO.value,
+                Zones.PACIFICO.value,
+                Zones.TRIBUNAL.value,
+                Zones.MONCLOA.value,
+                Zones.LA_LATINA.value,
+            ):
+                if z.is_in(lat, lon):
+                    return z.name
         return self.name
 
     def fix(self):

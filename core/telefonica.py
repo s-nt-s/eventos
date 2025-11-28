@@ -138,11 +138,15 @@ class Telefonica(Web):
             return Place(
                 name="Fundación Telefónica",
                 address="C/ Fuencarral, 3, Centro, 28004 Madrid",
-                latlon="40.42058956643586,-3.7017498812379235"
+                latlon="40.42058956643586,-3.7017498812379235",
+                avoid_alias=True
             )
         raise FieldUnknown(self.url, "place", dir)
 
     def __find_category(self, data: Dict, webpage: Dict):
+        name = plain_text(data['name'])
+        if re_or("madresfera", name):
+            return Category.MATERNITY
         cat = plain_text(self.select_one_txt("span.categoria"))
         if cat == "exposicion":
             return Category.EXPO
