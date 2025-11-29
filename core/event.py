@@ -280,8 +280,10 @@ class Place:
             v = getattr(self, f.name, None)
             if isinstance(v, list):
                 v = tuple(v)
-            elif isinstance(v, str) and len(v) == 0:
-                v = None
+            elif isinstance(v, str):
+                v = v.strip()
+                if len(v) == 0 and f.name != 'zone':
+                    v = None
             object.__setattr__(self, f.name, v)
         self.__fix()
 
@@ -575,8 +577,10 @@ class Event:
                 v = Session.parse_list(v)
             if isinstance(v, list):
                 v = tuple(v)
-            elif isinstance(v, str) and len(v) == 0:
-                v = None
+            elif isinstance(v, str):
+                v = v.strip()
+                if len(v) == 0:
+                    v = None
             if f.name == "category" and isinstance(v, str):
                 v = Category[v]
             object.__setattr__(self, f.name, v)
