@@ -116,3 +116,53 @@ class Zones(Enum):
         "Puerta Toledo",
         Circles.PUERTA_TOLEDO
     )
+
+
+if __name__ == "__main__":
+    import json
+    import math
+
+    def circle_polygon(lat, lon, radius_km, num_points=64):
+        R = 6371.0  # radio de la Tierra en km
+        lat = math.radians(lat)
+        lon = math.radians(lon)
+        d = radius_km / R
+
+        coords = []
+        for i in range(num_points):
+            angle = 2 * math.pi * i / num_points
+            lat_i = math.asin(math.sin(lat) * math.cos(d) +
+                            math.cos(lat) * math.sin(d) * math.cos(angle))
+            lon_i = lon + math.atan2(
+                math.sin(angle) * math.sin(d) * math.cos(lat),
+                math.cos(d) - math.sin(lat) * math.sin(lat_i)
+            )
+            coords.append([math.degrees(lon_i), math.degrees(lat_i)])
+
+        coords.append(coords[0])  # cerrar el polígono
+        return coords
+
+    features = []
+
+    for item in Circles:
+        c = item.value
+        poly = circle_polygon(c.lat, c.lon, c.kms)
+
+        features.append({
+            "type": "Feature",
+            "properties": {
+                "name": item.name,
+                "radius_km": c.kms
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [poly]
+            }
+        })
+
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features
+    }
+
+    print(json.dumps(geojson, indent=2))

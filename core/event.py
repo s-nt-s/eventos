@@ -340,6 +340,7 @@ class Place:
                 Zones.TRIBUNAL.value,
                 Zones.MONCLOA.value,
                 Zones.LA_LATINA.value,
+                Zones.PUERTA_TOLEDO.value,
                 Zones.LAVAPIES.value,
                 Zones.DELICIAS.value
             ):
