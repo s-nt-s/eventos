@@ -140,7 +140,7 @@ class Telefonica(Web):
 
     def __find_category(self, data: Dict, webpage: Dict):
         name = plain_text(data['name'])
-        if re_or("madresfera", name):
+        if re_or(name, "madresfera"):
             return Category.MATERNITY
         cat = plain_text(self.select_one_txt("span.categoria"))
         if cat == "exposicion":
