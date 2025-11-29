@@ -63,6 +63,7 @@ class Circles(Enum):
     SAN_ISIDRO = Circle(lat=40.41271801132734, lon=-3.7073444235919695, kms=0.5)
     LAVAPIES = Circle(lat=40.40897556386815, lon=-3.7010840545616155, kms=0.3)
     DELICIAS = Circle(lat=40.40006636655174, lon=-3.6939322883846866, kms=0.5)
+    PUERTA_TOLEDO = Circle(lat=40.40729757258129, lon=-3.711870974615181, kms=0.3)
 
 
 class Zones(Enum):
@@ -110,4 +111,8 @@ class Zones(Enum):
     LAVAPIES = Zone.build(
         "Lavapies",
         Circles.LAVAPIES
+    )
+    PUERTA_TOLEDO = Zone.build(
+        "Puerta Toledo",
+        Circles.PUERTA_TOLEDO
     )
