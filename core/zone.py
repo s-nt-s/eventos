@@ -64,6 +64,8 @@ class Circles(Enum):
     LAVAPIES = Circle(lat=40.40897556386815, lon=-3.7010840545616155, kms=0.3)
     DELICIAS = Circle(lat=40.40006636655174, lon=-3.6939322883846866, kms=0.5)
     PUERTA_TOLEDO = Circle(lat=40.40729757258129, lon=-3.711870974615181, kms=0.3)
+    MANZANARES_SUR = Circle(lat=40.40135493406257, lon=-3.7226623574561235, kms=0.8)
+    MARQUES_DE_VADILLO = Circle(lat=40.3975556652729, lon=-3.716267998239712, kms=1)
 
 
 class Zones(Enum):
@@ -115,6 +117,11 @@ class Zones(Enum):
     PUERTA_TOLEDO = Zone.build(
         "Puerta Toledo",
         Circles.PUERTA_TOLEDO
+    )
+    MARQUES_DE_VADILLO = Zone.build(
+        "Marques de Vadillo",
+        Circles.MANZANARES_SUR,
+        Circles.MARQUES_DE_VADILLO
     )
 
 

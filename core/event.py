@@ -342,7 +342,8 @@ class Place:
                 Zones.LA_LATINA.value,
                 Zones.PUERTA_TOLEDO.value,
                 Zones.LAVAPIES.value,
-                Zones.DELICIAS.value
+                Zones.DELICIAS.value,
+                Zones.MARQUES_DE_VADILLO.value
             ):
                 if z.is_in(lat, lon):
                     return z.name
