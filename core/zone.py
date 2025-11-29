@@ -64,6 +64,10 @@ class Circles(Enum):
     LAVAPIES = Circle(lat=40.40897556386815, lon=-3.7010840545616155, kms=0.3)
     DELICIAS = Circle(lat=40.40006636655174, lon=-3.6939322883846866, kms=0.5)
     PUERTA_TOLEDO = Circle(lat=40.40729757258129, lon=-3.711870974615181, kms=0.3)
+    MANZANARES_SUR = Circle(lat=40.40135493406257, lon=-3.7226623574561235, kms=0.8)
+    MARQUES_DE_VADILLO = Circle(lat=40.3975556652729, lon=-3.716267998239712, kms=1)
+    USERA_PLAZA_DE_TRIAS = Circle(lat=40.383865669782125, lon=-3.706729404035503, kms=1)
+    CERACANIAS_12_OCTUBRE = Circle(lat=40.37896902265067, lon=-3.698633187672925, kms=0.8)
 
 
 class Zones(Enum):
@@ -116,3 +120,63 @@ class Zones(Enum):
         "Puerta Toledo",
         Circles.PUERTA_TOLEDO
     )
+    MARQUES_DE_VADILLO = Zone.build(
+        "Marques de Vadillo",
+        Circles.MANZANARES_SUR,
+        Circles.MARQUES_DE_VADILLO
+    )
+    USERA = Zone.build(
+        "Usera",
+        Circles.USERA_PLAZA_DE_TRIAS,
+        Circles.CERACANIAS_12_OCTUBRE
+    )
+
+
+if __name__ == "__main__":
+    import json
+    import math
+
+    def circle_polygon(lat, lon, radius_km, num_points=64):
+        R = 6371.0  # radio de la Tierra en km
+        lat = math.radians(lat)
+        lon = math.radians(lon)
+        d = radius_km / R
+
+        coords = []
+        for i in range(num_points):
+            angle = 2 * math.pi * i / num_points
+            lat_i = math.asin(math.sin(lat) * math.cos(d) +
+                            math.cos(lat) * math.sin(d) * math.cos(angle))
+            lon_i = lon + math.atan2(
+                math.sin(angle) * math.sin(d) * math.cos(lat),
+                math.cos(d) - math.sin(lat) * math.sin(lat_i)
+            )
+            coords.append([math.degrees(lon_i), math.degrees(lat_i)])
+
+        coords.append(coords[0])  # cerrar el polígono
+        return coords
+
+    features = []
+
+    for item in Circles:
+        c = item.value
+        poly = circle_polygon(c.lat, c.lon, c.kms)
+
+        features.append({
+            "type": "Feature",
+            "properties": {
+                "name": item.name,
+                "radius_km": c.kms
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [poly]
+            }
+        })
+
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features
+    }
+
+    print(json.dumps(geojson, indent=2))

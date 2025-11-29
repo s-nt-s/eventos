@@ -333,16 +333,20 @@ class Place:
             return "Conde Duque"
         if self.latlon:
             lat, lon = map(float, self.latlon.split(","))
-            for z in (
-                Zones.CARABANCHEL.value,
-                Zones.VILLAVERDE_BAJO.value,
-                Zones.PACIFICO.value,
-                Zones.TRIBUNAL.value,
-                Zones.MONCLOA.value,
-                Zones.LA_LATINA.value,
-                Zones.LAVAPIES.value,
-                Zones.DELICIAS.value
+            for zn in (
+                Zones.CARABANCHEL,
+                Zones.VILLAVERDE_BAJO,
+                Zones.PACIFICO,
+                Zones.TRIBUNAL,
+                Zones.MONCLOA,
+                Zones.LA_LATINA,
+                Zones.PUERTA_TOLEDO,
+                Zones.LAVAPIES,
+                Zones.DELICIAS,
+                Zones.MARQUES_DE_VADILLO,
+                Zones.USERA
             ):
+                z = zn.value
                 if z.is_in(lat, lon):
                     return z.name
         return self.name
