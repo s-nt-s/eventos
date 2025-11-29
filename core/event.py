@@ -327,6 +327,8 @@ class Place:
             return "Matadero"
         if re_and(addr, "conde duque", "28015"):
             return "Conde Duque"
+        if re_or(name, "clara del rey"):
+            return "Conde Duque"
         if self.latlon:
             lat, lon = map(float, self.latlon.split(","))
             for z in (
@@ -364,46 +366,55 @@ class Places(Enum):
         name="Academia de cine",
         address="C/ de Zurbano, 3, Chamberí, 28010 Madrid",
         latlon="40.427566448169316,-3.6939387798888634",
+        zone=''
     )
     CAIXA_FORUM = Place(
         name="Caixa Forum",
         address="Paseo del Prado, 36, Centro, 28014 Madrid",
         latlon="40.41134208472603,-3.6935713500263523",
+        zone=''
     )
     CASA_AMERICA = Place(
         name="La casa America",
         address="Plaza Cibeles, s/n, Salamanca, 28014 Madrid",
         latlon="40.419580635299525,-3.693332407512017",
+        zone=''
     )
     CASA_ENCENDIDA = Place(
         name="La casa encendida",
         address="Rda. de Valencia, 2, Centro, 28012 Madrid",
         latlon="40.4062337055155,-3.6999346068731525",
+        zone=''
     )
     CIRCULO_BELLAS_ARTES = Place(
         name="Circulo de Bellas Artes",
         address="C/ Alcalá, 42, Centro, 28014 Madrid, España",
         latlon="40.4183042,-3.6991136",
+        zone=''
     )
     DORE = Place(
         name="Cine Doré",
         address="C/ de Santa Isabel, 3, Centro, 28012 Madrid",
         latlon="40.411950735826316,-3.699066276358703",
+        zone=''
     )
     SALA_BERLANGA = Place(
         name="Sala Berlanga",
         address="C/ de Andrés Mellado, 53, Chamberí, 28015 Madrid",
-        latlon="40.428087092339986,-3.7107698133958547"
+        latlon="40.428087092339986,-3.7107698133958547",
+        zone=''
     )
     SALA_EQUIS = Place(
         name="Sala Equis",
         address="C/ del Duque de Alba, 4, Centro, 28012 Madrid, España",
         latlon="40.412126715926796,-3.7059047815506396",
+        zone=''
     )
     FUNDACION_TELEFONICA = Place(
         name="Fundación Telefónica",
         address="C/ Fuencarral, 3, Centro, 28004 Madrid",
         latlon="40.42058956643586,-3.7017498812379235",
+        zone=''
     )
     CONDE_DUQUE = Place(
         name="Conde Duque",
