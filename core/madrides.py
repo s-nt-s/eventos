@@ -144,11 +144,20 @@ class MadridEs:
         )
 
     def get_safe_events(self):
+        return self.events
         try:
             return self.events
         except Exception as e:
             logger.critical(str(e), stack_info=True)
         return tuple()
+
+    @cached_property
+    def _free(self):
+        action, data = self.prepare_search()
+        data['gratuita'] = "1"
+        ids = self.__get_ids(action, data)
+        logger.debug(f"{len(ids)} ids en gratuita=1")
+        return ids
 
     @cached_property
     def _category(self):
@@ -293,14 +302,25 @@ class MadridEs:
             raise ValueError(f"{url} {title} {body}".strip())
         return self.w.soup
 
-    @cache
     def __get_description(self, url: str):
         soup = WEB.get_cached_soup(url)
-        n = soup.select_one("div.tramites-content div.tiny-text")
-        if n is None:
-            return None
-        txt = get_text(n)
+        txt = get_text(soup.select_one("div.tramites-content div.tiny-text"))
         return txt
+
+    def __get_price(self, id: str, url_event: str):
+        if id in self._free:
+            return 0
+        soup_event = WEB.get_cached_soup(url_event)
+        if soup_event.select_one("ul li p.gratuita"):
+            return 0
+        txt = get_text(soup_event.select_one("div.tramites-content div.tiny-text"))
+        if re_or(
+            txt,
+            "Entrada libre hasta completar aforo",
+            "Entrada gratuita",
+            flags=re.I
+        ):
+            return 0
 
     @property
     @TupleCache("rec/madrides.json", builder=Event.build)
@@ -356,12 +376,15 @@ class MadridEs:
             cat = self.__find_category(id, div, url_event)
             if cat is None:
                 continue
+            price = self.__get_price(id, url_event)
+            if price is None:
+                continue
             ev = Event(
                 id=id,
                 url=url_event,
                 name=get_text(a),
                 img=None,
-                price=0,
+                price=price,
                 category=cat,
                 place=place,
                 duration=duration,
@@ -510,12 +533,12 @@ class MadridEs:
             if ":" not in line:
                 continue
             field = re.split(r"[;:]", line)[0].strip()
-            if len(field)==0 or field != field.upper():
+            if len(field) == 0 or field != field.upper():
                 continue
             valid_lines.append(line)
         try:
             return Calendar("\n".join(valid_lines))
-        except (NotImplementedError, FailedParse) as e:
+        except (NotImplementedError, FailedParse, KeyError) as e:
             logger.error(str(e)+" "+url)
             return None
 
@@ -695,7 +718,7 @@ class MadridEs:
             return Category.MUSIC
         if re_or(desc, r"intervienen l[oa]s", "una mesa redonda con", " encuentro del ciclo Escritores", to_log=id, flags=re.I):
             return Category.CONFERENCE
-        if desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", "presenta su poemario", flags=re.I):
+        if desc and desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", "presenta su poemario", flags=re.I):
             return Category.POETRY
         if re_or(desc, "propuesta creativa y participativa que combina lectura, escritura y expresión", r"Se organizará un '?escape room'?", to_log=id, flags=re.I):
             return Category.WORKSHOP
@@ -754,7 +777,7 @@ class MadridEs:
         for k in ("gratuita", "movilidad"):
             if k in data:
                 del data[k]
-        data['gratuita'] = "1"
+        #data['gratuita'] = "1"
         data["tipo"] = "-1"
         data["distrito"] = "-1"
         data["usuario"] = "-1"
