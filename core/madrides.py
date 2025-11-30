@@ -313,7 +313,7 @@ class MadridEs:
         soup_event = WEB.get_cached_soup(url_event)
         if soup_event.select_one("ul li p.gratuita"):
             return 0
-        txt = get_text(soup_event.select_one("div.tramites-content div.tiny-text"))
+        txt = get_text(soup_event.select_one("div.tramites-content div.tiny-text")) or ''
         if re_or(
             txt,
             "Entrada libre hasta completar aforo",
@@ -321,6 +321,15 @@ class MadridEs:
             flags=re.I
         ):
             return 0
+        prices: set[str] = set()
+        for p in map(str.strip, re.search(r"(\d[\d\.,]+)\s*(?:€|euros?)", txt)):
+            p = p.replace(",", '.')
+            try:
+                prices.add(float(p))
+            except Exception:
+                pass
+        if len(prices):
+            return max(prices)
 
     @property
     @TupleCache("rec/madrides.json", builder=Event.build)
