@@ -66,6 +66,8 @@ class Circles(Enum):
     PUERTA_TOLEDO = Circle(lat=40.40729757258129, lon=-3.711870974615181, kms=0.3)
     MANZANARES_SUR = Circle(lat=40.40135493406257, lon=-3.7226623574561235, kms=0.8)
     MARQUES_DE_VADILLO = Circle(lat=40.3975556652729, lon=-3.716267998239712, kms=1)
+    USERA_PLAZA_DE_TRIAS = Circle(lat=40.383865669782125, lon=-3.706729404035503, kms=1)
+    CERACANIAS_12_OCTUBRE = Circle(lat=40.37896902265067, lon=-3.698633187672925, kms=0.8)
 
 
 class Zones(Enum):
@@ -122,6 +124,11 @@ class Zones(Enum):
         "Marques de Vadillo",
         Circles.MANZANARES_SUR,
         Circles.MARQUES_DE_VADILLO
+    )
+    USERA = Zone.build(
+        "Usera",
+        Circles.USERA_PLAZA_DE_TRIAS,
+        Circles.CERACANIAS_12_OCTUBRE
     )
 
 
