@@ -10,13 +10,17 @@ KO_MORE = (
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Sociocultural-Oporto/?vgnextfmt=default&vgnextoid=e990f36edd371910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Casa-del-Reloj/?vgnextfmt=default&vgnextoid=b8ce2420dc891910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Fernando-Lazaro-Carreter/?vgnextfmt=default&vgnextoid=25bff36edd371910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'imccwem.munimadrid.es'
 )
 
 
 def isOkMore(url: str):
     if url in KO_MORE:
         return False
-    if get_domain(url) != "madrid.es":
+    dom = get_domain(url)
+    if dom in KO_MORE:
+        return False
+    if dom != "madrid.es":
         return True
     tt = get_text(WEB.get_cached_soup(url).select_one("title"))
     if not isinstance(tt, str):
