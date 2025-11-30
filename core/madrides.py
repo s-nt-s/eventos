@@ -322,7 +322,7 @@ class MadridEs:
         ):
             return 0
         prices: set[str] = set()
-        for p in map(str.strip, re.search(r"(\d[\d\.,]+)\s*(?:€|euros?)", txt)):
+        for p in map(str.strip, re.findall(r"(\d[\d\.,]+)\s*(?:€|euros?)", txt)):
             p = p.replace(",", '.')
             try:
                 prices.add(float(p))
@@ -562,7 +562,7 @@ class MadridEs:
         plain_place = plain_text(note_place.attrs["data-name"]) if note_place else None
         if re_or(plain_place, "titeres", to_log=id):
             return Category.PUPPETRY
-    
+
         name_tp = re.split(r"\s*[:'\"\-]", name)[0].lower()
         tp_name = plain_text(((plain_type or "")+" "+plain_name).strip())
         maybeSPAM = any([
