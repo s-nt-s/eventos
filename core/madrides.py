@@ -544,6 +544,12 @@ class MadridEs:
             field = re.split(r"[;:]", line)[0].strip()
             if len(field) == 0 or field != field.upper():
                 continue
+            m = re.match(r"^\s*(DTSTAMP|DTSTART|DTEND)\s*:\s*(\d+T[\d:Z]+)\s*$", line)
+            if m:
+                k, v = m.groups()
+                if re.match(r"^\d\d:\d\d:\d\dZ$", v):
+                    v = v.replace(":", "")[:-1]
+                    line = f"{k}:{v}"
             valid_lines.append(line)
         try:
             return Calendar("\n".join(valid_lines))
