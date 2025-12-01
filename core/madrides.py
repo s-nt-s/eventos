@@ -713,6 +713,10 @@ class MadridEs:
             return Category.CONFERENCE
         if re_or(plain_name, "lengua de signos", r"^[Tt]alleres"):
             return Category.WORKSHOP
+        if re_or(plain_name, "^El mago", to_log=id):
+            return Category.MAGIC
+        if re_and(plain_name, "fiesta", "aniversario", flags=re.I, to_log=id):
+            return Category.PARTY
 
         desc = self.__get_description(url_event)
         if re_or(desc, "[mM]usical? infantil", r"[Tt]eatro infantil", "relatos en familia", "concierto familiar", "bienestar de niños y niñas", ("cuentacuentos", "en familia"), to_log=id, flags=re.I):
@@ -733,7 +737,7 @@ class MadridEs:
             return Category.WORKSHOP
         if re_and(desc, r"presentaci[oó]n", (r"libros?", r"novelas?"), (r"autore(es)?", r"autoras?"), to_log=id):
             return Category.CONFERENCE
-    
+
         if re_and(plain_place, "ambiental", ("casa de campo", "retiro"), to_log=id):
             return Category.VISIT
 
