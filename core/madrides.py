@@ -544,6 +544,12 @@ class MadridEs:
             field = re.split(r"[;:]", line)[0].strip()
             if len(field) == 0 or field != field.upper():
                 continue
+            m = re.match(r"^\s*(DTSTAMP|DTSTART|DTEND)\s*:\s*(\d+T[\d:Z]+)\s*$", line)
+            if m:
+                k, v = m.groups()
+                if re.match(r"^\d{8}T\d\d:\d\d:\d\dZ$", v):
+                    v = v.replace(":", "")[:-1]
+                    line = f"{k}:{v}"
             valid_lines.append(line)
         try:
             return Calendar("\n".join(valid_lines))
@@ -713,7 +719,7 @@ class MadridEs:
             return Category.CONFERENCE
         if re_or(plain_name, "lengua de signos", r"^[Tt]alleres"):
             return Category.WORKSHOP
-        if re_or(plain_name, "^El mago", to_log=id):
+        if re_or(plain_name, "^El mago", flags=re.I, to_log=id):
             return Category.MAGIC
         if re_and(plain_name, "fiesta", "aniversario", flags=re.I, to_log=id):
             return Category.PARTY
