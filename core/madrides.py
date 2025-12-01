@@ -729,11 +729,11 @@ class MadridEs:
             return Category.CONFERENCE
         if desc and desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", "presenta su poemario", flags=re.I):
             return Category.POETRY
-        if re_or(desc, "propuesta creativa y participativa que combina lectura, escritura y expresión", r"Se organizará un '?escape room'?", to_log=id, flags=re.I):
+        if re_or(desc, "propuesta creativa y participativa que combina lectura, escritura y expresión", r"Se organizará un '?escape room'?", "taller creativo", "pensado para ejercitar la memoria", to_log=id, flags=re.I):
             return Category.WORKSHOP
         if re_and(desc, r"presentaci[oó]n", (r"libros?", r"novelas?"), (r"autore(es)?", r"autoras?"), to_log=id):
             return Category.CONFERENCE
-
+    
         if re_and(plain_place, "ambiental", ("casa de campo", "retiro"), to_log=id):
             return Category.VISIT
 
