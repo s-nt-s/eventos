@@ -547,7 +547,7 @@ class MadridEs:
             m = re.match(r"^\s*(DTSTAMP|DTSTART|DTEND)\s*:\s*(\d+T[\d:Z]+)\s*$", line)
             if m:
                 k, v = m.groups()
-                if re.match(r"^\d\d:\d\d:\d\dZ$", v):
+                if re.match(r"^\d{8}T\d\d:\d\d:\d\dZ$", v):
                     v = v.replace(":", "")[:-1]
                     line = f"{k}:{v}"
             valid_lines.append(line)
