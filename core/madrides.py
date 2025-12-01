@@ -719,7 +719,7 @@ class MadridEs:
             return Category.CONFERENCE
         if re_or(plain_name, "lengua de signos", r"^[Tt]alleres"):
             return Category.WORKSHOP
-        if re_or(plain_name, "^El mago", to_log=id):
+        if re_or(plain_name, "^El mago", flags=re.I, to_log=id):
             return Category.MAGIC
         if re_and(plain_name, "fiesta", "aniversario", flags=re.I, to_log=id):
             return Category.PARTY
