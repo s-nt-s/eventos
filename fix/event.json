@@ -130,6 +130,22 @@
     "md6562": {
         "category": "EXPO"
     },
+    "msfdda365445339910VgnVCM200000f921e388RCRD": {
+        "category": "EXPO"
+    },
+    "md6614": {
+        "category": "CINEMA"
+    },
+    "ms0c27b4d724339910VgnVCM200000f921e388RCRD": {
+        "category": "CONFERENCE"
+    },
+    "msa747b4d724339910VgnVCM200000f921e388RCRD": {
+        "category": "CONFERENCE"
+    },
+    "ms5a49365445339910VgnVCM200000f921e388RCRD": {
+        "category": "CONFERENCE",
+        "more": "https://www.condeduquemadrid.es/actividades/examen-sorpresa-conferencia-ilustrada"
+    },
     "am45677": {
         "category": "CONFERENCE"
     },
@@ -529,5 +545,31 @@
     },
     "sb10309": {
         "filmaffinity": 584711
+    },
+    "md6615": {
+        "category": "CONFERENCE"
+    },
+    "msb299365445339910VgnVCM200000f921e388RCRD": {
+        "category": "CONFERENCE",
+        "more": "https://www.condeduquemadrid.es/actividades/hibridar-la-hibridacion-audiolibros-videopodcasts-comics-bordados"
+    },
+    "md6616": {
+        "category": "CONFERENCE"
+    },
+    "md6617": {
+        "category": "CONFERENCE"
+    },
+    "msfe57b4d724339910VgnVCM200000f921e388RCRD": {
+        "category": "CONFERENCE"
+    },
+    "ms0617b4d724339910VgnVCM200000f921e388RCRD": {
+        "category": "CONFERENCE",
+        "more": "https://www.condeduquemadrid.es/actividades/astronautas-investigando-en-el-espacio-para-toda-la-humanidad"
+    },
+    "ms8f4e60b36cc49910VgnVCM200000f921e388RCRD": {
+        "category": "CONFERENCE"
+    },
+    "msea2d9793521aa910VgnVCM200000f921e388RCRD": {
+        "more": "https://www.condeduquemadrid.es/actividades/coro-del-ies-lope-de-vega"
     }
 }

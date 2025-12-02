@@ -16,12 +16,13 @@ from core.j2 import Jnj2, toTag
 from datetime import datetime, timedelta
 from core.log import config_log
 from core.img import MyImage
-from core.util import dict_add, get_domain, to_datetime, uniq, to_uuid, find_duplicates
+from core.util import dict_add, get_domain, to_datetime, uniq, to_uuid, find_duplicates, get_main_value
 import logging
 from os import environ
 from os.path import isfile
 from typing import Tuple, Dict, Set, List
 from core.filemanager import FM
+from core.cache import StaticTupleCache
 import math
 import bs4
 import re
@@ -46,6 +47,7 @@ logger = logging.getLogger(__name__)
 white = (255, 255, 255)
 NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 PUBLISH: dict[str, str] = FM.load(OUT+"publish.json")
+MD = MadridDestino()
 
 
 def round_to_even(x):
@@ -123,15 +125,21 @@ OK_CAT = (
 )
 
 
-def myfilter(e: Event):
+def myfilter(e: Event, to_log=True):
     if e.place.name in (
         "Espacio Abierto Quinta de los Molinos",
         #"Centro Sociocultural Ágata"
     ):
+        if to_log:
+            logger.debug(f"{e.id} descartada por place={e.place.name}")
         return False
     if e.price > args.precio:
+        if to_log:
+            logger.debug(f"{e.id} descartada por price={e.price}")
         return False
     if e.category not in OK_CAT:
+        if to_log:
+            logger.debug(f"{e.id} descartada por category={e.category.name}")
         return False
 
     #if "madrid.es" in map(get_domain, e.iter_urls()):
@@ -142,13 +150,16 @@ def myfilter(e: Event):
     #        return False
 
     e.remove_old_sessions(NOW)
-    e.remove_working_sessions()
+    e.remove_working_sessions(to_log=to_log)
 
     count_session = len(e.sessions)
     if count_session == 0:
+        if to_log:
+            logger.debug(f"{e.id} descartada por 0 sesiones")
         return False
     if count_session > 20:
-        logger.warning(f"{e.id} tiene {count_session} sesiones {e.url}")
+        if to_log:
+            logger.warning(f"{e.id} tiene {count_session} sesiones {e.url}")
         return False
     return True
 
@@ -177,19 +188,63 @@ def find_filmaffinity_if_needed(imdb_film: dict[str, int], e: Cinema):
         return _id_
 
 
-def sorted_and_fix(eventos: List[Event]):
-    def _iter_fix(eventos: List[Event]):
-        done: set[Event] = set()
-        for e in eventos:
-            e = e.fix_type()
-            e = e.fix(publish=PUBLISH.get(e.id))
-            if e not in done:
-                done.add(e)
-                if myfilter(e):
-                    PUBLISH[e.id] = e.publish
-                    yield e
+@StaticTupleCache("rec/events.json", builder=Event.build)
+def get_events():
+    logger.info("Recuperar eventos")
+    eventos = \
+        MadridEs(remove_working_sessions=True).get_safe_events() + \
+        Dore().events + \
+        MD.events + \
+        CasaEncendida().events + \
+        SalaBerlanga().events + \
+        SalaEquis().events + \
+        CasaAmerica().events + \
+        AcademiaCine().events + \
+        CaixaForum().events + \
+        Telefonica().events
+    logger.info(f"{len(eventos)} recuperados")
+    eventos = tuple(filter(myfilter, eventos))
+    logger.info(f"{len(eventos)} pasan 1º filtro")
 
-    ok_events = set(_iter_fix(eventos))
+    arr: list[Event | Cinema] = list()
+    done: set[Event] = set()
+    for e in eventos:
+        e = e.fix_type()
+        e = e.fix(publish=PUBLISH.get(e.id))
+        if e not in done:
+            done.add(e)
+            if myfilter(e):
+                PUBLISH[e.id] = e.publish
+                arr.append(e)
+    logger.info(f"{len(arr)} pasan 2º filtrados")
+    return arr
+
+
+def sorted_and_dedup(events: List[Event]):
+    url_cat: dict[str, set[Category]] = defaultdict(set)
+    mad_more_cat: dict[str, set[Category]] = defaultdict(set)
+    ok_events = set(events)
+    for e in ok_events:
+        if e.category not in (None, Category.UNKNOWN) and e.url and get_domain(e.url) != "madrid.es":
+            url_cat[e.url].add(e.category)
+    for e in list(ok_events):
+        if get_domain(e.url) == "madrid.es":
+            cat = get_main_value(url_cat.get(e.more))
+            if cat not in (None, Category.UNKNOWN, e.category):
+                logger.debug(f"[{e.id}] FIX: category={cat} <- {e.category}")
+                ok_events.remove(e)
+                ok_events.add(e.merge(category=cat).fix_type())
+            elif e.category and e.more:
+                mad_more_cat[e.more].add(e.category)
+    ids = set(e.id for e in ok_events)
+    for e in set(MD.events):
+        if not myfilter(e, to_log=False) and e.id not in ids:
+            cat = get_main_value(mad_more_cat.get(e.url))
+            if cat not in (None, e.category):
+                logger.debug(f"[{e.id}] FIX: category={cat} <- {e.category}")
+                e = e.merge(category=cat).fix_type().fix()
+                if myfilter(e, to_log=False):
+                    ok_events.add(e)
 
     def _mk_key_madrid_music(e: Event):
         if e.category != Category.MUSIC:
@@ -239,17 +294,43 @@ def sorted_and_fix(eventos: List[Event]):
             cycle=cycle,
             id=_id_,
         ).fix(publish=PUBLISH.get(_id_))
+        st_more = set(x.more for x in evs if x.more)
+        st_url = set(x.url for x in evs if x.url)
         if all(s.url for s in e.sessions):
             e = e.merge(url=None, more=None)
+        if len(st_url) == 1 and e.url is None:
+            e = e.merge(url=st_url.pop())
+        if len(st_more) == 1 and e.url is None:
+            e = e.merge(url=st_more.pop())
+        if len(st_more) == 1 and e.more is None:
+            e = e.merge(more=st_more.pop())
         ok_events.add(e)
 
-    def _mk_place_name_session(e: Event | Category):
+    def _mk_place_name(e: Event | Cinema):
         name = re.sub(r"[:'',\.«»]", "", e.name).lower()
-        return (e.place, e.category, name, e.price, tuple((s.date for s in e.sessions)))
+        k = (e.place, e.category, name, e.price) #, tuple((s.date for s in e.sessions)))
+        return k
 
     for evs in find_duplicates(
         ok_events,
-        _mk_place_name_session
+        _mk_place_name
+    ):
+        for e in evs:
+            ok_events.remove(e)
+        _id_ = to_uuid("".join(e.id for e in evs))
+        e = Event.fusion(*evs).merge(
+            id=_id_,
+        ).fix(publish=PUBLISH.get(_id_))
+        ok_events.add(e)
+
+    def _mk_url(e: Event | Cinema):
+        for u in e.iter_urls():
+            if re.match(r"^https://www\.(condeduquemadrid\.es/actividades|teatroespanol\.es)/.+$", u):
+                return (u, e.place, e.price)
+
+    for evs in find_duplicates(
+        ok_events,
+        _mk_url
     ):
         for e in evs:
             ok_events.remove(e)
@@ -274,29 +355,19 @@ def sorted_and_fix(eventos: List[Event]):
             logger.debug(f"FIND FilmAffinity: {filmaffinity}")
             arr1[i] = e.merge(filmaffinity=filmaffinity).fix()
 
+    for i, e in enumerate(arr1):
+        while e.also_in and None in (e.url, e.more):
+            new_also = e.also_in[1:]
+            if e.url is None:
+                e = e.merge(url=e.also_in[0], also_in=new_also)
+            elif e.more is None:
+                e = e.merge(more=e.also_in[0], also_in=new_also)
+        arr1[i] = e
+    
     return tuple(arr1)
 
 
-logger.info("Recuperar eventos")
-eventos = \
-    MadridEs(remove_working_sessions=True).get_safe_events() + \
-    Dore().events + \
-    MadridDestino().events + \
-    CasaEncendida().events + \
-    SalaBerlanga().events + \
-    SalaEquis().events + \
-    CasaAmerica().events + \
-    AcademiaCine().events + \
-    CaixaForum().events + \
-    Telefonica().events
-logger.info(f"{len(eventos)} recuperados")
-
-NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
-eventos = tuple(filter(myfilter, eventos))
-eventos = sorted_and_fix(eventos)
-
-logger.info(f"{len(eventos)} filtrados")
-
+eventos = sorted_and_dedup(get_events())
 
 sesiones: Dict[str, Set[int]] = {}
 sin_sesiones: Set[int] = set()
@@ -380,7 +451,8 @@ def set_icons(html: str, **kwargs):
             "condeduquemadrid": "https://www.condeduquemadrid.es/themes/custom/condebase_theme/icon_app/favicon-16x16.png",
             "docs.google": "https://ssl.gstatic.com/docs/spreadsheets/forms/favicon_qp2.png",
             "forms.office": "https://cdn.forms.office.net/images/favicon.ico",
-            "goodreads": "https://www.goodreads.com/favicon.ico"
+            "goodreads": "https://www.goodreads.com/favicon.ico",
+            "teatroespanol": "https://www.teatroespanol.es/themes/custom/teatroespanol_v2/favicon.ico"
         }.get(dom)
         if ico is None:
             continue

@@ -9,6 +9,7 @@ from datetime import datetime
 from selenium.webdriver.common.by import By
 from .util import plain_text, re_or
 from bs4 import BeautifulSoup
+from functools import cached_property
 
 logger = logging.getLogger(__name__)
 NOW = datetime.now()
@@ -31,9 +32,9 @@ class CaixaForum:
 
     def __init__(self):
         self.__driver: Union[Driver, None] = None
-        self.__category = self.get__category()
 
-    def get__category(self):
+    @cached_property
+    def __category(self):
         done: Set[int] = set()
         category: Dict[Tuple[int, ...], Category] = {}
         with Driver(browser="firefox", wait=5) as f:

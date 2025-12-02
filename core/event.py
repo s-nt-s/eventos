@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict, fields, replace, is_dataclass
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set
-from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, re_or, re_and, get_main_value
+from core.util import get_obj, plain_text, get_domain, get_img_src, re_or, re_and, get_main_value
 from core.util.madrides import find_more_url as find_more_url_madrides
 from core.util.madriddestino import find_more_url as find_more_url_madriddestino
 from urllib.parse import quote
@@ -8,7 +8,7 @@ from enum import IntEnum
 from functools import cached_property
 import re
 from datetime import date, datetime
-from core.web import Web, get_text, WEB
+from core.web import get_text, WEB
 from core.filemanager import FM
 import logging
 from functools import cache
@@ -18,7 +18,6 @@ from typing import TypeVar, Type
 from core.goodreads import GR
 from core.zone import Zones
 from enum import Enum
-from requests import head as requests_head, get as requests_get
 
 T = TypeVar("T")
 
@@ -32,7 +31,6 @@ MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", 
 
 re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
 
-WEB = Web()
 
 @cache
 def safe_expand_url(url: str):
@@ -187,6 +185,10 @@ class Category(IntEnum):
             return "magia"
         if self == Category.LITERATURA:
             return "literatura"
+        if self == Category.NO_EVENT:
+            return "no-evento"
+        if self == Category.VIEW_POINT:
+            return "punto de interés"
         raise ValueError(self.value)
 
     def __lt__(self, other):
@@ -488,7 +490,7 @@ def _clean_name(name: str, place: str):
     while bak[-1] != name:
         bak.append(str(name))
         if "'" not in name:
-            name = re.sub(r'["`´”“]', "'", name)
+            name = re.sub(r'["`´”“‘’]', "'", name)
         for k, v in {
             "A.I At War": "A.I. At War",
             "AI At War": "A.I. At War",
@@ -603,7 +605,8 @@ class Event:
             object.__setattr__(self, 'name', new_name)
         fix_event = FIX_EVENT.get(self.id, {})
         for f in fields(self):
-            v = fix_event.get(f.name) or getattr(self, f.name, None)
+            old_val = getattr(self, f.name, None)
+            v = fix_event.get(f.name) or old_val
             if f.name == "sessions":
                 v = Session.parse_list(v)
             if isinstance(v, list):
@@ -614,7 +617,11 @@ class Event:
                     v = None
             if f.name == "category" and isinstance(v, str):
                 v = Category[v]
-            object.__setattr__(self, f.name, v)
+            if f.name == "price" and isinstance(v, float) and int(v) == v:
+                v = int(v)
+            if v != old_val or (type(v) is not type(old_val)):
+                logger.debug(f"[{self.id}].__post_init__ {f.name}={v} <- {old_val}")
+                object.__setattr__(self, f.name, v)
 
     def fix(self, **kwargs):
         for k, v in kwargs.items():
@@ -629,16 +636,31 @@ class Event:
         return self
 
     def __fix(self):
+        MAIN_DOM = ("condeduquemadrid.es", "teatroespanol.es")
         doit = True
         while doit:
             doit = False
             for f in fields(self):
                 if self._fix_field(f.name):
                     doit = True
-            if self.url is None and get_domain(self.more) == "madrid.es":
+            if self.url is not None and self.url == self.more:
+                logger.debug(f"FIX: more=None <- more=url={self.url}")
+                object.__setattr__(self, "more", None)
+                doit = True
+            if self.url is None and get_domain(self.more) in (MAIN_DOM+("madrid.es", )):
                 logger.debug(f"FIX: more=None url={self.more}")
                 object.__setattr__(self, "url", self.more)
                 object.__setattr__(self, "more", None)
+                doit = True
+            if get_domain(self.url) in ("madrid.es", ) and get_domain(self.more) in MAIN_DOM:
+                logger.debug(f"FIX: more={self.url} url={self.more}")
+                a, b = self.more, self.url
+                object.__setattr__(self, "url", a)
+                object.__setattr__(self, "more", b)
+                doit = True
+            also_in = tuple(u for u in self.also_in if u not in (None, self.url, self.more))
+            if also_in != self.also_in:
+                object.__setattr__(self, "also_in", also_in)
                 doit = True
             s_changed = False
             sessions = list(self.sessions)
@@ -675,7 +697,14 @@ class Event:
             fix_val = Category[fix_val]
         if fix_val == old_val:
             return False
-        logger.debug(f"FIX: {name} {fix_val} <- {old_val}")
+        if name == "more" and fix_val == self.url:
+            return False
+        if name == "url" and fix_val == self.more:
+            return False
+        if fix_val == fix_event.get(name):
+            logger.debug(f"FIX_EVENT: {name}={fix_val} <- {old_val}")
+        else:
+            logger.debug(f"FIX._fix_field: {name}={fix_val} <- {old_val}")
         object.__setattr__(self, name, fix_val)
         return True
 
@@ -720,10 +749,8 @@ class Event:
             return self.category
         if self.category == Category.CONFERENCE and get_domain(self.more) == "goodreads.com":
             return Category.LITERATURA
-        for url in self.iter_urls():
-            if get_domain(url) != "madrid.es":
-                continue
-            soup = WEB.get_cached_soup(url)
+        if get_domain(self.url) == "madrid.es":
+            soup = WEB.get_cached_soup(self.url)
             for txt in map(plain_text, soup.select("div.tramites-content div.tiny-text")):
                 if re_or(
                     txt,
@@ -749,13 +776,6 @@ class Event:
                 #):
                 #    return Category.LITERATURA
         return self.category
-
-    def _fix_price(self):
-        if isinstance(self.price, float):
-            i = int(self.price)
-            if i == self.price:
-                return i
-        return self.price
 
     def _get_img_from_url(self, url: str):
         if url is None:
@@ -810,14 +830,14 @@ class Event:
                 href = find_more_url_madriddestino(url)
                 if href and href not in urls:
                     return href
-            if dom == "madrid.es":
-                if self.category in (Category.CONFERENCE, Category.LITERATURA):
-                    books = GR.find(self.name)
-                    if books:
-                        return books[0].url
-                href = find_more_url_madrides(url)
-                if href and href not in urls:
-                    return href
+        if get_domain(self.url) == "madrid.es":
+            if self.category in (Category.CONFERENCE, Category.LITERATURA):
+                books = GR.find(self.name)
+                if books:
+                    return books[0].url
+            href = find_more_url_madrides(self.url)
+            if href and href not in urls:
+                return href
 
     @property
     def dates(self):
@@ -856,13 +876,14 @@ class Event:
         sessions = tuple(filter(lambda s: s.date >= now, self.sessions))
         object.__setattr__(self, 'sessions', sessions)
 
-    def remove_working_sessions(self):
+    def remove_working_sessions(self, to_log: bool = True):
         sessions = []
         w = 'LMXJVSD'
         for s in self.sessions:
             if s.isWorkingHours():
                 d = s.get_date()
-                logger.debug(f"[{self.id}] Sesion {s.date} {w[d.weekday()]} eliminada por estar en horario de trabajo. {s.url or self.url}")
+                if to_log:
+                    logger.debug(f"[{self.id}] Sesión {s.date} {w[d.weekday()]} eliminada por estar en horario de trabajo. {s.url or self.url}")
                 continue
             sessions.append(s)
         object.__setattr__(self, 'sessions', tuple(sessions))
@@ -916,9 +937,11 @@ class Event:
         durations: List[float] = []
         imgs: List[str] = []
         set_seen_in: Set[str] = set()
+        more_url: List[str] = list()
         for e in events:
             if e.category not in (None, Category.UNKNOWN):
                 categories.append(e.category)
+            more_url.append(e.more)
             durations.append(e.duration)
             imgs.append(e.img)
             for s in e.sessions:
@@ -932,7 +955,7 @@ class Event:
             set_seen_in.add(e.url)
             for u in e.also_in:
                 set_seen_in.add(u)
-        for st in (categories, set_seen_in, imgs, durations):
+        for st in (categories, set_seen_in, imgs, durations, more_url):
             if None in st:
                 st.remove(None)
         seen_in = tuple(sorted(set_seen_in))
@@ -952,7 +975,8 @@ class Event:
             category=get_main_value(categories, default=Category.UNKNOWN),
             sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
             price=max(x.price for x in events)
-        ).fix()
+        )
+        e = e.fix()
         if e.category != Category.CINEMA and e.more is None and len(e.also_in) == 1:
             e = e.merge(
                 more=e.also_in[0],
@@ -964,6 +988,11 @@ class Event:
             if title:
                 sessions[i] = s._replace(title=title)
         e = e.merge(sessions=sessions)
+        if e.more is None:
+            not_in = set(e.iter_urls()).union(e.also_in)
+            more_url = [u for u in more_url if u not in not_in]
+            if more_url:
+                e = e.merge(more=more_url[0])
         logger.debug(f"=== {e}")
         return e
 
