@@ -313,21 +313,24 @@ class MadridEs:
         soup_event = WEB.get_cached_soup(url_event)
         if soup_event.select_one("ul li p.gratuita"):
             return 0
-        txt = get_text(soup_event.select_one("div.tramites-content div.tiny-text")) or ''
-        if re_or(
-            txt,
-            "Entrada libre hasta completar aforo",
-            "Entrada gratuita",
-            flags=re.I
-        ):
-            return 0
         prices: set[str] = set()
-        for p in map(str.strip, re.findall(r"(\d[\d\.,]+)\s*(?:€|euros?)", txt)):
-            p = p.replace(",", '.')
-            try:
-                prices.add(float(p))
-            except Exception:
-                pass
+        for n in soup_event.select("div.tramites-content div.tiny-text, #importeVenta p"):
+            txt = get_text(n)
+            if txt is None:
+                continue
+            if re_or(
+                txt,
+                "Entrada libre hasta completar aforo",
+                "Entrada gratuita",
+                flags=re.I
+            ):
+                return 0
+            for p in re.findall(r"(\d[\d\.,]*)\s*(?:€|euros?)", txt):
+                p = p.replace(",", '.').strip()
+                try:
+                    prices.add(float(p))
+                except Exception:
+                    pass
         if len(prices):
             return max(prices)
 
@@ -599,7 +602,14 @@ class MadridEs:
             return Category.WORKSHOP
         if re_or(plain_name, "Salida medioambiental", to_log=id, flags=re.I):
             return Category.HIKING
-        if re_or(plain_name, "recital de piano", r"Cuartero de C[áa]mara", r"Arias de [Óo]pera", to_log=id, flags=re.I):
+        if re_or(plain_name, 
+                 "recital de piano",
+                 r"Cuartero de C[áa]mara",
+                 r"Arias de [Óo]pera",
+                 "No cesar[áa]n mis cantos",
+                 to_log=id,
+                 flags=re.I
+            ):
             return Category.MUSIC
         if re_and(plain_name, "ballet", ("repertorio", "clasico"), to_log=id):
             return Category.DANCE
@@ -609,7 +619,12 @@ class MadridEs:
             return Category.THEATER
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
-        if re_or(name_tp, r"^conferencias?$", r"^pregon$", to_log=id):
+        if re_or(name_tp,
+                 r"^conferencias?$",
+                 r"^pregon$",
+                 r'[Mm]ocrofestival, tableros y pantallas',
+                 to_log=id
+            ):
             return Category.CONFERENCE
         if re_or(name_tp, r"^conciertos?$", to_log=id):
             return Category.MUSIC
@@ -739,7 +754,15 @@ class MadridEs:
             return Category.CONFERENCE
         if desc and desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", "presenta su poemario", flags=re.I):
             return Category.POETRY
-        if re_or(desc, "propuesta creativa y participativa que combina lectura, escritura y expresión", r"Se organizará un '?escape room'?", "taller creativo", "pensado para ejercitar la memoria", to_log=id, flags=re.I):
+        if re_or(desc,
+                 "propuesta creativa y participativa que combina lectura, escritura y expresión",
+                 r"Se organizará un '?escape room'?",
+                 "taller creativo",
+                 "pensado para ejercitar la memoria",
+                 "m[óo]dulo pr[aá]ctico",
+                 to_log=id,
+                 flags=re.I
+            ):
             return Category.WORKSHOP
         if re_and(desc, r"presentaci[oó]n", (r"libros?", r"novelas?"), (r"autore(es)?", r"autoras?"), to_log=id):
             return Category.CONFERENCE

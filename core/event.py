@@ -18,6 +18,7 @@ from typing import TypeVar, Type
 from core.goodreads import GR
 from core.zone import Zones
 from enum import Enum
+from requests import head as requests_head
 
 T = TypeVar("T")
 
@@ -32,6 +33,17 @@ MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", 
 re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
 
 WEB = Web()
+
+@cache
+def safe_expand_url(url: str):
+    if not isinstance(url, str):
+        return url
+    if re.match(r"^(https://www\.condeduquemadrid\.es/node/\d+|https://www\.teatroespanol\.es/node/\d+)$", url):
+        dom = get_domain(url)
+        r = requests_head(url, allow_redirects=True, timeout=10)
+        if isinstance(r.url, str) and get_domain(r.url) == dom:
+            return r.url
+    return url
 
 
 def new_dataclass(cls: Type[T], obj: dict) -> T:
@@ -198,6 +210,7 @@ class Session(NamedTuple):
         obj = get_obj(*args, **kwargs)
         if obj is None:
             return None
+        obj['url'] = safe_expand_url(obj.get('url'))
         return Session(**obj)
 
     @staticmethod
@@ -370,6 +383,8 @@ class Place:
             return Places.CONDE_DUQUE.value
         if re.match(r"^Sala Berlanga$", name, flags=re.I) and re.search(r"Andr[ée]s Mellado.*53", address, flags=re.I):
             return Places.SALA_BERLANGA.value
+        if re.match(r"^Teatro Español$", name, flags=re.I):
+            return Places.TEATRO_ESPANOL.value
         return self
 
 
@@ -426,6 +441,12 @@ class Places(Enum):
         name="Fundación Telefónica",
         address="C/ Fuencarral, 3, Centro, 28004 Madrid",
         latlon="40.42058956643586,-3.7017498812379235",
+        zone=''
+    )
+    TEATRO_ESPANOL = Place(
+        name="Teatro Español",
+        address="C/ del Príncipe, 25, Centro, 28012 Madrid",
+        latlon="40.414828532240946,-3.700164949543688",
         zone=''
     )
     CONDE_DUQUE = Place(
@@ -633,16 +654,21 @@ class Event:
                 doit = True
 
     def _fix_field(self, name: str, fnc=None):
+        isUrl = name in ('more', 'url')
         fix_event = FIX_EVENT.get(self.id, {})
         old_val = getattr(self, name, None)
+        fix_val = None
         if name in fix_event:
             fix_val = fix_event[name]
         else:
             if fnc is None:
                 fnc = getattr(self, f'_fix_{name}', None)
-            if fnc is None or not callable(fnc):
+            if fnc is not None and callable(fnc):
+                fix_val = fnc()
+            elif not isUrl:
                 return False
-            fix_val = fnc()
+        if isUrl:
+            fix_val = safe_expand_url(fix_val or old_val)
         if name == "sessions":
             fix_val = Session.parse_list(fix_val)
         if name == "category" and isinstance(fix_val, str):
@@ -723,6 +749,13 @@ class Event:
                 #):
                 #    return Category.LITERATURA
         return self.category
+
+    def _fix_price(self):
+        if isinstance(self.price, float):
+            i = int(self.price)
+            if i == self.price:
+                return i
+        return self.price
 
     def _get_img_from_url(self, url: str):
         if url is None:
@@ -829,7 +862,7 @@ class Event:
         for s in self.sessions:
             if s.isWorkingHours():
                 d = s.get_date()
-                logger.debug(f"Sesion {s.date} {w[d.weekday()]} eliminada por estar en horario de trabajo")
+                logger.debug(f"[{self.id}] Sesion {s.date} {w[d.weekday()]} eliminada por estar en horario de trabajo. {s.url or self.url}")
                 continue
             sessions.append(s)
         object.__setattr__(self, 'sessions', tuple(sessions))
