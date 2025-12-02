@@ -244,7 +244,8 @@ def sorted_and_fix(eventos: List[Event]):
         ok_events.add(e)
 
     def _mk_place_name_session(e: Event | Category):
-        return (e.place, e.category, e.name, e.price, tuple((s.date for s in e.sessions)))
+        name = re.sub(r"[:'',\.«»]", "", e.name).lower()
+        return (e.place, e.category, name, e.price, tuple((s.date for s in e.sessions)))
 
     for evs in find_duplicates(
         ok_events,
