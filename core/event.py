@@ -8,7 +8,7 @@ from enum import IntEnum
 from functools import cached_property
 import re
 from datetime import date, datetime
-from core.web import Web, get_text
+from core.web import Web, get_text, WEB
 from core.filemanager import FM
 import logging
 from functools import cache
@@ -18,7 +18,7 @@ from typing import TypeVar, Type
 from core.goodreads import GR
 from core.zone import Zones
 from enum import Enum
-from requests import head as requests_head
+from requests import head as requests_head, get as requests_get
 
 T = TypeVar("T")
 
@@ -40,9 +40,9 @@ def safe_expand_url(url: str):
         return url
     if re.match(r"^(https://www\.condeduquemadrid\.es/node/\d+|https://www\.teatroespanol\.es/node/\d+)$", url):
         dom = get_domain(url)
-        r = requests_head(url, allow_redirects=True, timeout=10)
-        if isinstance(r.url, str) and get_domain(r.url) == dom:
-            return r.url
+        WEB.get(url)
+        if isinstance(WEB.url, str) and get_domain(WEB.url) == dom:
+            return WEB.url
     return url
 
 
