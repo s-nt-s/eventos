@@ -366,6 +366,8 @@ def my_filter(iterable: Iterable[T], func: Callable[[T], bool]) -> Tuple[List[T]
 
 
 def get_main_value(arr: List[T], default: Optional[T] = None) -> Union[T, None]:
+    if arr is None:
+        return default
     if len(arr) == 0:
         return default
     contador = Counter(arr)

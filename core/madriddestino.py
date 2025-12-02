@@ -1,5 +1,5 @@
 from .web import Driver, WEB, get_text
-from .util import re_or, plain_text, get_obj
+from .util import re_or, plain_text, get_obj, get_domain
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
@@ -290,6 +290,7 @@ class MadridDestino:
             return Category.YOUTH
         if not is_para_todos and is_cat("mayores"):
             return Category.SENIORS
+            
         if is_cat("online"):
             return Category.ONLINE
         if is_cat("visitas"):

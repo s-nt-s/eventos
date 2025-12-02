@@ -118,6 +118,21 @@ class TupleCache(Cache):
         return tuple((self.builder(d) for d in data))
 
 
+class StaticTupleCache(StaticCache):
+    def __init__(self, *args, builder=None, **kwargs):
+        if not callable(builder):
+            raise ValueError('builder is None')
+        self.builder = builder
+        super().__init__(*args, **kwargs)
+
+    def read(self, file, *args, **kwargs):
+        data = super().read(file, *args, **kwargs)
+        if isinstance(data, dict):
+            return self.builder(data)
+        return tuple((self.builder(d) for d in data))
+
+
+
 class HashCache(Cache):
     def parse_file_name(self, *args, slf=None, **kwargs):
         args = tuple(myhash(a) for a in args)

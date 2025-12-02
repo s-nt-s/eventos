@@ -54,6 +54,8 @@ class FileManager:
         file: str | Path
             Ruta a resolver
         """
+        if file is None:
+            return None
         if isinstance(file, str):
             file = Path(file)
 
