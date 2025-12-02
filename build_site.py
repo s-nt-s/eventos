@@ -278,7 +278,7 @@ def sorted_and_fix(eventos: List[Event]):
 
 logger.info("Recuperar eventos")
 eventos = \
-    MadridEs().get_safe_events() + \
+    MadridEs(remove_working_sessions=True).get_safe_events() + \
     Dore().events + \
     MadridDestino().events + \
     CasaEncendida().events + \
