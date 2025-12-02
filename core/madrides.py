@@ -3,7 +3,7 @@ from bs4 import Tag, BeautifulSoup
 import re
 from typing import Set, Dict, List, Tuple, Union
 from urllib.parse import urlencode
-from .event import Event, Session, Place, Category, CategoryUnknown
+from .event import Event, Session, Place, Category, CategoryUnknown, isWorkingHours
 from .util import plain_text, re_or, re_and, my_filter, get_domain
 from ics import Calendar
 from arrow import Arrow
@@ -135,7 +135,8 @@ class MadridEs:
     AGENDA = "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/?vgnextfmt=default&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"
     TAXONOMIA = "https://www.madrid.es/ContentPublisher/jsp/apl/includes/XMLAutocompletarTaxonomias.jsp?taxonomy=/contenido/actividades&idioma=es&onlyFirstLevel=true"
 
-    def __init__(self):
+    def __init__(self, remove_working_sessions: bool = False):
+        self.__remove_working_sessions = remove_working_sessions
         self.w = Web()
         self.w.s = Driver.to_session(
             "firefox",
@@ -144,7 +145,6 @@ class MadridEs:
         )
 
     def get_safe_events(self):
-        return self.events
         try:
             return self.events
         except Exception as e:
@@ -408,15 +408,15 @@ class MadridEs:
             return 0, tuple()
         durations: Set[int] = set()
         sessions: Set[Session] = set()
-        dates: set[str] = set()
         for event in cal.events:
             if event.begin.strftime("%Y-%m-%d") != event.end.strftime("%Y-%m-%d"):
                 continue
             s_date = self.__get_start(event.begin, url_event)
-            dates.add(s_date)
-            sessions.add(Session(
+            s = Session(
                 date=s_date
-            ))
+            )
+            if not self.__remove_working_sessions or not isWorkingHours(s.get_date()):
+                sessions.add(s)
             if event.end.strftime("%H:%M") != "23:59":
                 durations.add(int((event.end - event.begin).seconds / 60))
         if len(sessions) == 0:

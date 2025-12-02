@@ -53,6 +53,19 @@ def get_festivos(year: int):
     return tuple(sorted(dates))
 
 
+def isWorkingHours(dt: datetime):
+    if dt is None:
+        return False
+    hm = dt.hour + (dt.minute/100)
+    if hm == 0 or hm > 15:
+        return False
+    if dt.weekday() in (5, 6):
+        return False
+    if dt.date() in get_festivos(dt.year):
+        return False
+    return True
+
+
 class FieldNotFound(Exception):
     def __init__(self, field: str, scope=None):
         msg = "NOT FOUND "+field
@@ -217,14 +230,7 @@ class Session(NamedTuple):
         if self.date is None:
             return False
         dt = self.get_date()
-        hm = dt.hour + (dt.minute/100)
-        if hm == 0 or hm > 15:
-            return False
-        if dt.weekday() in (5, 6):
-            return False
-        if dt.date() in get_festivos(dt.year):
-            return False
-        return True
+        return isWorkingHours(dt)
 
     def get_date(self):
         dt_int = tuple(map(int, re.split(r"\D+", self.date)))
