@@ -598,7 +598,7 @@ class MadridEs:
             return Category.SENIORS
         if maybeSPAM:
             return Category.SPAM
-        if re_or(plain_name, "Mejora tu ingl[eé]s con charlas", to_log=id, flags=re.I):
+        if re_or(plain_name, "Mejora tu ingl[eé]s con charlas", "POM Condeduque", to_log=id, flags=re.I):
             return Category.WORKSHOP
         if re_or(plain_name, "Salida medioambiental", to_log=id, flags=re.I):
             return Category.HIKING
