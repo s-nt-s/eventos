@@ -94,8 +94,8 @@ class MadridDestino:
         for e in self.state['events']:
             #if len(e['eventCategories']) == 0:
             #    continue
-            if e['freeCapacity'] == 0:
-                continue
+            #if e['freeCapacity'] == 0:
+            #    continue
             org = self.__find("organizations", e['organization_id'])
             if org is None:
                 continue
@@ -112,7 +112,7 @@ class MadridDestino:
                 duration=info['duration'],
                 category=self.__find_category(id, e, info),
                 place=self.__find_place(e),
-                sessions=self.__find_sessions(url, e)
+                sessions=self.__find_sessions(url, e),
             )
             ev = self.__complete(ev, info)
             events.add(ev)
@@ -290,7 +290,7 @@ class MadridDestino:
             return Category.YOUTH
         if not is_para_todos and is_cat("mayores"):
             return Category.SENIORS
-            
+
         if is_cat("online"):
             return Category.ONLINE
         if is_cat("visitas"):
