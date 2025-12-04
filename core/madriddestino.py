@@ -1,5 +1,5 @@
 from .web import Driver, WEB, get_text
-from .util import re_or, plain_text, get_obj, get_domain
+from .util import re_or, plain_text, get_obj, get_domain, re_and
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
@@ -282,7 +282,9 @@ class MadridDestino:
 
         if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", to_log=id, flags=re.I):
             return Category.VIEW_POINT
-        if re_or(pt, "taller infantil", "concierto matinal familiar", to_log=id):
+        if re_or(pt, "taller infantil", "concierto matinal familiar", to_log=id, flags=re.I):
+            return Category.CHILDISH
+        if re_and(pt, "Fanzine sonoro", ("familiar", "adolescente"), to_log=id, flags=re.I):
             return Category.CHILDISH
         if not is_cat("cine") and is_cat("en familia", "infantil"):
             return Category.CHILDISH
@@ -342,6 +344,13 @@ class MadridDestino:
         psub = plain_text(e.get('subtitle'))
         if re_or(psub, r"^Taller de", to_log=id, flags=re.I) or re_or(audience, "Taller", to_log=id, flags=re.I):
             return Category.WORKSHOP
+        if re_or(psub, "Baychimo Teatro", flags=re.I):
+            return Category.THEATER
+        desc = plain_text(e.get('description'))
+        if re_or(desc, "Un taller de creatividad", flags=re.I):
+            return Category.WORKSHOP
+        if re_or(desc, "Los Absurdos Teatro", "teatro de sombras", "Un taller de experimentaci[oó]n", "Un taller de reflexi[oó]n", ("[eE]n esta actividad exploraremos", "con diversos materiales"), flags=re.I):
+            return Category.THEATER
 
         logger.critical(str(CategoryUnknown(MadridDestino.URL, f"{e['id']} {pt}: " + ", ".join(sorted(cats)))))
         return Category.UNKNOWN

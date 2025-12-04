@@ -251,7 +251,7 @@ class CasaAmerica(Web):
             return Category.CONFERENCE
         if re_and(content, r"mesa \d+", "entrevista", flags=re.I):
             return Category.CONFERENCE
-        if re_or(tit, "^[pP[oó]dcast"):
+        if re_or(tit, "^[pP][oó]dcast"):
             return Category.CONFERENCE
         if w1 == "conversatorio":
             return Category.CONFERENCE
