@@ -1,19 +1,19 @@
-from .web import Driver, WEB, get_text
-from .util import re_or, plain_text, get_obj, get_domain, re_and
+from core.web import Driver, WEB, get_text
+from core.util import re_or, plain_text, get_obj, re_and
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
-from .cache import Cache
+from core.cache import Cache
 import json
-from .event import Event, Cinema, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown
-from .cache import TupleCache
+from core.event import Event, Cinema, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown
+from core.cache import TupleCache
 from datetime import datetime
 import re
 import requests
 from pytz import timezone
 from typing import NamedTuple
 from collections import defaultdict
-from core.util.madriddestino import find_more_url as find_more_url_madriddestino
+from portal.util.madriddestino import find_more_url as find_more_url_madriddestino
 
 
 logger = logging.getLogger(__name__)

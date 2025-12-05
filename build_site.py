@@ -2,16 +2,16 @@
 
 from core.event import Event, Category, Session, Cinema
 from core.ics import IcsEvent
-from core.casaencendida import CasaEncendida
-from core.dore import Dore
-from core.madriddestino import MadridDestino
-from core.salaberlanga import SalaBerlanga
-from core.salaequis import SalaEquis
-from core.casaamerica import CasaAmerica
-from core.academiacine import AcademiaCine
-from core.caixaforum import CaixaForum
-from core.madrides import MadridEs
-from core.telefonica import Telefonica
+from portal.casaencendida import CasaEncendida
+from portal.dore import Dore
+from portal.madriddestino import MadridDestino
+from portal.salaberlanga import SalaBerlanga
+from portal.salaequis import SalaEquis
+from portal.casaamerica import CasaAmerica
+from portal.academiacine import AcademiaCine
+from portal.caixaforum import CaixaForum
+from portal.madrides import MadridEs
+from portal.telefonica import Telefonica
 from core.j2 import Jnj2, toTag
 from datetime import datetime, timedelta
 from core.log import config_log

@@ -3,9 +3,9 @@ from datetime import datetime
 import pytz
 from dataclasses import dataclass, asdict
 import re
-from .filemanager import FM
+from core.filemanager import FM
 from typing import Union
-from .util import to_uuid
+from core.util import to_uuid
 
 
 ICS_BEGIN = dedent(

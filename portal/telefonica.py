@@ -1,11 +1,11 @@
-from .web import Web, get_text
-from .cache import TupleCache, Cache
+from core.web import Web, get_text
+from core.cache import TupleCache, Cache
 from typing import Set, Dict, List
 from functools import cached_property
 import logging
-from .event import Event, Places, Session, Category, CategoryUnknown, FieldUnknown
+from core.event import Event, Places, Session, Category, CategoryUnknown, FieldUnknown
 from datetime import datetime
-from .util import plain_text, re_or, get_a_href, to_uuid
+from core.util import plain_text, re_or, get_a_href, to_uuid
 
 
 logger = logging.getLogger(__name__)

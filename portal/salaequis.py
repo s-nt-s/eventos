@@ -1,13 +1,13 @@
-from .web import Web, get_text
+from core.web import Web, get_text
 from functools import cache
 from bs4 import Tag
 from typing import Set, Dict, List
-from .cache import TupleCache
+from core.cache import TupleCache
 import logging
-from .event import Event, Session, Places, Category, FieldNotFound
+from core.event import Event, Session, Places, Category, FieldNotFound
 import re
-from .util import plain_text
-from core.kinetike import KineTike
+from core.util import plain_text
+from portal.kinetike import KineTike
 
 logger = logging.getLogger(__name__)
 

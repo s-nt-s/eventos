@@ -1,6 +1,6 @@
 from typing import NamedTuple, Union
 from enum import Enum
-from .util import getKm
+from core.util import getKm
 
 
 class Circle(NamedTuple):

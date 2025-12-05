@@ -4,9 +4,10 @@ import time
 import logging
 import hashlib
 
-from .filemanager import FM
+from core.filemanager import FM
 
 logger = logging.getLogger(__name__)
+
 
 def myhash(s: str) -> str:
     return hashlib.sha256(s.encode('utf-8')).hexdigest()
@@ -130,7 +131,6 @@ class StaticTupleCache(StaticCache):
         if isinstance(data, dict):
             return self.builder(data)
         return tuple((self.builder(d) for d in data))
-
 
 
 class HashCache(Cache):

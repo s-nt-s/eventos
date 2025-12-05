@@ -1,13 +1,13 @@
-from .web import get_text, Driver, WebException, MyTag
-from .cache import TupleCache, HashCache
+from core.web import get_text, Driver, WebException, MyTag
+from core.cache import TupleCache, HashCache
 from typing import Set, Dict, Union, List, Tuple
 import logging
-from .event import Event, Places, Session, Category, FieldNotFound, CategoryUnknown
+from core.event import Event, Places, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from bs4 import Tag
 from datetime import datetime
 from selenium.webdriver.common.by import By
-from .util import plain_text, re_or
+from core.util import plain_text, re_or
 from bs4 import BeautifulSoup
 from functools import cached_property
 

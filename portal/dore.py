@@ -1,7 +1,7 @@
-from .web import Web, get_text
-from .cache import TupleCache
+from core.web import Web, get_text
+from core.cache import TupleCache
 import logging
-from .event import Event, Cinema, Places, Session, Category
+from core.event import Event, Cinema, Places, Session, Category
 import re
 from bs4 import Tag
 from core.util import to_uuid

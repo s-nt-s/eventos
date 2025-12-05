@@ -7,7 +7,7 @@ import os
 from typing import List
 import logging
 
-from .event import Event
+from core.event import Event
 
 logger = logging.getLogger(__name__)
 

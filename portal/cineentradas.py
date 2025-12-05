@@ -3,11 +3,11 @@ from typing import Dict, Set, List, Union
 from functools import cached_property
 import logging
 import json
-from .web import Web, WebException
-from .cache import Cache, TupleCache
-from .event import Event, Session, Place, Category, FieldNotFound
-from .filemanager import FM
-from .util import re_or, re_and
+from core.web import Web, WebException
+from core.cache import Cache, TupleCache
+from core.event import Event, Session, Place, Category, FieldNotFound
+from core.filemanager import FM
+from core.util import re_or, re_and
 
 logger = logging.getLogger(__name__)
 
