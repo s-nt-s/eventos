@@ -82,6 +82,7 @@ class CirculoBellasArtes:
             category=Category.CINEMA,
         )
 
+
 if __name__ == "__main__":
     c = CirculoBellasArtes()
     print(*c.urls, sep="\n")

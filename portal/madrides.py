@@ -1,18 +1,18 @@
-from .web import Web, WebException, WEB, Driver
+from core.web import Web, WebException, WEB, Driver
 from bs4 import Tag, BeautifulSoup
 import re
 from typing import Set, Dict, List, Tuple, Union
 from urllib.parse import urlencode
-from .event import Event, Session, Place, Category, CategoryUnknown, isWorkingHours
-from .util import plain_text, re_or, re_and, my_filter, get_domain
+from core.event import Event, Session, Place, Category, CategoryUnknown, isWorkingHours
+from core.util import plain_text, re_or, re_and, my_filter, get_domain
 from ics import Calendar
 from arrow import Arrow
 import logging
-from .cache import TupleCache
+from core.cache import TupleCache
 from urllib.parse import urlparse, parse_qs
 from functools import cached_property, cache
 from collections import defaultdict
-from core.util.madrides import find_more_url
+from portal.util.madrides import find_more_url
 from html import unescape
 from tatsu.exceptions import FailedParse
 from core.zone import Circles
@@ -712,7 +712,7 @@ class MadridEs:
             return Category.VISIT
         if re_or(plain_name, "^mercadea en el mercado", "^mercadea en los mercadillos", to_log=id):
             return Category.CONFERENCE
-        if re_or(plain_name, "^poesia rapidita", r"^\d+ poemas", "poesia o barbarie", to_log=id):
+        if re_or(plain_name, "poemario", "^poesia rapidita", r"^\d+ poemas", "poesia o barbarie", to_log=id):
             return Category.POETRY
         if re_or(plain_name, "^hacer actuar", to_log=id):
             return Category.WORKSHOP
