@@ -346,18 +346,24 @@ class MadridDestino:
             return Category.WORKSHOP
         if re_or(psub, "Baychimo Teatro", flags=re.I):
             return Category.THEATER
-        desc = plain_text(e.get('description'))
+        if re_or(pt, "belen del ayuntamiento", flags=re.I):
+            return Category.EXPO
+        desc = info.get('description') or ''
+        for k, v in {
+            'ó': '&oacute;'
+        }.items():
+            desc = desc.replace(v, k)
         if re_or(desc, "Un taller de creatividad", flags=re.I):
             return Category.WORKSHOP
         if re_or(desc, "Los Absurdos Teatro", "teatro de sombras", "Un taller de experimentaci[oó]n", "Un taller de reflexi[oó]n", ("[eE]n esta actividad exploraremos", "con diversos materiales"), flags=re.I):
             return Category.THEATER
-
         logger.critical(str(CategoryUnknown(MadridDestino.URL, f"{e['id']} {pt}: " + ", ".join(sorted(cats)))))
+        print(desc)
         return Category.UNKNOWN
 
 
 if __name__ == "__main__":
-    from .log import config_log
-    config_log("log/madriddestino.log", log_level=(logging.DEBUG))
+    from core.log import config_log
+    config_log("log/madriddestino.log", log_level=logging.INFO)
     evs = MadridDestino().events
     #print(evs)
