@@ -1,5 +1,5 @@
 from .web import Driver, WEB, get_text
-from .util import re_or, plain_text, get_obj, get_domain
+from .util import re_or, plain_text, get_obj, get_domain, re_and
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
