@@ -1,7 +1,7 @@
 from core.web import Driver, Web, get_text, buildSoup
 from functools import cached_property
 from core.event import Cinema, Event, Category, Places, Session
-from core.cineentradas import CineEntradas
+from portal.cineentradas import CineEntradas
 from bs4 import Tag
 import re
 from core.cache import TupleCache

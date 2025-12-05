@@ -1,13 +1,13 @@
-from .web import Web, get_text
-from .cache import TupleCache
+from core.web import Web, get_text
+from core.cache import TupleCache
 from typing import Set, Dict, List
 from functools import cached_property, cache
 import logging
-from .event import Event, Places, Session, Category, FieldNotFound, CategoryUnknown
+from core.event import Event, Places, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from bs4 import Tag
 from datetime import datetime
-from .util import plain_text, re_or, re_and
+from core.util import plain_text, re_or, re_and
 import json
 
 

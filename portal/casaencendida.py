@@ -1,12 +1,12 @@
-from .web import get_text, Driver, MyTag
+from core.web import get_text, Driver, MyTag
 from typing import Set, Dict, List, Union, Optional
 from functools import cache
-from .cache import TupleCache
+from core.cache import TupleCache
 import logging
-from .event import Event, Session, Places, Category, CategoryUnknown
+from core.event import Event, Session, Places, Category, CategoryUnknown
 import re
 from datetime import datetime
-from .filemanager import FM
+from core.filemanager import FM
 from selenium.webdriver.common.by import By
 
 logger = logging.getLogger(__name__)
