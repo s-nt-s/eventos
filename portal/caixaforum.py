@@ -111,14 +111,25 @@ class CaixaForum:
         for div in divs:
             h2 = div.select_one("a > h2")
             url = h2.find_parent("a").attrs["href"]
-            m = re.match(r".*_a(\d+)$", url)
-            if not m:
+            eid = self.__get_id_from_url(url)
+            if eid is None:
                 logger.warning(f"ID not found in {url}")
                 continue
-            eid = int(m.group(1))
             events.append(MyIdTag(id=eid, url=url, node=div))
         logger.debug(f"{len(events)} {slc}")
         return tuple(events)
+
+    def __get_id_from_url(self, url: str):
+        m = re.match(r".*_a(\d+)$", url)
+        if m:
+            return int(m.group(1))
+        soup = self.get_soup(url)
+        ids: set[int] = set()
+        for script in map(get_text, soup.select("script")):
+            for m in re.findall(r"loadOneBoxTicketsDetailActivity\s*\(\s*['\"](\d+)['\"]", script or ''):
+                ids.add(int(m))
+        if len(ids):
+            return ids.pop()
 
     def __div_to_event(self, div: MyIdTag):
         h2 = div.select_one("a > h2")
@@ -219,7 +230,7 @@ class CaixaForum:
 
     def __find_duration(self, url_event: str, soup: Tag, category: Category, info: Dict):
         duration = []
-        for p in map(get_text, soup.findAll("p", string=re.compile(r".*\d+\s+minutos.*"))):
+        for p in map(get_text, soup.find_all("p", string=re.compile(r".*\d+\s+minutos.*"))):
             duration.extend(map(int, re.findall(r"\d+", p)))
         if duration:
             return sum(duration)
@@ -297,6 +308,6 @@ class CaixaForum:
 
 
 if __name__ == "__main__":
-    from .log import config_log
+    from core.log import config_log
     config_log("log/caixaforum.log", log_level=(logging.DEBUG))
     (CaixaForum().events)
