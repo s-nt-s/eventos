@@ -313,11 +313,15 @@ class EventCollector:
         return tuple(arr1)
 
     def __check_sessions(self, events: Tuple[Event | Cinema, ...]):
+        print(1111)
         arr = list(events)
         for i, e in enumerate(arr):
             sessions = list(e.sessions)
             for x, s in enumerate(sessions):
-                if re.match(r"https://tienda\.madrid-destino\.com/.*/\d+/?$", s.url or ''):
+                if s.url is None:
+                    continue
+                if re.match(r"https://tienda\.madrid-destino\.com/.*/\d+/?$", s.url):
+                    self.__madrid_destino.get_state_from_url(s.url)
                     soup = WEB.get_cached_soup(s.url)
                     mapa_url = s.url.rstrip("/")+"/mapa"
                     if soup.find("a", href=mapa_url):

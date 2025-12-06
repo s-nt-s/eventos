@@ -3,7 +3,7 @@ from core.util import re_or, plain_text, get_obj, re_and
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
-from core.cache import Cache
+from core.cache import Cache, HashCache
 import json
 from core.event import Event, Cinema, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown
 from core.cache import TupleCache
@@ -13,8 +13,6 @@ import requests
 from pytz import timezone
 from typing import NamedTuple
 from collections import defaultdict
-from portal.util.madriddestino import find_more_url as find_more_url_madriddestino
-
 
 logger = logging.getLogger(__name__)
 S = requests.Session()
@@ -39,6 +37,12 @@ S.headers.update({
 })
 
 
+KO_MORE = (
+    None,
+    '',
+    'imccwem.munimadrid.es'
+)
+
 def timestamp_to_date(timestamp: int):
     tz = timezone('Europe/Madrid')
     d = datetime.fromtimestamp(timestamp, tz)
@@ -62,8 +66,12 @@ class MadridDestino:
 
     @Cache("rec/madriddestino/state.json")
     def __get_state(self) -> Dict:
+        return self.get_state_from_url(MadridDestino.URL)
+
+    @HashCache("rec/madriddestino/state/{}.json")
+    def get_state_from_url(self, url: str) -> Dict:
         with Driver(browser="firefox") as f:
-            f.get(MadridDestino.URL)
+            f.get(url)
             f.wait_ready()
             js = f.execute_script(
                 "return JSON.stringify(window.__NUXT__.state)")
@@ -103,6 +111,8 @@ class MadridDestino:
             info = self.get_info(e['id'])
             url = MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
             id = "md"+str(e['id'])
+            more = info.get('webSource')
+            KO_MORE
             ev = Event(
                 id=id,
                 url=url,
@@ -113,6 +123,7 @@ class MadridDestino:
                 category=self.__find_category(id, e, info),
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(url, e),
+                more=None if more in KO_MORE else more
             )
             ev = self.__complete(ev, info)
             events.add(ev)
@@ -120,16 +131,13 @@ class MadridDestino:
 
     def __complete(self, ev: Event, info: dict):
         ev = ev.fix_type()
-        original_url = str(ev.url)
-        if all(s.url for s in ev.sessions):
-            new_url = find_more_url_madriddestino(original_url)
-            if new_url:
-                ev = ev.merge(url=new_url)
+        ori_more = ev.more or ''
+        if all(s.url for s in ev.sessions) and ev.more:
+            ev = ev.merge(url=ev.more, more=None)
         if not isinstance(ev, Cinema):
             return ev
-        new_url = find_more_url_madriddestino(original_url)
-        if new_url and new_url.startswith("https://www.cinetecamadrid.com/programacion/"):
-            soup = WEB.get_cached_soup(new_url)
+        if ori_more and ori_more.startswith("https://www.cinetecamadrid.com/programacion/"):
+            soup = WEB.get_cached_soup(ori_more)
             director: list[str] = []
             isVarios = False
             dir_txt = get_text(soup.select_one("div.field--name-field-director")) or ''
