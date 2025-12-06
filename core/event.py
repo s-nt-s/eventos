@@ -203,6 +203,7 @@ class Session(NamedTuple):
     date: str
     url: Optional[str] = None
     title: Optional[str] = None
+    full: Optional[bool] = None
 
     def merge(self, **kwargs):
         return self._replace(**kwargs)
@@ -922,10 +923,13 @@ class Event:
         logger.debug("Fusión: " + " + ".join(map(lambda e: e.id, evs)))
         logger.debug("Fusión: " + " + ".join(map(str, evs)))
         dates_with_url: Set[str] = set()
+        full_session: Set[str] = set()
         for e in evs:
             for s in e.sessions:
                 if s.url is not None:
                     dates_with_url.add(s.date)
+                if s.full is True:
+                    full_session.add(s.date)
         events = list(evs)
         for i, e in enumerate(events):
             sessions = tuple((s for s in e.sessions if s.url or s.date not in dates_with_url))
@@ -984,9 +988,10 @@ class Event:
             )
         sessions = list(e.sessions)
         for i, s in enumerate(sessions):
-            title = url_title.get(s.url)
-            if title:
-                sessions[i] = s._replace(title=title)
+            sessions[i] = s._replace(
+                title=url_title.get(s.url) or s.title,
+                full=full_session.get(s.date) or s.full
+            )
         e = e.merge(sessions=sessions)
         if e.more is None:
             not_in = set(e.iter_urls()).union(e.also_in)
