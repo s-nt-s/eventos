@@ -357,8 +357,8 @@ class MadridDestino:
             return Category.WORKSHOP
         if re_or(desc, "Los Absurdos Teatro", "teatro de sombras", "Un taller de experimentaci[oó]n", "Un taller de reflexi[oó]n", ("[eE]n esta actividad exploraremos", "con diversos materiales"), flags=re.I):
             return Category.THEATER
+
         logger.critical(str(CategoryUnknown(MadridDestino.URL, f"{e['id']} {pt}: " + ", ".join(sorted(cats)))))
-        print(desc)
         return Category.UNKNOWN
 
 
