@@ -2,7 +2,6 @@ from dataclasses import dataclass, asdict, fields, replace, is_dataclass
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set
 from core.util import get_obj, plain_text, get_domain, get_img_src, re_or, re_and, get_main_value
 from portal.util.madrides import find_more_url as find_more_url_madrides
-from portal.util.madriddestino import find_more_url as find_more_url_madriddestino
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
@@ -825,12 +824,6 @@ class Event:
         if self.more:
             return self.more
         urls = self.__get_urls()
-        for url in urls:
-            dom = get_domain(url)
-            if dom == "tienda.madrid-destino.com":
-                href = find_more_url_madriddestino(url)
-                if href and href not in urls:
-                    return href
         if get_domain(self.url) == "madrid.es":
             if self.category in (Category.CONFERENCE, Category.LITERATURA):
                 books = GR.find(self.name)
@@ -990,7 +983,7 @@ class Event:
         for i, s in enumerate(sessions):
             sessions[i] = s._replace(
                 title=url_title.get(s.url) or s.title,
-                full=full_session.get(s.date) or s.full
+                full=True if s.date in full_session else None
             )
         e = e.merge(sessions=sessions)
         if e.more is None:
