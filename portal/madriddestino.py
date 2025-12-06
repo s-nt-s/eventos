@@ -130,10 +130,10 @@ class MadridDestino:
         return tuple(sorted(events))
 
     def __complete(self, ev: Event, info: dict):
-        ev = ev.fix_type()
         ori_more = ev.more or ''
         if all(s.url for s in ev.sessions) and ev.more:
             ev = ev.merge(url=ev.more, more=None)
+        ev = ev.fix_type()
         if not isinstance(ev, Cinema):
             return ev
         if ori_more and ori_more.startswith("https://www.cinetecamadrid.com/programacion/"):
@@ -330,18 +330,12 @@ class MadridDestino:
             return Category.CONFERENCE
         if is_cat("música", "jazz", "arte sonoro"):
             return Category.MUSIC
-        if is_cat("pintura", "ilustración", "fotografía", "exposición"):
-            return Category.EXPO
-
         if re_or(pt, 'musica', to_log=id):
             return Category.MUSIC
         if re_or(pt, "visitas", to_log=id):
             return Category.VISIT
-        if is_cat("audiovisual"):
-            return Category.CINEMA
         if is_cat("letras"):
             return Category.CONFERENCE
-
         if is_cat("juvenil"):
             return Category.YOUTH
 
@@ -365,6 +359,15 @@ class MadridDestino:
             return Category.WORKSHOP
         if re_or(desc, "Los Absurdos Teatro", "teatro de sombras", "Un taller de experimentaci[oó]n", "Un taller de reflexi[oó]n", ("[eE]n esta actividad exploraremos", "con diversos materiales"), flags=re.I):
             return Category.THEATER
+
+        if is_cat("pintura", "ilustración", "fotografía", "exposición"):
+            for r in e.get('rooms', []):
+                if re_or(r.get('name'), 'Sal[oó]n de actos', flags=re.I, to_log=id):
+                    return Category.CONFERENCE
+            return Category.EXPO
+
+        if is_cat("audiovisual"):
+            return Category.CINEMA
 
         logger.critical(str(CategoryUnknown(MadridDestino.URL, f"{e['id']} {pt}: " + ", ".join(sorted(cats)))))
         return Category.UNKNOWN
