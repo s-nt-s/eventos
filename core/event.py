@@ -615,6 +615,10 @@ class Event:
                 v = v.strip()
                 if len(v) == 0:
                     v = None
+            if f.name == "more" and v == self.url:
+                continue
+            if f.name == "url" and v == self.more:
+                continue
             if f.name == "category" and isinstance(v, str):
                 v = Category[v]
             if f.name == "price" and isinstance(v, float) and int(v) == v:
@@ -1153,7 +1157,7 @@ class Cinema(Event):
 
     def _fix_more(self):
         fix_more = FIX_EVENT.get(self.id, {}).get("more")
-        if fix_more:
+        if fix_more not in (None, self.url):
             return fix_more
         if self.filmaffinity:
             return f"https://www.filmaffinity.com/es/film{self.filmaffinity}.html"

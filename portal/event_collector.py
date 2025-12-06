@@ -171,14 +171,17 @@ class EventCollector:
             if e.category not in (None, Category.UNKNOWN) and e.url and get_domain(e.url) != "madrid.es":
                 url_cat[e.url].add(e.category)
         for e in list(ok_events):
-            if get_domain(e.url) == "madrid.es":
-                cat = get_main_value(url_cat.get(e.more))
+            if "madrid.es" in (get_domain(e.url), get_domain(e.more)):
+                cat = get_main_value(url_cat.get(e.more, set()).union(url_cat.get(e.url, set())))
                 if cat not in (None, Category.UNKNOWN, e.category):
                     logger.debug(f"[{e.id}] FIX: category={cat} <- {e.category}")
                     ok_events.remove(e)
                     ok_events.add(e.merge(category=cat).fix_type())
-                elif e.category and e.more:
-                    mad_more_cat[e.more].add(e.category)
+                elif e.category:
+                    if e.more:
+                        mad_more_cat[e.more].add(e.category)
+                    if e.url:
+                        mad_more_cat[e.url].add(e.category)
         ids = set(e.id for e in ok_events)
         for e in set(self.__madrid_destino.events):
             if not self.__filter(e, to_log=False) and e.id not in ids:
@@ -313,7 +316,6 @@ class EventCollector:
         return tuple(arr1)
 
     def __check_sessions(self, events: Tuple[Event | Cinema, ...]):
-        print(1111)
         arr = list(events)
         for i, e in enumerate(arr):
             sessions = list(e.sessions)
