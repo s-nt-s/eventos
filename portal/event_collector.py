@@ -20,6 +20,8 @@ from collections import defaultdict
 from core.wiki import WIKI
 from core.filmaffinity import FilmAffinityApi
 from core.dblite import DB
+from core.web import WEB
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +148,7 @@ class EventCollector:
     def get_events(self):
         aux = self.__get_events()
         aux = self.__dedup(aux)
+        aux = self.__check_sessions(aux)
         aux = self.__complete_filmaffinity(aux)
         aux = self.__complete_url(aux)
         events = sorted(
@@ -308,6 +311,20 @@ class EventCollector:
                     e = e.merge(more=e.also_in[0], also_in=new_also)
             arr1[i] = e
         return tuple(arr1)
+
+    def __check_sessions(self, events: Tuple[Event | Cinema, ...]):
+        arr = list(events)
+        for i, e in enumerate(arr):
+            sessions = list(e.sessions)
+            for x, s in enumerate(sessions):
+                if re.match(r"https://tienda\.madrid-destino\.com/.*/\d+/?$", s.url or ''):
+                    soup = WEB.get_cached_soup(s.url)
+                    mapa_url = s.url.rstrip("/")+"/mapa"
+                    if soup.find("a", href=mapa_url):
+                        s = s._replace(url=mapa_url)
+                sessions[x] = s
+            arr[i] = e.merge(sessions=tuple(sessions))
+        return tuple(arr)
 
     @property
     def publish(self):
