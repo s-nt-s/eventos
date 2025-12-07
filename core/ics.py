@@ -69,8 +69,9 @@ class IcsEvent:
                 return None
             d = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
-        d_utc = d.astimezone(pytz.UTC)
-        return d_utc.strftime('%Y%m%dT%H%M%SZ')
+        return d.strftime('%Y%m%dT%H%M%S')
+        #d_utc = d.astimezone(pytz.UTC)
+        #return d_utc.strftime('%Y%m%dT%H%M%SZ')
 
     def parse_uid(self, s: str):
         return to_uuid(s)
