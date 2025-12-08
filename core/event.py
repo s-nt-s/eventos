@@ -124,8 +124,9 @@ class Category(IntEnum):
     VIEW_POINT = 37
     NO_EVENT = 38
     PARTY = 39
-    LITERATURA = 40
+    LITERATURE = 40
     MATERNITY = 41
+    INSTITUTIONAL_POLICY = 42
 
     def __str__(self):
         #if self == Category.OTHERS:
@@ -182,12 +183,14 @@ class Category(IntEnum):
             return "spam"
         if self == Category.MAGIC:
             return "magia"
-        if self == Category.LITERATURA:
+        if self == Category.LITERATURE:
             return "literatura"
         if self == Category.NO_EVENT:
             return "no-evento"
         if self == Category.VIEW_POINT:
             return "punto de interés"
+        if self == Category.INSTITUTIONAL_POLICY:
+            return "política instucional"
         raise ValueError(self.value)
 
     def __lt__(self, other):
@@ -752,7 +755,7 @@ class Event:
         if self.category == Category.CHILDISH:
             return self.category
         if self.category == Category.CONFERENCE and get_domain(self.more) == "goodreads.com":
-            return Category.LITERATURA
+            return Category.LITERATURE
         if get_domain(self.url) == "madrid.es":
             soup = WEB.get_cached_soup(self.url)
             for txt in map(plain_text, soup.select("div.tramites-content div.tiny-text")):
@@ -778,7 +781,7 @@ class Event:
                 #    ("encuentro literario", "el autor conversar[áa] sobre su novela")
                 #    flags=re.I
                 #):
-                #    return Category.LITERATURA
+                #    return Category.LITERATURE
         return self.category
 
     def _get_img_from_url(self, url: str):
@@ -829,7 +832,7 @@ class Event:
             return self.more
         urls = self.__get_urls()
         if get_domain(self.url) == "madrid.es":
-            if self.category in (Category.CONFERENCE, Category.LITERATURA):
+            if self.category in (Category.CONFERENCE, Category.LITERATURE):
                 books = GR.find(self.name)
                 if books:
                     return books[0].url

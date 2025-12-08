@@ -214,10 +214,13 @@ class CasaAmerica(Web):
         plain_content = plain_text(content)
         cat = plain_text(self.select_one("h1.tematica span.field")).lower()
         tit = plain_text(self.select_one("h1.titulo span.field")).lower()
+        aut = plain_text(self.soup.select_one("h2.autor"))
         if cat == "infantil":
             return Category.CHILDISH
+        if re_or(aut, "Ciclo Am[eé]rica Vota", flags=re.I):
+            return Category.INSTITUTIONAL_POLICY
         if re_or(plain_content, "presentacion (del )?libro"):
-            return Category.CONFERENCE
+            return Category.LITERATURE
         if cat == "cine":
             return Category.CINEMA
         if cat == "exposiciones":
@@ -234,6 +237,8 @@ class CasaAmerica(Web):
             return Category.CONFERENCE
         if cat == "literatura" and re_or(plain_content, "lectura performatica", flags=re.I):
             return Category.THEATER
+        if cat == "literatura" and re_or(plain_content, "presentaci[óo]n del libro", flags=re.I):
+            return Category.LITERATURE
         w1 = content.split()[0]
         if w1 == "concierto":
             return Category.MUSIC
