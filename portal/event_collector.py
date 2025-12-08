@@ -21,9 +21,12 @@ from core.wiki import WIKI
 from core.filmaffinity import FilmAffinityApi
 from core.dblite import DB
 from core.web import WEB
-import re
 
 logger = logging.getLogger(__name__)
+
+
+def gNow():
+    return datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
 def find_filmaffinity_if_needed(imdb_film: dict[str, int], e: Cinema):
@@ -130,8 +133,7 @@ class EventCollector:
         #        # Ya registrado en madrid-destino
         #        return False
 
-        now = datetime.now(tz=pytz.timezone('Europe/Madrid'))
-        e.remove_old_sessions(now)
+        e.remove_old_sessions(gNow())
         e.remove_working_sessions(to_log=to_log)
 
         count_session = len(e.sessions)
@@ -151,16 +153,20 @@ class EventCollector:
         aux = self.__check_sessions(aux)
         aux = self.__complete_filmaffinity(aux)
         aux = self.__complete_url(aux)
-        events = sorted(
-            (
-                e.merge(publish=self.__publish.get(e.id, e.publish))
-                for e in aux
-            ),
-            key=lambda e: (min(s.date for s in e.sessions), e.name, e.url or '')
-        )
-        for e in events:
+
+        events: list[Event | Cinema] = []
+        for e in aux:
+            e.remove_old_sessions(gNow())
+            if len(e.sessions) == 0:
+                logger.debug(f"{e.id} descartada por 0 sesiones")
+                continue
+            events.append(e.merge(publish=self.__publish.get(e.id, e.publish)))
             if e.id not in self.__publish and e.publish:
                 self.__publish[e.id] = e.publish
+        events = sorted(
+            events,
+            key=lambda e: (min(s.date for s in e.sessions), e.name, e.url or '')
+        )
         return tuple(events)
 
     def __dedup(self, events: Tuple[Event, ...]):

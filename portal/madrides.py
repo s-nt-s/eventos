@@ -264,7 +264,7 @@ class MadridEs:
             Category.EXPO : (
                 r"^exposicion(es)?$",
             ),
-            Category.LITERATURA: (
+            Category.LITERATURE: (
                 r'recital(es)?',
                 r'presentacion(es)?',
                 r'actos? literarios?',
@@ -564,7 +564,7 @@ class MadridEs:
         plain_type = plain_text(safe_get_text(div.select_one("p.event-type")))
         name = (get_text(div.select_one("a.event-link")) or "").lower()
         plain_name = plain_text(name)
-        if re_or(plain_name, r"d[íi]a mundial de la poes[íi]a", r"encuentro po[ée]tico", r"Recital de poes[íi]a", r"Versos entrevistados", to_log=id, flags=re.I):
+        if re_or(plain_name, r"d[íi]a mundial de la poes[íi]a", r"encuentro po[ée]tico", r"Recital de poes[íi]a", r"Versos entrevistados", "Presentaci[óo]n del poemario", to_log=id, flags=re.I):
             return Category.POETRY
 
         note_place = div.select_one("a.event-location")
@@ -752,7 +752,7 @@ class MadridEs:
             return Category.MUSIC
         if re_or(desc, r"intervienen l[oa]s", "una mesa redonda con", " encuentro del ciclo Escritores", to_log=id, flags=re.I):
             return Category.CONFERENCE
-        if desc and desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", "presenta su poemario", flags=re.I):
+        if desc and (desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", "presenta su poemario", "presentan? este poemario de", flags=re.I)):
             return Category.POETRY
         if re_or(desc,
                  "propuesta creativa y participativa que combina lectura, escritura y expresión",

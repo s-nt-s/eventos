@@ -50,7 +50,7 @@ EC = EventCollector(
         Category.VISIT,
         Category.MAGIC,
         Category.UNKNOWN,
-        Category.LITERATURA
+        Category.LITERATURE
     )
 )
 

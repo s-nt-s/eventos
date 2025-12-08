@@ -64,7 +64,7 @@ class SoupInfo(NamedTuple):
 class MadridDestino:
     URL = "https://tienda.madrid-destino.com/es"
 
-    @Cache("rec/madriddestino/state.json")
+    @Cache("rec/madriddestino/state.json", compact=True)
     def __get_state(self) -> Dict:
         return self.get_state_from_url(MadridDestino.URL)
 
@@ -87,9 +87,16 @@ class MadridDestino:
     def state(self):
         return self.__get_state()
 
-    @Cache("rec/madriddestino/{}.json")
-    def get_info(self, id) -> Dict:
+    @Cache("rec/madriddestino/{}.json", compact=True)
+    def get_event_info(self, id) -> Dict:
         url = f"https://api-tienda.madrid-destino.com/public_api/events/{id}/info"
+        logger.debug(url)
+        data = S.get(url).json()['data']
+        return data
+
+    @Cache("rec/madriddestino/session/{}.json", compact=True)
+    def get_info_session(self, id):
+        url = f"https://api-tienda.madrid-destino.com/public_api/sessions/{id}"
         logger.debug(url)
         data = S.get(url).json()['data']
         return data
@@ -108,11 +115,10 @@ class MadridDestino:
             if org is None:
                 continue
             logger.debug("event.id="+str(e['id']))
-            info = self.get_info(e['id'])
+            info = self.get_event_info(e['id'])
             url = MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
             id = "md"+str(e['id'])
             more = info.get('webSource')
-            KO_MORE
             ev = Event(
                 id=id,
                 url=url,
@@ -202,6 +208,8 @@ class MadridDestino:
         for s in e['uAvailableDates']:
             dt = timestamp_to_date(s)
             _id_ = id_session.get(dt)
+            #if _id_:
+            #    self.get_info_session(_id_)
             sessions.add(Session(
                 date=dt,
                 url=f"{url}/{_id_}" if _id_ else None
