@@ -272,10 +272,11 @@ class EventCollector:
             ok_events.add(e)
 
         for re_url in (
-            re.compile(r"^https://www\.condeduquemadrid\.es/actividades/.+$"),
-            re.compile(r"^https://www\.teatroespanol.es/.+$"),
-            re.compile(r"^https://21distritos\.es/evento/.+$"),
-            re.compile(r"^https://tienda\.madrid-destino\.com/es/.+$")
+            re.compile(r"^https://www\.condeduquemadrid\.es/actividades/\S+$"),
+            re.compile(r"^https://www\.teatroespanol.es/\S+$"),
+            re.compile(r"^https://21distritos\.es/evento/\S+$"),
+            re.compile(r"^https://tienda\.madrid-destino\.com/es/\S+$"),
+            re.compile(r"^https://www\.teatrocircoprice\.es/programacion/\S+$")
         ):
             def _mk_url(e: Event | Cinema):
                 for u in e.iter_urls():
