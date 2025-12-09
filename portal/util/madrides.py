@@ -32,6 +32,13 @@ def isOkMore(url: str):
 
 @cache
 def find_more_url(url: str):
+    more = _find_more_url(url)
+    if get_domain(more) == "madrid.es":
+        more = more.replace("?vgnextfmt=default&", "?")
+    return more
+
+
+def _find_more_url(url: str):
     href = None
     soup = WEB.get_cached_soup(url)
     h4 = soup.find('h4', string='Amplíe información')

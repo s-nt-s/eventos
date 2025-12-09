@@ -271,22 +271,27 @@ class EventCollector:
             ).fix()
             ok_events.add(e)
 
-        def _mk_url(e: Event | Cinema):
-            for u in e.iter_urls():
-                if re.match(r"^https://www\.(condeduquemadrid\.es/actividades|teatroespanol\.es)/.+$", u):
-                    return (u, e.place, e.price)
-
-        for evs in find_duplicates(
-            ok_events,
-            _mk_url
+        for re_url in (
+            re.compile(r"^https://www\.condeduquemadrid\.es/actividades\.es/.+$"),
+            re.compile(r"^https://www\.teatroespanol.es/.+$"),
+            re.compile(r"^https://21distritos\.es/evento/.+$")
         ):
-            for e in evs:
-                ok_events.remove(e)
-            _id_ = to_uuid("".join(e.id for e in evs))
-            e = Event.fusion(*evs).merge(
-                id=_id_,
-            ).fix()
-            ok_events.add(e)
+            def _mk_url(e: Event | Cinema):
+                for u in e.iter_urls():
+                    if re_url.match(u):
+                        return (u, e.place, e.price)
+
+            for evs in find_duplicates(
+                ok_events,
+                _mk_url
+            ):
+                for e in evs:
+                    ok_events.remove(e)
+                _id_ = to_uuid("".join(e.id for e in evs))
+                e = Event.fusion(*evs).merge(
+                    id=_id_,
+                ).fix()
+                ok_events.add(e)
 
         return tuple(e.fix_type().fix() for e in ok_events)
 
