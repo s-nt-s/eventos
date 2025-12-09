@@ -393,7 +393,7 @@ class MadridEs:
                 continue
             ev = Event(
                 id=id,
-                url=url_event.replace("?vgnextfmt=default&", "?"),
+                url=url_event,
                 name=get_text(a),
                 img=None,
                 price=price,
@@ -602,20 +602,20 @@ class MadridEs:
             return Category.WORKSHOP
         if re_or(plain_name, "Salida medioambiental", to_log=id, flags=re.I):
             return Category.HIKING
-        if re_or(plain_name, 
+        if re_or(plain_name,
                  "recital de piano",
                  r"Cuartero de C[áa]mara",
                  r"Arias de [Óo]pera",
                  "No cesar[áa]n mis cantos",
                  to_log=id,
                  flags=re.I
-            ):
+        ):
             return Category.MUSIC
         if re_and(plain_name, "ballet", ("repertorio", "clasico"), to_log=id):
             return Category.DANCE
         if re_or(plain_name, "certamen( de)? (pintura|decoracion)", "festival by olavide", to_log=id):
             return Category.EXPO
-        if re_or(plain_name, r"Representaci[óo]n(es)? teatral(es)?", to_log=id, flags=re.I):
+        if re_or(plain_name, "belen viviente", r"Representaci[óo]n(es)? teatral(es)?", to_log=id, flags=re.I):
             return Category.THEATER
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
