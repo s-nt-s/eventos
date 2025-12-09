@@ -143,7 +143,7 @@ class MyImage:
             im2.__background = im.__background
         return im2
 
-    def __trim(self, color):
+    def __trim(self, color: Tuple[int, int, int]):
         bg = Image.new(self.im.mode, self.im.size, color)
         diff = ImageChops.difference(self.im, bg)
         diff = ImageChops.add(diff, diff, 1, -50)
@@ -153,7 +153,7 @@ class MyImage:
             return None
         size_bbox = (bbox[2] - bbox[0], bbox[3] - bbox[1])
         if self.im.size == size_bbox:
-            logger.debug(f"trim: no tiene marco {self.origin.name}")
+            # logger.debug(f"trim: no tiene marco {self.origin.name}")
             return None
         im = self.im.crop(bbox)
         return MyImage(im, parent=self, background=color)

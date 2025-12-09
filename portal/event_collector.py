@@ -155,11 +155,7 @@ class EventCollector:
         aux = self.__complete_url(aux)
 
         events: list[Event | Cinema] = []
-        for e in aux:
-            e.remove_old_sessions(gNow())
-            if len(e.sessions) == 0:
-                logger.debug(f"{e.id} descartada por 0 sesiones")
-                continue
+        for e in filter(self.__filter, aux):
             events.append(e.merge(publish=self.__publish.get(e.id, e.publish)))
             if e.id not in self.__publish and e.publish:
                 self.__publish[e.id] = e.publish
