@@ -35,7 +35,7 @@ re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
 def safe_expand_url(url: str):
     if not isinstance(url, str):
         return url
-    if re.match(r"^(https://www\.condeduquemadrid\.es/node/\d+|https://www\.teatroespanol\.es/node/\d+)$", url):
+    if re.match(r"^https?://(www\.condeduquemadrid\.es/node/\d+|www\.teatroespanol\.es/node/\d+|www\.teatrocircoprice\.es/node/\d+)$", url):
         dom = get_domain(url)
         WEB.get(url)
         if isinstance(WEB.url, str) and get_domain(WEB.url) == dom:
@@ -733,6 +733,14 @@ class Event:
             yield url
         if self.more and self.more not in urls:
             yield self.more
+
+    @cached_property
+    def sites(self):
+        dom: list[str] = [None]
+        for d in map(get_domain, self.iter_urls()):
+            if d not in dom:
+                dom.append(d)
+        return tuple(dom[1:])
 
     def _fix_name(self):
         if self.name is not None:

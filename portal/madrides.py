@@ -602,13 +602,14 @@ class MadridEs:
             return Category.WORKSHOP
         if re_or(plain_name, "Salida medioambiental", to_log=id, flags=re.I):
             return Category.HIKING
-        if re_or(plain_name,
-                 "recital de piano",
-                 r"Cuartero de C[áa]mara",
-                 r"Arias de [Óo]pera",
-                 "No cesar[áa]n mis cantos",
-                 to_log=id,
-                 flags=re.I
+        if re_or(
+            plain_name,
+            "recital de piano",
+            r"Cuartero de C[áa]mara",
+            r"Arias de [Óo]pera",
+            "No cesar[áa]n mis cantos",
+            to_log=id,
+            flags=re.I
         ):
             return Category.MUSIC
         if re_and(plain_name, "ballet", ("repertorio", "clasico"), to_log=id):
