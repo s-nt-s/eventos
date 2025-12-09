@@ -393,7 +393,7 @@ class MadridEs:
                 continue
             ev = Event(
                 id=id,
-                url=url_event,
+                url=url_event.replace("?vgnextfmt=default&", "?"),
                 name=get_text(a),
                 img=None,
                 price=price,
