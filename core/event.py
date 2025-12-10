@@ -25,6 +25,12 @@ logger = logging.getLogger(__name__)
 TODAY = date.today()
 NOW = TODAY.strftime("%Y-%m-%d")
 FIX_EVENT: Dict[str, Dict[str, Any]] = FM.load("fix/event.json")
+for k, v in list(FIX_EVENT.items()):
+    if isinstance(v, dict):
+        for kk, vv in list(v.items()):
+            if isinstance(vv, list):
+                v[kk] = tuple(vv)
+        FIX_EVENT[k] = v
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
@@ -328,7 +334,7 @@ class Place:
         fix_val = fnc()
         if fix_val == old_val:
             return False
-        logger.debug(f"FIX: {name} {fix_val} <- {old_val}")
+        logger.debug(f"Place._fix_field: {name}={fix_val} <- {old_val}")
         object.__setattr__(self, name, fix_val)
         return True
 
@@ -373,7 +379,7 @@ class Place:
                 z = zn.value
                 if z.is_in(lat, lon):
                     return z.name
-        return self.name
+        return None
 
     @property
     def alias(self):
@@ -604,7 +610,7 @@ class Event:
         object.__setattr__(self, 'place', plc)
         new_name = _clean_name(self.name, self.place.name)
         if new_name != self.name:
-            logger.debug(f"FIX: {new_name} <- {self.name}")
+            logger.debug(f"[{self.id}].__post_init__ name={new_name} <- {self.name}")
             object.__setattr__(self, 'name', new_name)
         fix_event = FIX_EVENT.get(self.id, {})
         for f in fields(self):
@@ -651,16 +657,16 @@ class Event:
                 if self._fix_field(f.name):
                     doit = True
             if self.url is not None and self.url == self.more:
-                logger.debug(f"FIX: more=None <- more=url={self.url}")
+                logger.debug(f"[{self.id}].__fix: more=None <- more=url={self.url}")
                 object.__setattr__(self, "more", None)
                 doit = True
             if self.url is None and get_domain(self.more) in (MAIN_DOM+("madrid.es", )):
-                logger.debug(f"FIX: more=None url={self.more}")
+                logger.debug(f"[{self.id}].__fix: more=None url={self.more}")
                 object.__setattr__(self, "url", self.more)
                 object.__setattr__(self, "more", None)
                 doit = True
             if get_domain(self.url) in ("madrid.es", ) and get_domain(self.more) in MAIN_DOM:
-                logger.debug(f"FIX: more={self.url} url={self.more}")
+                logger.debug(f"[{self.id}].__fix: more={self.url} url={self.more}")
                 a, b = self.more, self.url
                 object.__setattr__(self, "url", a)
                 object.__setattr__(self, "more", b)
@@ -675,7 +681,7 @@ class Event:
                 s_id = f"{self.id}_{s.date}"
                 url = FIX_EVENT.get(s_id)
                 if url is not None and s.url is None:
-                    logger.debug(f"FIX: sessions {s_id} url = {url}")
+                    logger.debug(f"[{self.id}].__fix: sessions {s_id} url = {url}")
                     sessions[i] = s.merge(url=url)
                     s_changed = True
             if s_changed:
@@ -1085,7 +1091,7 @@ class Cinema(Event):
         ):
             new_name = _mk_re(d).sub("", self.name).strip()
             if new_name and new_name != self.name:
-                logger.debug(f"FIX: director={d} name={new_name} <- {self.name}")
+                logger.debug(f"[{self.id}].__fix_name_director: director={d} name={new_name} <- {self.name}")
                 object.__setattr__(self, "director", (d, ))
                 object.__setattr__(self, "name", new_name)
                 return

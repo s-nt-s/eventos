@@ -200,7 +200,7 @@ class CineEntradas:
 
 
 if __name__ == "__main__":
-    from .log import config_log
+    from core.log import config_log
 
     config_log("log/cineentradas.log", log_level=(logging.DEBUG))
     print(CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).events)

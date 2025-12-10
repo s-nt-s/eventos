@@ -193,7 +193,8 @@ def set_icons(html: str, **kwargs):
             "docs.google": "https://ssl.gstatic.com/docs/spreadsheets/forms/favicon_qp2.png",
             "forms.office": "https://cdn.forms.office.net/images/favicon.ico",
             "goodreads": "https://www.goodreads.com/favicon.ico",
-            "teatroespanol": "https://www.teatroespanol.es/themes/custom/teatroespanol_v2/favicon.ico"
+            "teatroespanol": "https://www.teatroespanol.es/themes/custom/teatroespanol_v2/favicon.ico",
+            "es.wikipedia": "https://es.wikipedia.org/static/favicon/wikipedia.ico"
         }.get(dom)
         if ico is None:
             continue

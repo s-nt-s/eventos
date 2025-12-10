@@ -570,5 +570,59 @@
     },
     "ms53a5a9ca4ddea910VgnVCM200000f921e388RCRD": {
         "category": "LITERATURE"
+    },
+    "ce15456": {
+        "filmaffinity": 706877
+    },
+    "md7236": {
+        "filmaffinity": 621222
+    },
+    "md7237": {
+        "more": "https://www.filmaffinity.com/es/search.php?stype=cast&stext=Hotel%20Diaries%20John%20Smith&orderby=year",
+        "url": "https://www.cinetecamadrid.com/programacion/hotel-diaries-1-7"
+    },
+    "md7251": {
+        "filmaffinity": 304633
+    },
+    "md7244": {
+        "more": "https://www.cinetecamadrid.com/ciclo/retrospectiva-germaine-dulac",
+        "cycle": "Germaine Dulac",
+        "also_in": ["https://es.wikipedia.org/wiki/Germaine_Dulac"]
+    },
+    "md7245": {
+        "more": "https://www.cinetecamadrid.com/ciclo/retrospectiva-germaine-dulac",
+        "cycle": "Germaine Dulac",
+        "also_in": ["https://es.wikipedia.org/wiki/Germaine_Dulac"]
+    },
+    "md7246": {
+        "more": "https://www.cinetecamadrid.com/ciclo/retrospectiva-germaine-dulac",
+        "cycle": "Germaine Dulac",
+        "also_in": ["https://es.wikipedia.org/wiki/Germaine_Dulac"]
+    },
+    "md7247": {
+        "more": "https://www.cinetecamadrid.com/ciclo/retrospectiva-germaine-dulac",
+        "cycle": "Germaine Dulac",
+        "also_in": ["https://es.wikipedia.org/wiki/Germaine_Dulac"]
+    },
+    "ac748": {
+        "filmaffinity": 516472
+    },
+    "am45957": {
+        "filmaffinity": 862573
+    },
+    "am45960": {
+        "filmaffinity": 640263
+    },
+    "msb2b215d028bc8910VgnVCM100000891ecb1aRCRD": {
+        "price": 7,
+        "more": "https://www.teatrocircoprice.es/programacion/hop"
+    },
+    "ms686cccdfd73c9910VgnVCM200000f921e388RCRD": {
+        "price": 7,
+        "more": "https://www.teatrocircoprice.es/programacion/hop"
+    },
+    "ms0577fec62f9da910VgnVCM100000891ecb1aRCRD": {
+        "price": 0,
+        "more": "https://clickflamenco.com/events/cantandole-a-la-navidad-804-949-312-440/"
     }
 }

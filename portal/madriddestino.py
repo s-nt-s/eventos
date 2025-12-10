@@ -1,5 +1,5 @@
 from core.web import Driver, WEB, get_text
-from core.util import re_or, plain_text, get_obj, re_and
+from core.util import re_or, plain_text, get_obj, re_and, get_domain
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
@@ -137,7 +137,19 @@ class MadridDestino:
 
     def __complete(self, ev: Event, info: dict):
         ori_more = ev.more or ''
-        if all(s.url for s in ev.sessions) and ev.more:
+        if all(s.url for s in ev.sessions) and get_domain(ev.more) in (
+            None,
+            'cinetecamadrid.com',
+            'teatroespanol.es',
+            'condeduquemadrid.es',
+            '21distritos.es',
+            'teatrocircoprice.es',
+            'nave10matadero.es',
+            'centrodanzamatadero.es',
+            'mataderomadrid.org',
+            'intermediae.es',
+            'medialab-matadero.es'
+        ):
             ev = ev.merge(url=ev.more, more=None)
         ev = ev.fix_type()
         if not isinstance(ev, Cinema):
@@ -249,34 +261,6 @@ class MadridDestino:
         logger.warning(str(FieldNotFound(f"{k}.id={id}", self.state[k])))
 
     def __find_category(self, id: str, e: Dict, info: Dict):
-        audience = plain_text(info['audience'])
-        if re_or(
-            audience,
-            "solo niñas",
-            "solo niños",
-            r"de [0-9][\-a\s]+([0-9]|1[0-2]) años",
-            "especialmente recomendada para la infancia",
-            "peques menores de",
-            to_log=id
-        ):
-            return Category.CHILDISH
-        if re_or(
-            audience,
-            r"de [0-9][\-a\s]+1[0-8] años",
-            r"solo si tienes entre 1[3-8] y 18 años",
-            to_log=id
-        ):
-            return Category.YOUTH
-
-        is_para_todos = audience is None or re_or(
-            audience,
-            "todos los publicos",
-            "de 6 a 99 años",
-            "no recomendada para menores de",
-            to_log=id
-        )
-
-        pt = plain_text(e['title'])
         cats: Set[str] = set()
         for c in self.state['categories']:
             if c['id'] in e['eventCategories']:
@@ -296,13 +280,43 @@ class MadridDestino:
                 logger.debug(f"{id} cumple {', '.join(sorted(ok))}")
                 return True
 
+        is_cine = is_cat('cine')
+        
+        audience = plain_text(info['audience'])
+        if not is_cine and re_or(
+            audience,
+            "solo niñas",
+            "solo niños",
+            r"de [0-9][\-a\s]+([0-9]|1[0-2]) años",
+            "especialmente recomendada para la infancia",
+            "peques menores de",
+            to_log=id
+        ):
+            return Category.CHILDISH
+        if not is_cine and re_or(
+            audience,
+            r"de [0-9][\-a\s]+1[0-8] años",
+            r"solo si tienes entre 1[3-8] y 18 años",
+            to_log=id
+        ):
+            return Category.YOUTH
+
+        is_para_todos = audience is None or re_or(
+            audience,
+            "todos los publicos",
+            "de 6 a 99 años",
+            "no recomendada para menores de",
+            to_log=id
+        )
+
+        pt = plain_text(e['title'])
         if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", to_log=id, flags=re.I):
             return Category.VIEW_POINT
         if re_or(pt, "taller infantil", "concierto matinal familiar", to_log=id, flags=re.I):
             return Category.CHILDISH
         if re_and(pt, "Fanzine sonoro", ("familiar", "adolescente"), to_log=id, flags=re.I):
             return Category.CHILDISH
-        if not is_cat("cine") and is_cat("en familia", "infantil"):
+        if not is_cine and is_cat("en familia", "infantil"):
             return Category.CHILDISH
         if re_or(pt, "sesion adolescente", to_log=id):
             return Category.YOUTH
@@ -319,7 +333,7 @@ class MadridDestino:
             return Category.CIRCUS
         if is_cat("taller", "curso"):
             return Category.WORKSHOP
-        if is_cat("cine"):
+        if is_cine:
             return Category.CINEMA
         if is_cat("danza"):
             return Category.DANCE
