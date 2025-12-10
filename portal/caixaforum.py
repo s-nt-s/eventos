@@ -237,8 +237,13 @@ class CaixaForum:
         if category in (Category.EXPO, Category.WORKSHOP, Category.MUSIC, Category.CONFERENCE, Category.UNKNOWN):
             return 60
         div = soup.select_one("div.secondary-text")
-        if div is not None and div.find("p", string=re.compile(r".* (una|1) hora.*")):
-            return 60
+        if div is not None:
+            for re_dur in (
+                r".* (una|1) hora.*",
+                r".*duraci[oó]n:?\s*1\s*h.*"
+            ):
+                if div.find("p", string=re.compile(re_dur, re.I)):
+                    return 60
         st: datetime = info.get("startDate")
         nd: datetime = info.get("endDate")
         if None not in (st, nd) and st.date() == nd.date():

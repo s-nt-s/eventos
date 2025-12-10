@@ -332,7 +332,6 @@ class EventCollector:
                 if s.url is None:
                     continue
                 if re.match(r"https://tienda\.madrid-destino\.com/.*/\d+/?$", s.url):
-                    self.__madrid_destino.get_state_from_url(s.url)
                     soup = WEB.get_cached_soup(s.url)
                     mapa_url = s.url.rstrip("/")+"/mapa"
                     if soup.find("a", href=mapa_url):

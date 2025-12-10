@@ -6,7 +6,7 @@ import logging
 from core.event import Event, Places, Session, Category, CategoryUnknown, FieldUnknown
 from datetime import datetime
 from core.util import plain_text, re_or, get_a_href, to_uuid
-
+import re
 
 logger = logging.getLogger(__name__)
 NOW = datetime.now()
@@ -151,15 +151,17 @@ class Telefonica(Web):
         if re_or(
             description,
             r"encuentro con (el|la|los|las) escrito(ra|re)s?",
-            'recibimos al autora?',
+            r'recibimos al autora?',
             "un libro sobre",
-            "conversar con (el|la) escritora?",
+            r"conversar con (el|la) escritora?",
             "presentacion del nuevo trabajo",
             "todopoderosos",
             "publicacion de su ultima",
             "acogemos un nuevo encuentro",
             "accesibilidad auditiva",
-            "una conversacion entre"
+            "una conversacion entre",
+            r"se presentar[áa]n diversos proyectos",
+            flags=re.I
         ):
             return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(self.url, cat)))
@@ -167,6 +169,6 @@ class Telefonica(Web):
 
 
 if __name__ == "__main__":
-    from .log import config_log
+    from core.log import config_log
     config_log("log/telefonica.log", log_level=(logging.DEBUG))
     print(Telefonica().events)

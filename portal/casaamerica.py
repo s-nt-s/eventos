@@ -260,11 +260,13 @@ class CasaAmerica(Web):
             return Category.CONFERENCE
         if w1 == "conversatorio":
             return Category.CONFERENCE
+        if content and content.lower().count("periodista") > 3:
+            return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(self.url, cat)))
         return Category.UNKNOWN
 
 
 if __name__ == "__main__":
-    from .log import config_log
+    from core.log import config_log
     config_log("log/casaamerica.log", log_level=(logging.DEBUG))
     print(CasaAmerica().events)

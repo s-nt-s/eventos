@@ -310,11 +310,31 @@ class MadridEs:
     def __get_price(self, id: str, url_event: str):
         if id in self._free:
             return 0
+        prc = self.__get_price_from_url(url_event)
+        if prc is not None:
+            return prc
+        urls: list[str] = []
         soup_event = WEB.get_cached_soup(url_event)
-        if soup_event.select_one("ul li p.gratuita"):
-            return 0
+        for a in soup_event.select("div.tramites-content a[href]"):
+            href = a.attrs["href"]
+            if isinstance(href, str) and href not in urls:
+                urls.append(href)
+        for href in urls:
+            new_id = MadridEs.get_id(href)
+            if new_id is None:
+                continue
+            if new_id in self._free:
+                return 0
+            if href.startswith("https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/"):
+                new_price = self.__get_price_from_url(href)
+                if new_price is not None:
+                    return new_price
+
+    @cache
+    def __get_price_from_url(self, url_event: str):
+        soup_event = WEB.get_cached_soup(url_event)
         prices: set[str] = set()
-        for n in soup_event.select("div.tramites-content div.tiny-text, #importeVenta p"):
+        for n in soup_event.select("div.tramites-content, #importeVenta p"):
             txt = get_text(n)
             if txt is None:
                 continue
@@ -322,6 +342,8 @@ class MadridEs:
                 txt,
                 "Entrada libre hasta completar aforo",
                 "Entrada gratuita",
+                "Gratuito para grupos",
+                "Acceso gratuito hasta completar aforo",
                 flags=re.I
             ):
                 return 0
@@ -333,6 +355,8 @@ class MadridEs:
                     pass
         if len(prices):
             return max(prices)
+        if soup_event.select_one("ul li p.gratuita"):
+            return 0
 
     @property
     @TupleCache("rec/madrides.json", builder=Event.build)
@@ -390,6 +414,7 @@ class MadridEs:
                 continue
             price = self.__get_price(id, url_event)
             if price is None:
+                logger.debug(f"Precio no encontrado en {url_event}")
                 continue
             ev = Event(
                 id=id,
@@ -753,17 +778,26 @@ class MadridEs:
             return Category.MUSIC
         if re_or(desc, r"intervienen l[oa]s", "una mesa redonda con", " encuentro del ciclo Escritores", to_log=id, flags=re.I):
             return Category.CONFERENCE
-        if desc and (desc.count("poesía") > 2 or re_or(desc, "presentación del poemario", "recital de poesía", "presenta su poemario", "presentan? este poemario de", flags=re.I)):
+        if (desc or '').count("poesía") > 2 or re_or(
+            desc,
+            "presentación del poemario",
+            r"recital de poes[íi]a",
+            "presenta su poemario",
+            r"presentan? este poemario de",
+            r"poemas in[eé]ditos",
+            flags=re.I
+        ):
             return Category.POETRY
-        if re_or(desc,
-                 "propuesta creativa y participativa que combina lectura, escritura y expresión",
-                 r"Se organizará un '?escape room'?",
-                 "taller creativo",
-                 "pensado para ejercitar la memoria",
-                 "m[óo]dulo pr[aá]ctico",
-                 to_log=id,
-                 flags=re.I
-            ):
+        if re_or(
+            desc,
+            "propuesta creativa y participativa que combina lectura, escritura y expresión",
+            r"Se organizará un '?escape room'?",
+            "taller creativo",
+            "pensado para ejercitar la memoria",
+            "m[óo]dulo pr[aá]ctico",
+            to_log=id,
+            flags=re.I
+        ):
             return Category.WORKSHOP
         if re_and(desc, r"presentaci[oó]n", (r"libros?", r"novelas?"), (r"autore(es)?", r"autoras?"), to_log=id):
             return Category.CONFERENCE
@@ -897,7 +931,7 @@ class MadridEs:
 
 
 if __name__ == "__main__":
-    from .log import config_log
+    from core.log import config_log
     config_log("log/madrides.log", log_level=(logging.DEBUG))
     print(MadridEs().events)
     #m.get_events()

@@ -139,6 +139,6 @@ class Dore(Web):
 
 
 if __name__ == "__main__":
-    from .log import config_log
+    from core.log import config_log
     config_log("log/dore.log", log_level=(logging.DEBUG))
     print(Dore().events)

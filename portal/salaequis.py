@@ -142,6 +142,6 @@ class SalaEquis(Web):
 
 
 if __name__ == "__main__":
-    from .log import config_log
+    from core.log import config_log
     config_log("log/salaequis.log", log_level=(logging.DEBUG))
     print(SalaEquis().events)

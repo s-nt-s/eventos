@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 from core.filemanager import FM
 from selenium.webdriver.common.by import By
+from core.util import re_or
 
 logger = logging.getLogger(__name__)
 
@@ -170,9 +171,9 @@ class CasaEncendida:
         if "concierto" in name:
             return Category.MUSIC
         desc = soup.select_one_txt("div.item-detail__info__content")
-        if "canciones" in desc:
+        if re_or(desc, "canciones"):
             return Category.MUSIC
-        if "film" in name.split():
+        if re_or(name, r"films?"):
             return Category.CINEMA
         logger.critical(str(CategoryUnknown(soup.url, ", ".join(sorted(tags)))))
         return Category.UNKNOWN
@@ -202,6 +203,6 @@ class CasaEncendida:
 
 
 if __name__ == "__main__":
-    from .log import config_log
+    from core.log import config_log
     config_log("log/casaencendida.log", log_level=(logging.DEBUG))
     print(CasaEncendida().events)
