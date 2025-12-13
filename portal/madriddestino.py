@@ -281,7 +281,7 @@ class MadridDestino:
                 return True
 
         is_cine = is_cat('cine')
-        
+
         audience = plain_text(info['audience'])
         if not is_cine and re_or(
             audience,
@@ -290,6 +290,8 @@ class MadridDestino:
             r"de [0-9][\-a\s]+([0-9]|1[0-2]) años",
             "especialmente recomendada para la infancia",
             "peques menores de",
+            "dirigido a peques",
+            flags=re.I,
             to_log=id
         ):
             return Category.CHILDISH
