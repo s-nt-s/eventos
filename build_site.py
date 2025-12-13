@@ -50,7 +50,9 @@ EC = EventCollector(
         Category.VISIT,
         Category.MAGIC,
         Category.UNKNOWN,
-        Category.LITERATURE
+        Category.LITERATURE,
+        Category.WORKSHOP,
+        Category.PARTY
     )
 )
 
@@ -194,7 +196,8 @@ def set_icons(html: str, **kwargs):
             "forms.office": "https://cdn.forms.office.net/images/favicon.ico",
             "goodreads": "https://www.goodreads.com/favicon.ico",
             "teatroespanol": "https://www.teatroespanol.es/themes/custom/teatroespanol_v2/favicon.ico",
-            "es.wikipedia": "https://es.wikipedia.org/static/favicon/wikipedia.ico"
+            "es.wikipedia": "https://es.wikipedia.org/static/favicon/wikipedia.ico",
+            "mataderomadrid": "https://www.mataderomadrid.org/themes/custom/new_matadero/favicon.ico",
         }.get(dom)
         if ico is None:
             continue
@@ -205,6 +208,8 @@ def set_icons(html: str, **kwargs):
             "atrapalo": "Buscar en Atrapalo",
             "google": "Buscar en Google",
             "21distritos": "Ver en 21distritos.es",
+            "goodreads": "Ver en Goodreads",
+            "wikipedia": "Ver en Wikipedia"
         }.get(dom)
         if tit and not a.attrs.get("title"):
             a.attrs["title"] = tit
