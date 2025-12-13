@@ -3,7 +3,7 @@ from bs4 import Tag, BeautifulSoup
 import re
 from typing import Set, Dict, List, Tuple, Union
 from urllib.parse import urlencode
-from core.event import Event, Session, Place, Category, CategoryUnknown, isWorkingHours
+from core.event import Event, Session, Place, Category, CategoryUnknown, isWorkingHours, FIX_EVENT
 from core.util import plain_text, re_or, re_and, my_filter, get_domain
 from ics import Calendar
 from arrow import Arrow
@@ -308,6 +308,9 @@ class MadridEs:
         return txt
 
     def __get_price(self, id: str, url_event: str):
+        prc = FIX_EVENT.get(id, {}).get("price")
+        if isinstance(prc, (int, float)):
+            return prc
         if id in self._free:
             return 0
         prc = self.__get_price_from_url(url_event)
