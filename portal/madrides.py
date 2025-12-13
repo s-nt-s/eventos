@@ -594,6 +594,10 @@ class MadridEs:
         plain_name = plain_text(name)
         if re_or(plain_name, r"d[íi]a mundial de la poes[íi]a", r"encuentro po[ée]tico", r"Recital de poes[íi]a", r"Versos entrevistados", "Presentaci[óo]n del poemario", to_log=id, flags=re.I):
             return Category.POETRY
+        if re_or(plain_name, r"Muestra de proyectos \d+", to_log=id, flags=re.I):
+            return Category.EXPO
+        if re_or(plain_name, r"taller familiar", to_log=id, flags=re.I):
+            return Category.CHILDISH
 
         note_place = div.select_one("a.event-location")
         plain_place = plain_text(note_place.attrs["data-name"]) if note_place else None
