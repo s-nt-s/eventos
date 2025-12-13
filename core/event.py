@@ -508,6 +508,9 @@ def _clean_name(name: str, place: str):
             "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.I)
+        name = re.sub(r"^Taller para adultos:\s*", "", name, flags=re.I)
+        name = re.sub(r"^POM Condeduque [\d\-]+\s*", "", name, flags=re.I)
+        name = re.sub(r"\s*en el Espacio de Igualdad Lourdes Hernández$", "", name, flags=re.I)
         name = re.sub(r"^Música:\s*", "", name, flags=re.I)
         name = re.sub(r"^Semana de la Ciencia 2025:\s*", "", name, flags=re.I)
         name = re.sub(r"^[a-zA-ZáéÁÉ]+ con Historia[\.\s]+[vV]isitas guiadas tem[aá]ticas a la colecci[oó]n[\.\s]+[a-zA-Z]+", "Visitas guiadas temáticas a la colección", name)
