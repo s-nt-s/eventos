@@ -598,6 +598,8 @@ class MadridEs:
             return Category.EXPO
         if re_or(plain_name, r"taller familiar", to_log=id, flags=re.I):
             return Category.CHILDISH
+        if re_or(plain_name, "Grupo de hombres por la Igualdad", to_log=id, flags=re.I):
+            return Category.ACTIVISM
 
         note_place = div.select_one("a.event-location")
         plain_place = plain_text(note_place.attrs["data-name"]) if note_place else None
