@@ -398,6 +398,8 @@ class Place:
             return Places.TEATRO_ESPANOL.value
         if re.match(r"^Teatro Circo Price$", name, flags=re.I):
             return Places.TEATRO_PRICE.value
+        if re.match(r"^Centro\s*Centro$", name, flags=re.I):
+            return Places.CENTRO_CENTRO.value
         return self
 
 
@@ -477,6 +479,11 @@ class Places(Enum):
         name="Faro de Moncloa",
         address="Av. de la Memoria, 2, 28040 Madrid",
         latlon="40.43727075977316,-3.721682694006853",
+    )
+    CENTRO_CENTRO = Place(
+        name="Centro Centro",
+        address="Pl. Cibeles, 1, Retiro, 28014 Madrid",
+        latlon="40.41902261618159,-3.692188193693138",
     )
 
 
