@@ -1,4 +1,4 @@
-from core.event import Event, Category, Cinema
+from core.event import Event, Category, Cinema, Session
 from portal.casaencendida import CasaEncendida
 from portal.dore import Dore
 from portal.madriddestino import MadridDestino
@@ -284,7 +284,8 @@ class EventCollector:
             re.compile(r"^https://www\.teatroespanol.es/\S+$"),
             re.compile(r"^https://21distritos\.es/evento/\S+$"),
             re.compile(r"^https://tienda\.madrid-destino\.com/es/\S+$"),
-            re.compile(r"^https://www\.teatrocircoprice\.es/programacion/\S+$")
+            re.compile(r"^https://www\.teatrocircoprice\.es/programacion/\S+$"),
+            re.compile(r"^https://www\.centrocentro\.org/\S+$"),
         ):
             def _mk_url(e: Event | Cinema):
                 for u in e.iter_urls():
@@ -333,20 +334,31 @@ class EventCollector:
         return tuple(arr1)
 
     def __check_sessions(self, events: Tuple[Event | Cinema, ...]):
-        arr = list(events)
-        for i, e in enumerate(arr):
-            sessions = list(e.sessions)
-            for x, s in enumerate(sessions):
-                if s.url is None:
-                    continue
-                if re.match(r"https://tienda\.madrid-destino\.com/.*/\d+/?$", s.url):
-                    soup = WEB.get_cached_soup(s.url)
-                    mapa_url = s.url.rstrip("/")+"/mapa"
-                    if soup.find("a", href=mapa_url):
-                        s = s._replace(url=mapa_url)
-                sessions[x] = s
-            arr[i] = e.merge(sessions=tuple(sessions))
-        return tuple(arr)
+        return tuple(map(self.__check_sessionse_of_event, events))
+
+    def __check_sessionse_of_event(self, e: Event | Cinema):
+        sessions = list(e.sessions)
+        s_doms: set[str] = set(map(get_domain, (s.url for s in e.sessions)))
+        ok_doms = tuple(sorted(s_doms.difference((
+            None,
+            "madrid.es"
+        ))))
+        need_check_domain = ok_doms in (
+            ("tienda.madrid-destino.com", ),
+        )
+        
+        sessions: list[Session] = []
+        for s in e.sessions:
+            if need_check_domain and get_domain(s.url) not in ok_doms:
+                continue
+            if s.url and re.match(r"https://tienda\.madrid-destino\.com/.*/\d+/?$", s.url):
+                soup = WEB.get_cached_soup(s.url)
+                mapa_url = s.url.rstrip("/")+"/mapa"
+                if soup.find("a", href=mapa_url):
+                    s = s._replace(url=mapa_url)
+            sessions.append(s)
+        return e.merge(sessions=tuple(sessions))
+        
 
     @property
     def publish(self):
