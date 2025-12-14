@@ -113,7 +113,7 @@ class Category(IntEnum):
     CONFERENCE = 9
     VISIT = 10
     CHILDISH = 11 # infantil
-    #OTHERS = 12
+    OTHERS = 12
     YOUTH = 14
     READING_CLUB = 15
     CONTEST = 16
@@ -396,6 +396,8 @@ class Place:
             return Places.SALA_BERLANGA.value
         if re.match(r"^Teatro Español$", name, flags=re.I):
             return Places.TEATRO_ESPANOL.value
+        if re.match(r"^Teatro Circo Price$", name, flags=re.I):
+            return Places.TEATRO_PRICE.value
         return self
 
 
@@ -458,6 +460,12 @@ class Places(Enum):
         name="Teatro Español",
         address="C/ del Príncipe, 25, Centro, 28012 Madrid",
         latlon="40.414828532240946,-3.700164949543688",
+        zone=''
+    )
+    TEATRO_PRICE = Place(
+        name="Teatro Circo Price",
+        address="Ronda de Atocha, 35. 28012 Madrid",
+        latlon="40.40596936645757,-3.698589986849812",
         zone=''
     )
     CONDE_DUQUE = Place(

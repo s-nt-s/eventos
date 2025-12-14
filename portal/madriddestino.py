@@ -148,7 +148,8 @@ class MadridDestino:
             'centrodanzamatadero.es',
             'mataderomadrid.org',
             'intermediae.es',
-            'medialab-matadero.es'
+            'medialab-matadero.es',
+            'centrocentro.org'
         ):
             ev = ev.merge(url=ev.more, more=None)
         ev = ev.fix_type()

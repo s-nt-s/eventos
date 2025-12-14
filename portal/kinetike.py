@@ -109,9 +109,11 @@ class KineTike:
         return ev
 
     def __find_category(self, ev: Event, price: float):
+        name = plain_text(ev.name)
+        if re_or(name, "vhz"):
+            return Category.CONFERENCE
         if price < 10:
             return Category.CINEMA
-        name = plain_text(ev.name)
         if re_or(name, "fiesta nochevieja"):
             return Category.PARTY
         return Category.UNKNOWN
