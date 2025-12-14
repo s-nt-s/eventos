@@ -21,6 +21,7 @@ from core.wiki import WIKI
 from core.filmaffinity import FilmAffinityApi
 from core.dblite import DB
 from core.web import WEB
+from functools import cache
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ def round_to_even(x):
 class EventCollector:
     def __init__(
             self,
-            max_price: int,
+            max_price: dict[Category, float],
             max_sessions: int,
             avoid_working_sessions: bool,
             publish: dict[str, str],
@@ -112,12 +113,19 @@ class EventCollector:
         logger.info(f"{len(arr)} pasan 2º filtrados")
         return tuple(arr)
 
+    @cache
+    def get_max_price(self, category: Category) -> float:
+        if category in self.__max_price:
+            return self.__max_price[category]
+        return max(self.__max_price.values())
+
     def __filter(self, e: Event, to_log=True):
         if e.place.name in self.__ko_places:
             if to_log:
                 logger.debug(f"{e.id} descartada por place={e.place.name}")
             return False
-        if e.price > self.__max_price:
+        max_price = self.get_max_price(e.category)
+        if e.price > max_price:
             if to_log:
                 logger.debug(f"{e.id} descartada por price={e.price}")
             return False

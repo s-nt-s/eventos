@@ -20,12 +20,7 @@ from core.rss import EventosRss
 from collections import defaultdict
 from portal.event_collector import EventCollector
 
-import argparse
 
-parser = argparse.ArgumentParser(description='Lista eventos')
-parser.add_argument('--precio', type=int, help="Precio máximo", default=5)
-
-args = parser.parse_args()
 config_log("log/build_site.log")
 logger = logging.getLogger(__name__)
 
@@ -34,7 +29,10 @@ OUT = "out/"
 WHITE = (255, 255, 255)
 
 EC = EventCollector(
-    max_price=args.precio,
+    max_price={
+        Category.CINEMA: 5,
+        Category.OTHERS: 10,
+    },
     max_sessions=20,
     avoid_working_sessions=True,
     publish=FM.load(OUT+"publish.json"),
@@ -198,11 +196,13 @@ def set_icons(html: str, **kwargs):
             "teatroespanol": "https://www.teatroespanol.es/themes/custom/teatroespanol_v2/favicon.ico",
             "es.wikipedia": "https://es.wikipedia.org/static/favicon/wikipedia.ico",
             "mataderomadrid": "https://www.mataderomadrid.org/themes/custom/new_matadero/favicon.ico",
+            "centrocentro": "https://www.centrocentro.org/sites/default/files/favicon_1.ico"
         }.get(dom)
         if ico is None:
             continue
+        cls = dom.replace(".", "_")
         a.string = ""
-        a.append(toTag(f'<img src="{ico}" class="ico" alt="{txt}"/>'))
+        a.append(toTag(f'<img src="{ico}" class="ico {cls}" alt="{txt}"/>'))
         tit = {
             "filmaffinity": "Ver en Filmaffinity",
             "atrapalo": "Buscar en Atrapalo",

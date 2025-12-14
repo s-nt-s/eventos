@@ -272,7 +272,7 @@ class CaixaForum:
             return Category.CINEMA
         if re_or(cat, "taller", "curso", "espacio educativo"):
             return Category.WORKSHOP
-        if re_or(cat, "encuentro", "conferencia", "debate", "tertulia", "jornada"):
+        if re_or(cat, "encuentro", "conferencia", "debate", "tertulia", "jornada", r"di[áa]logo"):
             return Category.CONFERENCE
         #if re_or(cat, "otros formatos"):  # , "espacio de mediacion", "espectaculo"):
         #    return Category.OTHERS
