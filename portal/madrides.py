@@ -368,6 +368,18 @@ class MadridEs:
         all_events: Set[Event] = set()
         for action, data in self.iter_submit():
             all_events = all_events.union(self.__get_events(action, data))
+        places_with_price: set[Place] = set()
+        for e in all_events:
+            if isinstance(e.price, (int, float)) and e.price > 0:
+                places_with_price.add(e.place)
+        for e in list(all_events):
+            if e.price is None and e.place not in places_with_price:
+                if re_or(e.place.name, "Espacio de igualdad", "Centro dotacional", "Centro cultural", "Biblioteca", flags=re.I):
+                    all_events.remove(e)
+                    all_events.add(e.merge(price=0))
+            if e.price is None:
+                logger.debug(f"Precio no encontrado en {e.url}")
+                all_events.remove(e)
         if len(all_events) == 0:
             return tuple()
 
@@ -416,9 +428,6 @@ class MadridEs:
             if cat is None:
                 continue
             price = self.__get_price(id, url_event)
-            if price is None:
-                logger.debug(f"Precio no encontrado en {url_event}")
-                continue
             ev = Event(
                 id=id,
                 url=url_event,

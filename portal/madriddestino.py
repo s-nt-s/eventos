@@ -235,7 +235,7 @@ class MadridDestino:
             url = f"{url}/{_id_}" if _id_ else None
             #if _id_:
             #    self.get_info_session(_id_)
-            if e['freeCapacity'] == 0:
+            if url and e['freeCapacity'] == 0:
                 self.__full_session.add(url)
             sessions.add(Session(
                 date=dt,
