@@ -64,6 +64,13 @@ class SoupInfo(NamedTuple):
 class MadridDestino:
     URL = "https://tienda.madrid-destino.com/es"
 
+    def __init__(self):
+        self.__full_session: set[str] = set()
+
+    @property
+    def full_sessions(self):
+        return tuple(sorted(self.__full_session))
+
     @Cache("rec/madriddestino/state.json", compact=True)
     def __get_state(self) -> Dict:
         return self.get_state_from_url(MadridDestino.URL)
@@ -101,6 +108,10 @@ class MadridDestino:
         data = S.get(url).json()['data']
         return data
 
+    @staticmethod
+    def mk_id(id: int) -> int:
+        return f"md{id}"
+
     @property
     @TupleCache("rec/madriddestino.json", builder=Event.build)
     def events(self):
@@ -117,7 +128,7 @@ class MadridDestino:
             logger.debug("event.id="+str(e['id']))
             info = self.get_event_info(e['id'])
             url = MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
-            id = "md"+str(e['id'])
+            id = MadridDestino.mk_id(e['id'])
             more = info.get('webSource')
             ev = Event(
                 id=id,
@@ -221,11 +232,14 @@ class MadridDestino:
         for s in e['uAvailableDates']:
             dt = timestamp_to_date(s)
             _id_ = id_session.get(dt)
+            url = f"{url}/{_id_}" if _id_ else None
             #if _id_:
             #    self.get_info_session(_id_)
+            if e['freeCapacity'] == 0:
+                self.__full_session.add(url)
             sessions.add(Session(
                 date=dt,
-                url=f"{url}/{_id_}" if _id_ else None
+                url=url
             ))
         return tuple(sorted(sessions, key=lambda s: s.date))
 

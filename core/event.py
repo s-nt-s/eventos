@@ -470,6 +470,12 @@ class Places(Enum):
         latlon="40.40596936645757,-3.698589986849812",
         zone=''
     )
+    CENTRO_CENTRO = Place(
+        name="Centro Centro",
+        address="Pl. Cibeles, 1, Retiro, 28014 Madrid",
+        latlon="40.41902261618159,-3.692188193693138",
+        zone=''
+    )
     CONDE_DUQUE = Place(
         name="Conde Duque",
         address="C/ del Conde Duque, 11, 28015 Madrid",
@@ -479,11 +485,6 @@ class Places(Enum):
         name="Faro de Moncloa",
         address="Av. de la Memoria, 2, 28040 Madrid",
         latlon="40.43727075977316,-3.721682694006853",
-    )
-    CENTRO_CENTRO = Place(
-        name="Centro Centro",
-        address="Pl. Cibeles, 1, Retiro, 28014 Madrid",
-        latlon="40.41902261618159,-3.692188193693138",
     )
 
 

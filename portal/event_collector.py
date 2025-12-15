@@ -334,7 +334,8 @@ class EventCollector:
         return tuple(arr1)
 
     def __check_sessions(self, events: Tuple[Event | Cinema, ...]):
-        return tuple(map(self.__check_sessionse_of_event, events))
+        aux = map(self.__check_sessionse_of_event, events)
+        return tuple(filter(self.__filter, aux))
 
     def __check_sessionse_of_event(self, e: Event | Cinema):
         sessions = list(e.sessions)
@@ -346,10 +347,12 @@ class EventCollector:
         need_check_domain = ok_doms in (
             ("tienda.madrid-destino.com", ),
         )
-        
+
         sessions: list[Session] = []
         for s in e.sessions:
             if need_check_domain and get_domain(s.url) not in ok_doms:
+                continue
+            if s.url in self.__madrid_destino.full_sessions:
                 continue
             if s.url and re.match(r"https://tienda\.madrid-destino\.com/.*/\d+/?$", s.url):
                 soup = WEB.get_cached_soup(s.url)
@@ -358,7 +361,6 @@ class EventCollector:
                     s = s._replace(url=mapa_url)
             sessions.append(s)
         return e.merge(sessions=tuple(sessions))
-        
 
     @property
     def publish(self):
