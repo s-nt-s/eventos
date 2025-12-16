@@ -641,5 +641,20 @@
     },
     "msb52a5a847243a910VgnVCM200000f921e388RCRD": {
         "category": "CHILDISH"
+    },
+    "msdc98d7d62c5ba910VgnVCM200000f921e388RCRD": {
+        "category": "CHILDISH",
+        "price": 0,
+        "more": "https://www.navidadmadrid.com/es/evento/madrid-navidad-de-encuentro/aventuras-de-don-quijote"
+    },
+    "msb3c8d7d62c5ba910VgnVCM200000f921e388RCRD": {
+        "category": "CHILDISH",
+        "price": 0,
+        "more": "https://www.navidadmadrid.com/es/evento/madrid-navidad-de-encuentro/el-guardian-de-los-cuentos"
+    },
+    "msec2c52a730d87910VgnVCM1000001d4a900aRCRD": {
+        "price": 21,
+        "more": "https://tienda.madrid-destino.com/es/nave-10/solea-morente-4/",
+        "also_in": ["https://www.nave10matadero.es/actividades/solea-morente"]
     }
 }

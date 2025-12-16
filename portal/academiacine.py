@@ -111,7 +111,7 @@ class AcademiaCine(Web):
             return Category.CINEMA
         if cat in ("los oficios del cine", "libros de cine"):
             return Category.CONFERENCE
-        if re.search(r"\bcorto\b", tit):
+        if re.search(r"\bcortos?\b", tit):
             return Category.CINEMA
         if re_or(cat, "podcast"):
             return Category.CONFERENCE
