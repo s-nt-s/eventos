@@ -85,10 +85,15 @@ class EventCollector:
     @TupleCache("rec/events.json", builder=Event.build)
     def __get_events(self,):
         logger.info("Recuperar eventos")
+        md_events = self.__madrid_destino.events
+        md_places = tuple(sorted(set(e.place for e in md_events if e.place)))
         eventos = \
-            MadridEs(remove_working_sessions=self.__avoid_working_sessions).get_safe_events() + \
+            MadridEs(
+                remove_working_sessions=self.__avoid_working_sessions,
+                places_with_store=md_places
+            ).get_safe_events() + \
             Dore().events + \
-            self.__madrid_destino.events + \
+            md_events + \
             CasaEncendida().events + \
             SalaBerlanga().events + \
             SalaEquis().events + \

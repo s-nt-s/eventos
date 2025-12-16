@@ -38,6 +38,7 @@ EC = EventCollector(
     publish=FM.load(OUT+"publish.json"),
     ko_places=(
         "Espacio Abierto Quinta de los Molinos",
+        "Parroquia Nuestra Señora de Guadalupe",
     ),
     categories=(
         Category.CINEMA,

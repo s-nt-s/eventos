@@ -135,8 +135,9 @@ class MadridEs:
     AGENDA = "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/?vgnextfmt=default&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"
     TAXONOMIA = "https://www.madrid.es/ContentPublisher/jsp/apl/includes/XMLAutocompletarTaxonomias.jsp?taxonomy=/contenido/actividades&idioma=es&onlyFirstLevel=true"
 
-    def __init__(self, remove_working_sessions: bool = False):
+    def __init__(self, remove_working_sessions: bool = False, places_with_store: tuple[Place, ...] = None):
         self.__remove_working_sessions = remove_working_sessions
+        self.__places_with_store = places_with_store or tuple()
         self.w = Web()
         self.w.s = Driver.to_session(
             "firefox",
@@ -417,7 +418,7 @@ class MadridEs:
                 name=clean_lugar(lg.attrs["data-name"]),
                 address=lg.attrs["data-direction"],
                 latlon=lg.attrs["data-latitude"]+","+lg.attrs["data-longitude"]
-            )
+            ).normalize()
             if not isOkPlace(place):
                 continue
             url_event = a.attrs["href"]
@@ -428,6 +429,8 @@ class MadridEs:
             if cat is None:
                 continue
             price = self.__get_price(id, url_event)
+            if (price is None or price>0) and place in self.__places_with_store:
+                continue
             ev = Event(
                 id=id,
                 url=url_event,

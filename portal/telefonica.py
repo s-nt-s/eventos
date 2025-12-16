@@ -163,6 +163,11 @@ class Telefonica(Web):
             "accesibilidad auditiva",
             "una conversacion entre",
             r"se presentar[áa]n diversos proyectos",
+            r"mesas? redondas?",
+            r"ponencias?",
+            r"debates?",
+            r"coloquios?",
+            r"conferencias?",
             flags=re.I
         ):
             return Category.CONFERENCE

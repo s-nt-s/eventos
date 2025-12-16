@@ -400,6 +400,8 @@ class Place:
             return Places.TEATRO_PRICE.value
         if re.match(r"^Centro\s*Centro$", name, flags=re.I):
             return Places.CENTRO_CENTRO.value
+        if re.search(f"cineteca", name, flags=re.I) and (self.latlon == Places.CINETECA.value.latlon or re_or(self.address, "Legazpi", flags=re.I)):
+            return Places.CINETECA.value
         return self
 
 
@@ -475,6 +477,12 @@ class Places(Enum):
         address="Pl. Cibeles, 1, Retiro, 28014 Madrid",
         latlon="40.41902261618159,-3.692188193693138",
         zone=''
+    )
+    CINETECA = Place(
+        name="Cineteca",
+        address="Pl. de Legazpi, 8, Arganzuela, 28045 Madrid",
+        latlon="40.39130985242181,-3.6958028442054074",
+        zone='Matadero'
     )
     CONDE_DUQUE = Place(
         name="Conde Duque",
