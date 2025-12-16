@@ -656,5 +656,11 @@
         "price": 21,
         "more": "https://tienda.madrid-destino.com/es/nave-10/solea-morente-4/",
         "also_in": ["https://www.nave10matadero.es/actividades/solea-morente"]
+    },
+    "sb10331": {
+        "filmaffinity": 584300
+    },
+    "sb10349": {
+        "filmaffinity": 709668
     }
 }

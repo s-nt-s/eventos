@@ -130,13 +130,14 @@ class MadridDestino:
             url = MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
             id = MadridDestino.mk_id(e['id'])
             more = info.get('webSource')
+            durt = info.get('duration')
             ev = Event(
                 id=id,
                 url=url,
                 name=e['title'],
                 img=e['featuredImage']['url'],
                 price=e['highestPrice'],
-                duration=info['duration'],
+                duration=durt if durt is not None else 60,
                 category=self.__find_category(id, e, info),
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(url, e),
@@ -277,11 +278,12 @@ class MadridDestino:
 
     def __find_category(self, id: str, e: Dict, info: Dict):
         cats: Set[str] = set()
+        eventCategories = e.get('eventCategories') or []
         for c in self.state['categories']:
-            if c['id'] in e['eventCategories']:
+            if c['id'] in eventCategories:
                 cats.add(c['label'])
             for ch in c.get('children', []):
-                if ch['id'] in e['eventCategories']:
+                if ch['id'] in eventCategories:
                     cats.add(ch['label'])
                     cats.add(c['label'])
         for c in list(cats):

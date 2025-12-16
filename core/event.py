@@ -17,6 +17,7 @@ from typing import TypeVar, Type
 from core.goodreads import GR
 from core.zone import Zones
 from enum import Enum
+from core.util import my_filter
 
 T = TypeVar("T")
 
@@ -197,6 +198,8 @@ class Category(IntEnum):
             return "punto de interés"
         if self == Category.INSTITUTIONAL_POLICY:
             return "política instucional"
+        if self == Category.PARTY:
+            return "fiesta"
         raise ValueError(self.value)
 
     def __lt__(self, other):
@@ -356,11 +359,11 @@ class Place:
         if re_or(name, r"d?el retiro", ("biblioteca", "eugenio trias"), "casa de vacas"):
             return "El Retiro"
         if re_or(name, "matadero", "cineteca", "Casa del Reloj", "Nave Terneras", "La Lonja", flags=re.I):
-            return "Matadero"
+            return "Legazpi"
         if re_and(addr, "conde duque", "28015"):
-            return "Conde Duque"
+            return "Conde Duque y alrededores"
         if re_or(name, "clara del rey"):
-            return "Conde Duque"
+            return "Conde Duque y alrededores"
         if self.latlon:
             lat, lon = map(float, self.latlon.split(","))
             for zn in (
@@ -369,10 +372,10 @@ class Place:
                 Zones.PACIFICO,
                 Zones.TRIBUNAL,
                 Zones.MONCLOA,
-                Zones.LA_LATINA,
+                Zones.SOL,
                 Zones.PUERTA_TOLEDO,
                 Zones.LAVAPIES,
-                Zones.DELICIAS,
+                Zones.LEGAZPI,
                 Zones.MARQUES_DE_VADILLO,
                 Zones.USERA
             ):
@@ -380,10 +383,6 @@ class Place:
                 if z.is_in(lat, lon):
                     return z.name
         return None
-
-    @property
-    def alias(self):
-        return self.zone or self.name
 
     def normalize(self):
         name = self.name or ''
@@ -400,8 +399,18 @@ class Place:
             return Places.TEATRO_PRICE.value
         if re.match(r"^Centro\s*Centro$", name, flags=re.I):
             return Places.CENTRO_CENTRO.value
-        if re.search(f"cineteca", name, flags=re.I) and (self.latlon == Places.CINETECA.value.latlon or re_or(self.address, "Legazpi", flags=re.I)):
+        if re.search("cineteca", name, flags=re.I) and (self.latlon == Places.CINETECA.value.latlon or re_or(self.address, "Legazpi", flags=re.I)):
             return Places.CINETECA.value
+        if re.search(r"\bESLA EKO\b", name, flags=re.I):
+            return Places.EKO.value
+        if re.search(r"Fundaci[óo]n Anselmo Lorenzo", name, flags=re.I):
+            return Places.FUNDACION_ALSELMO_LORENZO.value
+        for plc in Places:
+            p = plc.value
+            if (p.name, p.address) == (self.name, self.address):
+                return p
+            if (p.name, p.latlon) == (self.name, self.latlon):
+                return p
         return self
 
 
@@ -410,91 +419,107 @@ class Places(Enum):
         name="Academia de cine",
         address="C/ de Zurbano, 3, Chamberí, 28010 Madrid",
         latlon="40.427566448169316,-3.6939387798888634",
-        zone=''
+        zone='Moncloa'
     )
     CAIXA_FORUM = Place(
         name="Caixa Forum",
         address="Paseo del Prado, 36, Centro, 28014 Madrid",
         latlon="40.41134208472603,-3.6935713500263523",
-        zone=''
+        zone='Paseo del Pardo'
     )
     CASA_AMERICA = Place(
         name="La casa America",
         address="Plaza Cibeles, s/n, Salamanca, 28014 Madrid",
         latlon="40.419580635299525,-3.693332407512017",
-        zone=''
+        zone='Paseo del Pardo'
     )
     CASA_ENCENDIDA = Place(
         name="La casa encendida",
         address="Rda. de Valencia, 2, Centro, 28012 Madrid",
         latlon="40.4062337055155,-3.6999346068731525",
-        zone=''
+        zone='Lavapies'
     )
     CIRCULO_BELLAS_ARTES = Place(
         name="Circulo de Bellas Artes",
         address="C/ Alcalá, 42, Centro, 28014 Madrid, España",
         latlon="40.4183042,-3.6991136",
-        zone=''
+        zone='Sol'
     )
     DORE = Place(
         name="Cine Doré",
         address="C/ de Santa Isabel, 3, Centro, 28012 Madrid",
         latlon="40.411950735826316,-3.699066276358703",
-        zone=''
+        zone='Sol'
     )
     SALA_BERLANGA = Place(
         name="Sala Berlanga",
         address="C/ de Andrés Mellado, 53, Chamberí, 28015 Madrid",
-        latlon="40.428087092339986,-3.7107698133958547",
-        zone=''
+        latlon="40.436106653741795,-3.714403054648641",
+        zone='Moncloa'
     )
     SALA_EQUIS = Place(
         name="Sala Equis",
         address="C/ del Duque de Alba, 4, Centro, 28012 Madrid, España",
         latlon="40.412126715926796,-3.7059047815506396",
-        zone=''
+        zone='Sol'
     )
     FUNDACION_TELEFONICA = Place(
         name="Fundación Telefónica",
         address="C/ Fuencarral, 3, Centro, 28004 Madrid",
         latlon="40.42058956643586,-3.7017498812379235",
-        zone=''
+        zone='Sol'
     )
     TEATRO_ESPANOL = Place(
         name="Teatro Español",
         address="C/ del Príncipe, 25, Centro, 28012 Madrid",
         latlon="40.414828532240946,-3.700164949543688",
-        zone=''
+        zone='Sol'
     )
     TEATRO_PRICE = Place(
         name="Teatro Circo Price",
         address="Ronda de Atocha, 35. 28012 Madrid",
         latlon="40.40596936645757,-3.698589986849812",
-        zone=''
+        zone='Lavapies'
     )
     CENTRO_CENTRO = Place(
         name="Centro Centro",
         address="Pl. Cibeles, 1, Retiro, 28014 Madrid",
         latlon="40.41902261618159,-3.692188193693138",
-        zone=''
+        zone='Paseo del Pardo'
     )
     CINETECA = Place(
         name="Cineteca",
         address="Pl. de Legazpi, 8, Arganzuela, 28045 Madrid",
         latlon="40.39130985242181,-3.6958028442054074",
-        zone='Matadero'
+        zone='Legazpi'
     )
     CONDE_DUQUE = Place(
         name="Conde Duque",
         address="C/ del Conde Duque, 11, 28015 Madrid",
-        latlon="40.42739911262292,-3.710589286287491",
+        latlon="40.42739911262292,-3.710589286287491"
     )
     FARO_MONCLOA = Place(
         name="Faro de Moncloa",
         address="Av. de la Memoria, 2, 28040 Madrid",
         latlon="40.43727075977316,-3.721682694006853",
+        zone='Moncloa'
     )
-
+    TEATRO_MONUMENTAL = Place(
+        name="Teatro Monumental",
+        address="C. de Atocha, 65, Centro, 28012 Madrid",
+        zone='Sol'
+    )
+    EKO = Place(
+        name="CSO EKO",
+        address="C. del Ánade, 10, Carabanchel, 28019 Madrid",
+        latlon="40.391899629090574,-3.7310781522792906",
+    )
+    FUNDACION_ALSELMO_LORENZO = Place(
+        name="Fundación Anselmo Lorenzo",
+        address="Calle de las Peñuelas, 41, Arganzuela, 28005 Madrid",
+        latlon="40.4008721991779, -3.7021363154852938",
+        zone='Legazpi'
+    )
 
 def unquote(s: str):
     quotes = ("'", '"')
@@ -949,6 +974,27 @@ class Event:
         return asdict(self)
 
     @staticmethod
+    def fusionIfSimilar(all_events: tuple["Event", ...], keys: tuple[str, ...],firstEventUrl: bool = False):
+        if len(all_events) == 0:
+            return tuple()
+
+        empty = {k: None for k in list(all_events)[0]._asdict().keys()}
+
+        mrg_events: set[Event] = set()
+        ko_events: list[Event] = sorted(all_events)
+
+        while ko_events:
+            e = ko_events[0]
+            obj = {k: v for k, v in e._asdict().items() if k in keys}
+            k: Event = Event.build({
+                **empty,
+                **obj
+            })
+            ok, ko_events = my_filter(ko_events, lambda x: x.isSimilar(k))
+            mrg_events.add(Event.fusion(*ok, firstEventUrl=True))
+        return tuple(sorted(mrg_events))
+
+    @staticmethod
     def fusion(*evs: "Event", firstEventUrl: bool = False):
         if len(evs) == 0:
             raise ValueError("len(events)==0")
@@ -959,7 +1005,7 @@ class Event:
             if e.title and e.url and e.url not in url_title:
                 url_title[e.url] = e.title
             for s in e.sessions:
-                if s.title and s.url and e.url not in url_title:
+                if s.title and s.url and s.url not in url_title:
                     url_title[s.url] = s.title
         logger.debug("Fusión: " + " + ".join(map(lambda e: e.id, evs)))
         logger.debug("Fusión: " + " + ".join(map(str, evs)))

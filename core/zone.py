@@ -50,8 +50,9 @@ class Zone(NamedTuple):
 
 
 class Circles(Enum):
+    SOL = Circle(lat=40.416776435516745, lon=-3.7033224277568415, kms=0.7)
     CENTRO_SOL = Circle(lat=40.416776435516745, lon=-3.7033224277568415, kms=2)
-    LEGAZPI = Circle(lat=40.391225, lon=-3.695124, kms=2)
+    BIG_LEGAZPI = Circle(lat=40.391225, lon=-3.695124, kms=2)
     BANCO_ESPANA = Circle(lat=40.419529, lon=-3.693949, kms=3)
     MONCLOA = Circle(lat=40.434616, lon=-3.719097, kms=1)
     PACIFICO = Circle(lat=40.401874, lon=-3.674703, kms=1)
@@ -60,23 +61,26 @@ class Circles(Enum):
     OPORTO = Circle(lat=40.388966, lon=-3.731448, kms=1)
     VISTA_ALEGRE = Circle(lat=40.388721, lon=-3.739912, kms=1)
     TRIBUNAL = Circle(lat=40.42643799145984, lon=-3.7012786845904095, kms=0.5)
-    SAN_ISIDRO = Circle(lat=40.41271801132734, lon=-3.7073444235919695, kms=0.5)
+    SAN_ISIDRO = Circle(lat=40.41271801132734, lon=-3.7073444235919695, kms=0.6)
     LAVAPIES = Circle(lat=40.40897556386815, lon=-3.7010840545616155, kms=0.3)
-    DELICIAS = Circle(lat=40.40006636655174, lon=-3.6939322883846866, kms=0.5)
+    DELICIAS = Circle(lat=40.40006636655174, lon=-3.6939322883846866, kms=0.3)
     PUERTA_TOLEDO = Circle(lat=40.40729757258129, lon=-3.711870974615181, kms=0.3)
     MANZANARES_SUR = Circle(lat=40.40135493406257, lon=-3.7226623574561235, kms=0.8)
     MARQUES_DE_VADILLO = Circle(lat=40.3975556652729, lon=-3.716267998239712, kms=1)
     USERA_PLAZA_DE_TRIAS = Circle(lat=40.383865669782125, lon=-3.706729404035503, kms=1)
     CERACANIAS_12_OCTUBRE = Circle(lat=40.37896902265067, lon=-3.698633187672925, kms=0.8)
+    LEGAZPI = Circle(lat=40.391225, lon=-3.695124, kms=1)
 
 
 class Zones(Enum):
+    SOL = Zone.build(
+        "Sol",
+        Circles.SOL,
+        Circles.SAN_ISIDRO,
+    )
     LEGAZPI = Zone.build(
         "Legazpi",
-        Circles.LEGAZPI
-    )
-    DELICIAS = Zone.build(
-        "Delicias",
+        Circles.LEGAZPI,
         Circles.DELICIAS
     )
     BANCO_ESPANA = Zone.build(
