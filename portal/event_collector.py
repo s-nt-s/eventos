@@ -9,6 +9,8 @@ from portal.academiacine import AcademiaCine
 from portal.caixaforum import CaixaForum
 from portal.madrides import MadridEs
 from portal.telefonica import Telefonica
+from portal.teatromonumental import TeatroMonumental
+from portal.mad_convoca import MadConvoca
 from datetime import datetime
 from core.util import get_domain, to_uuid, find_duplicates, get_main_value
 import logging
@@ -22,6 +24,7 @@ from core.filmaffinity import FilmAffinityApi
 from core.dblite import DB
 from core.web import WEB
 from functools import cache
+from portal.gancio import GancioPortal
 
 logger = logging.getLogger(__name__)
 
@@ -88,10 +91,11 @@ class EventCollector:
         md_events = self.__madrid_destino.events
         md_places = tuple(sorted(set(e.place for e in md_events if e.place)))
         eventos = \
+            MadConvoca().events + \
             MadridEs(
                 remove_working_sessions=self.__avoid_working_sessions,
                 places_with_store=md_places
-            ).get_safe_events() + \
+            ).events + \
             Dore().events + \
             md_events + \
             CasaEncendida().events + \
@@ -100,7 +104,8 @@ class EventCollector:
             CasaAmerica().events + \
             AcademiaCine().events + \
             CaixaForum().events + \
-            Telefonica().events
+            Telefonica().events + \
+            TeatroMonumental().events
         logger.info(f"{len(eventos)} recuperados")
         eventos = tuple(filter(self.__filter, eventos))
         logger.info(f"{len(eventos)} pasan 1º filtro")

@@ -12,3 +12,5 @@ rfeed==1.1.1
 selenium==4.35.0
 Unidecode==1.4.0
 webdriver-manager==4.0.2
+feedparser==6.0.12
+icalendar==6.3.2

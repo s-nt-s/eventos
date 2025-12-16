@@ -4,7 +4,7 @@ import re
 from typing import Set, Dict, List, Tuple, Union
 from urllib.parse import urlencode
 from core.event import Event, Session, Place, Category, CategoryUnknown, isWorkingHours, FIX_EVENT
-from core.util import plain_text, re_or, re_and, my_filter, get_domain
+from core.util import plain_text, re_or, re_and, get_domain
 from ics import Calendar
 from arrow import Arrow
 import logging
@@ -381,26 +381,11 @@ class MadridEs:
             if e.price is None:
                 logger.debug(f"Precio no encontrado en {e.url}")
                 all_events.remove(e)
-        if len(all_events) == 0:
-            return tuple()
 
-        empty = {k: None for k in list(all_events)[0]._asdict().keys()}
-
-        mrg_events: Set[Event] = set()
-        ko_events: List[Event] = sorted(all_events)
-
-        while ko_events:
-            e = ko_events[0]
-            k: Event = Event.build({
-                **empty,
-                **{
-                    'name': e.name,
-                    'place': e.place,
-                }
-            })
-            ok, ko_events = my_filter(ko_events, lambda x: x.isSimilar(k))
-            mrg_events.add(Event.fusion(*ok))
-        return tuple(sorted(mrg_events))
+        return Event.fusionIfSimilar(
+            all_events,
+            ('name', 'place')
+        )
 
     def __get_ids(self, action: str, data: Dict = None):
         ids: Set[str] = set()

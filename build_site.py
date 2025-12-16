@@ -110,20 +110,25 @@ def add_image(e: Event):
 
 eventos = EC.get_events()
 
+null_zone = "Otra"
 sesiones: Dict[str, Set[int]] = {}
 sin_sesiones: Set[int] = set()
 categorias: Dict[Category, int] = {}
-lugares: Dict[str, int] = {}
+zones: Dict[str, int] = {}
+places: Dict[str, int] = {}
 
 for e in eventos:
     categorias[e.category] = categorias.get(e.category, 0) + 1
-    lugares[e.place.alias] = lugares.get(e.place.alias, 0) + 1
+    zones[e.place.zone or null_zone] = zones.get(e.place.zone or null_zone, 0) + 1
+    places[e.place.name] = places.get(e.place.name, 0) + 1
     if len(e.sessions) == 0:
         sin_sesiones.add(e.id)
         continue
     for f in e.sessions:
         f = f.date.split()[0]
         dict_add(sesiones, f, e.id)
+
+zones = dict(sorted(zones.items(), key=lambda kv: (int(kv[0] == null_zone), kv)))
 
 
 def event_to_ics(now: datetime, e: Event, s: Session):
@@ -245,7 +250,9 @@ j.save(
     clss_count=CLSS_COUNT,
     categorias=categorias,
     session_ics=session_ics,
-    lugares=lugares,
+    places=places,
+    zones=zones,
+    null_zone=null_zone,
     count=len(eventos),
     precio=round(max(e.price for e in eventos)),
     fecha=dict(
