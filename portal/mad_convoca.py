@@ -30,7 +30,6 @@ class MadConvoca:
                 if len(s) > 10:
                     return (e.place, s)
 
-        ok_events = set()
         for evs in find_duplicates(
             ok_events,
             _mk_key_mame_place
