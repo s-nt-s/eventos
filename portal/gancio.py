@@ -105,7 +105,7 @@ class GancioPortal:
             return Category.CHILDISH
         if has_tag("asamblea") or has_tag_or_title('manifestacion', 'concentracion'):
             return Category.ACTIVISM
-        if has_tag_or_title("cine", "cineforum"):
+        if has_tag_or_title("cine", "cineforum", "cinebollum"):
             return Category.CINEMA
         if has_tag_or_title("taller", "formacion", "intercambio de idiomas"):
             return Category.WORKSHOP
@@ -113,12 +113,12 @@ class GancioPortal:
             return Category.LITERATURE
         if has_tag_or_title("intercambio de idiomas", "hacklab") or re_or(name, "taller", "^clases de", "^curso de", flags=re.I, to_log=_id_):
             return Category.WORKSHOP
-        if has_tag("deporte",):
-            return Category.WORKSHOP
-        if re_or(name, "iniciaci[óo]n al",  flags=re.I, to_log=_id_) and has_tag("deporte", "gimnasia"):
-            return Category.WORKSHOP
+        if has_tag("deporte"):
+            return Category.SPORT
         if has_tag_or_title("yoga", "pilates"):
             return Category.SPORT
+        if re_or(name, "iniciaci[óo]n al",  flags=re.I, to_log=_id_) and has_tag("deporte", "gimnasia"):
+            return Category.WORKSHOP
         if has_tag_or_title("teatro", "micro abierto"):
             return Category.THEATER
         if has_tag_or_title("club de lectura"):
