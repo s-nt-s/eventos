@@ -101,6 +101,8 @@ class GancioPortal:
             return False
 
         name = plain_text(e['title'])
+        if has_tag_or_title("flinta"):
+            return Category.NO_EVENT
         if has_tag_or_title("infantil"):
             return Category.CHILDISH
         if has_tag("asamblea") or has_tag_or_title('manifestacion', 'concentracion'):
