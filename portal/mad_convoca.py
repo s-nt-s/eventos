@@ -3,6 +3,9 @@ from portal.icsevent import IcsToEvent
 from core.event import Event
 from functools import cached_property
 from core.util import plain_text, find_duplicates
+import re
+
+re_sp = re.compile(r"\s+")
 
 
 class MadConvoca:
@@ -21,7 +24,11 @@ class MadConvoca:
         ))
 
         def _mk_key_mame_place(e: Event):
-            return (e.place, plain_text(e.name))
+            name = plain_text(e.name) or ''
+            compact = re_sp.sub("", name)
+            for s in (compact, name):
+                if len(s) > 10:
+                    return (e.place, s)
 
         ok_events = set()
         for evs in find_duplicates(
