@@ -24,7 +24,6 @@ from core.filmaffinity import FilmAffinityApi
 from core.dblite import DB
 from core.web import WEB
 from functools import cache
-from portal.gancio import GancioPortal
 
 logger = logging.getLogger(__name__)
 

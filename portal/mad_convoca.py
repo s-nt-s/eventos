@@ -2,6 +2,7 @@ from portal.gancio import GancioPortal
 from portal.icsevent import IcsToEvent
 from core.event import Event
 from functools import cached_property
+from core.util import plain_text, find_duplicates
 
 
 class MadConvoca:
@@ -13,9 +14,23 @@ class MadConvoca:
 
     @cached_property
     def events(self):
-        all_events = set(self.__gancio.events).union(self.__fal.events)
-        events = Event.fusionIfSimilar(
-            all_events,
+        ok_events = set(self.__gancio.events).union(self.__fal.events)
+        ok_events = set(Event.fusionIfSimilar(
+            ok_events,
             ('name', 'place')
-        )
-        return events
+        ))
+
+        def _mk_key_mame_place(e: Event):
+            return (e.place, plain_text(e.name))
+
+        ok_events = set()
+        for evs in find_duplicates(
+            ok_events,
+            _mk_key_mame_place
+        ):
+            for e in evs:
+                ok_events.remove(e)
+            e = Event.fusion(*evs)
+            ok_events.add(e)
+
+        return tuple(sorted(ok_events))
