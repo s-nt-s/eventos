@@ -13,7 +13,7 @@ re_sp = re.compile(r"\s+")
 
 class MadConvoca:
     def __init__(self):
-        self.__gancio = GancioPortal(root="https://mad.convoca.la")
+        self.__gancio = GancioPortal(root="https://mad.convoca.la", id_prefix="")
         self.__fal = IcsToEvent(
             "https://fal.cnt.es/events/lista/?ical=1"
         )
@@ -44,4 +44,4 @@ class MadConvoca:
             e = Event.fusion(*evs)
             ok_events.add(e)
 
-        return tuple(sorted(ok_events))
+        return tuple(sorted(e.merge(id=f"mc{e.id}") for e in ok_events))
