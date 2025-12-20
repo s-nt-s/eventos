@@ -405,7 +405,7 @@ class Place:
             return Places.EKO.value
         if re.search(r"Fundaci[óo]n Anselmo Lorenzo", name, flags=re.I):
             return Places.FUNDACION_ALSELMO_LORENZO.value
-        if re.search(r"audiotrio francisa (martinez|Mtnez\.?) garrido", name, flags=re.I):
+        if re.search(r"auditorio francisca (martinez|Mtnez\.?) garrido", name, flags=re.I):
             return Places.AUDITORIO_FRANCISCA_MARTINEZ_GARRIDO.value
         for plc in Places:
             p = plc.value
