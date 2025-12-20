@@ -68,13 +68,13 @@ def round_to_even(x):
 
 class EventCollector:
     def __init__(
-            self,
-            max_price: dict[Category, float],
-            max_sessions: int,
-            avoid_working_sessions: bool,
-            publish: dict[str, str],
-            ko_places: Tuple[str],
-            categories: Tuple[Category],
+        self,
+        max_price: dict[Category, float],
+        max_sessions: int,
+        avoid_working_sessions: bool,
+        publish: dict[str, str],
+        ko_places: Tuple[str],
+        categories: Tuple[Category],
     ):
         self.__max_price = max_price
         self.__max_sessions = max_sessions
@@ -131,16 +131,16 @@ class EventCollector:
     def __filter(self, e: Event, to_log=True):
         if e.place.name in self.__ko_places:
             if to_log:
-                logger.debug(f"{e.id} descartada por place={e.place.name}")
+                logger.debug(f"Descartada por place={e.place.name} {e.url}")
             return False
         max_price = self.get_max_price(e.category)
         if e.price > max_price:
             if to_log:
-                logger.debug(f"{e.id} descartada por price={e.price}")
+                logger.debug(f"Descartada por price={e.price} {e.url or e.id}")
             return False
         if e.category not in self.__categories:
             if to_log:
-                logger.debug(f"{e.id} descartada por category={e.category.name}")
+                logger.debug(f"Descartada por category={e.category.name} {e.url or e.id}")
             return False
 
         #if "madrid.es" in map(get_domain, e.iter_urls()):
@@ -156,11 +156,11 @@ class EventCollector:
         count_session = len(e.sessions)
         if count_session == 0:
             if to_log:
-                logger.debug(f"{e.id} descartada por 0 sesiones")
+                logger.debug(f"Descartada por 0 sesiones {e.url or e.id}")
             return False
         if count_session > self.__max_sessions:
             if to_log:
-                logger.warning(f"{e.id} tiene {count_session} sesiones {e.url}")
+                logger.warning(f"Tiene {count_session} sesiones {e.url or e.id}")
             return False
         return True
 

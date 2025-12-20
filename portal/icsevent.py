@@ -126,9 +126,13 @@ class IcsToEvent:
     def _iter_events(self):
         r = requests.get(self.__url, timeout=10)
         r.raise_for_status()
-        cal = Calendar.from_ical(r.text)
-        for e in cal.walk("VEVENT"):
-            yield IcsEvent(e)
+        text = r.text.strip()
+        if len(text) == 0:
+            logger.warning(f"Calendario vació {self.__url}")
+        else:
+            cal = Calendar.from_ical(text)
+            for e in cal.walk("VEVENT"):
+                yield IcsEvent(e)
 
     @cached_property
     def events(self):
