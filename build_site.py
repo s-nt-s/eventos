@@ -33,7 +33,7 @@ EC = EventCollector(
         Category.CINEMA: 5,
         Category.OTHERS: 10,
     },
-    max_sessions=20,
+    max_sessions=30,
     avoid_working_sessions=True,
     publish=FM.load(OUT+"publish.json"),
     ko_places=(

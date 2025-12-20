@@ -1,5 +1,5 @@
 from portal.gancio import GancioPortal
-from portal.icsevent import IcsToEvent
+from portal.icsevent import BulkIcsToEvent
 from core.event import Event
 from functools import cached_property
 from core.util import plain_text, find_duplicates
@@ -13,15 +13,19 @@ re_sp = re.compile(r"\s+")
 
 class MadConvoca:
     def __init__(self):
-        self.__gancio = GancioPortal(root="https://mad.convoca.la", id_prefix="")
-        self.__fal = IcsToEvent(
-            "https://fal.cnt.es/events/lista/?ical=1"
+        self.__gancio = GancioPortal(
+            root="https://mad.convoca.la",
+            id_prefix=""
+        )
+        self.__ics = BulkIcsToEvent(
+            "https://fal.cnt.es/events/lista/?ical=1",
+            "https://lahorizontal.net/events/lista/?ical=1"
         )
 
     @cached_property
     def events(self):
         logger.info("Buscando eventos en MadConvoca")
-        ok_events = set(self.__gancio.events).union(self.__fal.events)
+        ok_events = set(self.__gancio.events).union(self.__ics.events)
         ok_events = set(Event.fusionIfSimilar(
             ok_events,
             ('name', 'place')
