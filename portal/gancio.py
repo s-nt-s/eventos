@@ -136,6 +136,10 @@ class GancioPortal:
             return Category.CONFERENCE
         if re_or(txt_desc, "m[uú]sica electr[óo]nica", flags=re.I, to_log=_id_):
             return Category.MUSIC
+        if re_or(txt_desc, "hacer arte cutre"):
+            return Category.WORKSHOP
+        if re_and(txt_desc, "performance", "micr[óo]fono abierto", "DJ Setlists", to_log=_id_, flags=re.i):
+            return Category.PARTY
 
         logger.critical(str(CategoryUnknown(url, f"{e}")))
         return Category.UNKNOWN
