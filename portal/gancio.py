@@ -58,9 +58,10 @@ class GancioPortal:
         img = f'{self.__root}/media/{media}' if media else None
         start = self.__get_datetime(e['start_datetime'])
         end = self.__get_datetime(e['end_datetime'])
-
         url = self.__root+'/event/'+e["slug"]
-
+        latlon = None
+        if p["latitude"] is not None and p["longitude"] is not None:
+            latlon = f'{p["latitude"]},{p["longitude"]}'
         event = Event(
             url=url,
             id=f"{self.__id_prefix}{e['id']}",
@@ -77,7 +78,7 @@ class GancioPortal:
             place=Place(
                 name=p["name"],
                 address=p["address"],
-                latlon=f'{p["latitude"]},{p["longitude"]}'
+                latlon=latlon
             ),
         )
         return event
