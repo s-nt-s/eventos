@@ -16,7 +16,7 @@ class MyProxy(NamedTuple):
     host: str
     port: int
     user: str
-    pasw: str
+    pssw: str
 
     def __str__(self):
         if self.user:
@@ -25,7 +25,7 @@ class MyProxy(NamedTuple):
 
     def get_full_url(self):
         if self.user:
-            return f"http://{self.user}:{self.pasw}@{self.host}:{self.port}"
+            return f"http://{self.user}:{self.pssw}@{self.host}:{self.port}"
         return f"http://{self.host}:{self.port}"
 
     @classmethod
@@ -39,14 +39,14 @@ class MyProxy(NamedTuple):
             raise ValueError(proxy)
         if len(fields) == 2:
             fields = [None, None] + fields
-        user, pasw, host, port = fields
+        user, pssw, host, port = fields
         if not port.isdecimal():
             raise ValueError(proxy)
         return cls(
             host=host,
             port=int(port),
             user=user,
-            pasw=pasw
+            pssw=pssw
         )
 
 
