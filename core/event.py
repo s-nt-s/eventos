@@ -405,6 +405,8 @@ class Place:
             return Places.EKO.value
         if re.search(r"Fundaci[óo]n Anselmo Lorenzo", name, flags=re.I):
             return Places.FUNDACION_ALSELMO_LORENZO.value
+        if re.search(r"audiotrio francisa (martinez|Mtnez\.?) garrido", name, flags=re.I):
+            return Places.AUDITORIO_FRANCISCA_MARTINEZ_GARRIDO.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -520,6 +522,13 @@ class Places(Enum):
         latlon="40.4008721991779, -3.7021363154852938",
         zone='Legazpi'
     )
+    AUDITORIO_FRANCISCA_MARTINEZ_GARRIDO = Place(
+        name="Auditorio Francisca Martínez Garrido",
+        address="P.º de la Chopera, 6, Arganzuela, 28045 Madrid",
+        latlon="40.3948050403511,-3.7003903328011405",
+        zone="Legazpi"
+    )
+
 
 def unquote(s: str):
     quotes = ("'", '"')
