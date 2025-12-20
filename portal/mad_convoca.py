@@ -26,7 +26,8 @@ class MadConvoca:
         def _mk_key_mame_place(e: Event):
             name = plain_text(e.name) or ''
             compact = re_sp.sub("", name)
-            for s in (compact, name):
+            only_w = re.sub(r"\w", "", compact)
+            for s in (only_w, compact, name):
                 if len(s) > 10:
                     return (e.place, s)
 
