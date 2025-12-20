@@ -331,7 +331,7 @@ class MadridDestino:
         pt = plain_text(e['title'])
         if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", to_log=id, flags=re.I):
             return Category.VIEW_POINT
-        if re_or(pt, "taller infantil", "concierto matinal familiar", to_log=id, flags=re.I):
+        if re_or(pt, "taller infantil", "concierto matinal familiar", "canciones de cuna", to_log=id, flags=re.I):
             return Category.CHILDISH
         if re_and(pt, "Fanzine sonoro", ("familiar", "adolescente"), to_log=id, flags=re.I):
             return Category.CHILDISH

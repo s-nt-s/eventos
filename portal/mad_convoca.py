@@ -4,6 +4,9 @@ from core.event import Event
 from functools import cached_property
 from core.util import plain_text, find_duplicates
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 re_sp = re.compile(r"\s+")
 
@@ -17,6 +20,7 @@ class MadConvoca:
 
     @cached_property
     def events(self):
+        logger.info("Buscando eventos en MadConvoca")
         ok_events = set(self.__gancio.events).union(self.__fal.events)
         ok_events = set(Event.fusionIfSimilar(
             ok_events,
