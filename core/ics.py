@@ -144,7 +144,7 @@ class IcsEventWrapper:
             raise IcsEventInvalid(f"Valor no es vDDDTypes: {val!r}")
         dt = val.dt
         if isinstance(dt, date):
-            return datetime.combine(dt, datetime.min.time(), tzinfo=ZoneInfo("Europe/Madrid"))
+            return datetime.combine(dt, datetime.min.time(), tzinfo=ZoneInfo(TZ_ZONE))
         if not isinstance(dt, datetime):
             raise IcsEventInvalid(f"Valor no es vDDDTypes con datetime: {val!r}")
         if dt.tzinfo is None:

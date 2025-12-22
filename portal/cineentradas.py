@@ -103,6 +103,7 @@ class CineEntradas:
 
         def __get(slc: str, *urls):
             w = Web()
+            w.s.headers.update({'Accept-Encoding': 'gzip, deflate'})
             for i, url in enumerate(urls):
                 w.get(url)
                 try:
