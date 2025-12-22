@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from core.event import Event, Category, Session
-from core.ics import IcsEvent
+from core.ics import SimpleIcsEvent
 from core.j2 import Jnj2, toTag
 from datetime import datetime, timedelta
 from core.log import config_log
@@ -138,7 +138,7 @@ def event_to_ics(now: datetime, e: Event, s: Session):
     )).strip()
     dtstart = to_datetime(s.date)
     dtend = dtstart + timedelta(minutes=(e.duration or 120))
-    return IcsEvent(
+    return SimpleIcsEvent(
         uid=f"{e.id}_{s.id}",
         dtstamp=now,
         url=(s.url or e.url),
@@ -163,7 +163,7 @@ for e in eventos:
         session_ics[e.id+s.id] = uid
         ics.dumpme(f"out/cal/{uid}.ics")
         icsevents.append(ics)
-IcsEvent.dump("out/eventos.ics", *icsevents)
+SimpleIcsEvent.dump("out/eventos.ics", *icsevents)
 
 logger.info("Añadiendo imágenes")
 img_eventos = tuple(map(add_image, eventos))
