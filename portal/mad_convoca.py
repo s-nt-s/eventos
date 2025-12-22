@@ -1,8 +1,8 @@
 from portal.gancio import GancioPortal
-from portal.icsevent import BulkIcsToEvent
-from core.event import Event
+from core.ics import IcsReader, IcsEventWrapper
+from core.event import Event, Place, Category, Session, CategoryUnknown
 from functools import cached_property
-from core.util import plain_text, find_duplicates
+from core.util import plain_text, find_duplicates, re_or, re_and
 import re
 import logging
 
@@ -17,7 +17,7 @@ class MadConvoca:
             root="https://mad.convoca.la",
             id_prefix=""
         )
-        self.__ics = BulkIcsToEvent(
+        self.__ics = IcsReader(
             "https://fal.cnt.es/events/lista/?ical=1",
             "https://lahorizontal.net/events/lista/?ical=1"
         )
@@ -25,7 +25,28 @@ class MadConvoca:
     @cached_property
     def events(self):
         logger.info("Buscando eventos en MadConvoca")
-        ok_events = set(self.__gancio.events).union(self.__ics.events)
+        ok_events = set(self.__gancio.events)
+        for e in self.__ics.events:
+            event = Event(
+                id=e.UID,
+                url=e.URL,
+                name=e.SUMMARY,
+                duration=e.duration or 60,
+                img=e.ATTACH,
+                price=0,
+                publish=e.str_publish,
+                category=self.__find_category(e),
+                place=Place(
+                    name=e.LOCATION,
+                    address=e.LOCATION
+                ),
+                sessions=(
+                    Session(
+                        date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
+                    ),
+                ),
+            )
+            ok_events.add(event)
         ok_events = set(Event.fusionIfSimilar(
             ok_events,
             ('name', 'place')
@@ -49,3 +70,11 @@ class MadConvoca:
             ok_events.add(e)
 
         return tuple(sorted(e.merge(id=f"mc{e.id}") for e in ok_events))
+
+    def __find_category(self, e: IcsEventWrapper):
+        if re_and(e.SUMMARY, "presentaci[oó]n del?", ("libro", "novela"), flags=re.I, to_log=e.UID):
+            return Category.LITERATURE
+        if re_or(e.SUMMARY, "exposici[oó]n", flags=re.I, to_log=e.UID):
+            return Category.EXPO
+        logger.critical(str(CategoryUnknown(self.__url, f"{e}")))
+        return Category.UNKNOWN
