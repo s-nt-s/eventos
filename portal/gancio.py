@@ -8,6 +8,7 @@ import re
 from core.web import get_text, buildSoup
 import feedparser
 from zoneinfo import ZoneInfo
+from core.dictwraper import DictWraper
 
 
 logger = logging.getLogger(__name__)
@@ -52,40 +53,46 @@ class GancioPortal:
             if i.link == url:
                 return buildSoup(self.__root, i.description)
 
-    def __obj_to_event(self, e: dict) -> Event:
-        p = e["place"]
-        media = (e['media'][0] if e['media'] else {}).get('url')
-        img = f'{self.__root}/media/{media}' if media else None
-        start = self.__get_datetime(e['start_datetime'])
-        end = self.__get_datetime(e['end_datetime'])
-        url = self.__root+'/event/'+e["slug"]
+    def __obj_to_event(self, e: DictWraper) -> Event:
+        p = e.get_dict("place")
+        latitude = p.get_float_or_none('latitude')
+        longitude = p.get_float_or_none('longitude')
+        media_list = e.get_list_or_none('media')
+        start = e.get_datetime('start_datetime')
+        end = e.get_datetime_or_none('end_datetime')
+        url = self.__root+'/event/'+e.get_str("slug")
+        img = None
         latlon = None
-        if p["latitude"] is not None and p["longitude"] is not None:
-            latlon = f'{p["latitude"]},{p["longitude"]}'
+        if latitude is not None and longitude is not None:
+            latlon = f'{latitude},{longitude}'
+        if media_list:
+            media = media_list[0].get("url")
+            if media:
+                img = f'{self.__root}/media/{media}'
         event = Event(
             url=url,
-            id=f"{self.__id_prefix}{e['id']}",
+            id=f"{self.__id_prefix}{e.get_int('id')}",
             price=0,
-            name=e["title"],
+            name=e.get_str("title"),
             img=img,
             category=self.__find_category(url, e),
-            duration=int((end-start).total_seconds() / 60) if end and start else 60,
+            duration=int((end-start).total_seconds() / 60) if end else 60,
             sessions=(
                 Session(
                     date=start.strftime("%Y-%m-%d %H:%M"),
                 ),
             ),
             place=Place(
-                name=p["name"],
-                address=p["address"],
+                name=p.get_str("name"),
+                address=p.get_str("address"),
                 latlon=latlon
             ),
         )
         return event
 
-    def __find_category(self, url: str, e: dict) -> Category:
-        _id_ = e['id']
-        tags = set(map(plain_text, map(str.lower, e['tags'])))
+    def __find_category(self, url: str, e: DictWraper) -> Category:
+        _id_ = e.get_int('id')
+        tags = set(map(plain_text, map(str.lower, (e.get_list_or_none('tags') or []))))
 
         def has_tag(*args):
             for a in args:
@@ -101,7 +108,7 @@ class GancioPortal:
                 return True
             return False
 
-        name = plain_text(e['title'])
+        name = plain_text(e.get_str('title'))
         if has_tag_or_title("flinta"):
             return Category.NO_EVENT
         if has_tag_or_title("infantil"):
@@ -151,7 +158,7 @@ class GancioPortal:
     def events(self):
         logger.info(f"Buscando eventos en {self.__root}")
         all_events: set[Event] = set()
-        for e in self.list_events():
+        for e in map(DictWraper, self.list_events()):
             event = self.__obj_to_event(e)
             if event:
                 all_events.add(event)
