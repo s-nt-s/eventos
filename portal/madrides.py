@@ -1,7 +1,7 @@
 from core.web import Web, WebException, WEB, Driver
 from bs4 import Tag, BeautifulSoup
 import re
-from typing import Set, Dict, List, Tuple, Union
+from typing import Set, Dict, Tuple, Union, Optional
 from urllib.parse import urlencode
 from core.event import Event, Session, Place, Category, CategoryUnknown, isWorkingHours, FIX_EVENT
 from core.util import plain_text, re_or, re_and, get_domain
@@ -16,10 +16,24 @@ from portal.util.madrides import find_more_url
 from html import unescape
 from tatsu.exceptions import FailedParse
 from core.zone import Circles
+from core.apimadrides import ApiMadridEs
+from types import MappingProxyType
+from datetime import datetime
+import pytz
+from zoneinfo import ZoneInfo
 
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
+
+TZ_ZONE = 'Europe/Madrid'
+NOW = datetime.now(tz=pytz.timezone(TZ_ZONE))
+
+
+def str_to_datetime(s: str):
+    dt = datetime.strptime(s, "%Y-%m-%d %H:%M")
+    dt = dt.replace(tzinfo=ZoneInfo(TZ_ZONE))
+    return dt
 
 
 def get_query(url: str):
@@ -135,15 +149,24 @@ class MadridEs:
     AGENDA = "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/?vgnextfmt=default&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"
     TAXONOMIA = "https://www.madrid.es/ContentPublisher/jsp/apl/includes/XMLAutocompletarTaxonomias.jsp?taxonomy=/contenido/actividades&idioma=es&onlyFirstLevel=true"
 
-    def __init__(self, remove_working_sessions: bool = False, places_with_store: tuple[Place, ...] = None):
+    def __init__(
+        self,
+        remove_working_sessions: bool = False,
+        places_with_store: tuple[Place, ...] = None,
+        max_price: Optional[float] = None
+    ):
         self.__remove_working_sessions = remove_working_sessions
         self.__places_with_store = places_with_store or tuple()
+        self.__max_price = max_price
         self.w = Web()
         self.w.s = Driver.to_session(
             "firefox",
             "https://www.madrid.es",
             session=self.w.s,
         )
+        self.__info = MappingProxyType({
+             MadridEs.get_id(i.url): i for i in ApiMadridEs().get_events()
+        })
 
     def get_safe_events(self):
         try:
@@ -156,9 +179,13 @@ class MadridEs:
     def _free(self):
         action, data = self.prepare_search()
         data['gratuita'] = "1"
-        ids = self.__get_ids(action, data)
+        vals = set(self.__get_ids(action, data))
+        for k, v in self.__info.items():
+            if v.price == 0:
+                vals.add(k)
+        ids = tuple(sorted(vals))
         logger.debug(f"{len(ids)} ids en gratuita=1")
-        return ids
+        return vals
 
     @cached_property
     def _category(self):
@@ -262,7 +289,7 @@ class MadridEs:
             Category.SPORT: (
                 r'deportivas',
             ),
-            Category.EXPO : (
+            Category.EXPO: (
                 r"^exposicion(es)?$",
             ),
             Category.LITERATURE: (
@@ -314,6 +341,9 @@ class MadridEs:
             return prc
         if id in self._free:
             return 0
+        inf = self.__info.get(id)
+        if inf and inf.price is not None:
+            return inf.price
         prc = self.__get_price_from_url(url_event)
         if prc is not None:
             return prc
@@ -329,6 +359,9 @@ class MadridEs:
                 continue
             if new_id in self._free:
                 return 0
+            inf = self.__info.get(new_id)
+            if inf and inf.price is not None:
+                return inf.price
             if href.startswith("https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/"):
                 new_price = self.__get_price_from_url(href)
                 if new_price is not None:
@@ -393,28 +426,66 @@ class MadridEs:
             ids.add(id)
         return tuple(sorted(ids))
 
+    def __is_ko_info(self, id: str):
+        inf = self.__info.get(id)
+        if inf is None:
+            return False
+        dtend = str_to_datetime(inf.dtend)
+        if dtend < NOW:
+            return True
+        dtstart = str_to_datetime(inf.dtstart)
+        if dtend < dtstart:
+            logger.critical(f"[{id}] dtend < dtstart {inf.url}")
+            return True
+        max_days = 90
+        days = (dtend-dtstart).days
+        if days > max_days:
+            logger.debug(f"[{id}] descartado por días={days} > {max_days} {inf.url}")
+            return True
+        if self.__max_price is not None and inf.price is not None and inf.price > self.__max_price:
+            logger.debug(f"[{id}] descartado por price={inf.price} > {self.__max_price} {inf.url}")
+            return True
+        if inf.audience:
+            audience = set(inf.audience).difference({'Mayores', 'Niños'})
+            if len(audience) == 0:
+                logger.debug(f"[{id}] descartado por audience={inf.audience} {inf.url}")
+                return True
+        if inf.price and inf.price > 0 and inf.place:
+            price_ko = self.__is_ko_price(inf.price, Place(
+                name=clean_lugar(inf.place.location),
+                address=inf.place.address,
+                latlon=f"{inf.place.latitude},{inf.place.longitude}"
+            ).normalize())
+            if price_ko:
+                logger.debug(f"[{id}] descartado por {price_ko} {inf.url}")
+
+    def __is_ko_price(self, price: float, place: Place):
+        if price is None:
+            return None
+        if self.__max_price is not None and price > self.__max_price:
+            return f"price={price} > {self.__max_price}"
+        if price > 0 and place in self.__places_with_store:
+            return f"evento de pago en lugar [{place.name}] con store"
+
     def __get_events(self, action: str, data: Dict = None):
         evts: Set[Event] = set()
         for id, a, div in self.__get_soup_events(action, data):
-            lg = div.select_one("a.event-location")
-            if lg is None:
+            if self.__is_ko_info(id):
                 continue
-            place = Place(
-                name=clean_lugar(lg.attrs["data-name"]),
-                address=lg.attrs["data-direction"],
-                latlon=lg.attrs["data-latitude"]+","+lg.attrs["data-longitude"]
-            ).normalize()
-            if not isOkPlace(place):
+            place = self.__get_place(id, div)
+            if place is None or not isOkPlace(place):
                 continue
             url_event = a.attrs["href"]
-            duration, sessions = self.__get_sessions(url_event, div)
+            duration, sessions = self.__get_sessions(id, url_event, div)
             if len(sessions) == 0:
                 continue
             cat = self.__find_category(id, div, url_event)
             if cat is None:
                 continue
             price = self.__get_price(id, url_event)
-            if (price is None or price>0) and place in self.__places_with_store:
+            price_ko = self.__is_ko_price(999 if price is None else price, place)
+            if price_ko:
+                logger.debug(f"[{id}] descartado por {price_ko} {url_event}")
                 continue
             ev = Event(
                 id=id,
@@ -430,10 +501,27 @@ class MadridEs:
             evts.add(ev)
         return evts
 
-    def __get_sessions(self, url_event: str, div: Tag) -> Tuple[Union[int, None], Tuple[Session, ...]]:
+    def __get_place(self, id: str, div: Tag):
+        lg = div.select_one("a.event-location")
+        if lg:
+            return Place(
+                name=clean_lugar(lg.attrs["data-name"]),
+                address=lg.attrs["data-direction"],
+                latlon=lg.attrs["data-latitude"]+","+lg.attrs["data-longitude"]
+            ).normalize()
+        inf = self.__info.get(id)
+        if inf and inf.place:
+            return Place(
+                name=clean_lugar(inf.place.location),
+                address=inf.place.address,
+                latlon=f"{inf.place.latitude},{inf.place.longitude}"
+            ).normalize()
+
+    def __get_sessions(self, id: str, url_event: str, div: Tag) -> Tuple[Union[int, None], Tuple[Session, ...]]:
         cal = self.__get_cal(div)
         if cal is None:
             return 0, tuple()
+
         durations: Set[int] = set()
         sessions: Set[Session] = set()
         for event in cal.events:
@@ -558,6 +646,10 @@ class MadridEs:
         if cal is None:
             return None
         url = cal.attrs["href"]
+        return self.__get_cal_from_url(url)
+
+    @cache
+    def __get_cal_from_url(self, url: str):
         logger.debug(url)
         r = self.w._get(url)
         valid_lines: list[str] = []
@@ -651,12 +743,13 @@ class MadridEs:
             return Category.THEATER
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
-        if re_or(name_tp,
-                 r"^conferencias?$",
-                 r"^pregon$",
-                 r'[Mm]ocrofestival, tableros y pantallas',
-                 to_log=id
-            ):
+        if re_or(
+            name_tp,
+            r"^conferencias?$",
+            r"^pregon$",
+            r'[Mm]ocrofestival, tableros y pantallas',
+            to_log=id
+        ):
             return Category.CONFERENCE
         if re_or(name_tp, r"^conciertos?$", to_log=id):
             return Category.MUSIC

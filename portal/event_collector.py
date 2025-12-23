@@ -93,7 +93,8 @@ class EventCollector:
             MadConvoca().events + \
             MadridEs(
                 remove_working_sessions=self.__avoid_working_sessions,
-                places_with_store=md_places
+                places_with_store=md_places,
+                max_price=self.__max_price
             ).events + \
             Dore().events + \
             md_events + \
