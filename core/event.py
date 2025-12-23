@@ -358,6 +358,10 @@ class Place:
         addr = plain_text(self.address) or ''
         if re_or(name, r"d?el retiro", ("biblioteca", "eugenio trias"), "casa de vacas"):
             return "El Retiro"
+        if re_or(name, r"jardin(es)? del?\b.*\bretiro\b", flags=re.I):
+            return "El Retiro"
+        if re_or(name, r"Parque\b.*\bEnrique Tierno Galv[aá]n", flags=re.I):
+            return "Legazpi"
         if re_or(name, "matadero", "cineteca", "Casa del Reloj", "Nave Terneras", "La Lonja", flags=re.I):
             return "Legazpi"
         if re_and(addr, "conde duque", "28015"):
