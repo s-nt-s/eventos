@@ -94,7 +94,7 @@ class EventCollector:
             MadridEs(
                 remove_working_sessions=self.__avoid_working_sessions,
                 places_with_store=md_places,
-                max_price=self.__max_price
+                max_price=max(self.__max_price.values())
             ).events + \
             Dore().events + \
             md_events + \
