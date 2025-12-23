@@ -94,14 +94,14 @@ class MadridDestino:
     def state(self):
         return self.__get_state()
 
-    @Cache("rec/madriddestino/{}.json", compact=True)
+    @Cache("rec/madriddestino/{}.json")
     def get_event_info(self, id) -> Dict:
         url = f"https://api-tienda.madrid-destino.com/public_api/events/{id}/info"
         logger.debug(url)
         data = S.get(url).json()['data']
         return data
 
-    @Cache("rec/madriddestino/session/{}.json", compact=True)
+    @Cache("rec/madriddestino/session/{}.json")
     def get_info_session(self, id):
         url = f"https://api-tienda.madrid-destino.com/public_api/sessions/{id}"
         logger.debug(url)
@@ -299,7 +299,7 @@ class MadridDestino:
 
         is_cine = is_cat('cine')
 
-        audience = plain_text(info['audience'])
+        audience = plain_text(info.get('audience'))
         if not is_cine and re_or(
             audience,
             "solo niñas",
