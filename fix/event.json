@@ -133,9 +133,6 @@
     "msfdda365445339910VgnVCM200000f921e388RCRD": {
         "category": "EXPO"
     },
-    "md6614": {
-        "category": "CINEMA"
-    },
     "ms0c27b4d724339910VgnVCM200000f921e388RCRD": {
         "category": "CONFERENCE"
     },
@@ -670,6 +667,10 @@
         "filmaffinity": 381570
     },
     "md6614": {
+        "category": "CINEMA",
         "filmaffinity": 317618
+    },
+    "cf175205303": {
+        "filmaffinity": 779034
     }
 }
