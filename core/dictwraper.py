@@ -85,7 +85,7 @@ class DictWraper:
         if isinstance(v, int):
             v = datetime.fromtimestamp(v, tz=timezone.utc)
             v = v.astimezone(ZoneInfo("Europe/Madrid"))
-        if isinstance(v, date):
+        if not isinstance(v, datetime) and isinstance(v, date):
             return datetime.combine(v, datetime.min.time(), tzinfo=ZoneInfo(TZ_ZONE))
         if isinstance(v, str) and dt_format:
             v = datetime.strptime(v, dt_format)
