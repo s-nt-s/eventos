@@ -9,12 +9,15 @@ from functools import cache
 from core.filemanager import FileManager
 from core.cache import HashCache, TupleCache
 from core.util import get_obj
+from core.web import get_query
 import json
 import re
+import pytz
 
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
+NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
 def str_line(s: str | None):
@@ -84,6 +87,11 @@ class MadridEsEvent(NamedTuple):
                 obj[k] = tuple(v)
         return MadridEsEvent(**obj)
 
+    def get_vgnextoid(self):
+        obj = DictWraper(get_query(self.url))
+        vgnextoid = obj.get_str('vgnextoid')
+        return vgnextoid
+
 
 class MadridEsDictWraper(DictWraper):
     def get_price(self):
@@ -96,6 +104,16 @@ class MadridEsDictWraper(DictWraper):
             prc = find_euros(txt)
             if prc is not None:
                 return prc
+        free = self.get_bool_or_none('__free__')
+        if free is True:
+            return 0
+        prc = self.get_str_or_none('price')
+        if prc not in (
+            None, 
+            "Entradas disponibles próximamente en entradas.com y en la taquilla del recinto",
+            "Consultar descuentos especiales",
+        ):
+            logger.critical(f"Campo price inexperado: {prc}")
 
 
 class MadridEs:
@@ -145,6 +163,10 @@ class MadridEs:
 
     def __obj_to_event(self, obj: dict):
         i = MadridEsDictWraper(obj)
+        dtend = i.get_datetime("dtend", "%Y-%m-%d %H:%M:%S.0")
+        if dtend and dtend < NOW:
+            logger.debug(f"Ignorado por dtend<NOW {obj}")
+            return None
         loc = i.get_dict_or_none('location')
         if loc is None:
             logger.debug(f"Ignorado por location=None {obj}")
@@ -162,7 +184,7 @@ class MadridEs:
             price=i.get_price(),
             description=str_line(i.get_str_or_none('description')),
             dtstart=date_to_str(i.get_datetime("dtstart", "%Y-%m-%d %H:%M:%S.0")),
-            dtend=date_to_str(i.get_datetime("dtend", "%Y-%m-%d %H:%M:%S.0")),
+            dtend=date_to_str(dtend),
             audience=str_tuple(i.get_str_or_none("audience"), r"\s*,\s*"),
             recurrence=i.get("recurrence") is not None,
             latitude=loc.get_float('latitude'),
@@ -187,12 +209,16 @@ class MadridEs:
 
     @HashCache("rec/api_madrid_es/dataset.json")
     def __get_events(self):
+        FREE_IF_IN = (
+            'https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json',
+        )
         events_dict: dict[int, dict] = {}
         sources = {
             url: self.get_graph_list(url) for url in (
                 "https://datos.madrid.es/egob/catalogo/300107-0-agenda-actividades-eventos.json",
                 "https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json",
-                "https://datos.madrid.es/egob/catalogo/206974-0-agenda-eventos-culturales-100.json"
+                "https://datos.madrid.es/egob/catalogo/206974-0-agenda-eventos-culturales-100.json",
+                'https://datos.madrid.es/egob/catalogo/212504-0-agenda-actividades-deportes.json'
             )
         }
         sources = dict(sorted(sources.items(), key=lambda kv:(-len(kv[1]), kv[0])))
@@ -209,6 +235,8 @@ class MadridEs:
                 for k, v in e.items():
                     if obj.get(k) is None:
                         obj[k] = v
+                if url in FREE_IF_IN:
+                    obj['__free__'] = True
                 events_dict[_id_] = obj
             if i > 0:
                 count = len(new_ids)
