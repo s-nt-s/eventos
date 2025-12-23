@@ -8,8 +8,8 @@ from requests.exceptions import JSONDecodeError
 from functools import cache
 from core.filemanager import FileManager
 from core.cache import HashCache, TupleCache
-from core.util import get_obj
-from core.web import get_query
+from core.util import get_obj, re_or
+from core.web import get_query, WEB, get_text
 import json
 import re
 import pytz
@@ -115,6 +115,17 @@ class MadridEsDictWraper(DictWraper):
             "Consultar descuentos especiales",
         ):
             logger.critical(f"Campo price inexperado: {prc}")
+        soup = WEB.get_cached_soup(self.get_str('link'))
+        prices: set[str] = set()
+        for n in soup_event.select("div.tramites-content, #importeVenta p"):
+            txt = get_text(n)
+            prc = find_euros(txt)
+            if prc is not None:
+                return prices.add(prc)
+        if len(prices):
+            return max(prices)
+        if soup_event.select_one("ul li p.gratuita"):
+            return 0
 
 
 class MadridEs:
@@ -178,13 +189,17 @@ class MadridEs:
             area.get_str('postal-code'),
             area.get_str('locality')
         ])
+        dtstart = i.get_datetime("dtstart", "%Y-%m-%d %H:%M:%S.0")
+        hm_tm = i.get_str_or_none('time')
+        if hm_tm not in (None, dtstart.strftime("%H:%M")):
+            logger.critical(f"time={hm_tm} dtstart={dtstart} in {obj}")
         e = MadridEsEvent(
             id=i.get_int('id'),
             url=i.get_str('link'),
             title=str_line(i.get_str('title')),
             price=i.get_price(),
             description=str_line(i.get_str_or_none('description')),
-            dtstart=date_to_str(i.get_datetime("dtstart", "%Y-%m-%d %H:%M:%S.0")),
+            dtstart=date_to_str(dtstart),
             dtend=date_to_str(dtend),
             audience=str_tuple(i.get_str_or_none("audience"), r"\s*,\s*"),
             recurrence=i.get("recurrence") is not None,
