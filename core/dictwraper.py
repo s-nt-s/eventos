@@ -3,6 +3,7 @@ from types import NoneType
 from collections.abc import Sized
 from datetime import datetime, date, timezone
 from zoneinfo import ZoneInfo
+import re
 
 TZ_ZONE = 'Europe/Madrid'
 
@@ -37,8 +38,11 @@ class DictWraper:
         v = self.get(k, mandatory=(NoneType not in tps))
         if int in tps and float not in tps and isinstance(v, float) and int(v) == v:
             v = int(v)
-        if int in tps and str not in tps and isinstance(v, str) and v.isdecimal():
-            v = int(v)
+        if isinstance(v, str) and str not in tps:
+            if int in tps and v.isdecimal():
+                v = int(v)
+            if float in tps and (v.isdecimal() or re.match(r"^-?\d+\.\d+$", v)):
+                v = float(v)
         if not isinstance(v, tps):
             raise ValueError(f"{k} is not {tps} in {self}")
         return v
