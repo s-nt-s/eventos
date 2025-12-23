@@ -104,6 +104,11 @@ class DictWraper:
     def get_dict(self, k: str):
         return DictWraper(self.__get_type(k, dict))
 
+    def get_dict_or_none(self, k: str):
+        obj = self.__get_type(k, dict, NoneType)
+        if obj is not None:
+            return DictWraper(obj)
+
     def get_dict_or_empty(self, k: str):
         return DictWraper(self.__get_type(k, dict, NoneType) or {})
 

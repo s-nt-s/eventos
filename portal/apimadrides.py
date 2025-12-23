@@ -32,6 +32,7 @@ def str_tuple(s: str | None, spl: str) -> tuple[str, ...]:
             arr.add(x)
     return tuple(sorted(arr))
 
+
 def find_euros(prc: str | None):
     if prc is None:
         return None
@@ -56,7 +57,10 @@ class MadridEsEvent(NamedTuple):
     dtend: datetime
     audience: tuple[str, ...]
     recurrence: bool
-    organization: str
+    latitude: float
+    longitude: float
+    location: str
+    address: str
     price: Optional[float | int] = None
 
 
@@ -98,7 +102,7 @@ class MadridEs:
             raise ValueError(f"No dict: {url}")
         return obj
 
-    @HashCache("rec/api_madrid_es/{}.json", compact=True)
+    @HashCache("rec/api_madrid_es/{}.json")
     def get_graph_list(self, url: str) -> tuple[dict, ...]:
         obj = self.__get_dict(url)
         lst = obj.get("@graph")
@@ -109,85 +113,97 @@ class MadridEs:
             return tuple()
         if not all(isinstance(x, dict) for x in lst):
             raise ValueError(f"@graph is not list[dict] {url}")
-        return list(lst)
+        return list(FileManager.parse_obj(i, compact=True) for i in lst)
 
-    @cache
     def get_graph_list_len_1(self, url: str):
         graph = self.get_graph_list(url)
         if len(graph) != 1:
             raise ValueError(f"@graph is not len(list[dict]) == 1 {url}")
-        return graph[0]
+        obj = FileManager.parse_obj(graph[0], compact=True) or {}
+        return obj
 
-    def __get_event_list(self, url: str):
-        events: set[MadridEsEvent] = set()
-        for i in map(DictWraper, self.get_graph_list(url)):
-            e = MadridEsEvent(
-                id=i.get_int('id'),
-                url=i.get_str('link'),
-                title=str_line(i.get_str('title')),
-                price=self.__find_price(i),
-                description=str_line(i.get_str_or_none('description')),
-                dtstart=i.get_datetime("dtstart", "%Y-%m-%d %H:%M:%S.0"),
-                dtend=i.get_datetime("dtend", "%Y-%m-%d %H:%M:%S.0"),
-                audience=str_tuple(i.get_str_or_none("audience"), r"\s*,\s*"),
-                recurrence=i.get("recurrence") is not None,
-                organization=self.__find_organization(i)
-            )
-            events.add(e)
-        return events
+    def __obj_to_event(self, obj: dict):
+        i = MadridEsDictWraper(obj)
+        loc = i.get_dict_or_none('location')
+        if loc is None:
+            logger.debug(f"Ignorado por location=None {obj}")
+            return None
+        area = self.__find_area(i)
+        address = ", ".join([
+            area.get_str('street-address'),
+            area.get_str('postal-code'),
+            area.get_str('locality')
+        ])
+        e = MadridEsEvent(
+            id=i.get_int('id'),
+            url=i.get_str('link'),
+            title=str_line(i.get_str('title')),
+            price=i.get_price(),
+            description=str_line(i.get_str_or_none('description')),
+            dtstart=i.get_datetime("dtstart", "%Y-%m-%d %H:%M:%S.0"),
+            dtend=i.get_datetime("dtend", "%Y-%m-%d %H:%M:%S.0"),
+            audience=str_tuple(i.get_str_or_none("audience"), r"\s*,\s*"),
+            recurrence=i.get("recurrence") is not None,
+            latitude=loc.get_float('latitude'),
+            longitude=loc.get_float('longitude'),
+            location=i.get_str('event-location'),
+            address=address
+        )
+        return e
 
-    def __find_organization(self, e: DictWraper):
-        for k in (
-            "organization-name",
-            "event-location"
-        ):
-            org = e.get_str_or_none(k)
-            if org:
-                return org
-        rel = e.get_dict_or_empty("relation")
-        url = rel.get_str_or_none('@id') or ''
+    def __find_area(self, e: MadridEsDictWraper):
+        addr = e.get_dict('address')
+        area = e.get_dict_or_none('area')
+        if area:
+            return area
+        url = e.get_dict_or_empty('relation').get_str_or_none('@id') or ''
         if re.match(r"^https://datos\.madrid\.es/egob/catalogo/tipo/entidadesyorganismos/\S+\.json$", url):
             obj = DictWraper(self.get_graph_list_len_1(url))
-            title = obj.get_str_or_none("title")
-            if title:
-                return title
-            obj = obj.get_dict_or_empty('organization')
-            name = obj.get_str_or_none('organization-name')
-            if name:
-                return name
-        raise ValueError(f"Organización no encontrada en {e}")
+            addr = obj.get_dict_or_none("address")
+            if addr:
+                return addr
+        raise ValueError(f"Área no encontrada en {e}")
 
     def get_events(self):
-        events_dict: dict[int, list[MadridEsEvent]] = defaultdict(list)
-        for url in (
-            "https://datos.madrid.es/egob/catalogo/300107-0-agenda-actividades-eventos.json",
-            "https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json",
-            "https://datos.madrid.es/egob/catalogo/206974-0-agenda-eventos-culturales-100.json"
-        ):
-            for e in self.get_graph_list(url):
-                events_dict[int(e['id'])].append(e)
+        events_dict: dict[int, dict] = {}
+        sources = {
+            url: self.get_graph_list(url) for url in (
+                "https://datos.madrid.es/egob/catalogo/300107-0-agenda-actividades-eventos.json",
+                "https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json",
+                "https://datos.madrid.es/egob/catalogo/206974-0-agenda-eventos-culturales-100.json"
+            )
+        }
+        sources = dict(sorted(sources.items(), key=lambda kv:(-len(kv[1]), kv[0])))
+        for i, (url, evs) in enumerate(sources.items()):
+            logger.info(f"[{len(evs):5d}] {url}")
+            new_ids: set[int] = set()
+            for e in evs:
+                _id_ = int(e['id'])
+                if _id_ not in events_dict and _id_ not in new_ids:
+                    new_ids.add(_id_)
+                obj = events_dict.get(_id_, {
+                    "__source__": url
+                })
+                for k, v in e.items():
+                    if obj.get(k) is None:
+                        obj[k] = v
+                events_dict[_id_] = obj
+            if i > 0:
+                count = len(new_ids)
+                logger.info(f"[+{count:4d}] {url} {', '.join(map(str, sorted(new_ids)))}")
 
+        size = len(events_dict.values())
         events: set[MadridEsEvent] = set()
-        for evs in events_dict.values():
-            events.add(self.__merge(*evs))
+        for e in events_dict.values():
+            x = self.__obj_to_event(e)
+            if x is not None:
+                events.add(x)
+        logger.info(f"[{size:5d}] Total")
+        logger.info(f"[-{size-len(events):4d}] Descartados")
         return tuple(sorted(events))
 
-    def __merge(self, *events_obj):
-        obj: dict[str, set] = defaultdict(set)
-        for e in map(MadridEsDictWraper, events_obj):
-            obj['id'].add(e.get_int('id'))
-            obj['url'].add(e.get_str('link'))
-            obj['title'].add(str_line(e.get_str('title')))
-            obj['price'].add(e.get_price())
-            obj['description'].add(str_line(e.get_str_or_none('description')))
-            obj['dtstart'].add(e.get_datetime("dtstart", "%Y-%m-%d %H:%M:%S.0"))
-            obj['dtend'].add(e.get_datetime("dtend", "%Y-%m-%d %H:%M:%S.0"))
-            obj['audience'].add(str_tuple(e.get_str_or_none("audience"), r"\s*,\s*"))
-            obj['recurrence'].add(e.get("recurrence") is not None)
-            obj['organization-name'].add(e.get_str_or_none("organization-name"))
-            obj['event-location'].add(e.get_str_or_none('event-location'))
-
-
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/apimadrides.log", log_level=(logging.INFO))
     m = MadridEs()
-    list(m.get_events())
+    print(len(m.get_events()))

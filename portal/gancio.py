@@ -146,7 +146,9 @@ class GancioPortal:
             return Category.MUSIC
         if re_or(txt_desc, "hacer arte cutre"):
             return Category.WORKSHOP
-        if re_and(txt_desc, "performance", "micr[óo]fono abierto", "DJ Setlists", to_log=_id_, flags=re.I):
+        if re_and(txt_desc, "performance", "micr[óo]fono abierto", "DJ Set(lists?)?", to_log=_id_, flags=re.I):
+            return Category.PARTY
+        if re_and(txt_desc, "Karaoke", "DJ Set(lists?)?", to_log=_id_, flags=re.I):
             return Category.PARTY
         if re_and(txt_desc, "jornada", "auditorio", flags=re.I, to_log=_id_):
             return Category.CONFERENCE

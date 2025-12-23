@@ -268,7 +268,7 @@ class CaixaForum:
             return Category.MUSIC
         if re_or(cat, "exposicion"):
             return Category.EXPO
-        if re_or(cat, "proyecciones", "proyeccion"):
+        if re_or(cat, "proyecciones", "proyección", "proyeccion", "cinefórum", "cineforum"):
             return Category.CINEMA
         if re_or(cat, "taller", "curso", "espacio educativo"):
             return Category.WORKSHOP
