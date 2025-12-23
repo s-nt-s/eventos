@@ -3,11 +3,12 @@ import logging
 from typing import NamedTuple, Optional
 from collections import defaultdict
 from core.dictwraper import DictWraper
-from datetime import datetime
+from datetime import datetime, date
 from requests.exceptions import JSONDecodeError
 from functools import cache
 from core.filemanager import FileManager
-from core.cache import HashCache
+from core.cache import HashCache, TupleCache
+from core.util import get_obj
 import json
 import re
 
@@ -33,6 +34,16 @@ def str_tuple(s: str | None, spl: str) -> tuple[str, ...]:
     return tuple(sorted(arr))
 
 
+def date_to_str(d: date | datetime | None):
+    if d is None:
+        return None
+    if isinstance(d, datetime):
+        return d.strftime("%Y-%d-%m %H:%M")
+    if isinstance(d, date):
+        return d.strftime("%Y-%d-%m")
+    raise ValueError(d)
+
+
 def find_euros(prc: str | None):
     if prc is None:
         return None
@@ -53,8 +64,8 @@ class MadridEsEvent(NamedTuple):
     url: str
     title: str
     description: str
-    dtstart: datetime
-    dtend: datetime
+    dtstart: str
+    dtend: str
     audience: tuple[str, ...]
     recurrence: bool
     latitude: float
@@ -62,6 +73,16 @@ class MadridEsEvent(NamedTuple):
     location: str
     address: str
     price: Optional[float | int] = None
+
+    @staticmethod
+    def build(*args, **kwargs):
+        obj = get_obj(*args, **kwargs)
+        if obj is None:
+            return None
+        for k, v in list(obj.items()):
+            if isinstance(v, list):
+                obj[k] = tuple(v)
+        return MadridEsEvent(**obj)
 
 
 class MadridEsDictWraper(DictWraper):
@@ -140,8 +161,8 @@ class MadridEs:
             title=str_line(i.get_str('title')),
             price=i.get_price(),
             description=str_line(i.get_str_or_none('description')),
-            dtstart=i.get_datetime("dtstart", "%Y-%m-%d %H:%M:%S.0"),
-            dtend=i.get_datetime("dtend", "%Y-%m-%d %H:%M:%S.0"),
+            dtstart=date_to_str(i.get_datetime("dtstart", "%Y-%m-%d %H:%M:%S.0")),
+            dtend=date_to_str(i.get_datetime("dtend", "%Y-%m-%d %H:%M:%S.0")),
             audience=str_tuple(i.get_str_or_none("audience"), r"\s*,\s*"),
             recurrence=i.get("recurrence") is not None,
             latitude=loc.get_float('latitude'),
@@ -164,7 +185,8 @@ class MadridEs:
                 return addr
         raise ValueError(f"Área no encontrada en {e}")
 
-    def get_events(self):
+    @HashCache("rec/api_madrid_es/dataset.json")
+    def __get_events(self):
         events_dict: dict[int, dict] = {}
         sources = {
             url: self.get_graph_list(url) for url in (
@@ -179,7 +201,7 @@ class MadridEs:
             new_ids: set[int] = set()
             for e in evs:
                 _id_ = int(e['id'])
-                if _id_ not in events_dict and _id_ not in new_ids:
+                if _id_ not in events_dict:
                     new_ids.add(_id_)
                 obj = events_dict.get(_id_, {
                     "__source__": url
@@ -191,10 +213,14 @@ class MadridEs:
             if i > 0:
                 count = len(new_ids)
                 logger.info(f"[+{count:4d}] {url} {', '.join(map(str, sorted(new_ids)))}")
+        return list(events_dict.values())
 
-        size = len(events_dict.values())
+    @TupleCache("rec/api_madrid_es.json", builder=MadridEsEvent.build)
+    def get_events(self):
+        events_dict = self.__get_events()
+        size = len(events_dict)
         events: set[MadridEsEvent] = set()
-        for e in events_dict.values():
+        for e in events_dict:
             x = self.__obj_to_event(e)
             if x is not None:
                 events.add(x)
