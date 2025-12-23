@@ -69,28 +69,29 @@ class GancioPortal:
             media = media_list[0].get("url")
             if media:
                 img = f'{self.__root}/media/{media}'
+        place = Place(
+            name=p.get_str("name"),
+            address=p.get_str("address"),
+            latlon=latlon
+        )
         event = Event(
             url=url,
             id=f"{self.__id_prefix}{e.get_int('id')}",
             price=0,
             name=e.get_str("title"),
             img=img,
-            category=self.__find_category(url, e),
+            category=self.__find_category(url, place, e),
             duration=int((end-start).total_seconds() / 60) if end else 60,
             sessions=(
                 Session(
                     date=start.strftime("%Y-%m-%d %H:%M"),
                 ),
             ),
-            place=Place(
-                name=p.get_str("name"),
-                address=p.get_str("address"),
-                latlon=latlon
-            ),
+            place=place,
         )
         return event
 
-    def __find_category(self, url: str, e: DictWraper) -> Category:
+    def __find_category(self, url: str, place: Place, e: DictWraper) -> Category:
         _id_ = e.get_int('id')
         tags = set(map(plain_text, map(str.lower, (e.get_list_or_none('tags') or []))))
 
@@ -152,6 +153,9 @@ class GancioPortal:
             return Category.PARTY
         if re_and(txt_desc, "jornada", "auditorio", flags=re.I, to_log=_id_):
             return Category.CONFERENCE
+
+        if re_or(place.name, "librer[íi]a", flags=re.I) and re_or(name, "poes[íi]aa?", flags=re.I):
+            return Category.POETRY
 
         logger.critical(str(CategoryUnknown(url, f"{e}")))
         return Category.UNKNOWN

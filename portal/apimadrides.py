@@ -14,6 +14,7 @@ import json
 import re
 import pytz
 
+# https://datos.madrid.es/portal/site/egob/menuitem.9e1e2f6404558187cf35cf3584f1a5a0/?vgnextoid=374512b9ace9f310VgnVCM100000171f5a0aRCRD&vgnextchannel=374512b9ace9f310VgnVCM100000171f5a0aRCRD&vgnextfmt=default&page=5
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
