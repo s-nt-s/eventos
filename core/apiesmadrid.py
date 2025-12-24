@@ -10,6 +10,9 @@ import logging
 from datetime import timedelta, date
 from core.util import re_or
 
+# https://datos.madrid.es/portal/site/egob/menuitem.9e1e2f6404558187cf35cf3584f1a5a0/?vgnextoid=374512b9ace9f310VgnVCM100000171f5a0aRCRD&vgnextchannel=374512b9ace9f310VgnVCM100000171f5a0aRCRD&vgnextfmt=default&page=5
+# https://datos.madrid.es/portal/site/egob/menuitem.c05c1f754a33a9fbe4b2e4b284f1a5a0/?vgnextoid=30c1a0d4c16f3510VgnVCM1000001d4a900aRCRD&vgnextchannel=374512b9ace9f310VgnVCM100000171f5a0aRCRD&vgnextfmt=default
+
 logger = logging.getLogger(__name__)
 TODAY = date.today()
 
@@ -258,12 +261,13 @@ class ApiEsMadrid:
         longitude = g.get_float_or_none('longitude')
         address = g.get_str_or_none('address')
         if None in (latitude, longitude) and address is None:
-            logger.warning(f"{id} descartado por falta de ubicación {web}")
+            logger.debug(f"{id} descartado por falta de ubicación {web}")
             return None
 
         for k, (fnc, ok, ko) in {
             'language': (b.get_str, ('es', ), None),
             'fechas': (e.get_dict_or_none, None, (None, )),
+            'Tipo': (e.get_str, ('Eventos', ), None),
         }.items():
             x = fnc(k)
             if (ok and x not in ok) or (ko and x in ko):
@@ -277,7 +281,7 @@ class ApiEsMadrid:
 
         price = self.__get_price(obj)
         if isinstance(price, str):
-            logger.warning(f"{id} descartado por price={price} {web}")
+            logger.debug(f"{id} descartado por pago={price} {web}")
             return None
 
         e = EsMadridEvent(
@@ -376,7 +380,7 @@ class ApiEsMadrid:
         ):
             return None
 
-        logger.warning(f"Precio no encontrado en: {pago}")
+        logger.debug(f"Precio no encontrado en: {pago}")
         #raise ValueError([text, pago])
 
     def __get_categorias(self, obj: DictWraper):
