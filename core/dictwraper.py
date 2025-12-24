@@ -105,6 +105,30 @@ class DictWraper:
             raise ValueError(f"{k} is None in {self}")
         return v
 
+    def get_date_or_none(self, k: str, dt_format: str = None):
+        tps = [datetime, date, int, NoneType]
+        if dt_format:
+            tps.append(str)
+        v = self.__get_type(k, *tps)
+        if v is None:
+            return None
+        if isinstance(v, int):
+            v = datetime.fromtimestamp(v, tz=timezone.utc)
+            v = v.astimezone(ZoneInfo("Europe/Madrid"))
+        if isinstance(v, str) and dt_format:
+            v = datetime.strptime(v, dt_format)
+        if isinstance(v, datetime):
+            v = v.date()
+        if not isinstance(v, date):
+            raise ValueError(f"{k} is not date in {self}")
+        return v
+
+    def get_date(self, k: str, dt_format: str = None):
+        v = self.get_date_or_none(k, dt_format=dt_format)
+        if v is None:
+            raise ValueError(f"{k} is None in {self}")
+        return v
+
     def get_dict(self, k: str):
         return DictWraper(self.__get_type(k, dict))
 
@@ -124,3 +148,12 @@ class DictWraper:
 
     def get_list_or_none(self, k: str):
         return self.__get_type(k, list, NoneType)
+
+    def get_list(self, k: str):
+        return self.__get_type(k, list)
+
+    def get_list_or_empty(self, k: str):
+        obj = self.__get_type(k, list, NoneType)
+        if obj is None:
+            return []
+        return obj
