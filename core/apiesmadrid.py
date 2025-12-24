@@ -275,9 +275,8 @@ class ApiEsMadrid:
                 return None
         tp_fechas = self.__get_dates(obj)
         if len(tp_fechas) == 0:
-            if (ok and x not in ok) or (ko and x in ko):
-                logger.warning(f"{id} descartado por no tener fechas {web}")
-                return None
+            logger.debug(f"{id} descartado por no tener fechas {web}")
+            return None
 
         price = self.__get_price(obj)
         if isinstance(price, str):
