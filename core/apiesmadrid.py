@@ -4,6 +4,24 @@ from core.cache import Cache
 from core.web import Driver
 
 
+def is_dict(obj, *keys: str):
+    if not isinstance(obj, dict):
+        return False
+    ks = tuple(sorted(obj.keys()))
+    if ks != tuple(sorted(keys)):
+        return False
+    return True
+
+
+def flatten(lst):
+    if isinstance(lst, list):
+        for x in lst:
+            if isinstance(x, list):
+                yield from flatten(x)
+            else:
+                yield x
+
+
 def re_parse(value):
     val = list_item_to_obj(value)
     if isinstance(val, dict):
@@ -74,12 +92,12 @@ class ApiEsMadrid:
         )
 
     @Cache("rec/esmadrid/dataset.json")
-    def get_data(self):
+    def get_data(self) -> list[dict]:
         url = "https://www.esmadrid.com/opendata/agenda_v1_es.xml"
         r = self.__s.get(url)
         r.raise_for_status()
         obj = xmltodict.parse(
-            r.text
+            r.text,
         )
         obj = FileManager.parse_obj(
             obj,
@@ -99,9 +117,57 @@ class ApiEsMadrid:
         lst = obj['service']
         if not isinstance(lst, list):
             raise ValueError("No es un {{'serviceList': {'service': [...]}} "+url)
-        
+
+        def _get(obj: dict, *path):
+            obj = {None: obj}
+            path = list(reversed(path))
+            path.append(None)
+            while path and obj and isinstance(obj, dict):
+                obj = obj.get(path.pop())
+                if len(path) == 0:
+                    return obj
+
+        def _flatten(obj: dict, *path):
+            prt = _get(obj, *path[:-1])
+            val = _get(obj, *path)
+            if isinstance(val, (dict, str)):
+                prt[path[-1]] = [val]
+            elif isinstance(val, list):
+                prt[path[-1]] = list(flatten(val))
+
+        for val in lst:
+            if not isinstance(val, dict):
+                raise ValueError("No es un {{'serviceList': {'service': [dict]}} "+url)
+
+            _flatten(val, 'multimedia', 'media')
+            _flatten(val, 'extradata', 'fechas', 'rango')
+            _flatten(val, 'extradata', 'fechas', 'exclusion')
+            _flatten(val, 'extradata', 'fechas', 'inclusion')
+            _flatten(val, 'extradata', 'categorias', 'categoria')
+            cats = _get(val, 'extradata', 'categorias')
+            if cats is not None:
+                if not is_dict(cats, "categoria") or val['extradata'].get('categoria') is not None:
+                    raise ValueError("No es un {{'serviceList': {'service': [{'extradata': {'categorias': {'categoria': ...}}}}]}} "+url)
+                val['extradata']['categoria'] = cats['categoria']
+                del val['extradata']['categorias']
+            cats = _get(val, 'extradata', 'categoria')
+            if isinstance(cats, list):
+                for i, cat in enumerate(cats):
+                    if isinstance(cat, dict):
+                        _flatten(cat, 'subcategorias', 'subcategoria')
+                        subcats = _get(cat, 'subcategorias')
+                        if subcats is not None:
+                            if not isinstance(subcats, dict):
+                                raise ValueError("subcategorias no es un dict en "+url)
+                            if not is_dict(subcats, "subcategoria") or not not is_dict(cat.get('subcategoria'), 'item'):
+                                raise ValueError("subcategorias no es un {'subcategoria': {'item': ...}} en "+url)
+                            cat['subcategoria'] = subcats['subcategoria']['item']
+                            del cat['subcategorias']
+                        val['extradata']['categoria'][i] = cat
+
         return lst
 
 
 if __name__ == "__main__":
-    ApiEsMadrid().get_data()
+    d = ApiEsMadrid().get_data()
+    print(len(d))
