@@ -62,6 +62,7 @@ def list_item_to_obj(arr: list):
             return None
         obj[k] = v
     if len(obj):
+        obj = {k: v for k, v in obj.items() if v != ''}
         return obj
 
 
