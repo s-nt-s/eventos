@@ -93,7 +93,7 @@ class GancioPortal:
 
     def __find_category(self, url: str, place: Place, e: DictWraper) -> Category:
         _id_ = e.get_int('id')
-        tags = set(map(plain_text, map(str.lower, (e.get_list_or_none('tags') or []))))
+        tags = set(map(plain_text, map(str.lower, (e.get_list_or_empty('tags')))))
 
         def has_tag(*args):
             for a in args:
