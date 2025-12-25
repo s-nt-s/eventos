@@ -51,7 +51,8 @@ EC = EventCollector(
         Category.UNKNOWN,
         Category.LITERATURE,
         Category.WORKSHOP,
-        Category.PARTY
+        Category.PARTY,
+        Category.READING_CLUB
     )
 )
 

@@ -165,7 +165,7 @@ class Category(IntEnum):
         if self == Category.YOUTH:
             return "juventud"
         if self == Category.READING_CLUB:
-            return "club lectura"
+            return "club de lectura"
         if self == Category.CONTEST:
             return "concurso"
         if self == Category.SPORT:

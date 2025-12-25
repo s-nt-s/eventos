@@ -132,6 +132,8 @@ class GancioPortal:
             return Category.THEATER
         if has_tag_or_title("club de lectura"):
             return Category.READING_CLUB
+        if has_tag("concierto"):
+            return Category.MUSIC
         if re_or(name, "fiesta", "Social Swing", flags=re.I, to_log=_id_):
             return Category.PARTY
         if re_or(name, "bicicritica", to_log=_id_):
