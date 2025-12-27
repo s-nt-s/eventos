@@ -411,6 +411,8 @@ class Place:
             return Places.FUNDACION_ALSELMO_LORENZO.value
         if re.search(r"auditorio francisca (martinez|Mtnez\.?) garrido", name, flags=re.I):
             return Places.AUDITORIO_FRANCISCA_MARTINEZ_GARRIDO.value
+        if re.search(r"\b(CS la cheli|local de xr madrid)\b", name, flags=re.I):
+            return Places.CS_LA_CHELI.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -531,6 +533,12 @@ class Places(Enum):
         address="P.º de la Chopera, 6, Arganzuela, 28045 Madrid",
         latlon="40.3948050403511,-3.7003903328011405",
         zone="Legazpi"
+    )
+    CS_LA_CHELI = Place(
+        name="CS La Cheli",
+        address="C. de la Iglesia, 12, Carabanchel, 28019 Madrid",
+        latlon="40.39584448961841,-3.7177346134909293",
+        zone="Marques de Vadillo"
     )
 
 

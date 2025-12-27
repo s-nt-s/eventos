@@ -13,9 +13,13 @@ re_sp = re.compile(r"\s+")
 
 class MadConvoca:
     def __init__(self):
-        self.__gancio = GancioPortal(
+        self.__mad = GancioPortal(
             root="https://mad.convoca.la",
             id_prefix=""
+        )
+        self.__ext = GancioPortal(
+            root="https://calendario.extinctionrebellion.es",
+            id_prefix="ex"
         )
         self.__ics = IcsReader(
             "https://fal.cnt.es/events/lista/?ical=1",
@@ -25,7 +29,7 @@ class MadConvoca:
     @cached_property
     def events(self):
         logger.info("Buscando eventos en MadConvoca")
-        ok_events = set(self.__gancio.events)
+        ok_events = set(self.__mad.events).union(self.__ext.events)
         for e in self.__ics.events:
             event = Event(
                 id=e.UID,
