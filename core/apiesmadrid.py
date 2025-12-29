@@ -400,6 +400,7 @@ class ApiEsMadrid:
                 cats.append(c)
         return tuple(cats)
 
+
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/esmadrid.log")

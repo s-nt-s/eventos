@@ -74,7 +74,7 @@ class EventCollector:
         avoid_working_sessions: bool,
         publish: dict[str, str],
         ko_places: Tuple[str],
-        categories: Tuple[Category],
+        categories: Tuple[Category, ...],
     ):
         self.__max_price = max_price
         self.__max_sessions = max_sessions
