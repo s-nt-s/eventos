@@ -140,6 +140,8 @@ class GancioPortal:
             return Category.SPORT
         if re_and(name, "no", "compres", "cose",  flags=re.I, to_log=_id_):
             return Category.WORKSHOP
+        if re_or(name, "Charla-debate", flags=re.I, to_log=_id_):
+            return Category.CONFERENCE
 
         desc = self.get_description(url)
         txt_desc = get_text(desc)
