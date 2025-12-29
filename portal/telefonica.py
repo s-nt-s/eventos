@@ -147,7 +147,7 @@ class Telefonica(Web):
             return Category.EXPO
         description = plain_text(webpage.get('description', '') + ' ' + self.select_one_txt("#textoread"))
         if cat == "taller":
-            if re_or(description, "taller para familias", flags=re.I):
+            if re_or(description, "taller para (familias|niñ[oa@xe]s)", flags=re.I):
                 return Category.CHILDISH
             return Category.WORKSHOP
         if re_or(
