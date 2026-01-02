@@ -15,10 +15,18 @@ logger = logging.getLogger(__name__)
 
 
 class GancioPortal:
-    def __init__(self, root: str, api_key: str = None, id_prefix: str = "ga", show_recurrent: bool = False):
+    def __init__(
+        self,
+        root: str,
+        api_key: str = None,
+        id_prefix: str = "ga",
+        show_recurrent: bool = False,
+        show_online: bool = False
+    ):
         self.__root = root
         self.__id_prefix = id_prefix
         self.__show_recurrent = "true" if show_recurrent else "false"
+        self.__show_online = show_online
         self.__s = ReqSession()
         if api_key:
             self.__s.headers.update({"Authorization": f"Bearer {api_key}"})
@@ -73,7 +81,10 @@ class GancioPortal:
             name=p.get_str("name"),
             address=p.get_str("address"),
             latlon=latlon
-        )
+        ).normalize()
+
+        if not self.__show_online and re_or(place.name, r"^(online|zoom)$", flags=re.I):
+            return None
         event = Event(
             url=url,
             id=f"{self.__id_prefix}{e.get_int('id')}",
