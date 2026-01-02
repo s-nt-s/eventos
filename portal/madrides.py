@@ -685,7 +685,7 @@ class MadridEs:
             return Category.POETRY
         if re_or(plain_name, r"Muestra de proyectos \d+", to_log=id, flags=re.I):
             return Category.EXPO
-        if re_or(plain_name, r"taller familiar", to_log=id, flags=re.I):
+        if re_or(plain_name, r"taller familiar", r"huerto familiar", to_log=id, flags=re.I):
             return Category.CHILDISH
         if re_or(plain_name, "Grupo de hombres por la Igualdad", to_log=id, flags=re.I):
             return Category.ACTIVISM
