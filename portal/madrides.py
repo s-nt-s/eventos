@@ -331,6 +331,9 @@ class MadridEs:
         return self.w.soup
 
     def __get_description(self, url: str):
+        inf = self.__info.get(MadridEs.get_id(url))
+        if inf and inf.description:
+            return inf.description
         soup = WEB.get_cached_soup(url)
         txt = get_text(soup.select_one("div.tramites-content div.tiny-text"))
         return txt
@@ -353,6 +356,7 @@ class MadridEs:
             href = a.attrs["href"]
             if isinstance(href, str) and href not in urls:
                 urls.append(href)
+        second_try: list[str] = []
         for href in urls:
             new_id = MadridEs.get_id(href)
             if new_id is None:
@@ -362,6 +366,8 @@ class MadridEs:
             inf = self.__info.get(new_id)
             if inf and inf.price is not None:
                 return inf.price
+            second_try.append(href)
+        for href in second_try:
             if href.startswith("https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/"):
                 new_price = self.__get_price_from_url(href)
                 if new_price is not None:
