@@ -217,6 +217,15 @@ class MadridEs:
                     logger.debug(f"{len(ids)} ids en {key}={v}")
                     category[cat] = category[cat].union(ids)
 
+        for cat, auds in {
+            Category.CHILDISH: ("Niños", "Familias", "Jovenes"),
+            Category.SENIORS: ("Mayores", ),
+        }.items():
+            for a in auds:
+                ids = [k for k, i in self.__info.items() if a in i.audience]
+                logger.debug(f"{len(ids)} ids en audience={a}")
+                category[cat] = category[cat].union(ids)
+
         _set_cats('usuario', usuarios, {
             Category.CHILDISH: (
                 'familias',
