@@ -153,11 +153,13 @@ class MadridEs:
         self,
         remove_working_sessions: bool = False,
         places_with_store: tuple[Place, ...] = None,
-        max_price: Optional[float] = None
+        max_price: Optional[float] = None,
+        adult_only: bool = True
     ):
         self.__remove_working_sessions = remove_working_sessions
         self.__places_with_store = places_with_store or tuple()
         self.__max_price = max_price
+        self.__adult_only = adult_only
         self.w = Web()
         self.w.s = Driver.to_session(
             "firefox",
@@ -226,6 +228,36 @@ class MadridEs:
                     logger.debug(f"{len(ids)} ids en {key}={v}")
                     category[cat] = category[cat].union(ids)
 
+        for k, v in self.__info.items():
+            if re_or(
+                v.title,
+                r"concierto infantil",
+                r"en familia",
+                r"elaboraci[óo]n de comederos de aves",
+                r"los [\d\. ]+ primeros d[íi]as no se repiten",
+                r"photocall hinchable",
+                r"^re vuelta al patio",
+                r"taller familiar",
+                r"huerto familiar",
+                (r"dia", r"internacional", r"familias?"),
+                (r"taller", r"pequeños"),
+                flags=re.I
+            ):
+                category[Category.CHILDISH].add(k)
+            if re_or(
+                v.description,
+                r"musical? infantil",
+                r"teatro infantil",
+                r"relatos en familia",
+                r"concierto familiar",
+                r"bienestar de niños y niñas",
+                (r"cuentacuentos", r"en familia"),
+                flags=re.I
+            ):
+                category[Category.CHILDISH].add(k)
+            if re_or(v.title, "para mayores$", flags=re.I):
+                category[Category.SENIORS].add(k)
+
         _set_cats('usuario', usuarios, {
             Category.CHILDISH: (
                 'familias',
@@ -255,11 +287,6 @@ class MadridEs:
                 'animales',
             ),
         })
-        #cine: Set[str] = set()
-        #for k, v in tipos.items():
-        #    if re_or(k, "cine"):
-        #        cine = cine.union(self.__get_ids(action, {**data_form, **{'tipo': v}}))
-        #category[Category.CHILDISH] = category[Category.CHILDISH].difference(cine)
         _set_cats('tipo', tipos, {
             Category.CHILDISH: (
                 'escolares',
@@ -323,7 +350,7 @@ class MadridEs:
         done: Set[str] = set()
         rt_dict: Dict[Tuple[str, ...], Category] = {}
         for k, v in category.items():
-            v = v.difference(done)
+            #v = v.difference(done)
             rt_dict[tuple(sorted(v))] = k
             done = done.union(v)
         return rt_dict
@@ -461,13 +488,15 @@ class MadridEs:
             logger.debug(f"[{id}] descartado por price={inf.price} > {self.__max_price} {inf.url}")
             return True
         cats = set(v for k, v in self._category.items() if id in k)
-        if cats and not cats.difference((
+        if self.__adult_only and cats.intersection((
             Category.CHILDISH,
             Category.SENIORS,
             Category.NON_GENERAL_PUBLIC,
             Category.MARGINNALIZED,
             Category.ONLINE
-        )):
+        )) and not cats.intersection({
+            Category.CINEMA,
+        }):
             logger.debug(f"[{id}] descartado por audience={inf.audience} {inf.url}")
             return True
         if inf.price and inf.price > 0 and inf.place:
