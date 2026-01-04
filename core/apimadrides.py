@@ -122,6 +122,7 @@ class MadridEsEvent(NamedTuple):
     dtend: str
     audience: tuple[str, ...]
     recurrence: bool
+    typ: Optional[str] = None
     place: Optional[MadridEsPlace] = None
     price: Optional[float | int] = None
 
@@ -234,6 +235,7 @@ class ApiMadridEs:
             logger.critical(f"time={hm_tm} dtstart={dtstart} in {obj}")
         e = MadridEsEvent(
             id=i.get_int('id'),
+            typ=i.get_str_or_none("@type"),
             url=i.get_str('link'),
             title=str_line(i.get_str('title')),
             price=i.get_price(),

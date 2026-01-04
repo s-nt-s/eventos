@@ -16,7 +16,7 @@ from portal.util.madrides import find_more_url
 from html import unescape
 from tatsu.exceptions import FailedParse
 from core.zone import Circles
-from core.apimadrides import ApiMadridEs
+from core.apimadrides import ApiMadridEs, MadridEsEvent
 from types import MappingProxyType
 from datetime import datetime
 import pytz
@@ -164,7 +164,7 @@ class MadridEs:
             "https://www.madrid.es",
             session=self.w.s,
         )
-        self.__info = MappingProxyType({
+        self.__info: MappingProxyType[str, MadridEsEvent] = MappingProxyType({
              MadridEs.get_id(i.url): i for i in ApiMadridEs().get_events()
         })
 
@@ -201,6 +201,15 @@ class MadridEs:
                     data_val.add(v)
             data = dict(data_form)
             for cat, key_vals in data_cat.items():
+                if key == 'usuario':
+                    ok_aud: set[str] = set()
+                    for kk, vv in self.__info.items():
+                        for x in map(plain_text, vv.audience):
+                            if re_or(x, *key_vals):
+                                ok_aud.add(x)
+                                category[cat].add(kk)
+                    if len(category[cat]):
+                        logger.debug(f"{len(category[cat])} ids en audience in {tuple(sorted(ok_aud))}")
                 data_val: Set[str] = set()
                 data_txt: Set[str] = set()
                 for k, v in data_key.items():
@@ -216,15 +225,6 @@ class MadridEs:
                     ids = self.__get_ids(action, data)
                     logger.debug(f"{len(ids)} ids en {key}={v}")
                     category[cat] = category[cat].union(ids)
-
-        for cat, auds in {
-            Category.CHILDISH: ("Niños", "Familias", "Jovenes"),
-            Category.SENIORS: ("Mayores", ),
-        }.items():
-            for a in auds:
-                ids = [k for k, i in self.__info.items() if a in i.audience]
-                logger.debug(f"{len(ids)} ids en audience={a}")
-                category[cat] = category[cat].union(ids)
 
         _set_cats('usuario', usuarios, {
             Category.CHILDISH: (
@@ -460,11 +460,16 @@ class MadridEs:
         if self.__max_price is not None and inf.price is not None and inf.price > self.__max_price:
             logger.debug(f"[{id}] descartado por price={inf.price} > {self.__max_price} {inf.url}")
             return True
-        if inf.audience:
-            audience = set(inf.audience).difference({'Mayores', 'Niños'})
-            if len(audience) == 0:
-                logger.debug(f"[{id}] descartado por audience={inf.audience} {inf.url}")
-                return True
+        cats = set(v for k, v in self._category.items() if id in k)
+        if cats and not cats.difference((
+            Category.CHILDISH,
+            Category.SENIORS,
+            Category.NON_GENERAL_PUBLIC,
+            Category.MARGINNALIZED,
+            Category.ONLINE
+        )):
+            logger.debug(f"[{id}] descartado por audience={inf.audience} {inf.url}")
+            return True
         if inf.price and inf.price > 0 and inf.place:
             price_ko = self.__is_ko_price(inf.price, Place(
                 name=clean_lugar(inf.place.location),
