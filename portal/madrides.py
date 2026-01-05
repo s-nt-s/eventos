@@ -804,10 +804,12 @@ class MadridEs:
             plain_name,
             "belen popular tradicional",
             "belen angelicum",
-            "belen navidad en",
+            r"belen (de )?navidad en",
             "belenes del mundo",
             r"apertura al publico (de el|del) belen",
             "belen monumental",
+            r"dioramas? de navidad",
+            "belen napolitano",
             to_log=id,
             flags=re.I
         ):

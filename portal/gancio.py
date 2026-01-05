@@ -172,6 +172,9 @@ class GancioPortal:
         if re_or(place.name, "librer[íi]a", flags=re.I) and re_or(name, "poes[íi]aa?", flags=re.I):
             return Category.POETRY
 
+        if re_or(name, "kafeta", to_log=_id_, flags=re.I):
+            return Category.PARTY
+
         logger.critical(str(CategoryUnknown(url, f"{e}")))
         return Category.UNKNOWN
 
