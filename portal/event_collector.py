@@ -83,6 +83,26 @@ class EventCollector:
         self.__avoid_working_sessions = avoid_working_sessions
         self.__publish = publish
         self.__madrid_destino = MadridDestino()
+        self.__avoid_categories = tuple(set({
+            Category.CHILDISH,
+            Category.SENIORS,
+            Category.ORGANIZATIONS,
+            Category.NON_GENERAL_PUBLIC,
+            Category.MARGINNALIZED,
+            Category.ONLINE,
+            Category.SPAM,
+            Category.PUPPETRY,
+            Category.EXPO,
+            Category.YOUTH,
+            Category.CONTEST,
+            Category.SPORT,
+            Category.POETRY,
+            Category.HIKING,
+            Category.VIEW_POINT,
+            Category.NO_EVENT,
+            Category.MATERNITY,
+            Category.INSTITUTIONAL_POLICY,
+        }).difference(self.__categories))
 
     @TupleCache("rec/events.json", builder=Event.build)
     def __get_events(self,):
@@ -94,7 +114,8 @@ class EventCollector:
             MadridEs(
                 remove_working_sessions=self.__avoid_working_sessions,
                 places_with_store=md_places,
-                max_price=max(self.__max_price.values())
+                max_price=max(self.__max_price.values()),
+                avoid_categories=self.__avoid_categories
             ).events + \
             Dore().events + \
             md_events + \

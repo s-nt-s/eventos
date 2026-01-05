@@ -154,12 +154,12 @@ class MadridEs:
         remove_working_sessions: bool = False,
         places_with_store: tuple[Place, ...] = None,
         max_price: Optional[float] = None,
-        adult_only: bool = True
+        avoid_categories: tuple[Category, ...] = tuple()
     ):
         self.__remove_working_sessions = remove_working_sessions
         self.__places_with_store = places_with_store or tuple()
         self.__max_price = max_price
-        self.__adult_only = adult_only
+        self.__avoid_categories = avoid_categories
         self.w = Web()
         self.w.s = Driver.to_session(
             "firefox",
@@ -257,11 +257,24 @@ class MadridEs:
                 category[Category.CHILDISH].add(k)
             if re_or(v.title, "para mayores$", flags=re.I):
                 category[Category.SENIORS].add(k)
-
+            if re_or(
+                v.title,
+                r"d[íi]a mundial de la poes[íi]a",
+                r"encuentro po[ée]tico",
+                r"Recital de poes[íi]a",
+                r"Versos entrevistados",
+                r"Presentaci[óo]n del poemario",
+                flags=re.I
+            ):
+                category[Category.POETRY].add(k)
+            if re_or(v.title, r"Muestra de proyectos \d+", flags=re.I):
+                category[Category.EXPO].add(k)
+            if re_or(v.title, "Grupo de hombres por la Igualdad", flags=re.I):
+                category[Category.ACTIVISM].add(k)
         _set_cats('usuario', usuarios, {
             Category.CHILDISH: (
                 'familias',
-                'jovenes',
+                r'j[óo]venes',
                 'niñas',
                 'niños',
             ),
@@ -269,11 +282,11 @@ class MadridEs:
             Category.MARGINNALIZED: (
                 'colectivos necesitados',
                 'discapacidad',
-                'necesidad socioeconómica',
+                r'necesidad socioecon[oó]mica',
                 'emergencia social',
-                'situacion de dependencia',
+                r'situaci[óo]n de dependencia',
                 'sin hogar',
-                'víctimas',
+                r'v[íi]ctimas',
                 'violencia genero',
                 r'(in|e)?migrantes',
                 'drogodependientes',
@@ -309,34 +322,34 @@ class MadridEs:
             ),
             Category.THEATER: (
                 r"(clasico|drama)\b.*teatro",
-                r"(zarzuela)\bmusica",
+                r"(zarzuela).*\bm[úu]sica",
                 r"teatro perfomance",
             ),
             Category.MUSIC: (
                 r"(opera)\b.*teatro",
                 r"flamenco\b.*danza",
-                r"(rap|jazz|soul|funky|swing|reagge|flamenco|clasica|batucada|latina|española|electronica|rock|pop|folk|country)\bmusica",
-                r"^musica$",
+                r"(rap|jazz|soul|funky|swing|reagge|flamenco|clasica|batucada|latina|española|electronica|rock|pop|folk|country).*\bm[úu]sica",
+                r"^m[úu]sica$",
             ),
             Category.DANCE: (
                 r"danza y baile",
-                r"(clasica|tango|breakdance|contemporane(a|o))\b.*danza",
+                r"(cl[áa]sica|tango|breakdance|contempor[áa]ne(a|o))\b.*danza",
             ),
             Category.SPORT: (
                 r'deportivas',
             ),
             Category.EXPO: (
-                r"^exposicion(es)?$",
+                r"^exposici[óo]n(es)?$",
             ),
             Category.LITERATURE: (
                 r'recital(es)?',
-                r'presentacion(es)?',
+                r'presentaci[óo]n(es)?',
                 r'actos? literarios?',
             ),
             Category.CINEMA: (
                 r'\b(documental|cine experimental)\b',
-                r"\b(ficcion)\b.*cine",
-                r"cine\b.*(ficcion)\b",
+                r"\b(ficci[óo]n)\b.*cine",
+                r"cine\b.*(ficci[óo]n)\b",
                 r"^cine$"
             ),
             Category.CONFERENCE: (
@@ -488,16 +501,9 @@ class MadridEs:
             logger.debug(f"[{id}] descartado por price={inf.price} > {self.__max_price} {inf.url}")
             return True
         cats = set(v for k, v in self._category.items() if id in k)
-        if self.__adult_only and cats.intersection((
-            Category.CHILDISH,
-            Category.SENIORS,
-            Category.NON_GENERAL_PUBLIC,
-            Category.MARGINNALIZED,
-            Category.ONLINE
-        )) and not cats.intersection({
-            Category.CINEMA,
-        }):
-            logger.debug(f"[{id}] descartado por audience={inf.audience} {inf.url}")
+        ko_cat = cats.intersection(self.__avoid_categories)
+        if ko_cat:
+            logger.debug(f"[{id}] descartado por audience={inf.audience} categories={tuple(sorted(ko_cat))} {inf.url}")
             return True
         if inf.price and inf.price > 0 and inf.place:
             price_ko = self.__is_ko_price(inf.price, Place(
@@ -507,6 +513,7 @@ class MadridEs:
             ).normalize())
             if price_ko:
                 logger.debug(f"[{id}] descartado por {price_ko} {inf.url}")
+                return True
 
     def __is_ko_price(self, price: float, place: Place):
         if price is None:
@@ -525,11 +532,11 @@ class MadridEs:
             if place is None or not isOkPlace(place):
                 continue
             url_event = a.attrs["href"]
+            cat = self.__find_category(id, div, url_event)
+            if cat is None or cat in self.__avoid_categories:
+                continue
             duration, sessions = self.__get_sessions(id, url_event, div)
             if len(sessions) == 0:
-                continue
-            cat = self.__find_category(id, div, url_event)
-            if cat is None:
                 continue
             price = self.__get_price(id, url_event)
             price_ko = self.__is_ko_price(999 if price is None else price, place)
