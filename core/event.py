@@ -381,7 +381,8 @@ class Place:
                 Zones.LAVAPIES,
                 Zones.LEGAZPI,
                 Zones.MARQUES_DE_VADILLO,
-                Zones.USERA
+                Zones.USERA,
+                Zones.VALLECAS,
             ):
                 z = zn.value
                 if z.is_in(lat, lon):
