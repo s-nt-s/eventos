@@ -392,7 +392,7 @@ class Place:
     def _fix_latlon(self):
         if self.latlon:
             return self.latlon
-        if re_or(self.address, "Sierra de Alquife,? 12", flags=re.I):
+        if re_or(self.address, "Sierra (de )?Alquife,? 12", flags=re.I):
             return "40.38888553445172,-3.66665737114293"
 
     def normalize(self):
