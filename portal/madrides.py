@@ -670,7 +670,7 @@ class MadridEs:
         dom = get_domain(more_url)
         if dom == "madrid.es":
             s_hour = self.__get_start_from_madrides(more_url)
-            if s_hour not in ko_hour: 
+            if s_hour not in ko_hour:
                 return f"{s_day} {s_hour}"
         if dom == "centrodanzamatadero.es":
             soup = WEB.get_cached_soup(more_url)
