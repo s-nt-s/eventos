@@ -828,7 +828,7 @@ class MadridEs:
             return Category.SPORT
         if re_or(name_tp, r"^teatros?$", to_log=id):
             return Category.THEATER
-        if re_or(name_tp, r"^danzas?$", to_log=id):
+        if re_or(name_tp, r"^danzas?$", "Voguing", to_log=id, flags=re.I):
             return Category.DANCE
         if re_or(name_tp, r"^cine$", to_log=id):
             return Category.CINEMA
@@ -971,6 +971,8 @@ class MadridEs:
             return Category.WORKSHOP
         if re_and(desc, r"presentaci[oó]n", (r"libros?", r"novelas?"), (r"autore(es)?", r"autoras?"), to_log=id):
             return Category.CONFERENCE
+        if re_and(desc, "ilusionista", "mentalismo"):
+            return Category.MAGIC
 
         if re_and(plain_place, "ambiental", ("casa de campo", "retiro"), to_log=id):
             return Category.VISIT
