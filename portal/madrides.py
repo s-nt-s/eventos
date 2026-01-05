@@ -493,6 +493,9 @@ class MadridEs:
             logger.critical(f"[{id}] dtend < dtstart {inf.url}")
             return True
         max_days = 90
+        if self.__remove_working_sessions and isWorkingHours(dtstart) and dtstart.date() == dtend.date() and dtstart.strftime("%H:%M") != "00:00":
+            logger.debug(f"[{id}] descartado por dtstart={inf.dtstart} {inf.url}")
+            return True
         days = (dtend-dtstart).days
         if days > max_days:
             logger.debug(f"[{id}] descartado por días={days} > {max_days} {inf.url}")
@@ -797,6 +800,18 @@ class MadridEs:
             return Category.EXPO
         if re_or(plain_name, "belen viviente", r"Representaci[óo]n(es)? teatral(es)?", to_log=id, flags=re.I):
             return Category.THEATER
+        if re_or(
+            plain_name,
+            "belen popular tradicional",
+            "belen angelicum",
+            "belen navidad en",
+            "belenes del mundo",
+            r"apertura al publico (de el|del) belen",
+            "belen monumental",
+            to_log=id,
+            flags=re.I
+        ):
+            return Category.EXPO
         if re_or(name_tp, r"^exposici[oó]n(es)$", to_log=id):
             return Category.EXPO
         if re_or(
