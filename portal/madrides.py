@@ -239,6 +239,7 @@ class MadridEs:
                 r"^re vuelta al patio",
                 r"taller familiar",
                 r"huerto familiar",
+                r"Pedag[óo]gico Infantil",
                 (r"dia", r"internacional", r"familias?"),
                 (r"taller", r"pequeños"),
                 flags=re.I
@@ -796,20 +797,17 @@ class MadridEs:
             return Category.MUSIC
         if re_and(plain_name, "ballet", ("repertorio", "clasico"), to_log=id):
             return Category.DANCE
-        if re_or(plain_name, "certamen( de)? (pintura|decoracion)", "festival by olavide", to_log=id):
+        if re_or(plain_name, r"certamen( de)? (pintura|decoraci[oó]n|ilustraci[oó]n)", "festival by olavide", to_log=id):
             return Category.EXPO
         if re_or(plain_name, "belen viviente", r"Representaci[óo]n(es)? teatral(es)?", to_log=id, flags=re.I):
             return Category.THEATER
         if re_or(
             plain_name,
-            "belen popular tradicional",
-            "belen angelicum",
+            r"belen (popular )?(angelicum|tradicional|monumental|napolitano)",
             r"belen (de )?navidad en",
             "belenes del mundo",
             r"apertura al publico (de el|del) belen",
-            "belen monumental",
             r"dioramas? de navidad",
-            "belen napolitano",
             to_log=id,
             flags=re.I
         ):
