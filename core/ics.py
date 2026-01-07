@@ -143,13 +143,13 @@ class IcsEventWrapper:
         if not isinstance(val, vDDDTypes):
             raise IcsEventInvalid(f"Valor no es vDDDTypes: {val!r}")
         dt = val.dt
-        if isinstance(dt, date):
+        if isinstance(dt, date) and not isinstance(dt, datetime):
             return datetime.combine(dt, datetime.min.time(), tzinfo=ZoneInfo(TZ_ZONE))
         if not isinstance(dt, datetime):
             raise IcsEventInvalid(f"Valor no es vDDDTypes con datetime: {val!r}")
         if dt.tzinfo is None:
             return dt.replace(tzinfo=ZoneInfo(TZ_ZONE))
-        return dt.astimezone(tzinfo=ZoneInfo(TZ_ZONE))
+        return dt.astimezone(tz=ZoneInfo(TZ_ZONE))
 
     def __get_text(self, key: str, mandatory: bool = False):
         val = self.__event.get(key)
@@ -282,3 +282,11 @@ class IcsReader:
     @cached_property
     def events(self):
         return tuple(self.__iter_events())
+
+
+if __name__ == "__main__":
+    ics = IcsReader(
+        "https://fal.cnt.es/events/lista/?ical=1",
+    )
+    for e in ics.events:
+        print(e.DTSTART, e.DTEND)
