@@ -408,7 +408,7 @@ class Place:
             return Places.TEATRO_ESPANOL.value
         if re.match(r"^Teatro Circo Price$", name, flags=re.I):
             return Places.TEATRO_PRICE.value
-        if re.match(r"^Centro\s*Centro$", "Palacio de Cibeles", name, flags=re.I):
+        if re.match(r"(^Centro\s*Centro$|.*\bPalacio de Cibeles\b.*)", name, flags=re.I):
             return Places.CENTRO_CENTRO.value
         if re.search("cineteca", name, flags=re.I) and (self.latlon == Places.CINETECA.value.latlon or re_or(self.address, "Legazpi", flags=re.I)):
             return Places.CINETECA.value
