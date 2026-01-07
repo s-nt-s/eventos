@@ -142,6 +142,8 @@ class Telefonica(Web):
         name = plain_text(data['name'])
         if re_or(name, "madresfera"):
             return Category.MATERNITY
+        if re_or(name, "^encuentro con", flags=re.I):
+            return Category.CONFERENCE
         cat = plain_text(self.select_one_txt("span.categoria"))
         if cat == "exposicion":
             return Category.EXPO
@@ -154,6 +156,7 @@ class Telefonica(Web):
             description,
             r"encuentro con (el|la|los|las) escrito(ra|re)s?",
             r'recibimos al autora?',
+            r"El primer encuentro del año",
             "un libro sobre",
             r"conversar con (el|la) escritora?",
             "presentacion del nuevo trabajo",
