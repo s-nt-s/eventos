@@ -176,7 +176,7 @@ class GancioPortal:
 
         if re_or(name, "kafeta", to_log=_id_, flags=re.I):
             return Category.PARTY
-        if re_or(name, "Presentación del libro", to_log=_id_, flags=re.I):
+        if re_or(name, "Presentaci[óo]n del libro", to_log=_id_, flags=re.I):
             return Category.LITERATURE
 
         logger.critical(str(CategoryUnknown(url, f"{e}")))
