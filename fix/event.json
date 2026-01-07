@@ -704,21 +704,21 @@
         "filmaffinity": 152338
     },
     "msf522b5d5fb79b910VgnVCM100000891ecb1aRCRD": {
-        "CATEGORY":  "SPAM"
+        "category":  "SPAM"
     },
     "ms3522b5d5fb79b910VgnVCM100000891ecb1aRCRD": {
-        "CATEGORY": "CHILDISH"
+        "category": "CHILDISH"
     },
     "msc722b5d5fb79b910VgnVCM100000891ecb1aRCRD": {
-        "CATEGORY": "NON_GENERAL_PUBLIC"
+        "category": "NON_GENERAL_PUBLIC"
     },
     "ms74d356f27289b910VgnVCM100000891ecb1aRCRD": {
-        "CATEGORY": "CHILDISH"
+        "category": "CHILDISH"
     },
     "ce15487": {
         "img": "https://cdn.lacasaencendida.es/storage/40733/responsive-images/julia%3Fn-ge%3Fnissonpng___detail_783_424.jpg"
     },
     "mc26598": {
-        "CATEGORY": "CONFERENCE"
+        "category": "CONFERENCE"
     }
 }
