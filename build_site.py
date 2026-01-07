@@ -39,6 +39,7 @@ EC = EventCollector(
     ko_places=(
         "Espacio Abierto Quinta de los Molinos",
         "Parroquia Nuestra Señora de Guadalupe",
+        "La Pedriza. Manzanares.",
     ),
     categories=(
         Category.CINEMA,

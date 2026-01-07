@@ -420,6 +420,8 @@ class Place:
             return Places.AUDITORIO_FRANCISCA_MARTINEZ_GARRIDO.value
         if re.search(r"\b(CS la cheli|local de xr madrid)\b", name, flags=re.I):
             return Places.CS_LA_CHELI.value
+        if re.search(r"CSR?OA? Diskordia", name) and re.search(r"Antoñita Jiménez", self.address, flags=re.I):
+            return Places.CSO_DISKORDIA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -545,6 +547,12 @@ class Places(Enum):
         name="CS La Cheli",
         address="C. de la Iglesia, 12, Carabanchel, 28019 Madrid",
         latlon="40.39584448961841,-3.7177346134909293",
+        zone="Marques de Vadillo"
+    )
+    CSO_DISKORDIA = Place(
+        name="CSO Discordia",
+        address="C. de Antoñita Jiménez, 60, Carabanchel, 28019 Madrid",
+        latlon="40.39131044903329,-3.7197457145163964",
         zone="Marques de Vadillo"
     )
 
