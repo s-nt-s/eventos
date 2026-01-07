@@ -123,7 +123,7 @@ class Category(IntEnum):
     ACTIVISM = 19
     SENIORS = 20
     ORGANIZATIONS = 21
-    MARGINNALIZED = 22
+    MARGINALIZED = 22
     NON_GENERAL_PUBLIC = 23
     ONLINE = 24
     HIKING = 35 # senderismo
@@ -178,7 +178,7 @@ class Category(IntEnum):
             return "mayores"
         if self == Category.ORGANIZATIONS:
             return "organizaciones"
-        if self == Category.MARGINNALIZED:
+        if self == Category.MARGINALIZED:
             return "marginados"
         if self == Category.NON_GENERAL_PUBLIC:
             return "público no general"

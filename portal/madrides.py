@@ -280,7 +280,7 @@ class MadridEs:
                 'niños',
             ),
             Category.SENIORS: ('mayores', ),
-            Category.MARGINNALIZED: (
+            Category.MARGINALIZED: (
                 'colectivos necesitados',
                 'discapacidad',
                 r'necesidad socioecon[oó]mica',

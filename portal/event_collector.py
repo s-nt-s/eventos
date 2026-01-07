@@ -88,7 +88,7 @@ class EventCollector:
             Category.SENIORS,
             Category.ORGANIZATIONS,
             Category.NON_GENERAL_PUBLIC,
-            Category.MARGINNALIZED,
+            Category.MARGINALIZED,
             Category.ONLINE,
             Category.SPAM,
             Category.PUPPETRY,
