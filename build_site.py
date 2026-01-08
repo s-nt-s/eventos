@@ -41,6 +41,7 @@ EC = EventCollector(
         "Parroquia Nuestra Señora de Guadalupe",
         "La Pedriza. Manzanares.",
         "AV La Vecinal del Barrio Bilbao y Pueblo Nuevo",
+        'CSO La Tejedora'
     ),
     categories=(
         Category.CINEMA,

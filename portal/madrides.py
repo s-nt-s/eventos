@@ -1070,7 +1070,7 @@ class MadridEs:
         desc = self.__get_description(url_event)
         if re_or(desc, "[mM]usical? infantil", r"[Tt]eatro infantil", "relatos en familia", "concierto familiar", "bienestar de niños y niñas", ("cuentacuentos", "en familia"), to_log=vgnextoid, flags=re.I):
             return Category.CHILDISH
-        if re_or(desc, "zarzuela", "teatro", "espect[áa]culo (circense y )?teatral", to_log=vgnextoid, flags=re.I):
+        if re_or(desc, "zarzuela", "teatro", "radionovela", "espect[áa]culo (circense y )?teatral", to_log=vgnextoid, flags=re.I):
             return Category.THEATER
         if re_or(desc, "itinerario .* kil[ó]metros", to_log=vgnextoid, flags=re.I):
             return Category.SPORT
@@ -1137,7 +1137,7 @@ class MadridEs:
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/madrides.log", log_level=(logging.INFO))
-    print(MadridEs(
+    evs = MadridEs(
         remove_working_sessions=True
-    ).events)
-    #m.get_events()
+    ).events
+    print(len(evs))
