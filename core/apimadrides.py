@@ -8,11 +8,27 @@ from core.filemanager import FileManager
 from core.cache import HashCache, TupleCache
 from core.util import get_obj
 from core.web import get_query
+from core.bulkrequests import BulkRequestsFileJob, BulkRequests
 import json
 import re
+from os import makedirs
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
+
+
+class ICSDownloader(BulkRequestsFileJob):
+    def __init__(self, store: str, id: str):
+        self.__store = store
+        self.__id = id
+
+    @property
+    def file(self) -> str:
+        return f"{self.__store}{self.__id}.ics"
+
+    @property
+    def url(self) -> str:
+        return f"https://www.madrid.es/ContentPublisher/jsp/cont/microformatos/obtenerVCal.jsp?vgnextoid={self.__id}"
 
 
 class ApiSession:
@@ -217,6 +233,10 @@ class MadridEsDictWraper(DictWraper):
 
 class ApiMadridEs:
 
+    def __init__(self):
+        self.__ics_store = "rec/madrides/ics/"
+        makedirs(self.__ics_store, exist_ok=True)
+
     def __obj_to_event(self, obj: dict):
         i = MadridEsDictWraper(obj)
         place = None
@@ -297,6 +317,13 @@ class ApiMadridEs:
         discard = size-len(events)
         if discard:
             logger.info(f"[-{discard:4d}] Descartados")
+        BulkRequests().run(
+            *(ICSDownloader(
+                self.__ics_store,
+                e.get_vgnextoid()
+            ) for e in events if e.get_vgnextoid()),
+            label="ics"
+        )
         return tuple(sorted(events))
 
 

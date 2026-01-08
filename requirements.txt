@@ -15,3 +15,4 @@ webdriver-manager==4.0.2
 feedparser==6.0.12
 icalendar==6.3.2
 xmltodict==1.0.2
+aiohttp==3.8.6
