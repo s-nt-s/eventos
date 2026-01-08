@@ -104,7 +104,10 @@ class GancioPortal:
 
     def __find_category(self, url: str, place: Place, e: DictWraper) -> Category:
         _id_ = e.get_int('id')
-        tags = set(map(plain_text, map(str.lower, (e.get_list_or_empty('tags')))))
+        tags = set(
+            x.lstrip("# ") for x in
+            map(plain_text, map(str.lower, (e.get_list_or_empty('tags'))))
+        )
 
         def has_tag(*args):
             for a in args:
@@ -139,7 +142,7 @@ class GancioPortal:
             return Category.WORKSHOP
         if re_or(name, "iniciaci[óo]n al",  flags=re.I, to_log=_id_) and has_tag("deporte", "gimnasia"):
             return Category.WORKSHOP
-        if has_tag_or_title("teatro", "micro abierto"):
+        if has_tag_or_title("teatro", "micro abierto", "performance"):
             return Category.THEATER
         if has_tag_or_title("club de lectura"):
             return Category.READING_CLUB
