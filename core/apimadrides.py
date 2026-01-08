@@ -17,20 +17,6 @@ logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
 
 
-class ICSDownloader(BulkRequestsFileJob):
-    def __init__(self, store: str, id: str):
-        self.__store = store
-        self.__id = id
-
-    @property
-    def file(self) -> str:
-        return f"{self.__store}{self.__id}.ics"
-
-    @property
-    def url(self) -> str:
-        return f"https://www.madrid.es/ContentPublisher/jsp/cont/microformatos/obtenerVCal.jsp?vgnextoid={self.__id}"
-
-
 class ApiSession:
     def __init__(self):
         self.__s = Session()
@@ -153,11 +139,6 @@ class MadridEsEvent(NamedTuple):
             if k == "place" and isinstance(v, dict):
                 obj[k] = MadridEsPlace(**v)
         return MadridEsEvent(**obj)
-
-    def get_vgnextoid(self):
-        obj = DictWraper(get_query(self.url))
-        vgnextoid = obj.get_str('vgnextoid')
-        return vgnextoid
 
 
 class MadridEsDictWraper(DictWraper):
@@ -317,13 +298,6 @@ class ApiMadridEs:
         discard = size-len(events)
         if discard:
             logger.info(f"[-{discard:4d}] Descartados")
-        BulkRequests().run(
-            *(ICSDownloader(
-                self.__ics_store,
-                e.get_vgnextoid()
-            ) for e in events if e.get_vgnextoid()),
-            label="ics"
-        )
         return tuple(sorted(events))
 
 
