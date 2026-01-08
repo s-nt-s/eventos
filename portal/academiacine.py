@@ -39,6 +39,7 @@ class AcademiaCine(Web):
             events.add(self.__url_to_event(url, img))
         if None in events:
             events.remove(None)
+        logger.info(f"Academia Cine: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
 
     def __url_to_event(self, url: str, img: str):

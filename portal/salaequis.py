@@ -71,6 +71,7 @@ class SalaEquis(Web):
                     )
             e = e.merge(id="se"+e.id)
             events.add(e)
+        logger.info(f"Sala Equis: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
 
     def __url_to_event(self, url):

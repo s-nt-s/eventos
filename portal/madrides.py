@@ -622,10 +622,12 @@ class MadridEs:
                 logger.debug(f"Precio no encontrado en {e.url}")
                 all_events.remove(e)
 
-        return Event.fusionIfSimilar(
+        rt = Event.fusionIfSimilar(
             all_events,
             ('name', 'place')
         )
+        logger.info(f"Madrid Es: Buscando eventos = {len(rt)}")
+        return rt
 
     def __is_ko_info(self, vgnextoid: str):
         inf = self.__info.get(vgnextoid)

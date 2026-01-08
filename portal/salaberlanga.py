@@ -213,6 +213,7 @@ class SalaBerlanga:
             ev = self._to_event(item)
             if ev:
                 events.add(ev)
+        logger.info(f"Sala Berlanga: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
 
 

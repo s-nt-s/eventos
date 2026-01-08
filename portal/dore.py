@@ -42,6 +42,7 @@ class Dore(Web):
         for url_info, div in self.__iter_divs():
             events.add(self.__div_to_event(url_info, div))
         events = self.__clean_events(events)
+        logger.info(f"Dore: Buscando eventos = {len(events)}")
         return tuple(events)
 
     def __clean_events(self, all_events: set[Event]):

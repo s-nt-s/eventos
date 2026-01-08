@@ -5,8 +5,10 @@ from urllib.parse import urljoin
 import re
 from core.event import Event, Category, Places, Session, Place
 from core.util import re_or, plain_text
+import logging
 
 
+logger = logging.getLogger(__name__)
 re_num = re.compile(r"\d+")
 re_date = re.compile(r"^\d{1,2}/\d{1,2}/20\d{2}$")
 re_hour = re.compile(r"^\d{2}:\d{2}$")
@@ -17,6 +19,7 @@ def _get_date(s: str):
         return None
     d, m, y = map(int, re_num.findall(s))
     return f"{y}-{m:02d}-{d:02d}"
+
 
 def _get_hour(s: str):
     if s is None or not re_hour.match(s):
@@ -76,11 +79,13 @@ class KineTike:
 
     @cached_property
     def events(self):
+        logger.info("KineTike: Buscando eventos")
         evs: set[Event] = set()
         for url in self.urls:
             ev = self.__get_event_from_url(url)
             if ev:
                 evs.add(ev)
+        logger.info(f"KineTike: Buscando eventos = {len(evs)}")
         return tuple(sorted(evs))
 
     def __get_event_from_url(self, url):

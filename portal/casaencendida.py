@@ -81,6 +81,7 @@ class CasaEncendida:
         events: Set[Event] = set()
         for url in self.get_links():
             events.add(self.__url_to_event(url))
+        logger.info(f"Casa Encendida: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
 
     def __url_to_event(self, url):

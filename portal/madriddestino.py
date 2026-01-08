@@ -43,6 +43,7 @@ KO_MORE = (
     'imccwem.munimadrid.es'
 )
 
+
 def timestamp_to_date(timestamp: int):
     tz = timezone('Europe/Madrid')
     d = datetime.fromtimestamp(timestamp, tz)
@@ -145,6 +146,7 @@ class MadridDestino:
             )
             ev = self.__complete(ev, info)
             events.add(ev)
+        logger.info(f"Madrid Destino: Buscando eventos {len(events)}")
         return tuple(sorted(events))
 
     def __complete(self, ev: Event, info: dict):

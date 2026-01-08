@@ -95,6 +95,7 @@ class CaixaForum:
                     events.add(self.__div_to_event(div))
         if None in events:
             events.remove(None)
+        logger.info(f"Caixa Forum: Buscando eventos {len(events)}")
         return tuple(sorted(events))
 
     def __get_div_events(self, url: str) -> Tuple[MyIdTag, ...]:

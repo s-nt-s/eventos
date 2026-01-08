@@ -65,7 +65,9 @@ class CasaAmerica(Web):
         events: Set[Event] = set()
         for url in self.calendar:
             events = events.union(self.__url_to_events(url))
-        return self.__clean_events(events)
+        evs = self.__clean_events(events)
+        logger.info(f"Casa America: Buscando eventos = {len(evs)}")
+        return evs
 
     def __clean_events(self, all_events: Set[Event]):
         if None in all_events:

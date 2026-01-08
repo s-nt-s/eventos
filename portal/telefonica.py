@@ -65,6 +65,7 @@ class Telefonica(Web):
             ev = self.__url_to_event(url)
             if ev:
                 events.add(ev)
+        logger.info(f"Telefonica: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
 
     @Cache("rec/telefonica/{}data.json")

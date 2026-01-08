@@ -1012,7 +1012,7 @@ class Event:
         return asdict(self)
 
     @staticmethod
-    def fusionIfSimilar(all_events: tuple["Event", ...], keys: tuple[str, ...],firstEventUrl: bool = False):
+    def fusionIfSimilar(all_events: tuple["Event", ...], keys: tuple[str, ...],firstEventUrl: bool = False) -> tuple["Event", ...]
         if len(all_events) == 0:
             return tuple()
 

@@ -73,17 +73,20 @@ class TeatroMonumental:
     @property
     @TupleCache("rec/teatromonumental.json", builder=Event.build)
     def events(self):
+        logger.info("TeatroMonumental: Buscando eventos")
         all_events: set[Event] = set()
         for url in self.urls:
             e = self.__get_event(url)
             if e is not None:
                 all_events.add(e)
 
-        return Event.fusionIfSimilar(
+        evs = Event.fusionIfSimilar(
             all_events,
             ('name', 'place'),
             firstEventUrl=True
         )
+        logger.info(f"TeatroMonumental: Buscando eventos = {len(evs)}")
+        return evs
 
     def __get_event(self, url: str) -> Event | None:
         soup = WEB.get(url)

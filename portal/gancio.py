@@ -106,7 +106,7 @@ class GancioPortal:
         _id_ = e.get_int('id')
         tags = set(
             x.lstrip("# ") for x in
-            map(plain_text, map(str.lower, (e.get_list_or_empty('tags'))))
+            map(plain_text, map(str.lower, e.get_list_or_empty('tags')))
         )
 
         def has_tag(*args):

@@ -73,7 +73,9 @@ class MadConvoca:
             e = Event.fusion(*evs)
             ok_events.add(e)
 
-        return tuple(sorted(e.merge(id=f"mc{e.id}") for e in ok_events))
+        rt = tuple(sorted(e.merge(id=f"mc{e.id}") for e in ok_events))
+        logger.info(f"Buscando eventos en MadConvoca = {len(rt)}")
+        return rt
 
     def __find_category(self, e: IcsEventWrapper):
         if re_and(e.SUMMARY, "presentaci[oó]n del?", ("libro", "novela"), flags=re.I, to_log=e.UID):
