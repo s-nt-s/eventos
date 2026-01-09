@@ -47,7 +47,7 @@ def safe_expand_url(url: str):
         WEB.get(url)
         if isinstance(WEB.url, str) and get_domain(WEB.url) == dom:
             return WEB.url
-    if re.match(r"^https://forms.gle/\w+$"):
+    if re.match(r"^https://forms.gle/\w+$", url):
         WEB.get(url)
         if isinstance(WEB.url, str) and get_domain(WEB.url) == "docs.google.com":
             return WEB.url
