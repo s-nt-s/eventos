@@ -244,6 +244,8 @@ class CasaAmerica(Web):
         w1 = content.split()[0]
         if w1 == "concierto":
             return Category.MUSIC
+        if re.search(r"\bLectura de poemas\b", content, re.I):
+            return Category.POETRY
         if re.search(r"proyección del documental", content):
             return Category.CINEMA
         if re.search(r"\b(conferencia|mesa redonda|debate|esta charla propone|seminario)\b", content) or w1 in ("presentación", "diálogo", "jornada"):

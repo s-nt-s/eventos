@@ -5,10 +5,11 @@ from datetime import datetime, timezone
 import logging
 from core.util import re_or, plain_text, re_and
 import re
-from core.web import get_text, buildSoup
+from core.web import get_text, buildSoup, WEB
 import feedparser
 from zoneinfo import ZoneInfo
 from core.dictwraper import DictWraper
+from bs4 import Tag
 
 
 logger = logging.getLogger(__name__)
@@ -56,10 +57,12 @@ class GancioPortal:
         url = f"{self.__root}/feed/rss?show_recurrent={self.__show_recurrent}"
         return feedparser.parse(url)
 
-    def get_description(self, url: str):
+    def get_description(self, url: str) -> Tag | None:
         for i in self.rss.entries:
             if i.link == url:
                 return buildSoup(self.__root, i.description)
+        soup = WEB.get_cached_soup(url)
+        return soup.select_one("div.p-description")
 
     def __obj_to_event(self, e: DictWraper) -> Event:
         p = e.get_dict("place")
