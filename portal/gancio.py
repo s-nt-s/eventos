@@ -107,10 +107,11 @@ class GancioPortal:
 
     def __find_category(self, url: str, place: Place, e: DictWraper) -> Category:
         _id_ = e.get_int('id')
-        tags = set(
-            x.lstrip("# ") for x in
-            map(plain_text, map(str.lower, e.get_list_or_empty('tags')))
-        )
+        tags: set[str] = set()
+        for t in map(str.lower, e.get_list_or_empty('tags')):
+            for x in map(plain_text, map(str.strip, re.split(r"[#\s+]+", t))):
+                if len(x):
+                    tags.add(x)
 
         def has_tag(*args):
             for a in args:
@@ -147,7 +148,7 @@ class GancioPortal:
             return Category.WORKSHOP
         if has_tag_or_title("teatro", "micro abierto", "performance"):
             return Category.THEATER
-        if has_tag_or_title("club de lectura"):
+        if has_tag_or_title("club de lectura", "grupo de lectura", "clubdelectura", "grupodelectura"):
             return Category.READING_CLUB
         if has_tag("concierto") or re_or("^concierto", flags=re.I, to_log=_id_):
             return Category.MUSIC
@@ -157,12 +158,14 @@ class GancioPortal:
             return Category.SPORT
         if re_and(name, "no", "compres", "cose",  flags=re.I, to_log=_id_):
             return Category.WORKSHOP
-        if re_or(name, "Charla-debate", flags=re.I, to_log=_id_):
+        if re_or(name, "Charla-debate", "conferencia", flags=re.I, to_log=_id_):
             return Category.CONFERENCE
+        if has_tag_or_title("concierto"):
+            return Category.MUSIC
 
         desc = self.get_description(url)
         txt_desc = get_text(desc)
-        if re_or(txt_desc, "Charla cr[ií]tica", "vendr[aá]n a conversar sobre", flags=re.I, to_log=_id_):
+        if re_or(txt_desc, "Charla cr[ií]tica", "vendr[aá]n a conversar sobre", "conferencia", flags=re.I, to_log=_id_):
             return Category.CONFERENCE
         if re_or(txt_desc, "m[uú]sica electr[óo]nica", flags=re.I, to_log=_id_):
             return Category.MUSIC

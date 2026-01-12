@@ -13,6 +13,7 @@ KO_MORE = (
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Programacion-Cultural-Chamberi/?vgnextfmt=default&vgnextoid=5ea6daba65bc4910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Espacio-Sociocultural-Marta-Escudero-Diaz-Tejeiro/?vgnextfmt=default&vgnextoid=d7e6b95f6495a910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Festividad-de-San-Anton-2026/?vgnextfmt=default&vgnextoid=4ad7b5e5b979b910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/44-Semana-de-cine-espanol-de-Carabanchel/?vgnextfmt=default&vgnextoid=626e8c7843cab910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'imccwem.munimadrid.es'
 )
 

@@ -875,6 +875,8 @@ class MadridEs:
         plain_type = plain_text(safe_get_text(div.select_one("p.event-type")))
         name = (get_text(div.select_one("a.event-link")) or "").lower()
         plain_name = plain_text(name)
+        if re_or(plain_name, "La Liga de la Leche", flags=re.I, to_log=vgnextoid):
+            return Category.MATERNITY
         if re_or(plain_name, r"d[íi]a mundial de la poes[íi]a", r"encuentro po[ée]tico", r"Recital de poes[íi]a", r"Versos entrevistados", "Presentaci[óo]n del poemario", to_log=id, flags=re.I):
             return Category.POETRY
         if re_or(plain_name, r"Muestra de proyectos \d+", to_log=vgnextoid, flags=re.I):

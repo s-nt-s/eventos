@@ -1167,6 +1167,10 @@ class Event:
             return "Madrid entre libros"
         if self.category == Category.CONFERENCE and self.img in ("https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Arganzuela/Eventos/ficheros/Roma.png", ):
             return "Tardes romanas"
+        if self.category == Category.CONFERENCE and self.more in (
+            'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Memento-mori-Mujer-y-muerte-en-el-mundo-antiguo-Ciclo-de-conferencias/?vgnextfmt=default&vgnextoid=1d096787031bb910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+        ):
+            return "Mujer y muerte en el mundo antiguo"
         return None
 
 
