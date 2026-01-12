@@ -426,6 +426,10 @@ class Place:
             return Places.CS_LA_CHELI.value
         if re.search(r"CS[ROA]* [dD]is[ck]ordia", name) and re.search(r"Antoñita Jiménez", self.address, flags=re.I):
             return Places.CSO_DISKORDIA.value
+        if re.search(r"Sala Clamores", name, flags=re.I) and re.search(r"Alburquerque.*14", address, flags=re.I):
+            return Places.SALA_CLAMORES.value
+        if re.search(r"casa del barrio.*carabanchel", name, flags=re.I):
+            return Places.CASA_DEL_BARRIO_CARABANCHEL.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -558,6 +562,18 @@ class Places(Enum):
         address="C. de Antoñita Jiménez, 60, Carabanchel, 28019 Madrid",
         latlon="40.39131044903329,-3.7197457145163964",
         zone="Marques de Vadillo"
+    )
+    SALA_CLAMORES = Place(
+        name="Sala Clamaroes",
+        address="C. de Alburquerque, 14, Chamberí, 28010 Madrid",
+        latlon="40.431136283125035,-3.7008120268850164",
+        zone="Tribunal"
+    )
+    CASA_DEL_BARRIO_CARABANCHEL = Place(
+        name="Casa del barrio",
+        address="Av. de Carabanchel Alto, 64, Carabanchel, 28044 Madrid",
+        latlon="40.37004495963912,-3.7534234636546335",
+        zone="Carabanchel"
     )
 
 
