@@ -109,7 +109,7 @@ class GancioPortal:
         _id_ = e.get_int('id')
         tags: set[str] = set()
         for t in map(str.lower, e.get_list_or_empty('tags')):
-            for x in map(plain_text, map(str.strip, re.split(r"[#\s+]+", t))):
+            for x in map(plain_text, map(str.strip, re.split(r"\s*#\s*", t))):
                 if x is not None and len(x):
                     tags.add(x)
 
