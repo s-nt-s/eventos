@@ -110,7 +110,7 @@ class GancioPortal:
         tags: set[str] = set()
         for t in map(str.lower, e.get_list_or_empty('tags')):
             for x in map(plain_text, map(str.strip, re.split(r"[#\s+]+", t))):
-                if len(x):
+                if x is not None and len(x):
                     tags.add(x)
 
         def has_tag(*args):
