@@ -160,7 +160,7 @@ class GancioPortal:
             return Category.WORKSHOP
         if re_or(name, "Charla-debate", "conferencia", flags=re.I, to_log=_id_):
             return Category.CONFERENCE
-        if has_tag_or_title("concierto") or has_tag("m[uú]sica"):
+        if has_tag_or_title("concierto") or has_tag("musica", "música"):
             return Category.MUSIC
 
         desc = self.get_description(url)
