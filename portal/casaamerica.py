@@ -256,9 +256,9 @@ class CasaAmerica(Web):
             return Category.CONFERENCE
         if re.search(r"Participan\s*:.*Turno de preguntas", content, flags=re.I | re.S):
             return Category.CONFERENCE
-        if re.search(r"Programa:.*Presenta y modera:", content, flags=re.I | re.S):
+        if re.search(r"Programa:.*Presenta y modera\s*:", content, flags=re.I | re.S):
             return Category.CONFERENCE
-        if re.search(r"Bienvenida:.*Participantes:", content, flags=re.I | re.S):
+        if re.search(r"Bienvenida\s*:.*Participantes\s*:", content, flags=re.I | re.S):
             return Category.CONFERENCE
         if re_and(content, r"mesa \d+", "entrevista", flags=re.I):
             return Category.CONFERENCE
