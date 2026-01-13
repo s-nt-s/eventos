@@ -430,6 +430,8 @@ class Place:
             return Places.SALA_CLAMORES.value
         if re.search(r"casa del barrio.*carabanchel", name, flags=re.I):
             return Places.CASA_DEL_BARRIO_CARABANCHEL.value
+        if re.search(r"la an[oó]nima", name, flags=re.I) and re.search(r"Embajadores.*166", address, flags=re.I):
+            return Places.LA_ANONIMA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -574,6 +576,12 @@ class Places(Enum):
         address="Av. de Carabanchel Alto, 64, Carabanchel, 28044 Madrid",
         latlon="40.37004495963912,-3.7534234636546335",
         zone="Carabanchel"
+    )
+    LA_ANONIMA = Place(
+        name="La Anónima",
+        address="C. de Embajadores, 166, Arganzuela, 28045 Madrid",
+        latlon="40.39618124632335,-3.696199766490811",
+        zone="Legazpi"
     )
 
 
