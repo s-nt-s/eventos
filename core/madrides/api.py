@@ -7,11 +7,10 @@ from requests.exceptions import JSONDecodeError
 from core.filemanager import FileManager
 from core.cache import HashCache, TupleCache
 from core.util import get_obj
-from core.web import get_query
-from core.bulkrequests import BulkRequestsFileJob, BulkRequests
 import json
 import re
 from os import makedirs
+
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
@@ -213,10 +212,6 @@ class MadridEsDictWraper(DictWraper):
 
 
 class ApiMadridEs:
-
-    def __init__(self):
-        self.__ics_store = "rec/madrides/ics/"
-        makedirs(self.__ics_store, exist_ok=True)
 
     def __obj_to_event(self, obj: dict):
         i = MadridEsDictWraper(obj)

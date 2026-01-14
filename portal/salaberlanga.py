@@ -1,4 +1,4 @@
-from core.web import Driver, Web, get_text, buildSoup
+from core.web import Driver, get_text, buildSoup
 from functools import cached_property
 from core.event import Cinema, Event, Category, Places, Session
 from portal.cineentradas import CineEntradas
@@ -45,8 +45,10 @@ class SalaBerlanga:
     ACTIVIDADES = "https://salaberlanga.com/wp-json/wp/v2/actividad/?per_page=100"
 
     def __init__(self):
-        self.w = Web()
-        self.__cine_entradas = CineEntradas(SalaBerlanga.CINE_ENTRADAS, price=SalaBerlanga.PRICE).events
+        self.__cine_entradas = CineEntradas(
+            SalaBerlanga.CINE_ENTRADAS,
+            price=SalaBerlanga.PRICE
+        ).events
 
     @cached_property
     def items(self):

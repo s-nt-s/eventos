@@ -188,7 +188,9 @@ class CineEntradas:
                 sessions=self.__find_sessions(root, i['shows']['data'])
             )
             events.add(e)
-        return tuple(sorted(events))
+        evs = tuple(sorted(events))
+        logger.info(f"Cine Entradas: Buscando eventos = {len(evs)}")
+        return evs
 
     def __find_sessions(self, root: str, shows: List[Dict]):
         sessions: Set[Session] = set()
