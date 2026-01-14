@@ -758,5 +758,23 @@
     "msf246f939527bb910VgnVCM100000891ecb1aRCRD": {"cycle": "Oriente próximo"},
     "ms951fcfdd837bb910VgnVCM100000891ecb1aRCRD": {"cycle": "Oriente próximo"},
     "ms5f2aa9a0b47bb910VgnVCM100000891ecb1aRCRD": {"cycle": "Oriente próximo"},
-    "ms8fd3b841c57bb910VgnVCM100000891ecb1aRCRD": {"cycle": "Oriente próximo"}
+    "ms8fd3b841c57bb910VgnVCM100000891ecb1aRCRD": {"cycle": "Oriente próximo"},
+    "cf175352396":{
+        "category": "CINEMA",
+        "filmaffinity": 888904
+    },
+    "ms0465517f446bb910VgnVCM200000f921e388RCRD": {
+        "name": "Hoy tengo algo que hacer",
+        "category": "THEATER",
+        "more": "https://21distritos.es/evento/hoy-tengo-algo-que-hacer-2/",
+        "img": "https://21distritos.es/wp-content/uploads/2026/01/web-foto-7.jpg",
+        "duration": 70
+    },
+    "ms9865517f446bb910VgnVCM200000f921e388RCRD": {
+        "name": "Hoy tengo algo que hacer",
+        "category": "THEATER",
+        "more": "https://21distritos.es/evento/hoy-tengo-algo-que-hacer-2/",
+        "img": "https://21distritos.es/wp-content/uploads/2026/01/web-foto-7.jpg",
+        "duration": 70
+    }
 }

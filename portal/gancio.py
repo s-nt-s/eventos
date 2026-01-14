@@ -182,8 +182,11 @@ class GancioPortal:
         if re_or(txt_desc, "comedia perform[aá]tica", flags=re.I, to_log=_id_):
             return Category.THEATER
 
-        if re_or(place.name, "librer[íi]a", flags=re.I) and re_or(name, "poes[íi]aa?", flags=re.I):
-            return Category.POETRY
+        if re_or(place.name, "librer[íi]a", flags=re.I):
+            if re_or(name, "poes[íi]aa?", flags=re.I):
+                return Category.POETRY
+            if re_or(name, "presentaci[oó]n", flags=re.I):
+                return Category.LITERATURE
 
         if re_or(name, "kafeta", to_log=_id_, flags=re.I):
             return Category.PARTY
