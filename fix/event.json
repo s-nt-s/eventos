@@ -776,5 +776,24 @@
         "more": "https://21distritos.es/evento/hoy-tengo-algo-que-hacer-2/",
         "img": "https://21distritos.es/wp-content/uploads/2026/01/web-foto-7.jpg",
         "duration": 70
-    }
+    },
+    "mc26651": {
+        "category": "LITERATURE",
+        "name": "IA: Jugar o romper la baraja",
+        "more": "https://www.goodreads.com/book/show/243332431"
+    },
+    "ce15516": {
+        "category": "CINEMA",
+        "name": "Knit’s Island",
+        "filmaffinity": 269894,
+        "cycle": "Piezas sobre Tecnocapitalismo"
+    },
+    "ce15515": {
+        "category": "CINEMA",
+        "name": "Incels, criptomonedas y vendehúmos",
+        "filmaffinity": 689748,
+        "cycle": "Piezas sobre Tecnocapitalismo"
+    },
+    "ce15518": {"cycle": "Piezas sobre Tecnocapitalismo"},
+    "ce15517": {"cycle": "Piezas sobre Tecnocapitalismo"}
 }

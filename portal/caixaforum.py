@@ -22,6 +22,7 @@ class MyIdTag(MyTag):
 
 
 class CaixaForum:
+    TIT_SELECTOR = "a > h2, a > .activity-title, a > h3"
     URLS = (
         "https://caixaforum.org/es/madrid/actividades?p=999",
         #"https://caixaforum.org/es/madrid/actividades?p=999&c=874798",
@@ -105,12 +106,12 @@ class CaixaForum:
         if warn is not None:
             logger.warning(warn+" "+url)
             return tuple()
-        slc = "div.card-item:has(a > h2)"
+        slc = f"div.card-item:has({CaixaForum.TIT_SELECTOR})"
         divs = soup.select(slc)
         if len(divs) == 0:
             raise WebException(f"{slc} NOT FOUND in {url}")
         for div in divs:
-            h2 = div.select_one("a > h2")
+            h2 = div.select_one(CaixaForum.TIT_SELECTOR)
             url = h2.find_parent("a").attrs["href"]
             eid = self.__get_id_from_url(url)
             if eid is None:
@@ -133,7 +134,7 @@ class CaixaForum:
             return ids.pop()
 
     def __div_to_event(self, div: MyIdTag):
-        h2 = div.select_one("a > h2")
+        h2 = div.select_one(CaixaForum.TIT_SELECTOR)
         url = h2.find_parent("a").attrs["href"]
         info = self.get_ld_json(url)
         ficha = self.__get_ficha(div.id)

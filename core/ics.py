@@ -128,9 +128,14 @@ class IcsEventMandatory(ValueError):
 
 
 class IcsEventWrapper:
-    def __init__(self, event: Component):
+    def __init__(self, event: Component, source: str = None):
         self.__event = event
+        self.__source = source
 
+    @property
+    def source(self):
+        return self.__source
+    
     def __str__(self):
         return str(self.__event)
 
@@ -266,7 +271,7 @@ class IcsReader:
             if cal is not None:
                 logger.info(f"Recuperando eventos de {url}")
                 for e in cal.walk("VEVENT"):
-                    e = IcsEventWrapper(e)
+                    e = IcsEventWrapper(e, source=url)
                     try:
                         if None not in (
                             e.UID,

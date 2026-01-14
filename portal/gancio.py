@@ -1,7 +1,7 @@
 from requests import Session as ReqSession
 from core.event import Event, Place, Category, Session, CategoryUnknown
 from functools import cached_property
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
 from core.util import re_or, plain_text, re_and
 import re
@@ -88,6 +88,9 @@ class GancioPortal:
 
         if not self.__show_online and re_or(place.name, r"^(online|zoom)$", flags=re.I):
             return None
+
+        duration, sessions = self.__get_duration_sessions(start, end)
+
         event = Event(
             url=url,
             id=f"{self.__id_prefix}{e.get_int('id')}",
@@ -95,16 +98,33 @@ class GancioPortal:
             name=e.get_str("title"),
             img=img,
             category=self.__find_category(url, place, e),
-            duration=int((end-start).total_seconds() / 60) if end else 60,
-            sessions=(
-                Session(
-                    date=start.strftime("%Y-%m-%d %H:%M"),
-                ),
-            ),
+            duration=duration,
+            sessions=sessions,
             place=place,
         )
         return event
 
+    def __get_duration_sessions(self, start: datetime, end: datetime | None):
+        duration = int((end-start).total_seconds() / 60) if end else 60
+        days = [start]
+        if duration > (60*24):
+            hm1 = start.strftime("%H:%M")
+            hm2 = end.strftime("%H:%M")
+            if hm1 not in ("00:00", ) or hm2 not in ("00:00", "24:00", "23:59"):
+                aux = end.replace(year=start.year, month=start.month, day=start.day)
+                if aux > start:
+                    duration = int((aux-start).total_seconds() / 60)
+                    st = start  + timedelta(days=1)
+                    nd = end.date()
+                    while st.date() <= nd:
+                        days.append(st)
+                        st = st + timedelta(days=1)
+        sessions = []
+        for dt in days:
+            sessions.append(Session(date=dt.strftime("%Y-%m-%d %H:%M")))
+        return duration, tuple(sessions)
+
+    
     def __find_category(self, url: str, place: Place, e: DictWraper) -> Category:
         _id_ = e.get_int('id')
         tags: set[str] = set()
@@ -164,6 +184,8 @@ class GancioPortal:
             return Category.WORKSHOP
         if has_tag_or_title("concierto", "swing") or has_tag("musica", "música"):
             return Category.MUSIC
+        if has_tag_or_title("exposición", "exposicion", "miniexpo", "mini-expo"):
+            return Category.EXPO
 
         desc = self.get_description(url)
         txt_desc = get_text(desc)

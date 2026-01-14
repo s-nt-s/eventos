@@ -429,17 +429,12 @@ class MadridEs:
             for r in self.__form.get_results(**data):
                 if not self.__is_ko_info(r.vgnextoid):
                     results[r.vgnextoid] = r
-        ics_values = GETTER.get_text(
-            *(
-                f"https://www.madrid.es/ContentPublisher/jsp/cont/microformatos/obtenerVCal.jsp?vgnextoid={vgnextoid}"
-                for vgnextoid in results.keys()
-            )
-        )
+        id_ics_value = self.__get_ics_values(*results.keys())
         all_events: Set[Event] = set()
-        for r, ics_value in zip(results.values(), ics_values):
+        for r in results.values():
             e = self.__get_event(
                 r,
-                ics_value
+                id_ics_value[r.vgnextoid]
             )
             if e is not None:
                 all_events.add(e)
@@ -462,6 +457,16 @@ class MadridEs:
         )
         logger.info(f"Madrid Es: Buscando eventos = {len(rt)}")
         return rt
+
+    def __get_ics_values(self, *vgnextoid: str):
+        ics_values = GETTER.get_text(
+            *(
+                f"https://www.madrid.es/ContentPublisher/jsp/cont/microformatos/obtenerVCal.jsp?vgnextoid={i}"
+                for i in vgnextoid
+            )
+        )
+        id_ics_value = {get_vgnextoid(i.url): i for i in ics_values}
+        return id_ics_value
 
     def __is_ko_info(self, vgnextoid: str):
         inf = self.__info.get(vgnextoid)

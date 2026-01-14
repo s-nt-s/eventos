@@ -2,14 +2,14 @@ from core.web import Web, WebException, Driver, get_text, get_query
 from urllib.parse import urljoin
 from bs4 import Tag, BeautifulSoup
 import re
-from urllib.parse import urlencode
 from core.util import plain_text, get_domain
 import logging
 from functools import cached_property, cache
 from types import MappingProxyType
 from typing import NamedTuple
 from core.fetcher import Getter
-
+from url_normalize import url_normalize
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
@@ -33,6 +33,19 @@ def get_vgnextoid(url: str | Tag):
     if len(id) == 0:
         return None
     return id
+
+
+def normalize_url_with_param_last(url: str, param: str) -> str:
+    norm_url = url_normalize(url)
+    parsed = urlparse(norm_url)
+    query_params = parse_qsl(parsed.query, keep_blank_values=True)
+
+    new_params = [p for p in query_params if p[0] != param]
+    if param in dict(query_params):
+        new_params.append((param, dict(query_params)[param]))
+
+    new_query = urlencode(new_params)
+    return urlunparse(parsed._replace(query=new_query))
 
 
 class FormSearchResult(NamedTuple):
@@ -101,6 +114,7 @@ class FormSearch:
             logger.debug(f"{len(arr)} en {url}")
             if a_next is None:
                 return None, arr
+            href = a_next.attrs["href"]
             onclick = a_next.attrs.get("onclick")
             if isinstance(onclick, str):
                 m = re.match(
@@ -108,9 +122,9 @@ class FormSearch:
                     onclick
                 )
                 if m:
-                    next_url = urljoin(url, m.group(1))
-                    return next_url, arr
-            return a_next.attrs["href"], arr
+                    href = urljoin(url, m.group(1))
+            href = normalize_url_with_param_last(href, "page")
+            return href, arr
 
         for k, v in action_data.items():
             if k not in kwargs:
