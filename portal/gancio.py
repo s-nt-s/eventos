@@ -148,7 +148,7 @@ class GancioPortal:
             return Category.WORKSHOP
         if has_tag_or_title("teatro", "micro abierto", "performance"):
             return Category.THEATER
-        if has_tag_or_title("club de lectura", "grupo de lectura", "clubdelectura", "grupodelectura"):
+        if has_tag_or_title("club de lectura", "grupo de lectura", "clubdelectura", "grupodelectura", "bookelarre"):
             return Category.READING_CLUB
         if has_tag("concierto") or re_or("^concierto", flags=re.I, to_log=_id_):
             return Category.MUSIC
