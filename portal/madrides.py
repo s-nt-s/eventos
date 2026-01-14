@@ -248,6 +248,10 @@ class MadridEs:
                 category[Category.EXPO].add(k)
             if re_or(v.title, "Grupo de hombres por la Igualdad", flags=re.I):
                 category[Category.ACTIVISM].add(k)
+            if re_or(v.title, r"Primeros pasos con Gmail", "Quiero usar mi m[oó]vil", flags=re.I):
+                category[Category.SPAM].add(k)
+            if re_or(v.title, r"Grupo de crianza", flags=re.I):
+                category[Category.MATERNITY].add(k)
         _set_cats('usuario', usuarios, {
             Category.CHILDISH: (
                 'familias',
