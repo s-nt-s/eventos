@@ -135,6 +135,11 @@ class FormSearch:
         page_size = int(m.group(1))
         if page_size > total:
             raise WebException(f"{slc_size} TOO BIG {page_size} > {total} in {url}")
+        if page_size == total:
+            return IndexSearch(
+                total=total,
+                urls=tuple(urls),
+            )
         slc_a_next = "li.next a.pagination-text"
         a_next = soup.select_one(slc_a_next)
         if a_next is None:
