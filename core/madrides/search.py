@@ -98,10 +98,10 @@ class FormSearch:
 
         def _get_pages(url: str):
             soup = self.get(url)
-            total = int(soup.select_one(".results-total strong").get_text().strip())
-            if total == 0:
-                return total, []
             arr = soup.select(slc_result)
+            total = int(get_text(soup.select_one(".results-total strong")) or "0")
+            if total == 0 and len(arr) == 0:
+                return total, []
             page_size = len(arr)
             rnt = [(url, arr,)]
             if page_size >= total:
@@ -211,4 +211,5 @@ if __name__ == "__main__":
     for k in ko_api:
         print(frm_urls[k])
     for k in ko_frm:
+        continue
         print(api_urls[k])
