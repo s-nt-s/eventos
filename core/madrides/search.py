@@ -1,4 +1,4 @@
-from core.web import Web, WebException, Driver, get_text, get_query
+from core.web import Web, WebException, Driver, get_text, get_query, buildSoup
 from urllib.parse import urljoin
 from bs4 import Tag, BeautifulSoup
 import re
@@ -8,8 +8,9 @@ from functools import cached_property, cache
 from types import MappingProxyType
 from typing import NamedTuple
 from core.fetcher import Getter
-from url_normalize import url_normalize
-from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
+from core.util import normalize_url
+from urllib.parse import urlencode
+
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
@@ -33,19 +34,6 @@ def get_vgnextoid(url: str | Tag):
     if len(id) == 0:
         return None
     return id
-
-
-def normalize_url_with_param_last(url: str, param: str) -> str:
-    norm_url = url_normalize(url)
-    parsed = urlparse(norm_url)
-    query_params = parse_qsl(parsed.query, keep_blank_values=True)
-
-    new_params = [p for p in query_params if p[0] != param]
-    if param in dict(query_params):
-        new_params.append((param, dict(query_params)[param]))
-
-    new_query = urlencode(new_params)
-    return urlunparse(parsed._replace(query=new_query))
 
 
 class FormSearchResult(NamedTuple):
@@ -106,14 +94,21 @@ class FormSearch:
     @cache
     def get_results(self, **kwargs):
         action, action_data = self.__prepare_search()
+        slc_result = "#listSearchResults ul.events-results li div.event-info"
 
-        def _get(url: str):
+        def _get_pages(url: str):
             soup = self.get(url)
-            arr = soup.select("#listSearchResults ul.events-results li div.event-info")
+            total = int(soup.select_one(".results-total strong").get_text().strip())
+            if total == 0:
+                return total, []
+            arr = soup.select(slc_result)
+            page_size = len(arr)
+            rnt = [(url, arr,)]
+            if page_size >= total:
+                return total, rnt
             a_next = soup.select_one("li.next a.pagination-text")
-            logger.debug(f"{len(arr)} en {url}")
             if a_next is None:
-                return None, arr
+                return total, rnt
             href = a_next.attrs["href"]
             onclick = a_next.attrs.get("onclick")
             if isinstance(onclick, str):
@@ -123,8 +118,32 @@ class FormSearch:
                 )
                 if m:
                     href = urljoin(url, m.group(1))
-            href = normalize_url_with_param_last(href, "page")
-            return href, arr
+            href = normalize_url(href, "page")
+            pages = ((total - 1) // page_size + 1) - 1
+            urls = [href]
+            while len(urls) < pages:
+                last_url = urls[-1]
+                next_page = int(re.search(r"page=(\d+)", last_url).group(1)) + 1
+                next_url = re.sub(r"page=\d+", f"page={next_page}", last_url)
+                urls.append(next_url)
+            bodies = {i.url: i.body for i in self.__getter.get_text(*urls)}
+            for u in urls:
+                soup = buildSoup(u, bodies[u])
+                arr = soup.select(slc_result)
+                rnt.append((u, arr,))
+            return total, rnt
+
+        def _get_items(url: str):
+            total, pages = _get_pages(url)
+            rt_arr: list[Tag] = []
+            for u, arr in pages:
+                rt_arr.extend(arr)
+            total_get = len(rt_arr)
+            if total_get == total:
+                logger.debug(f"{total_get} div en {url}")
+            else:
+                logger.warning(f"TOTAL MISMATCH {total_get} != {total} en {url}")
+            return rt_arr
 
         for k, v in action_data.items():
             if k not in kwargs:
@@ -132,20 +151,17 @@ class FormSearch:
 
         start_url = action + '?' + urlencode(kwargs)
         rt_arr: dict[str, FormSearchResult] = {}
-        url = str(start_url)
-        while url:
-            url, arr = _get(url)
-            for div in arr:
-                a = div.select_one("a.event-link")
-                vgnextoid = get_vgnextoid(a)
-                if vgnextoid is None:
-                    continue
-                rt_arr[vgnextoid] = FormSearchResult(
-                    vgnextoid=vgnextoid,
-                    a=a,
-                    div=div
-                )
-        logger.debug(f"{len(rt_arr)} TOTAL en {start_url}")
+        for div in _get_items(start_url):
+            a = div.select_one("a.event-link")
+            vgnextoid = get_vgnextoid(a)
+            if vgnextoid is None:
+                continue
+            rt_arr[vgnextoid] = FormSearchResult(
+                vgnextoid=vgnextoid,
+                a=a,
+                div=div
+            )
+        logger.info(f"{len(rt_arr)} ids en {start_url}")
         return tuple(rt_arr.values())
 
     @cached_property

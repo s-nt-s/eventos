@@ -9,6 +9,9 @@ from datetime import datetime
 from math import radians, sin, cos, sqrt, atan2
 from collections import Counter, defaultdict
 from os import environ
+from url_normalize import url_normalize
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
+
 
 import uuid
 
@@ -285,3 +288,25 @@ def find_duplicates(
         if len(v) > 1:
             data.append(tuple(v))
     return tuple(data)
+
+
+def normalize_url(url: str, *tail: str) -> str:
+    norm_url = url_normalize(url)
+    parsed = urlparse(norm_url)
+    query_params = parse_qsl(parsed.query, keep_blank_values=True)
+
+    new_params = [p for p in query_params if p[0] not in tail]
+    for param in tail:
+        if param in dict(query_params):
+            new_params.append((param, dict(query_params)[param]))
+
+    new_query = urlencode(new_params)
+    new_unparse = urlunparse(parsed._replace(query=new_query))
+    return new_unparse
+    for param in order:
+        if param in dict(query_params):
+            new_params.append((param, dict(query_params)[param]))
+
+    new_query = urlencode(new_params)
+    new_unparse = urlunparse(parsed._replace(query=new_query))
+    return new_unparse
