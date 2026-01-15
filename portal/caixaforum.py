@@ -181,12 +181,17 @@ class CaixaForum:
         img = re.sub(r"(\.jpe?g)/.*$", r"\1", img)
         return img
 
-    def __get_ficha(self, eid: int) -> Dict:
-        url = "https://caixaforum.org/es/web/madrid/actividades?p_p_id=headersearch_INSTANCE_HeaderSearch&p_p_lifecycle=2&p_p_resource_id=%2Fsearch%2FoneBox&_headersearch_INSTANCE_HeaderSearch_cpDefinitionId="+str(eid)
-        js = self.get_json(url)
-        return js
+    def __get_ficha(self, eid: int) -> Dict | None:
+        for url in (
+            "https://caixaforum.org/es/web/madrid/fichaactividad?p_p_id=FlcHeaderSearchPortlet&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_resource_id=%2Fsearch%2FoneBox&p_p_cacheability=cacheLevelPage&_FlcHeaderSearchPortlet_cpDefinitionId="+str(eid),
+            "https://caixaforum.org/es/web/madrid/actividades?p_p_id=headersearch_INSTANCE_HeaderSearch&p_p_lifecycle=2&p_p_resource_id=%2Fsearch%2FoneBox&_headersearch_INSTANCE_HeaderSearch_cpDefinitionId="+str(eid),
+        ):
+            js = self.get_json(url)
+            if js is not None:
+                return js
+        return None
 
-    def __find_session(self, event_url: str, ficha: Dict, info: Dict):
+    def __find_session(self, event_url: str, ficha: Dict | None, info: Dict):
         sessions: Set[Session] = set()
         ss: List[Dict] = (ficha or {}).get('sessions', [])
         for s in ss:

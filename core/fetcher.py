@@ -43,7 +43,7 @@ class AsyncFetcher(Generic[T]):
     def __init__(
         self,
         response_type: ResponseType | str,
-        max_concurrency: int = 20,
+        max_concurrency: int = 40,
         timeout: float = 10.0,
         raise_for_status: bool = True,
         cookie_jar: Optional[CookieJar | RequestsCookieJar] = None,
