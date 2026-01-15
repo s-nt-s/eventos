@@ -63,7 +63,10 @@ class CaixaForum:
 
     @HashCache("rec/caixaforum/{}_ld.json")
     def __get_ld_json(self, url: str) -> Dict:
-        return self.get_soup(url).select_one_json('script[type="application/ld+json"]')
+        return self.get_soup(url).select_one_json(
+            'script[type="application/ld+json"]',
+            warning=True
+        )
 
     def get_soup(self, url: str):
         html = self.__get_html(url)
@@ -73,10 +76,12 @@ class CaixaForum:
     @HashCache("rec/caixaforum/{}_js.json")
     def get_json(self, url: str) -> Union[Dict, List]:
         node = self.get_soup(url)
-        return node.select_one_json("body")
+        return node.select_one_json("body", none=("Desinstalado", ))
 
     def get_ld_json(self, url: str) -> Dict:
         js = self.__get_ld_json(url)
+        if js is None:
+            return {}
         for k in ("startDate", "endDate"):
             v = js.get(k)
             if v:
@@ -183,7 +188,7 @@ class CaixaForum:
 
     def __find_session(self, event_url: str, ficha: Dict, info: Dict):
         sessions: Set[Session] = set()
-        ss: List[Dict] = ficha.get('sessions', [])
+        ss: List[Dict] = (ficha or {}).get('sessions', [])
         for s in ss:
             if s.get('availableCapacity') == 0:
                 continue

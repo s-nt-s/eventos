@@ -42,6 +42,11 @@ class FormSearchResult(NamedTuple):
     div: Tag
 
 
+class IndexSearch(NamedTuple):
+    total: int
+    urls: tuple[str, ...]
+
+
 class FormSearch:
     AGENDA = "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/?vgnextfmt=default&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"
     TAXONOMIA = "https://www.madrid.es/ContentPublisher/jsp/apl/includes/XMLAutocompletarTaxonomias.jsp?taxonomy=/contenido/actividades&idioma=es&onlyFirstLevel=true"
@@ -61,6 +66,8 @@ class FormSearch:
         self.usuarios = MappingProxyType(self.__get_options("#usuario"))
         self.distritos = MappingProxyType(self.__get_options("#distrito"))
         self.tipos = MappingProxyType(self.__get_tipos())
+        self.__form_index: dict[str, tuple[str, ...]] = {}
+        self.__cached_soup: dict[str, BeautifulSoup] = {}
 
     def get(self, url, *args, **kwargs) -> BeautifulSoup:
         if self.__w.url != url:
@@ -72,6 +79,23 @@ class FormSearch:
             body = re.sub(r"^Access Denied\s+", "", body or "")
             raise ValueError(f"{url} {title} {body}".strip())
         return self.__w.soup
+
+    def __get_cached_soup(self, url: str) -> BeautifulSoup:
+        if url not in self.__cached_soup:
+            self.__cached_soup[url] = self.get(url)
+        return self.__cached_soup[url]
+
+    def __add_cached_soup(self, *urls: str) -> BeautifulSoup:
+        urls = sorted(set(urls).difference(self.__cached_soup.keys()))
+        if len(urls) == 0:
+            return None
+        if len(urls) == 1:
+            self.__get_cached_soup(urls[0])
+            return
+        bodies = {i.url: i.body for i in self.__getter.get_text(*urls)}
+        for u in urls:
+            soup = buildSoup(u, bodies[u])
+            self.__cached_soup[u] = soup
 
     def __prepare_search(self):
         self.get(FormSearch.AGENDA)
@@ -92,58 +116,72 @@ class FormSearch:
         return tuple(sorted(set(r.vgnextoid for r in results)))
 
     @cache
-    def get_results(self, **kwargs):
-        action, action_data = self.__prepare_search()
-        slc_result = "#listSearchResults ul.events-results li div.event-info"
+    def __get_index_search(self, url: str):
+        urls = [url]
+        soup = self.__get_cached_soup(url)
+        total = int(get_text(soup.select_one(".results-total strong")) or "0")
+        if total == 0:
+            return IndexSearch(
+                total=total,
+                urls=tuple(urls),
+            )
+        slc_size = ".results-displayed strong"
+        text = get_text(soup.select_one(".results-displayed strong"))
+        if text is None:
+            raise WebException(f"{slc_size} NOT FOUND in {url}")
+        m = re.match(r"^\s*1\s*-\s*(\d+)\s*$", text)
+        if m is None:
+            raise WebException(f"{slc_size} INVALID FORMAT '{text}' in {url}")
+        page_size = int(m.group(1))
+        if page_size > total:
+            raise WebException(f"{slc_size} TOO BIG {page_size} > {total} in {url}")
+        slc_a_next = "li.next a.pagination-text"
+        a_next = soup.select_one(slc_a_next)
+        if a_next is None:
+            raise WebException(f"{slc_a_next} NOT FOUND in {url}")
+        href = a_next.attrs["href"]
+        onclick = a_next.attrs.get("onclick")
+        if isinstance(onclick, str):
+            m = re.match(
+                r".*ajaxDivChange\(['\"]([^'\"]+).*",
+                onclick
+            )
+            if m:
+                href = urljoin(url, m.group(1))
+        pages = ((total - 1) // page_size + 1)
+        href = normalize_url(href, "page")
+        urls.append(href)
+        while len(urls) < pages:
+            last_url = urls[-1]
+            next_page = int(re.search(r"page=(\d+)", last_url).group(1)) + 1
+            next_url = re.sub(r"page=\d+", f"page={next_page}", last_url)
+            urls.append(next_url)
+        return IndexSearch(
+            total=total,
+            urls=tuple(urls),
+        )
 
-        def _get_pages(url: str):
-            soup = self.get(url)
-            arr = soup.select(slc_result)
-            total = int(get_text(soup.select_one(".results-total strong")) or "0")
-            if total == 0 and len(arr) == 0:
-                return total, []
-            page_size = len(arr)
-            rnt = [(url, arr,)]
-            if page_size >= total:
-                return total, rnt
-            a_next = soup.select_one("li.next a.pagination-text")
-            if a_next is None:
-                return total, rnt
-            href = a_next.attrs["href"]
-            onclick = a_next.attrs.get("onclick")
-            if isinstance(onclick, str):
-                m = re.match(
-                    r".*ajaxDivChange\(['\"]([^'\"]+).*",
-                    onclick
-                )
-                if m:
-                    href = urljoin(url, m.group(1))
-            href = normalize_url(href, "page")
-            pages = ((total - 1) // page_size + 1) - 1
-            urls = [href]
-            while len(urls) < pages:
-                last_url = urls[-1]
-                next_page = int(re.search(r"page=(\d+)", last_url).group(1)) + 1
-                next_url = re.sub(r"page=\d+", f"page={next_page}", last_url)
-                urls.append(next_url)
-            bodies = {i.url: i.body for i in self.__getter.get_text(*urls)}
-            for u in urls:
-                soup = buildSoup(u, bodies[u])
-                arr = soup.select(slc_result)
-                rnt.append((u, arr,))
-            return total, rnt
+    @cache
+    def get_results(self, **kwargs):
 
         def _get_items(url: str):
-            total, pages = _get_pages(url)
             rt_arr: list[Tag] = []
-            for u, arr in pages:
-                rt_arr.extend(arr)
+            inx = self.__get_index_search(url)
+            self.__add_cached_soup(*inx.urls)
+            for u in inx.urls:
+                soup = self.__get_cached_soup(u)
+                arr = soup.select(slc_result)
+                for div in arr:
+                    rt_arr.append(div)
             total_get = len(rt_arr)
-            if total_get == total:
+            if total_get == inx.total:
                 logger.debug(f"{total_get} div en {url}")
             else:
-                logger.warning(f"TOTAL MISMATCH {total_get} != {total} en {url}")
+                logger.warning(f"TOTAL MISMATCH {total_get} != {inx.total} en {url}")
             return rt_arr
+
+        action, action_data = self.__prepare_search()
+        slc_result = "#listSearchResults ul.events-results li div.event-info"
 
         for k, v in action_data.items():
             if k not in kwargs:

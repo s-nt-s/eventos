@@ -212,9 +212,9 @@ class Getter():
         if len(urls) == 0:
             return [], []
         urls = sorted(set(urls))
-        logger.info(f"Fetching {len(urls)} URLs")
+        #logger.info(f"Fetching {len(urls)} URLs")
         bodies = fetcher.run(*urls)
-        logger.info(f"Fetching {len(urls)} URLs DONE")
+        #logger.info(f"Fetching {len(urls)} URLs DONE")
         return urls, bodies
 
     def get_text(self, *urls: str):

@@ -295,8 +295,12 @@ class MyTag:
             raise ex
         return txt
 
-    def select_one_json(self, slc: str) -> Union[dict, list]:
-        txt = self.select_one_txt(slc)
+    def select_one_json(self, slc: str, warning: bool = False, none: tuple[str, ...] = ()) -> Union[dict, list, None]:
+        txt = self.select_one_txt(slc, warning=warning)
+        if txt is None and warning:
+            return None
+        if txt in none:
+            return None
         try:
             return json.loads(txt)
         except json.JSONDecodeError:
