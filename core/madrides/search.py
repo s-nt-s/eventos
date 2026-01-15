@@ -64,10 +64,29 @@ class FormSearch:
         )
         self.distritos = MappingProxyType(self.__get_options("#distrito"))
         self.usuarios = MappingProxyType(self.__get_options("#usuario"))
-        self.distritos = MappingProxyType(self.__get_options("#distrito"))
         self.tipos = MappingProxyType(self.__get_tipos())
-        self.__form_index: dict[str, tuple[str, ...]] = {}
         self.__cached_soup: dict[str, BeautifulSoup] = {}
+
+    def preload(self):
+        logger.info("INI: FormSearch.preload()")
+        arr_kwargs: list[dict] = []
+        for k in self.usuarios.keys():
+            arr_kwargs.append({"usuario": k})
+        for k in self.tipos.keys():
+            arr_kwargs.append({"tipo": k})
+        for k in self.distritos.keys():
+            arr_kwargs.append({"distrito": k})
+        urls: set[str] = set()
+        for kw in arr_kwargs:
+            s_url = self.build_search_url(**kw)
+            urls.add(s_url)
+        self.__add_cached_soup(*urls)
+
+        urls: set[str] = set()
+        for kw in arr_kwargs:
+            urls.update(self.get_index_search(**kw).urls)
+        self.__add_cached_soup(*urls)
+        logger.info("FIN: FormSearch.preload()")
 
     def get(self, url, *args, **kwargs) -> BeautifulSoup:
         if self.__w.url != url:
@@ -97,6 +116,7 @@ class FormSearch:
             soup = buildSoup(u, bodies[u])
             self.__cached_soup[u] = soup
 
+    @cache
     def __prepare_search(self):
         self.get(FormSearch.AGENDA)
         action, data = self.__w.prepare_submit("#generico1", enviar="buscar")
@@ -108,14 +128,13 @@ class FormSearch:
         data["tipo"] = "-1"
         data["distrito"] = "-1"
         data["usuario"] = "-1"
-        return action, data
+        return action, MappingProxyType(data)
 
     @cache
     def get_vgnextoid(self, **kwargs):
         results = self.get_results(**kwargs)
         return tuple(sorted(set(r.vgnextoid for r in results)))
 
-    @cache
     def __get_index_search(self, url: str):
         urls = [url]
         soup = self.__get_cached_soup(url)
@@ -166,12 +185,25 @@ class FormSearch:
             urls=tuple(urls),
         )
 
+    def build_search_url(self, **kwargs):
+        action, action_data = self.__prepare_search()
+        for k, v in action_data.items():
+            if k not in kwargs:
+                kwargs[k] = v
+        url = action + '?' + urlencode(kwargs)
+        return url
+
+    @cache
+    def get_index_search(self, **kwargs):
+        url = self.build_search_url(**kwargs)
+        return self.__get_index_search(url)
+
     @cache
     def get_results(self, **kwargs):
+        inx = self.get_index_search(**kwargs)
 
-        def _get_items(url: str):
+        def _get_items():
             rt_arr: list[Tag] = []
-            inx = self.__get_index_search(url)
             self.__add_cached_soup(*inx.urls)
             for u in inx.urls:
                 soup = self.__get_cached_soup(u)
@@ -180,21 +212,15 @@ class FormSearch:
                     rt_arr.append(div)
             total_get = len(rt_arr)
             if total_get == inx.total:
-                logger.debug(f"{total_get} div en {url}")
+                logger.debug(f"{total_get} div en {inx.urls[0]}")
             else:
-                logger.warning(f"TOTAL MISMATCH {total_get} != {inx.total} en {url}")
+                logger.warning(f"TOTAL MISMATCH {total_get} != {inx.total} en {inx.urls[0]}")
             return rt_arr
 
-        action, action_data = self.__prepare_search()
         slc_result = "#listSearchResults ul.events-results li div.event-info"
 
-        for k, v in action_data.items():
-            if k not in kwargs:
-                kwargs[k] = v
-
-        start_url = action + '?' + urlencode(kwargs)
         rt_arr: dict[str, FormSearchResult] = {}
-        for div in _get_items(start_url):
+        for div in _get_items():
             a = div.select_one("a.event-link")
             vgnextoid = get_vgnextoid(a)
             if vgnextoid is None:
@@ -204,7 +230,7 @@ class FormSearch:
                 a=a,
                 div=div
             )
-        logger.info(f"{len(rt_arr)} ids en {start_url}")
+        logger.info(f"{len(rt_arr)} ids en {inx.urls[0]}")
         return tuple(rt_arr.values())
 
     @cached_property
@@ -246,12 +272,14 @@ if __name__ == "__main__":
     logger.info("FIN: API")
     logger.info("INI: FORM 1")
     FS = FormSearch()
+    FS.preload()
     logger.info("INI: FORM 2")
     frm_urls = {r.vgnextoid: r.a.attrs["href"] for r in FS.get_results()}
     logger.info("FIN: FORM")
     ko_api = sorted(set(frm_urls.keys()) - set(api_urls.keys()))
     ko_frm = sorted(set(api_urls.keys()) - set(frm_urls.keys()))
     for k in ko_api:
+        continue
         print(frm_urls[k])
     for k in ko_frm:
         continue

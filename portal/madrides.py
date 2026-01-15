@@ -170,9 +170,10 @@ class MadridEs:
 
     @cached_property
     def _category(self):
+        self.__form.preload()
         category: Dict[Category, Set[str]] = defaultdict(set)
-        tipos = {plain_text(unescape(v)): k for k, v in self.__form.tipos.items()}
-        usuarios = {plain_text(unescape(v)): k for k, v in self.__form.usuarios.items()}
+        tipos: dict[str, str] = {plain_text(unescape(v)): k for k, v in self.__form.tipos.items()}
+        usuarios: dict[str, str] = {plain_text(unescape(v)): k for k, v in self.__form.usuarios.items()}
 
         def _set_cats(key: str, data_key: Dict[str, str], data_cat: Dict[Category, Tuple[str, ...]]):
             data_val: Set[str] = set()

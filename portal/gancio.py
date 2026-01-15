@@ -124,7 +124,6 @@ class GancioPortal:
             sessions.append(Session(date=dt.strftime("%Y-%m-%d %H:%M")))
         return duration, tuple(sessions)
 
-    
     def __find_category(self, url: str, place: Place, e: DictWraper) -> Category:
         _id_ = e.get_int('id')
         tags: set[str] = set()
@@ -172,7 +171,7 @@ class GancioPortal:
             return Category.READING_CLUB
         if has_tag("concierto") or re_or("^concierto", flags=re.I, to_log=_id_):
             return Category.MUSIC
-        if re_or(name, "fiesta", "Social Swing", flags=re.I, to_log=_id_):
+        if re_or(name, "fiesta", "Social Swing", "kabaret", flags=re.I, to_log=_id_):
             return Category.PARTY
         if re_or(name, "bicicritica", to_log=_id_):
             return Category.SPORT

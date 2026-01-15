@@ -82,5 +82,7 @@ class MadConvoca:
             return Category.LITERATURE
         if re_or(e.SUMMARY, "exposici[oó]n", flags=re.I, to_log=e.UID):
             return Category.EXPO
+        if re_or(e.SUMMARY, "taller", "formaci[óo]n", flags=re.I, to_log=e.UID):
+            return Category.WORKSHOP
         logger.critical(str(CategoryUnknown(e.source, f"{e}")))
         return Category.UNKNOWN

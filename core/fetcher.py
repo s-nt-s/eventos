@@ -63,7 +63,7 @@ class AsyncFetcher(Generic[T]):
         if cookie_jar is not None and not isinstance(cookie_jar, CookieJar):
             raise ValueError("cookie_jar must be a CookieJar or RequestsCookieJar")
         self.__cookie_jar = cookie_jar
-        self.__semaphore = Semaphore(max_concurrency)
+        self.__max_concurrency = max_concurrency
         self.__timeout = ClientTimeout(total=timeout)
         self.__response_type = response_type
         self.__raise_for_status = raise_for_status
@@ -89,10 +89,11 @@ class AsyncFetcher(Generic[T]):
 
     async def __fetch_once(
         self,
+        semaphore: Semaphore,
         session: ClientSession,
         rqs: URLRequest,
     ):
-        async with self.__semaphore:
+        async with semaphore:
             await self.__respect_rate_limit()
 
             async with session.request(
@@ -113,12 +114,14 @@ class AsyncFetcher(Generic[T]):
 
     async def __fetch_with_retries(
         self,
+        semaphore: Semaphore,
         session: ClientSession,
         rqs: URLRequest,
     ):
         for attempt in range(self.__retries + 1):
             try:
                 return await self.__fetch_once(
+                    semaphore,
                     session,
                     rqs,
                 )
@@ -135,6 +138,8 @@ class AsyncFetcher(Generic[T]):
     ) -> list[T]:
         if len(rqs) == 0:
             return []
+
+        semaphore = Semaphore(self.__max_concurrency)
         rqs = list(rqs)
         for i, rq in enumerate(rqs):
             if isinstance(rq, str):
@@ -149,6 +154,7 @@ class AsyncFetcher(Generic[T]):
         ) as session:
             tasks = [
                 self.__fetch_with_retries(
+                    semaphore,
                     session,
                     rq
                 )
@@ -212,7 +218,7 @@ class Getter():
         if len(urls) == 0:
             return [], []
         urls = sorted(set(urls))
-        #logger.info(f"Fetching {len(urls)} URLs")
+        logger.debug(f"Fetching {len(urls)} URLs")
         bodies = fetcher.run(*urls)
         #logger.info(f"Fetching {len(urls)} URLs DONE")
         return urls, bodies

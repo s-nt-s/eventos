@@ -782,6 +782,11 @@
         "name": "IA: Jugar o romper la baraja",
         "more": "https://www.goodreads.com/book/show/243332431"
     },
+    "mc26663": {
+        "category": "LITERATURE",
+        "name": "IA: Jugar o romper la baraja",
+        "more": "https://www.goodreads.com/book/show/243332431"
+    },
     "ce15516": {
         "category": "CINEMA",
         "name": "Knit’s Island",
@@ -795,5 +800,9 @@
         "cycle": "Piezas sobre Tecnocapitalismo"
     },
     "ce15518": {"cycle": "Piezas sobre Tecnocapitalismo"},
-    "ce15517": {"cycle": "Piezas sobre Tecnocapitalismo"}
+    "ce15517": {"cycle": "Piezas sobre Tecnocapitalismo"},
+    "tl8887D819-B844-5C03-BAA0-580751F48B08": {
+        "category": "LITERATURE",
+        "more": "https://www.goodreads.com/book/show/242254766"
+    }
 }

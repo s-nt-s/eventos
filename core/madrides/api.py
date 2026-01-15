@@ -95,6 +95,8 @@ def date_to_str(d: date | datetime | None):
 def find_euros(prc: str | None):
     if prc is None:
         return None
+    if re.match(r"^\s*(gratuito|gratis)\s*$", prc, flags=re.I):
+        return 0
     if re.search(r"\b(gratuit[ao] (para|con)|(entrada|acceso) (gratuit[oa]|libre)|actividad(es)? gratuitas?)\b", prc, flags=re.I):
         return 0
     eur: set[float] = set()
