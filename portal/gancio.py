@@ -177,7 +177,7 @@ class GancioPortal:
             return Category.SPORT
         if re_and(name, "no", "compres", "cose",  flags=re.I, to_log=_id_):
             return Category.WORKSHOP
-        if re_or(name, "Charla-debate", "conferencia", flags=re.I, to_log=_id_):
+        if re_or(name, "Charla-debate", "conferencia", "Discusi[oó]n cr[ií]tica sobre", flags=re.I, to_log=_id_):
             return Category.CONFERENCE
         if re_or(name, "radio comunitaria", flags=re.I, to_log=_id_):
             return Category.WORKSHOP
