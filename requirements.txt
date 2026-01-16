@@ -17,3 +17,4 @@ icalendar==6.3.2
 xmltodict==1.0.2
 aiohttp==3.8.6
 url-normalize==2.2.1
+fastkml==1.4.0

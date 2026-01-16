@@ -232,7 +232,7 @@ NEWS = PBLSH[0 if len(PBLSH) < 3 else 1]
 CLSS = defaultdict(list)
 CLSS_COUNT = defaultdict(int)
 for e in eventos:
-    if NEWS <= e.publish:
+    if e.publish is None or NEWS <= e.publish:
         CLSS[e.id].append("novedad")
 for arr in CLSS.values():
     for a in arr:

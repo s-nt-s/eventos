@@ -135,7 +135,7 @@ class IcsEventWrapper:
     @property
     def source(self):
         return self.__source
-    
+
     def __str__(self):
         return str(self.__event)
 
@@ -220,20 +220,25 @@ class IcsEventWrapper:
 
     @property
     def ATTACH(self):
-        return self.__event.get("ATTACH")
+        return self.__get_text("ATTACH")
 
     @property
     def URL(self):
-        return self.__event.get("URL")
+        return self.__get_text("URL")
+
+    @property
+    def DESCRIPTION(self):
+        return self.__get_text("DESCRIPTION")
 
     @property
     def publish(self):
         p = None
         for k in ("DTSTAMP", "CREATED", "LAST-MODIFIED"):
             dt = self.__get_datetime(k)
+            print(k, dt)
             if dt is not None and (p is None or dt < p):
                 p = dt
-        return dt
+        return p
 
     @property
     def str_publish(self):
@@ -242,12 +247,13 @@ class IcsEventWrapper:
 
 
 class IcsReader:
-    def __init__(self, *urls: str):
+    def __init__(self, *urls: str, verify_ssl: bool = True):
         self.__urls = urls
         self.__s = buildSession()
+        self.__verify_ssl = verify_ssl
 
     def __from_ical(self, url: str):
-        r = self.__s.get(url, timeout=10)
+        r = self.__s.get(url, timeout=10, verify=self.__verify_ssl)
         try:
             r.raise_for_status()
         except Exception as e:

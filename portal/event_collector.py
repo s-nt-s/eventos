@@ -11,6 +11,7 @@ from portal.madrides import MadridEs
 from portal.telefonica import Telefonica
 from portal.teatromonumental import TeatroMonumental
 from portal.mad_convoca import MadConvoca
+from portal.universidad import Universidad
 from datetime import datetime
 from core.util import get_domain, to_uuid, find_duplicates, get_main_value
 import logging
