@@ -1,7 +1,7 @@
 from core.ics import IcsReader, IcsEventWrapper
 from functools import cached_property
 from core.event import Event, Place, Session, Category
-import feedparser
+from core.util import re_or
 from fastkml import kml
 import requests
 import re
@@ -9,10 +9,14 @@ from bs4 import BeautifulSoup
 from collections import defaultdict
 from types import MappingProxyType
 from functools import cache
+from core.web import WEB, buildSoup
+import feedparser
+import logging
 
 import urllib3
 
 urllib3.disable_warnings()
+logger = logging.getLogger(__name__)
 
 
 def load_kml(url: str, verify_ssl=True) -> kml.KML:
@@ -42,6 +46,20 @@ class Universidad:
         #self.__kml = load_kml(self.__kml_url, verify_ssl=verify_ssl)
         self.__kml_soup = load_kml_soup(self.__kml_url, verify_ssl=verify_ssl)
         self.__rss_url = ics.replace("/ics/", "/rss/").replace(".ics", ".rss")
+        self.__rss = feedparser.parse(self.__rss_url)
+
+    @cache
+    def __get_description(self, url: str, name: str) -> str:
+        for i in self.__rss.entries:
+            if i.link in (url, url + ".html"):
+                return buildSoup(url, i.description)
+        for p in self.__kml_soup.select("Placemark:has(name):has(description)"):
+            n = p.find("name").text.strip()
+            if n != name:
+                continue
+            c = p.find("description").text.strip()
+            if len(c) == 0:
+                return c
 
     @cache
     def __find_coordinates(self, name: str):
@@ -83,15 +101,21 @@ class Universidad:
             latlon = self.__find_coordinates(e.SUMMARY)
             if latlon is None:
                 latlon = loc_latlon.get(e.LOCATION)
+            link = self.__find_url(e)
+            if link is None:
+                logger.warning(f"Evento sin URL {e}")
+                continue
+            category = self.__find_category(e)
+            description = self.__get_description(link, e.SUMMARY)
             event = Event(
                 id=e.UID,
-                url=self.__find_url(e),
+                url=link,
                 name=e.SUMMARY,
                 duration=e.duration or 60,
                 img=self.__find_img(e),
                 price=0,
                 publish=e.str_publish,
-                category=Category.UNKNOWN,
+                category=category,
                 place=Place(
                     name=e.LOCATION,
                     address=e.LOCATION,
@@ -107,12 +131,19 @@ class Universidad:
         evs = tuple(sorted(events))
         return evs
 
-    def __find_url(self, e: IcsEventWrapper) -> str:
+    def __find_category(self, e: IcsEventWrapper) -> Category:
+        if re_or(e.SUMMARY, r"Actividad formativa de Doctorado", flags=re.I):
+            return Category.NO_EVENT
+        if re_or(e.SUMMARY, r" UN REGRESO DE CINE", flags=re.I):
+            return Category.CINEMA
+        return Category.UNKNOWN
+
+    def __find_url(self, e: IcsEventWrapper):
         for url in (e.URL, e.DESCRIPTION):
             if isinstance(url, str) and url.startswith("http"):
                 return url
 
-    def __find_img(self, e: IcsEventWrapper) -> str:
+    def __find_img(self, e: IcsEventWrapper):
         for img in (e.ATTACH,):
             if isinstance(img, str) and img.startswith("http"):
                 return img
@@ -124,6 +155,7 @@ class Universidad:
         for url in urls:
             events.update(cls(url, verify_ssl=verify_ssl).events)
         return tuple(sorted(events))
+
 
 if __name__ == "__main__":
     # https://eventos.uc3m.es/kml.html
