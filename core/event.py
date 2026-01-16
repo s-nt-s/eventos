@@ -597,7 +597,8 @@ class Places(Enum):
         name="Librería Mary Read",
         address="C. del Marqués de Toca, 3, Centro, 28012 Madrid",
         latlon="40.41033677820543,-3.6960205749461768",
-    )._fix_zone()
+        zone="Paseo del Pradro"
+    )
 
 
 def unquote(s: str):
