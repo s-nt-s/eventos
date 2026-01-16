@@ -235,7 +235,6 @@ class IcsEventWrapper:
         p = None
         for k in ("DTSTAMP", "CREATED", "LAST-MODIFIED"):
             dt = self.__get_datetime(k)
-            print(k, dt)
             if dt is not None and (p is None or dt < p):
                 p = dt
         return p
