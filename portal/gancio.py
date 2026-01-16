@@ -202,6 +202,8 @@ class GancioPortal:
             return Category.CONFERENCE
         if re_or(txt_desc, "comedia perform[aá]tica", flags=re.I, to_log=_id_):
             return Category.THEATER
+        if re_or(txt_desc, "taller", flags=re.I, to_log=_id_):
+            return Category.WORKSHOP
 
         if re_or(place.name, "librer[íi]a", flags=re.I):
             if re_or(name, "poes[íi]aa?", flags=re.I):

@@ -812,5 +812,8 @@
     "20260212180000Z-146723@eventos.uc3m.es": {
         "category": "LITERATURE",
         "more": "https://www.goodreads.com/book/show/123411167"
-    }
+    },
+    "20260126173000Z-146195@eventos.ucm.es": {"category": "CONFERENCE"},
+    "20260204150000Z-143708@eventos.urjc.es": {"category": "SPAM"},
+    "20260203150000Z-146181@eventos.urjc.es": {"category": "SPAM"}
 }

@@ -14,16 +14,67 @@ import logging
 from typing import Callable
 from requests import Session as ReqSession
 from bs4 import XMLParsedAsHTMLWarning
-from core.util import find_euros
-
+from core.util import find_euros, get_obj
+from core.cache import HashTupleCache
+from datetime import datetime
+import pytz
 import urllib3
 import warnings
+import json
+from typing import NamedTuple
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 urllib3.disable_warnings()
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
+
+NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
+
+
+class Info(NamedTuple):
+    ldj: dict
+    sym: dict
+    pog: dict
+
+    def get_img(self):
+        if self.pog:
+            return self.pog.get('image')
+
+    def get_price(self):
+        if self.ldj:
+            offers = self.ldj.get('offers')
+            if isinstance(offers, list) and len(offers) > 0:
+                prices: set[float] = set()
+                for o in offers:
+                    prices.add(float(o['price']))
+                if len(prices):
+                    return max(prices)
+
+    def get_categories(self):
+        val: set[str] = set()
+        if isinstance(self.sym, dict):
+            arr = []
+            for k in ('categories', 'tags'):
+                v = self.sym.get(k)
+                if isinstance(v, list):
+                    arr.extend(v)
+            for c in arr:
+                if isinstance(c, dict):
+                    v = c.get("name")
+                    if isinstance(v, str):
+                        v = re_sp.sub(" ", v).strip()
+                        if len(v):
+                            val.add(v)
+        if val:
+            return tuple(val)
+
+    @staticmethod
+    def build(*args, **kwargs):
+        obj = get_obj(*args, **kwargs)
+        if obj is None:
+            return None
+        return Info(**obj)
 
 
 def load_kml_soup(url: str, verify_ssl=True):
@@ -43,6 +94,8 @@ def clean_place_name(name: str) -> str:
         return "URJC Quintana"
     if re_and(name, "Carlos III", "Puerta (de )?Toledo", flags=re.I):
         return "UC3 Puerta Toledo"
+    if re_and(name, "ateneo (de )?Madrid", flags=re.I):
+        return "Ateneo Madrid"
     return name
 
 
@@ -72,6 +125,35 @@ class Universidad:
         r = self.__s.get(url, verify=self.__verify_ssl)
         r.raise_for_status()
         return buildSoup(url, r.content)
+
+    @HashTupleCache("rec/universidad/{}.json", builder=Info.build)
+    def __get_info(self, url: str):
+        ldj, sym = None, None
+        soup = self.__get(url)
+        txt = get_text(soup.select_one("script[type='application/ld+json']"))
+        if txt:
+            ldj = json.loads(txt)
+        for script in map(get_text, soup.select("script")):
+            m = re.match(
+                re.escape("var SYM = $.extend(SYM || {}, {data:") + r"(.+)}\);.*",
+                script or ""
+            )
+            if m:
+                sym = json.loads(m.group(1))
+        pog = {}
+        for k in ('image', ):
+            og_node = soup.select_one(f"meta[property='og:{k}']")
+            if og_node:
+                v = og_node.get("content")
+                if v:
+                    v = re_sp.sub(r" ", v).strip()
+                    if len(v):
+                        pog[k] = v
+        return Info(
+            ldj=ldj,
+            sym=sym,
+            pog=pog
+        )
 
     @cache
     def __get_description(self, url: str, name: str) -> str:
@@ -120,9 +202,12 @@ class Universidad:
 
     @cached_property
     def events(self):
+        logger.info("Buscando eventos en universidades")
         loc_latlon = self.__get_locations()
         events: set[Event] = set()
         for e in self.__ics.events:
+            if e.DTSTART <= NOW:
+                continue
             latlon = self.__find_coordinates(e.SUMMARY)
             if latlon is None:
                 latlon = loc_latlon.get(e.LOCATION)
@@ -158,6 +243,7 @@ class Universidad:
             )
             events.add(event)
         evs = tuple(sorted(events))
+        logger.info(f"Buscando eventos en universidades = {len(evs)}")
         return evs
 
     def __find_category(self, link: str, e: IcsEventWrapper) -> Category:
@@ -170,6 +256,14 @@ class Universidad:
         description = get_text(self.__get_description(link, e.SUMMARY))
         if re_or(description, r"Encuentro con", flags=re.I):
             return Category.CONFERENCE
+        if re_or(description, "obra esc[eé]nica", flags=re.I):
+            return Category.THEATER
+        info = self.__get_info(link)
+        if info:
+            cat = info.get_categories() or tuple()
+            for c in cat:
+                if re_or(c, "teatro"):
+                    return Category.THEATER
         return Category.UNKNOWN
 
     def __find_url(self, e: IcsEventWrapper):
@@ -181,15 +275,21 @@ class Universidad:
         for img in (e.ATTACH,):
             if isinstance(img, str) and img.startswith("http"):
                 return img
-        soup = self.__get(link)
-        og_image = soup.select_one("meta[property='og:image']")
-        if og_image and og_image.get("content"):
-            return og_image["content"]
-        return None
+        info = self.__get_info(link)
+        if info:
+            return info.get_img()
 
     def __find_price(self, link: str, e: IcsEventWrapper) -> float | int:
         description = get_text(self.__get_description(link, e.SUMMARY))
-        return find_euros(description) or 0
+        prc = find_euros(description)
+        if prc is not None:
+            return prc
+        info = self.__get_info(link)
+        if info:
+            prc = info.get_price()
+            if prc is not None:
+                return prc
+        return 0
 
     @classmethod
     def get_events(

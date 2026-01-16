@@ -140,3 +140,12 @@ class HashCache(Cache):
         if args or kwargs:
             return self.file.format(*args, **kwargs)
         return self.file
+
+
+class HashTupleCache(TupleCache):
+    def parse_file_name(self, *args, slf=None, **kwargs):
+        args = tuple(myhash(a) for a in args)
+        kwargs = {k: myhash(v) for k, v in kwargs.items()}
+        if args or kwargs:
+            return self.file.format(*args, **kwargs)
+        return self.file

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 TZ_ZONE = 'Europe/Madrid'
+NOW = datetime.now(tz=pytz.timezone(TZ_ZONE))
 
 
 ICS_BEGIN = dedent(
@@ -79,7 +80,7 @@ class SimpleIcsEvent:
         if d is None:
             if k != 'dtstamp':
                 return None
-            d = datetime.now(tz=pytz.timezone(TZ_ZONE))
+            d = NOW
 
         return d.strftime('%Y%m%dT%H%M%S')
 
@@ -235,7 +236,7 @@ class IcsEventWrapper:
         p = None
         for k in ("DTSTAMP", "CREATED", "LAST-MODIFIED"):
             dt = self.__get_datetime(k)
-            if dt is not None and (p is None or dt < p):
+            if dt is not None and dt <= NOW and (p is None or dt < p):
                 p = dt
         return p
 

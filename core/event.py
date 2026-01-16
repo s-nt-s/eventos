@@ -434,6 +434,8 @@ class Place:
             return Places.LA_ANONIMA.value
         if re.search(r"santander", name, flags=re.I) and re.search(r"valmojado.*291", address, flags=re.I):
             return Places.LIBRERIA_SANTANDER.value
+        if re.search(r"mary read", name, flags=re.I) and re.search(r"Marqu[eé]s (de )?Toca", address, flags=re.I):
+            return Places.LIBRERIA_MARY_READ.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -591,6 +593,11 @@ class Places(Enum):
         latlon="40.38681110054098,-3.7588677722869073",
         zone="Carabanchel"
     )
+    LIBRERIA_MARY_READ = Place(
+        name="Librería Mary Read",
+        address="C. del Marqués de Toca, 3, Centro, 28012 Madrid",
+        latlon="40.41033677820543,-3.6960205749461768",
+    )._fix_zone()
 
 
 def unquote(s: str):
