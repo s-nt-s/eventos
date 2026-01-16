@@ -1,30 +1,29 @@
 from core.ics import IcsReader, IcsEventWrapper
 from functools import cached_property
 from core.event import Event, Place, Session, Category
-from core.util import re_or
-from fastkml import kml
+from core.util import re_or, re_and
 import requests
 import re
 from bs4 import BeautifulSoup
 from collections import defaultdict
 from types import MappingProxyType
 from functools import cache
-from core.web import WEB, buildSoup
+from core.web import buildSoup, get_text
 import feedparser
 import logging
+from typing import Callable
+from requests import Session as ReqSession
+from bs4 import XMLParsedAsHTMLWarning
+from core.util import find_euros
 
 import urllib3
+import warnings
+
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 urllib3.disable_warnings()
 logger = logging.getLogger(__name__)
-
-
-def load_kml(url: str, verify_ssl=True) -> kml.KML:
-    r = requests.get(url, verify=verify_ssl)
-    r.raise_for_status()
-    k = kml.KML()
-    k.from_string(r.text.encode("utf-8"))
-    return k
+re_sp = re.compile(r"\s+")
 
 
 def load_kml_soup(url: str, verify_ssl=True):
@@ -34,19 +33,45 @@ def load_kml_soup(url: str, verify_ssl=True):
     return soup
 
 
+def clean_place_name(name: str) -> str:
+    if name is None:
+        return None
+    name = re_sp.sub(" ", name).strip()
+    if len(name) == 0:
+        return None
+    if re_and(name, "URJC", "Quintana", flags=re.I):
+        return "URJC Quintana"
+    if re_and(name, "Carlos III", "Puerta (de )?Toledo", flags=re.I):
+        return "UC3 Puerta Toledo"
+    return name
+
+
 class Universidad:
-    def __init__(self, ics: str, verify_ssl=True):
+    def __init__(
+        self,
+        ics: str,
+        verify_ssl=True,
+        isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None
+    ):
         self.__ics_url = ics
+        self.__isOkPlace = isOkPlace or (lambda *_: True)
         self.__ics = IcsReader(ics, verify_ssl=verify_ssl)
         self.__kml_url = re.sub(
             r"/ics/location/(.+)/(.+)\.ics$",
             r"/kml/get/\2.kml",
             ics
         )
-        #self.__kml = load_kml(self.__kml_url, verify_ssl=verify_ssl)
         self.__kml_soup = load_kml_soup(self.__kml_url, verify_ssl=verify_ssl)
         self.__rss_url = ics.replace("/ics/", "/rss/").replace(".ics", ".rss")
         self.__rss = feedparser.parse(self.__rss_url)
+        self.__verify_ssl = verify_ssl
+        self.__s = ReqSession()
+
+    @cache
+    def __get(self, url: str):
+        r = self.__s.get(url, verify=self.__verify_ssl)
+        r.raise_for_status()
+        return buildSoup(url, r.content)
 
     @cache
     def __get_description(self, url: str, name: str) -> str:
@@ -59,7 +84,7 @@ class Universidad:
                 continue
             c = p.find("description").text.strip()
             if len(c) == 0:
-                return c
+                return buildSoup(url, c)
 
     @cache
     def __find_coordinates(self, name: str):
@@ -101,26 +126,30 @@ class Universidad:
             latlon = self.__find_coordinates(e.SUMMARY)
             if latlon is None:
                 latlon = loc_latlon.get(e.LOCATION)
+            place = Place(
+                name=clean_place_name(e.LOCATION),
+                address=e.LOCATION,
+                latlon=latlon
+            ).normalize()
+            if not self.__isOkPlace(place):
+                continue
             link = self.__find_url(e)
             if link is None:
                 logger.warning(f"Evento sin URL {e}")
                 continue
-            category = self.__find_category(e)
-            description = self.__get_description(link, e.SUMMARY)
+            category = self.__find_category(link, e)
+            img = self.__find_img(link, e)
+            price = self.__find_price(link, e)
             event = Event(
                 id=e.UID,
                 url=link,
                 name=e.SUMMARY,
                 duration=e.duration or 60,
-                img=self.__find_img(e),
-                price=0,
+                img=img,
+                price=price,
                 publish=e.str_publish,
                 category=category,
-                place=Place(
-                    name=e.LOCATION,
-                    address=e.LOCATION,
-                    latlon=latlon
-                ),
+                place=place,
                 sessions=(
                     Session(
                         date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
@@ -131,11 +160,16 @@ class Universidad:
         evs = tuple(sorted(events))
         return evs
 
-    def __find_category(self, e: IcsEventWrapper) -> Category:
+    def __find_category(self, link: str, e: IcsEventWrapper) -> Category:
         if re_or(e.SUMMARY, r"Actividad formativa de Doctorado", flags=re.I):
             return Category.NO_EVENT
-        if re_or(e.SUMMARY, r" UN REGRESO DE CINE", flags=re.I):
+        if re_or(e.SUMMARY, r"UN REGRESO DE CINE", flags=re.I):
             return Category.CINEMA
+        if re_or(e.SUMMARY, "Presentaci[óo]n de la asociaci[óo]n", flags=re.I):
+            return Category.CONFERENCE
+        description = get_text(self.__get_description(link, e.SUMMARY))
+        if re_or(description, r"Encuentro con", flags=re.I):
+            return Category.CONFERENCE
         return Category.UNKNOWN
 
     def __find_url(self, e: IcsEventWrapper):
@@ -143,17 +177,30 @@ class Universidad:
             if isinstance(url, str) and url.startswith("http"):
                 return url
 
-    def __find_img(self, e: IcsEventWrapper):
+    def __find_img(self, link: str, e: IcsEventWrapper):
         for img in (e.ATTACH,):
             if isinstance(img, str) and img.startswith("http"):
                 return img
+        soup = self.__get(link)
+        og_image = soup.select_one("meta[property='og:image']")
+        if og_image and og_image.get("content"):
+            return og_image["content"]
         return None
 
+    def __find_price(self, link: str, e: IcsEventWrapper) -> float | int:
+        description = get_text(self.__get_description(link, e.SUMMARY))
+        return find_euros(description) or 0
+
     @classmethod
-    def get_events(cls, *urls: str, verify_ssl=True):
+    def get_events(
+        cls,
+        *urls: str,
+        verify_ssl=True,
+        isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None
+    ):
         events: set[Event] = set()
         for url in urls:
-            events.update(cls(url, verify_ssl=verify_ssl).events)
+            events.update(cls(url, verify_ssl=verify_ssl, isOkPlace=isOkPlace).events)
         return tuple(sorted(events))
 
 

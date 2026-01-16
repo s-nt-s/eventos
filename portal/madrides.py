@@ -13,7 +13,6 @@ from collections import defaultdict
 from portal.util.madrides import find_more_url
 from html import unescape
 from tatsu.exceptions import FailedParse
-from core.zone import Circles
 from core.madrides.api import ApiMadridEs, MadridEsEvent
 from types import MappingProxyType
 from datetime import datetime
@@ -21,6 +20,7 @@ import pytz
 from zoneinfo import ZoneInfo
 from core.fetcher import Getter, URLText
 from core.madrides.search import FormSearch, FormSearchResult, get_vgnextoid
+from typing import Callable
 
 
 logger = logging.getLogger(__name__)
@@ -124,23 +124,6 @@ def str_to_arrow_hour(h: str):
         return Arrow.strptime(h, "%H:%M")
 
 
-@cache
-def isOkPlace(p: Place):
-    if re.search(r"\bcentro juvenil\b", p.name, flags=re.I):
-        return False
-    if p.latlon is None:
-        return True
-    kms: list[float] = []
-    lat, lon = map(float, p.latlon.split(","))
-    for c in Circles:
-        kms.append(c.value.get_km(lat, lon))
-        if kms[-1] <= c.value.kms:
-            return True
-    k = round(min(kms))
-    logger.debug(f"Lugar descartado {k}km {p.name} {p.url}")
-    return False
-
-
 class MadridEs:
     def __init__(
         self,
@@ -148,7 +131,9 @@ class MadridEs:
         places_with_store: tuple[Place, ...] = None,
         max_price: Optional[float] = None,
         avoid_categories: tuple[Category, ...] = tuple(),
+        isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None
     ):
+        self.__isOkPlace = isOkPlace or (lambda *_: True)
         self.__remove_working_sessions = remove_working_sessions
         self.__places_with_store = places_with_store or tuple()
         self.__max_price = max_price
@@ -510,7 +495,7 @@ class MadridEs:
         if self.__is_ko_info(r.vgnextoid):
             return None
         place = self.__get_place(r.vgnextoid, r.div)
-        if place is None or not isOkPlace(place):
+        if place is None or not self.__isOkPlace(place):
             return None
         url_event = r.a.attrs["href"]
         duration, sessions = self.__get_sessions(url_event, ics_file)

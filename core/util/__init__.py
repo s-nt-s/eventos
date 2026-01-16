@@ -303,10 +303,20 @@ def normalize_url(url: str, *tail: str) -> str:
     new_query = urlencode(new_params)
     new_unparse = urlunparse(parsed._replace(query=new_query))
     return new_unparse
-    for param in order:
-        if param in dict(query_params):
-            new_params.append((param, dict(query_params)[param]))
 
-    new_query = urlencode(new_params)
-    new_unparse = urlunparse(parsed._replace(query=new_query))
-    return new_unparse
+
+def find_euros(prc: str | None):
+    if prc is None:
+        return None
+    if re.match(r"^\s*(gratuito|gratis)\s*$", prc, flags=re.I):
+        return 0
+    if re.search(r"\b(gratuit[ao] (para|con)|(entrada|acceso) (gratuit[oa]|libre)|actividad(es)? gratuitas?)\b", prc, flags=re.I):
+        return 0
+    eur: set[float] = set()
+    for s in re.findall(r"(\d[\d\.,]*)\s*(?:€|euros?)", prc, flags=re.I):
+        p = float(s.replace(",", "."))
+        if p == int(p):
+            p = int(p)
+        eur.add(p)
+    if len(eur):
+        return max(eur)

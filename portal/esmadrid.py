@@ -3,20 +3,9 @@ from core.event import Category, Place
 from core.zone import Circles
 from functools import cache
 import logging
+from typing import Callable
 
 logger = logging.getLogger(__name__)
-
-
-@cache
-def isOkPlace(lat: float, lon: float):
-    kms: list[float] = []
-    for c in Circles:
-        kms.append(c.value.get_km(lat, lon))
-        if kms[-1] <= c.value.kms:
-            return True
-    k = round(min(kms))
-    logger.debug(f"Lugar descartado {k}km {lat},{lon}")
-    return False
 
 
 class EsMadrid:
@@ -25,18 +14,20 @@ class EsMadrid:
         max_price: float,
         categories: tuple[Category, ...],
         max_sessions: int,
+        isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None
     ):
         self.__api = ApiEsMadrid()
         self.__max_price = max_price
         self.__categories = categories
         self.__max_sessions = max_sessions
+        self.__isOkPlace = isOkPlace or (lambda *_: True)
 
     def _get_events(self):
         evs: list[EsMadridEvent] = []
         for e in self.__api.get_events():
             if None not in (self.__max_price, e.price) and e.price > self.__max_price:
                 continue
-            if None not in (e.latitude, e.longitude) and not isOkPlace(e.latitude, e.longitude):
+            if None not in (e.latitude, e.longitude) and not self.__isOkPlace((e.latitude, e.longitude)):
                 continue
             if self.__max_sessions is not None and self.__max_sessions < len(e.dates):
                 continue

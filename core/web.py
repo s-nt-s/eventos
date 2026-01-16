@@ -131,6 +131,7 @@ class Web:
 
     def _get(self, url, allow_redirects=True, auth=None, **kwargs):
         verify = kwargs.get('verify', self.verify)
+        kwargs.pop('verify', None)
         if kwargs:
             return self.s.post(url, data=kwargs, allow_redirects=allow_redirects, verify=verify, auth=auth)
         return self.s.get(url, allow_redirects=allow_redirects, verify=verify, auth=auth)
@@ -232,18 +233,18 @@ class Web:
             raise WebException(f"{slc} no json in {self.url}")
 
     @cache
-    def __cached_get(self, url: str):
+    def __cached_get(self, url: str, verify_ssl=True):
         if get_domain(url) == "madrid.es":
             s = Driver.cached_session(
                 "firefox",
                 "https://www.madrid.es",
             )
-            return s.get(url).content
-        r = self._get(url)
+            return s.get(url, verify=verify_ssl).content
+        r = self._get(url, verify=verify_ssl)
         return r.content
 
-    def get_cached_soup(self, url: str, parser="lxml"):
-        content = self.__cached_get(url)
+    def get_cached_soup(self, url: str, parser="lxml", verify_ssl=True):
+        content = self.__cached_get(url, verify_ssl=verify_ssl)
         soup = buildSoup(url, content, parser=parser)
         return soup
 

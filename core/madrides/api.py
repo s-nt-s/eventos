@@ -6,10 +6,9 @@ from datetime import datetime, date
 from requests.exceptions import JSONDecodeError
 from core.filemanager import FileManager
 from core.cache import HashCache, TupleCache
-from core.util import get_obj
+from core.util import get_obj, find_euros
 import json
 import re
-from os import makedirs
 
 
 logger = logging.getLogger(__name__)
@@ -90,23 +89,6 @@ def date_to_str(d: date | datetime | None):
     if isinstance(d, date):
         return d.strftime("%Y-%m-%d")
     raise ValueError(d)
-
-
-def find_euros(prc: str | None):
-    if prc is None:
-        return None
-    if re.match(r"^\s*(gratuito|gratis)\s*$", prc, flags=re.I):
-        return 0
-    if re.search(r"\b(gratuit[ao] (para|con)|(entrada|acceso) (gratuit[oa]|libre)|actividad(es)? gratuitas?)\b", prc, flags=re.I):
-        return 0
-    eur: set[float] = set()
-    for s in re.findall(r"(\d[\d\.,]*)\s*(?:€|euros?)", prc, flags=re.I):
-        p = float(s.replace(",", "."))
-        if p == int(p):
-            p = int(p)
-        eur.add(p)
-    if len(eur):
-        return max(eur)
 
 
 class MadridEsPlace(NamedTuple):

@@ -25,12 +25,49 @@ from core.filmaffinity import FilmAffinityApi
 from core.dblite import DB
 from core.web import WEB
 from functools import cache
+from core.zone import Circles
+from core.event import Place
 
 logger = logging.getLogger(__name__)
 
 
 def gNow():
     return datetime.now(tz=pytz.timezone('Europe/Madrid'))
+
+
+KO_PLACES = (
+
+)
+
+
+@cache
+def isOkPlace(p: Place | tuple[float, float] | str):
+    latlon = None
+    name = None
+    if isinstance(p, Place):
+        name = p.name
+        if p.latlon:
+            latlon = map(float, p.latlon.split(","))
+    elif isinstance(p, str):
+        name = p
+    elif isinstance(p, tuple) and len(p) == 2:
+        latlon = p
+    if all(x is None for x in (latlon, name)):
+        return True
+    if name:
+        if re.search(r"\bcentro juvenil\b", name, flags=re.I):
+            return False
+    if latlon is None:
+        return True
+    lat, lon = latlon
+    kms: list[float] = []
+    for c in Circles:
+        kms.append(c.value.get_km(lat, lon))
+        if kms[-1] <= c.value.kms:
+            return True
+    k = round(min(kms))
+    logger.debug(f"Lugar descartado {k}km {p.name} {p.url}")
+    return False
 
 
 def find_filmaffinity_if_needed(imdb_film: dict[str, int], e: Cinema):
@@ -111,12 +148,21 @@ class EventCollector:
         md_events = self.__madrid_destino.events
         md_places = tuple(sorted(set(e.place for e in md_events if e.place)))
         eventos = \
+            Universidad.get_events(
+                "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
+                "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
+                "https://eventos.uam.es/ics/location/espana/lo-1.ics",
+                "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
+                verify_ssl=False,
+                isOkPlace=isOkPlace
+            ) + \
             MadConvoca().events + \
             MadridEs(
                 remove_working_sessions=self.__avoid_working_sessions,
                 places_with_store=md_places,
                 max_price=max(self.__max_price.values()),
-                avoid_categories=self.__avoid_categories
+                avoid_categories=self.__avoid_categories,
+                isOkPlace=isOkPlace
             ).events + \
             Dore().events + \
             md_events + \

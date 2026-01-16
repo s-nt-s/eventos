@@ -1,5 +1,6 @@
 from PIL import Image, UnidentifiedImageError, ImageChops
-import requests
+from requests import Session
+from requests.exceptions import SSLError, RequestException
 from io import BytesIO
 import logging
 from os.path import dirname
@@ -18,6 +19,7 @@ warnings.filterwarnings("ignore", module="PIL")
 
 logger = logging.getLogger(__name__)
 S = buildSession()
+ReqSession = Session()
 
 
 class CornerColor(NamedTuple):
@@ -100,7 +102,7 @@ class MyImage:
             im = Image.open(path)
             im = im.convert('RGB')
             return im
-        except requests.exceptions.RequestException:
+        except RequestException:
             logger.critical("No se pudo descargar la imagen "+str(self.path), exc_info=True)
         except UnidentifiedImageError:
             logger.critical("La ruta no apunta a una imagen válida "+str(self.path), exc_info=True)
@@ -110,7 +112,10 @@ class MyImage:
         dom = get_domain(url)
         isSalaBerlanga = dom == "salaberlanga.com"
         if not isSalaBerlanga:
-            r = S.get(url)
+            try:
+                r = S.get(url)
+            except SSLError:
+                r = ReqSession.get(url, verify=False)
             if r.status_code != 403 and r.content:
                 return BytesIO(r.content)
         with Driver(browser="firefox") as f:
