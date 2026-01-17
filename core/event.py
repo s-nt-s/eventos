@@ -1,7 +1,7 @@
 from dataclasses import dataclass, asdict, fields, replace, is_dataclass
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set
 from core.util import get_obj, plain_text, get_domain, get_img_src, re_or, re_and, get_main_value
-from portal.util.madrides import find_more_url as find_more_url_madrides
+from portal.util.madrides import find_more_url as find_more_url_madrides, isWorkingHours
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
@@ -60,30 +60,6 @@ def new_dataclass(cls: Type[T], obj: dict) -> T:
     ks = tuple(f.name for f in fields(cls))
     obj = {k: v for k, v in obj.items() if k in ks}
     return cls(**obj)
-
-
-@cache
-def get_festivos(year: int):
-    dates: set[str] = set()
-    soup = WEB.get_cached_soup(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
-    for month, div in enumerate(soup.select("#wrapIntoMeses div.mes")):
-        for day in map(get_text, div.select("td[class^='cajaFestivo']")):
-            dt = date(year, month+1, int(day))
-            dates.add(dt)
-    return tuple(sorted(dates))
-
-
-def isWorkingHours(dt: datetime):
-    if dt is None:
-        return False
-    hm = dt.hour + (dt.minute/100)
-    if hm == 0 or hm > 15:
-        return False
-    if dt.weekday() in (5, 6):
-        return False
-    if dt.date() in get_festivos(dt.year):
-        return False
-    return True
 
 
 class FieldNotFound(Exception):

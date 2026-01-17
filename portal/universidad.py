@@ -104,21 +104,33 @@ class Universidad:
         self,
         ics: str,
         verify_ssl=True,
-        isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None
+        isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
+        avoid_working_sessions: bool = False
     ):
+        self.__verify_ssl = verify_ssl
         self.__ics_url = ics
         self.__isOkPlace = isOkPlace or (lambda *_: True)
-        self.__ics = IcsReader(ics, verify_ssl=verify_ssl)
+        self.__ics = IcsReader(
+            ics,
+            verify_ssl=verify_ssl,
+            avoid_working_sessions=avoid_working_sessions
+        )
         self.__kml_url = re.sub(
             r"/ics/location/(.+)/(.+)\.ics$",
             r"/kml/get/\2.kml",
             ics
         )
-        self.__kml_soup = load_kml_soup(self.__kml_url, verify_ssl=verify_ssl)
         self.__rss_url = ics.replace("/ics/", "/rss/").replace(".ics", ".rss")
-        self.__rss = feedparser.parse(self.__rss_url)
         self.__verify_ssl = verify_ssl
         self.__s = ReqSession()
+
+    @cached_property
+    def __rss(self):
+        return feedparser.parse(self.__rss_url)
+
+    @cached_property
+    def __kml_soup(self):
+        return load_kml_soup(self.__kml_url, verify_ssl=self.__verify_ssl)
 
     @cache
     def __get(self, url: str):
@@ -307,11 +319,17 @@ class Universidad:
         cls,
         *urls: str,
         verify_ssl=True,
-        isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None
+        isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
+        avoid_working_sessions: bool = False
     ):
         events: set[Event] = set()
         for url in urls:
-            events.update(cls(url, verify_ssl=verify_ssl, isOkPlace=isOkPlace).events)
+            events.update(cls(
+                url,
+                verify_ssl=verify_ssl,
+                isOkPlace=isOkPlace,
+                avoid_working_sessions=avoid_working_sessions
+            ).events)
         return tuple(sorted(events))
 
 

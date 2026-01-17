@@ -3,15 +3,16 @@ from typing import List, Dict, Union, Set, Tuple, Optional, Callable, TypeVar, I
 from bs4 import Tag, BeautifulSoup
 import logging
 from unidecode import unidecode
-from urllib.parse import urlparse, ParseResult
 import pytz
 from datetime import datetime
 from math import radians, sin, cos, sqrt, atan2
 from collections import Counter, defaultdict
 from os import environ
 from url_normalize import url_normalize
-from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
-
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse, ParseResult
+from functools import cache
+import requests
+from datetime import date
 
 import uuid
 
@@ -320,3 +321,29 @@ def find_euros(prc: str | None):
         eur.add(p)
     if len(eur):
         return max(eur)
+
+
+@cache
+def get_festivos(year: int):
+    dates: set[str] = set()
+    r = requests.get(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
+    r.raise_for_status()
+    soup = BeautifulSoup(r.content, 'html.parser')
+    for month, div in enumerate(soup.select("#wrapIntoMeses div.mes")):
+        for day in map(get_text, div.select("td[class^='cajaFestivo']")):
+            dt = date(year, month+1, int(day))
+            dates.add(dt)
+    return tuple(sorted(dates))
+
+
+def isWorkingHours(dt: datetime):
+    if dt is None:
+        return False
+    hm = dt.hour + (dt.minute/100)
+    if hm == 0 or hm > 15:
+        return False
+    if dt.weekday() in (5, 6):
+        return False
+    if dt.date() in get_festivos(dt.year):
+        return False
+    return True

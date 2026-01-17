@@ -154,9 +154,12 @@ class EventCollector:
                 "https://eventos.uam.es/ics/location/espana/lo-1.ics",
                 "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
                 verify_ssl=False,
-                isOkPlace=isOkPlace
+                isOkPlace=isOkPlace,
+                avoid_working_sessions=self.__avoid_working_sessions,
             ) + \
-            MadConvoca().events + \
+            MadConvoca(
+                avoid_working_sessions=self.__avoid_working_sessions,
+            ).events + \
             MadridEs(
                 remove_working_sessions=self.__avoid_working_sessions,
                 places_with_store=md_places,

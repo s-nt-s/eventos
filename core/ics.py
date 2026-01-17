@@ -5,7 +5,7 @@ from dataclasses import dataclass, asdict
 import re
 from core.filemanager import FM
 from typing import Union
-from core.util import to_uuid
+from core.util import to_uuid, isWorkingHours
 from icalendar import Calendar, vDDDTypes, Component, vText
 from icalendar.prop import vCategory
 from datetime import date
@@ -247,10 +247,11 @@ class IcsEventWrapper:
 
 
 class IcsReader:
-    def __init__(self, *urls: str, verify_ssl: bool = True):
+    def __init__(self, *urls: str, verify_ssl: bool = True, avoid_working_sessions: bool = False):
         self.__urls = urls
         self.__s = buildSession()
         self.__verify_ssl = verify_ssl
+        self.__avoid_working_sessions = avoid_working_sessions
 
     def __from_ical(self, url: str):
         r = self.__s.get(url, timeout=10, verify=self.__verify_ssl)
@@ -279,6 +280,8 @@ class IcsReader:
                 for e in cal.walk("VEVENT"):
                     e = IcsEventWrapper(e, source=url)
                     try:
+                        if self.__avoid_working_sessions and isWorkingHours(e.DTSTART):
+                            continue
                         if None not in (
                             e.UID,
                             e.DTSTART,

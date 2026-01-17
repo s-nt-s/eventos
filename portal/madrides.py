@@ -2,8 +2,8 @@ from core.web import WEB
 from bs4 import Tag
 import re
 from typing import Set, Dict, Tuple, Union, Optional
-from core.event import Event, Session, Place, Category, CategoryUnknown, isWorkingHours, FIX_EVENT
-from core.util import plain_text, re_or, re_and, get_domain
+from core.event import Event, Session, Place, Category, CategoryUnknown, FIX_EVENT
+from core.util import plain_text, re_or, re_and, get_domain, isWorkingHours
 from ics import Calendar
 from arrow import Arrow
 import logging
