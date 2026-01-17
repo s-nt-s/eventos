@@ -208,6 +208,12 @@ class MadridEs:
             ):
                 category[Category.CHILDISH].add(k)
             if re_or(
+                v.title,
+                "taller juvenil",
+                flags=re.I
+            ):
+                category[Category.YOUTH].add(k)
+            if re_or(
                 v.description,
                 r"musical? infantil",
                 r"teatro infantil",

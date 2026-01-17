@@ -229,13 +229,13 @@ class MadridDestino:
             address=space['address']
         )
 
-    def __find_sessions(self, url: str, e: Dict):
-        id_session = self.__get_session_from_soup(e['id'], url)
+    def __find_sessions(self, source: str, e: Dict):
+        id_session = self.__get_session_from_soup(e['id'], source)
         sessions: Set[Session] = set()
         for s in e['uAvailableDates']:
             dt = timestamp_to_date(s)
             _id_ = id_session.get(dt)
-            url = f"{url}/{_id_}" if _id_ else None
+            url = f"{source}/{_id_}" if _id_ else None
             #if _id_:
             #    self.get_info_session(_id_)
             if url and e['freeCapacity'] == 0:
