@@ -101,9 +101,12 @@ class MadConvoca:
                 return Category.LITERATURE
         if re_and(e.DESCRIPTION, "M[úu]sica", ("compositor", "voz", "viol[íi]n"), flags=re.I):
             return Category.MUSIC
-        if re_and(e.DESCRIPTION, ("Abre el acto", "Presenta", "modera"), ("Intervienen", "con: "), flags=re.I):
+        if re_and(e.DESCRIPTION, ("Abre el acto", "Presenta", "modera"), ("Intervienen?", "con: "), flags=re.I):
             return Category.CONFERENCE
-        logger.critical(str(CategoryUnknown(e.source, f"{e.CATEGORIES} -- {e.SUMMARY}")))
+        if e.CATEGORIES:
+            logger.critical(str(CategoryUnknown(e.source, f"{e.CATEGORIES} -- {e.SUMMARY}")))
+        else:
+            logger.critical(str(CategoryUnknown(e.source, f"{e}")))
         return Category.UNKNOWN
 
     def __find_place(self, e: IcsEventWrapper):
