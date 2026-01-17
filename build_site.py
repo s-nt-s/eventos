@@ -3,7 +3,7 @@
 from core.event import Event, Category, Session
 from core.ics import SimpleIcsEvent
 from core.j2 import Jnj2, toTag
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from core.log import config_log
 from core.img import MyImage
 from core.util import dict_add, get_domain, to_datetime, uniq
@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 PAGE_URL = environ['PAGE_URL']
 OUT = "out/"
 WHITE = (255, 255, 255)
+STR_TODAY = date.today().strftime("%Y-%m-%d")
 
 EC = EventCollector(
     max_price={
@@ -35,7 +36,7 @@ EC = EventCollector(
     },
     max_sessions=30,
     avoid_working_sessions=True,
-    publish=FM.load(OUT+"publish.json"),
+    publish={k: v for k, v in FM.load(OUT+"publish.json").items() if v <= STR_TODAY},
     ko_places=(
         "Espacio Abierto Quinta de los Molinos",
         "Parroquia Nuestra Señora de Guadalupe",
@@ -157,6 +158,7 @@ def event_to_ics(now: datetime, e: Event, s: Session):
 
 
 NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
+STR_TODAY = NOW.strftime("%Y-%m-%d")
 logger.info("Añadiendo ics")
 session_ics: Dict[str, str] = dict()
 icsevents = []
@@ -225,8 +227,7 @@ def set_icons(html: str, **kwargs):
             a.attrs["title"] = tit
     return str(soup)
 
-
-PBLSH = sorted(set((e.publish for e in eventos if e.publish)), reverse=True)
+PBLSH = sorted(set((e.publish for e in eventos if e.publish and e.publish <= STR_TODAY)), reverse=True)
 NEWS = PBLSH[0 if len(PBLSH) < 3 else 1]
 
 CLSS = defaultdict(list)
