@@ -622,7 +622,13 @@
         "price": 0,
         "more": "https://clickflamenco.com/events/cantandole-a-la-navidad-804-949-312-440/"
     },
+    "md7218": {
+        "name": "Taller 'Lengua en Coro, Cuenta'",
+        "category": "WORKSHOP",
+        "more": "https://www.mataderomadrid.org/programacion/talleres-para-adultos-sobre-la-exposicion-lengua-en-coro-cuenta-de-cristina-mejias"
+    },
     "ms48af0f91e6aca910VgnVCM100000891ecb1aRCRD": {
+        "name": "Taller 'Lengua en Coro, Cuenta'",
         "category": "WORKSHOP",
         "price": 3,
         "img": "https://www.mataderomadrid.org/sites/default/files/styles/full_main_content/public/media/image/2025/11/taller_adultos_cm.png.webp",
@@ -826,8 +832,5 @@
     },
     "msf58951860e5cb910VgnVCM200000f921e388RCRD": {
         "img": "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1762626242i/243375667.jpg"
-    },
-    "md7218": {
-        "more": "https://www.mataderomadrid.org/programacion/talleres-para-adultos-sobre-la-exposicion-lengua-en-coro-cuenta-de-cristina-mejias"
     }
 }
