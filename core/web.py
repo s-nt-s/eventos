@@ -151,8 +151,10 @@ class Web:
     def prepare_submit(self, slc, silent_in_fail=False, **kwargs):
         data: dict[str, Union[str, int, float, None]] = {}
         self.form = self.soup.select_one(slc)
-        if silent_in_fail and self.form is None:
-            return None, None
+        if self.form is None:
+            if silent_in_fail:
+                return None, None
+            raise WebException(f"{slc} not found in {self.url}")
         for i in self.form.select("input[name]"):
             name = i.attrs["name"]
             data[name] = i.attrs.get("value")
@@ -229,8 +231,8 @@ class Web:
         txt = self.select_one_txt(slc)
         try:
             return json.loads(txt)
-        except json.JSONDecodeError:
-            raise WebException(f"{slc} no json in {self.url}")
+        except json.JSONDecodeError as e:
+            raise WebException(f"{slc} no json in {self.__url} {e} {txt}")
 
     @cache
     def __cached_get(self, url: str, verify_ssl=True):
@@ -304,8 +306,8 @@ class MyTag:
             return None
         try:
             return json.loads(txt)
-        except json.JSONDecodeError:
-            raise WebException(f"{slc} no json in {self.__url}")
+        except json.JSONDecodeError as e:
+            raise WebException(f"{slc} no json in {self.__url} {e} {txt}")
 
     def select(self, slc: str):
         nds = self.__node.select(slc)
@@ -530,6 +532,13 @@ class Driver:
         if by == By.XPATH:
             return self._driver.find_element(By.XPATH, id)
         return self._driver.find_element(By.ID, id)
+
+    def safe_waitjs(self, js: str, val=True, seconds=None):
+        try:
+            return self.waitjs(js, val=val, seconds=seconds)
+        except TimeoutException:
+            pass
+        return None
 
     def waitjs(self, js: str, val=True, seconds=None):
         if seconds is None:

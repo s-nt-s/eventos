@@ -9,7 +9,7 @@ import json
 from typing import NamedTuple
 from core.filemanager import FM
 from collections import defaultdict
-from core.util import re_or, MONTH
+from core.util import re_or, MONTH, re_and
 from datetime import date
 import logging
 
@@ -165,11 +165,30 @@ class SalaBerlanga:
         if isGratis:
             ev = ev.merge(price=0)
         cat = get_text(item.tag.select_one("div.categoria-sala-berlanga")) or ''
-        if re_or("cine", cat, flags=re.I):
+        m = re.match(r"^(Charla|Podcast): (.+)$", ev.name or '', flags=re.I)
+        if m:
+            ev = ev.merge(
+                category=Category.CONFERENCE,
+                name=m.group(2)
+            )
+        elif re_and(
+            ev.name,
+            "Charlas?",
+            "sesi[oó]n(es)? de firmas?",
+            flags=re.I
+        ):
+            ev = ev.merge(category=Category.CONFERENCE)
+        elif re_and(
+            ev.name,
+            "Presentación del libro",
+            flags=re.I
+        ):
+            ev = ev.merge(category=Category.LITERATURE)
+        elif re_or(cat, "cine", flags=re.I):
             ev = ev.merge(category=Category.CINEMA)
-        elif re_or("Música", cat, flags=re.I):
+        elif re_or(cat, "M[uú]sica", flags=re.I):
             ev = ev.merge(category=Category.MUSIC)
-        elif re_or("Artes escénicas", cat, flags=re.I):
+        elif re_or(cat, "Artes? esc[eé]nicass?", flags=re.I):
             ev = ev.merge(category=Category.THEATER)
         if ev.img is None:
             ev = ev.merge(img=get_attr(item.tag.select_one("img"), "src"))

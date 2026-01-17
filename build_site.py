@@ -35,20 +35,12 @@ EC = EventCollector(
         Category.OTHERS: 10,
     },
     max_sessions=30,
-    avoid_working_sessions=True,
     publish={
         k: v
         for k, v in
         FM.load(OUT+"publish.json").items()
         if v is not None and v <= STR_TODAY
     },
-    ko_places=(
-        "Espacio Abierto Quinta de los Molinos",
-        "Parroquia Nuestra Señora de Guadalupe",
-        "La Pedriza. Manzanares.",
-        "AV La Vecinal del Barrio Bilbao y Pueblo Nuevo",
-        'CSO La Tejedora'
-    ),
     categories=(
         Category.CINEMA,
         Category.MUSIC,
@@ -61,7 +53,7 @@ EC = EventCollector(
         Category.LITERATURE,
         Category.WORKSHOP,
         Category.PARTY,
-        Category.READING_CLUB
+        Category.READING_CLUB,
     )
 )
 
@@ -99,7 +91,10 @@ def add_image(e: Event):
         return (None, e)
     local = f"img/{e.id}.jpg"
     file = OUT+local
-    im = MyImage.get(e.img)
+    im = URL_IMG.get(
+        e.img,
+        MyImage.get(e.img)
+    )
     if isfile(file):
         lc = MyImage(file, parent=im, background=im.background)
     else:
@@ -177,6 +172,7 @@ for e in eventos:
 SimpleIcsEvent.dump("out/eventos.ics", *icsevents)
 
 logger.info("Añadiendo imágenes")
+URL_IMG = MyImage.get_all(*(e.img for e in eventos if e.img))
 img_eventos = tuple(map(add_image, eventos))
 
 logger.info("Creando web")
@@ -232,14 +228,30 @@ def set_icons(html: str, **kwargs):
             a.attrs["title"] = tit
     return str(soup)
 
-PBLSH = sorted(set((e.publish for e in eventos if e.publish and e.publish <= STR_TODAY)), reverse=True)
-NEWS = PBLSH[0 if len(PBLSH) < 3 else 1]
+
+def get_novedad(x: int):
+    ids: set[str] = set()
+    PBLSH = sorted(set((e.publish for e in eventos if e.publish and e.publish <= STR_TODAY)), reverse=True)
+    if len(PBLSH) == 0:
+        return set()
+    index = min(x, len(PBLSH)-1)
+    NEWS = PBLSH[index]
+    for e in eventos:
+        if e.publish is None or NEWS <= e.publish:
+            ids.add(e.id)
+    return ids
+
+
+id_novedad = get_novedad(1)
+if len(id_novedad) > 50:
+    id_novedad = get_novedad(0)
 
 CLSS = defaultdict(list)
 CLSS_COUNT = defaultdict(int)
-for e in eventos:
-    if e.publish is None or NEWS <= e.publish:
-        CLSS[e.id].append("novedad")
+
+for i in id_novedad:
+    CLSS[i].append("novedad")
+
 for arr in CLSS.values():
     for a in arr:
         CLSS_COUNT[a] = CLSS_COUNT[a] + 1

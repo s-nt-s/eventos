@@ -6,7 +6,7 @@ import logging
 from core.event import Places, Event, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from datetime import datetime
-from core.util import plain_text, re_or
+from core.util import plain_text, re_or, re_and
 
 
 logger = logging.getLogger(__name__)
@@ -36,9 +36,9 @@ class AcademiaCine(Web):
         logger.info("Academia Cine: Buscando eventos")
         events: Set[Event] = set()
         for url, img in self.calendar:
-            events.add(self.__url_to_event(url, img))
-        if None in events:
-            events.remove(None)
+            ev = self.__url_to_event(url, img)
+            if ev is not None:
+                events.add(ev)
         logger.info(f"Academia Cine: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
 

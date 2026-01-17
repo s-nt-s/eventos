@@ -1,21 +1,22 @@
-from requests.sessions import Session
 import logging
 from typing import NamedTuple, Optional
 from core.dictwraper import DictWrapper
 from datetime import datetime, date
-from requests.exceptions import JSONDecodeError as ReqJSONDecodeError
 from json.decoder import JSONDecodeError
 from core.filemanager import FileManager
-from core.cache import HashCache, TupleCache
-from core.util import get_obj, find_euros
+from core.cache import TupleCache
+from core.util import get_obj, un_camel
 import json
 import re
 from aiohttp import ClientResponse
 from core.fetcher import Getter
+from bs4 import BeautifulSoup
+from core.madrid_es.tp import Place
 
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
+re_org_api = re.compile(r"^https://datos\.madrid\.es/egob/catalogo/tipo/entidadesyorganismos/\S+\.json$")
 
 
 async def rq_to_json(r: ClientResponse):
@@ -46,63 +47,40 @@ async def rq_to_graph_list(r: ClientResponse) -> list[dict]:
         return []
     if not all(isinstance(x, dict) for x in lst):
         raise ValueError(f"@graph is not list[dict] {r.url}")
-    return lst
+    return list(FileManager.parse_obj(i, compact=True) for i in lst)
 
 
 async def rq_to_graph_list_len_1(r: ClientResponse):
     graph = await rq_to_graph_list(r)
     if len(graph) != 1:
         raise ValueError(f"@graph is not len(list[dict]) == 1 {r.url}")
-    return graph[0]
+    obj = FileManager.parse_obj(graph[0], compact=True) or {}
+    return obj
 
 
-class ApiSession:
-    def __init__(self):
-        self.__s = Session()
-
-    def __get_json(self, url: str):
-        r = self.__s.get(url)
-        try:
-            return r.json()
-        except ReqJSONDecodeError:
-            text = re_sp.sub(r" ", r.text).strip()
-            if len(text) == 0:
-                logger.critical(f"{url} is empty : {text}")
-            try:
-                return json.loads(text)
-            except Exception:
-                pass
-            logger.critical(f"{url} is not a JSON: {text}")
-            raise
-
-    def __get_dict(self, url: str):
-        obj = self.__get_json(url)
-        if not isinstance(obj, dict):
-            raise ValueError(f"No dict: {url}")
-        return obj
-
-    @HashCache("rec/api_madrid_es/hash/{}.json")
-    def get_graph_list(self, url: str) -> tuple[dict, ...]:
-        obj = self.__get_dict(url)
-        lst = obj.get("@graph")
-        if not isinstance(lst, list):
-            raise ValueError(f"@graph is not list {url}")
-        if len(lst) == 0:
-            logger.critical(f"@graph is empty list {url}")
-            return tuple()
-        if not all(isinstance(x, dict) for x in lst):
-            raise ValueError(f"@graph is not list[dict] {url}")
-        return list(FileManager.parse_obj(i, compact=True) for i in lst)
-
-    def get_graph_list_len_1(self, url: str):
-        graph = self.get_graph_list(url)
-        if len(graph) != 1:
-            raise ValueError(f"@graph is not len(list[dict]) == 1 {url}")
-        obj = FileManager.parse_obj(graph[0], compact=True) or {}
-        return obj
-
-
-SESSION = ApiSession()
+async def rq_to_label(r: ClientResponse):
+    soup = BeautifulSoup(await r.read(), "xml")
+    url = r.history[0].url
+    node = soup.find("skos:prefLabel", attrs={"xml:lang": "es"})
+    if node is None:
+        node = soup.find("skos:prefLabel")
+    if node is not None:
+        txt = re_sp.sub(" ", node.get_text()).strip()
+        return txt
+    node = soup.find("rdf:Description")
+    about = node.attrs.get('rdf:about') if node else None
+    if about is None:
+        val = {
+            "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid%2028042/Distrito/Barajas": "Barajas",
+            "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Fuencarral-ElPardo": "Fuencarral El Pardo"
+        }.get(str(url))
+        if val is not None:
+            return val
+        logger.critical(f"skos:prefLabel not found in {url}")
+        return None
+    about = about.rsplit("/", 1)[-1]
+    about = un_camel(about)
+    return about
 
 
 def str_line(s: str | None):
@@ -132,25 +110,19 @@ def date_to_str(d: date | datetime | None):
     raise ValueError(d)
 
 
-class MadridEsPlace(NamedTuple):
-    latitude: float
-    longitude: float
-    location: str
-    address: str
-
-
-class MadridEsEvent(NamedTuple):
+class Item(NamedTuple):
     id: int
     url: str
     title: str
     description: str
     dtstart: str
     dtend: str
-    audience: tuple[str, ...]
     recurrence: bool
-    typ: Optional[str] = None
-    place: Optional[MadridEsPlace] = None
-    price: Optional[float | int] = None
+    audience: tuple[str, ...] = tuple()
+    category: Optional[str] = None
+    place: Optional[Place] = None
+    price: Optional[str] = None
+    free: Optional[bool] = None
 
     @staticmethod
     def build(*args, **kwargs):
@@ -161,8 +133,8 @@ class MadridEsEvent(NamedTuple):
             if isinstance(v, list):
                 obj[k] = tuple(v)
             if k == "place" and isinstance(v, dict):
-                obj[k] = MadridEsPlace(**v)
-        return MadridEsEvent(**obj)
+                obj[k] = Place(**v)
+        return Item(**obj)
 
 
 class MadridEsDictWrapper(DictWrapper):
@@ -174,31 +146,17 @@ class MadridEsDictWrapper(DictWrapper):
 
     @property
     def __organismo(self):
-        url = self.get_api_org()
-        if url:
-            return DictWrapper(SESSION.get_graph_list_len_1(url))
+        org = self.get('__organization__')
+        if isinstance(org, dict):
+            return DictWrapper(org)
         return DictWrapper({})
 
-    def get_price(self):
+    def is_free(self):
         if self.get_bool('free'):
-            return 0
-        for txt in (
-            self.get_str_or_none('price'),
-            self.get_str_or_none('description')
-        ):
-            prc = find_euros(txt)
-            if prc is not None:
-                return prc
-        free = self.get_bool_or_none('__free__')
-        if free is True:
-            return 0
-        prc = self.get_str_or_none('price')
-        if prc not in (
-            None,
-            "Entradas disponibles próximamente en entradas.com y en la taquilla del recinto",
-            "Consultar descuentos especiales",
-        ):
-            logger.critical(f"Campo price inexperado: {prc}")
+            return True
+        if self.get_bool_or_none('__free__') is True:
+            return True
+        return False
 
     def get_location(self):
         loc = self.get_dict_or_none('location')
@@ -232,49 +190,88 @@ class MadridEsDictWrapper(DictWrapper):
         raise ValueError(f"[{self.get('id')}] address no encontrado")
 
     def __get_address(self):
-        addr = self.get_dict_or_none('address')
-        area = self.get_dict_or_none('area')
+        addr = self.get_dict_or_empty('address')
+        area = addr.get_dict_or_none('area')
         if area:
             return area
         addr = self.__organismo.get_dict_or_none("address")
         if addr:
             return addr
 
+    def get_district(self):
+        ko_district = (
+            "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Distrito",
+        )
+        is_ko = False
+        for obj in (
+            self.get_dict_or_empty('address'),
+            self.__organismo.get_dict_or_empty("address"),
+        ):
+            aux = obj.get_dict_or_empty('district')
+            district = aux.get_str_or_none('@id')
+            if district is None:
+                continue
+            if district not in ko_district:
+                return district
+            is_ko = True
+        msg = f"[{self.get('id')}] district no encontrado"
+        if is_ko:
+            logger.critical(msg)
+        else:
+            raise ValueError(msg)
 
-class ApiMadridEs:
+
+class Dataset(NamedTuple):
+    events: list[dict]
+    organizations: dict[str, dict]
+
+    @staticmethod
+    def build(*args, **kwargs):
+        obj = get_obj(*args, **kwargs)
+        if obj is None:
+            return None
+        return Dataset(**obj)
+
+
+class DatosMadridEs:
 
     def __obj_to_event(self, obj: dict):
         i = MadridEsDictWrapper(obj)
         place = None
         dtend = i.get_datetime("dtend", "%Y-%m-%d %H:%M:%S.0")
         loc = i.get_location()
-        if loc is not None:
-            place = MadridEsPlace(
-                latitude=loc.get_float('latitude'),
-                longitude=loc.get_float('longitude'),
-                location=i.event_location(),
-                address=i.get_address()
-            )
+        place = Place(
+            latitude=loc.get_float('latitude'),
+            longitude=loc.get_float('longitude'),
+            location=i.event_location(),
+            address=i.get_address(),
+            district=i.get_district()
+        ) if loc else None
         dtstart = i.get_datetime("dtstart", "%Y-%m-%d %H:%M:%S.0")
         hm_tm = i.get_str_or_none('time')
         if hm_tm not in (None, dtstart.strftime("%H:%M")):
-            logger.critical(f"time={hm_tm} dtstart={dtstart} in {obj}")
-        e = MadridEsEvent(
+            if dtstart.strftime("%H:%M") == "00:00":
+                h, m = map(int, hm_tm.split(":"))
+                dtstart = dtstart.replace(hour=h, minute=m)
+            else:
+                logger.critical(f"time={hm_tm} dtstart={dtstart} in {obj}")
+        e = Item(
             id=i.get_int('id'),
-            typ=i.get_str_or_none("@type"),
+            category=i.get_str_or_none("@type"),
             url=i.get_str('link'),
             title=str_line(i.get_str('title')),
-            price=i.get_price(),
-            description=str_line(i.get_str_or_none('description')),
+            price=i.get_str_or_none('price'),
+            description=i.get_str_or_none('description'),
             dtstart=date_to_str(dtstart),
             dtend=date_to_str(dtend),
-            audience=str_tuple(i.get_str_or_none("audience"), r"\s*,\s*"),
+            audience=tuple(map(un_camel, str_tuple(i.get_str_or_none("audience"), r"\s*,\s*"))),
             recurrence=i.get("recurrence") is not None,
-            place=place
+            place=place,
+            free=i.is_free()
         )
         return e
 
-    @HashCache("rec/api_madrid_es/dataset.json")
+    @TupleCache("rec/apimadrides/dataset.json", builder=Dataset.build)
     def __get_events(self):
         FREE_IF_IN = (
             'https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json',
@@ -308,14 +305,38 @@ class ApiMadridEs:
             if i > 0:
                 count = len(new_ids)
                 logger.info(f"[+{count:4d}] {url} {', '.join(map(str, sorted(new_ids)))}")
-        return list(events_dict.values())
 
-    @TupleCache("rec/api_madrid_es.json", builder=MadridEsEvent.build)
+        events = list(events_dict.values())
+        orgs: set[str] = set()
+        for e in events:
+            relation = e.get("relation")
+            if isinstance(relation, dict):
+                url = relation.get('@id')
+                if isinstance(url, str):
+                    url = url.strip()
+                    if re_org_api.match(url):
+                        orgs.add(url)
+                        e['__organization__'] = url
+
+        org_data: dict[str, dict] = Getter(
+            onread=rq_to_graph_list_len_1
+        ).get(*orgs)
+
+        dts = Dataset(
+            events=list(events_dict.values()),
+            organizations=org_data
+        )
+        return dts
+
+    @TupleCache("rec/apimadrides/items.json", builder=Item.build)
     def get_events(self):
-        events_dict = self.__get_events()
-        size = len(events_dict)
-        events: set[MadridEsEvent] = set()
-        for e in events_dict:
+        dataset = self.__get_events()
+        size = len(dataset.events)
+        events: set[Item] = set()
+        for e in dataset.events:
+            org = dataset.organizations.get(e.get('__organization__'))
+            if isinstance(org, dict):
+                e['__organization__'] = org
             x = self.__obj_to_event(e)
             if x is not None:
                 events.add(x)
@@ -323,11 +344,35 @@ class ApiMadridEs:
         discard = size-len(events)
         if discard:
             logger.info(f"[-{discard:4d}] Descartados")
-        return tuple(sorted(events))
+
+        url_label: set[str] = set()
+        for e in events:
+            if e.category:
+                url_label.add(e.category)
+            if e.place and e.place.district:
+                url_label.add(e.place.district)
+
+        data_label: dict[str, str] = Getter(
+            onread=rq_to_label,
+            raise_for_status=False
+        ).get(*url_label)
+
+        evs: set[Item] = set()
+        for e in events:
+            e = e._replace(
+                category=data_label.get(e.category)
+            )
+            if e.place and e.place.district:
+                e = e._replace(place=e.place._replace(
+                    district=data_label.get(e.place.district)
+                ))
+            evs.add(e)
+
+        return tuple(sorted(evs))
 
 
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/apimadrides.log", log_level=(logging.INFO))
-    m = ApiMadridEs()
+    m = DatosMadridEs()
     print(len(m.get_events()))

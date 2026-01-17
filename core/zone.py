@@ -72,6 +72,7 @@ class Circles(Enum):
     LEGAZPI = Circle(lat=40.391225, lon=-3.695124, kms=1)
     PUENTE_VALLECAS = Circle(lat=40.39855701548307, lon=-3.6690140560088267, kms=2)
     ARENAL = Circle(lat=40.389887491953125, lon=-3.645447400911845, kms=1)
+    ALCALA_DE_HENARES = Circle(lat=40.48420151410674, lon=-3.3680555921752076, kms=6)
 
 
 class Zones(Enum):
@@ -141,6 +142,22 @@ class Zones(Enum):
         Circles.PUENTE_VALLECAS,
         Circles.ARENAL
     )
+    MANUEL_BECERRA = Zone.build(
+        "Manuel Becerra",
+        Circle(lat=40.42787618435172, lon=-3.669076239770764, kms=1)
+    )
+    NUNEZ_BOLBOA = Zone.build(
+        "Nuñez de Balboa",
+        Circle(lat=40.432793386204, lon=-3.68312899494794, kms=0.7)
+    )
+    ALCALA_DE_HENARES = Zone.build(
+        "Alcalá de Henares",
+        Circles.ALCALA_DE_HENARES
+    )
+    AV_AMERICA = Zone.build(
+        "Avenida de América",
+        Circle(lat=40.43892297245423, lon=-3.6788992647788437, kms=0.7)
+    )
 
 
 if __name__ == "__main__":
@@ -191,4 +208,3 @@ if __name__ == "__main__":
     }
 
     print(json.dumps(geojson, indent=2))
-

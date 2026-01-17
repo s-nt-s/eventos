@@ -90,6 +90,10 @@ class GancioPortal:
             return None
 
         duration, sessions = self.__get_duration_sessions(start, end)
+        more: list[str] = []
+        for m in p.get_list_or_empty('online_locations'):
+            if re.match(r"^https?://\S+$", m or '') and m not in more:
+                more.append(m)
 
         event = Event(
             url=url,
@@ -101,6 +105,7 @@ class GancioPortal:
             duration=duration,
             sessions=sessions,
             place=place,
+            more=more[0] if more else None
         )
         return event
 
@@ -114,7 +119,7 @@ class GancioPortal:
                 aux = end.replace(year=start.year, month=start.month, day=start.day)
                 if aux > start:
                     duration = int((aux-start).total_seconds() / 60)
-                    st = start  + timedelta(days=1)
+                    st = start + timedelta(days=1)
                     nd = end.date()
                     while st.date() <= nd:
                         days.append(st)
@@ -130,7 +135,7 @@ class GancioPortal:
         for t in map(str.lower, e.get_list_or_empty('tags')):
             for x in map(plain_text, map(str.strip, re.split(r"\s*#\s*", t))):
                 if x is not None and len(x):
-                    tags.add(x)
+                    tags.add(x.lower())
 
         def has_tag(*args):
             for a in args:
@@ -161,6 +166,8 @@ class GancioPortal:
             return Category.WORKSHOP
         if has_tag_or_title("presentacion de libro"):
             return Category.LITERATURE
+        if re_and(name, "presentaci[oó]n", "jugar o romper", flags=re.I):
+            return Category.LITERATURE
         if has_tag_or_title("intercambio de idiomas", "hacklab") or re_or(name, "taller", "^clases de", "^curso de", flags=re.I, to_log=_id_):
             return Category.WORKSHOP
         if re_or(name, "iniciaci[óo]n al",  flags=re.I, to_log=_id_) and has_tag("deporte", "gimnasia"):
@@ -171,7 +178,7 @@ class GancioPortal:
             return Category.READING_CLUB
         if has_tag("concierto") or re_or("^concierto", flags=re.I, to_log=_id_):
             return Category.MUSIC
-        if re_or(name, "fiesta", "Social Swing", "kabaret", flags=re.I, to_log=_id_):
+        if re_or(name, "fiesta", "Social Swing", "kabaret", "cañeo", flags=re.I, to_log=_id_):
             return Category.PARTY
         if re_or(name, "bicicritica", to_log=_id_):
             return Category.SPORT
@@ -185,10 +192,38 @@ class GancioPortal:
             return Category.MUSIC
         if has_tag_or_title("exposición", "exposicion", "miniexpo", "mini-expo"):
             return Category.EXPO
+        if has_tag_or_title("mesa ciudadana", "movilizaciones por"):
+            return Category.ACTIVISM
+        if has_tag_or_title("teknokasa"):
+            return Category.WORKSHOP
+        if re_and(name, "Software", ("Free", "libre"), ("day", "día"), flags=re.I):
+            return Category.PARTY
+        if re_or(
+            name,
+            "Filosof[ií]a PEC",
+            flags=re.I
+        ):
+            return Category.READING_CLUB
 
         desc = self.get_description(url)
         txt_desc = get_text(desc)
-        if re_or(txt_desc, "Charla cr[ií]tica", "vendr[aá]n a conversar sobre", "conferencia", flags=re.I, to_log=_id_):
+        if re_or(
+            txt_desc,
+            "Ven con tus peques",
+            flags=re.I,
+            to_log=_id_
+        ):
+            return Category.CHILDISH
+        if re_or(
+            txt_desc,
+            "Charla cr[ií]tica",
+            "vendr[aá]n a conversar sobre",
+            "conferencia",
+            "conversaremos con",
+            ("jornada", "auditorio"),
+            flags=re.I,
+            to_log=_id_
+        ):
             return Category.CONFERENCE
         if re_or(txt_desc, "m[uú]sica electr[óo]nica", flags=re.I, to_log=_id_):
             return Category.MUSIC
@@ -198,12 +233,17 @@ class GancioPortal:
             return Category.PARTY
         if re_and(txt_desc, "Karaoke", r"DJ Set(s|lists?)?", to_log=_id_, flags=re.I):
             return Category.PARTY
-        if re_and(txt_desc, "jornada", "auditorio", flags=re.I, to_log=_id_):
-            return Category.CONFERENCE
         if re_or(txt_desc, "comedia perform[aá]tica", flags=re.I, to_log=_id_):
             return Category.THEATER
-        if re_or(txt_desc, "taller", flags=re.I, to_log=_id_):
+        if re_or(txt_desc, "taller", "Curso presencial", flags=re.I, to_log=_id_):
             return Category.WORKSHOP
+        if re_and(
+            txt_desc,
+            "leer un texto",
+            "razonar en com[uú]n",
+            flags=re.I
+        ):
+            return Category.READING_CLUB
 
         if re_or(place.name, "librer[íi]a", flags=re.I):
             if re_or(name, "poes[íi]aa?", flags=re.I):
@@ -216,6 +256,16 @@ class GancioPortal:
         if re_or(name, "Presentaci[óo]n del libro", to_log=_id_, flags=re.I):
             return Category.LITERATURE
 
+        if has_tag("poesia"):
+            return Category.POETRY
+        if has_tag_or_title("asamblea abierta"):
+            return Category.ACTIVISM
+        if has_tag("marcha", "lavapiesallimite"):
+            return Category.ACTIVISM
+        if has_tag("excursion") and has_tag("somosierra"):
+            return Category.SPORT
+        if has_tag_or_title("dramaturgia"):
+            return Category.THEATER
         logger.critical(str(CategoryUnknown(url, f"{e}")))
         return Category.UNKNOWN
 

@@ -1,18 +1,19 @@
-from core.web import Driver, WEB, get_text
+from core.web import Driver, WEB, get_text, buildSoup
 from core.util import re_or, plain_text, get_obj, re_and, get_domain
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
-from core.cache import Cache, HashCache
+from core.cache import TupleCache, HashCache
 import json
 from core.event import Event, Cinema, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown
-from core.cache import TupleCache
 from datetime import datetime
 import re
 import requests
 from pytz import timezone
 from typing import NamedTuple
 from collections import defaultdict
+from core.fetcher import Getter
+from aiohttp import ClientResponse
 
 logger = logging.getLogger(__name__)
 S = requests.Session()
@@ -44,6 +45,37 @@ KO_MORE = (
 )
 
 
+async def rq_to_data(r: ClientResponse):
+    js = await r.json()
+    if not isinstance(js, dict):
+        raise ValueError(f'{r.url} is not a dict')
+    data = js.get('data')
+    if not isinstance(data, dict):
+        raise ValueError(f'{r.url} is not a {{"data": dict}}')
+    return data
+
+
+async def rq_to_info_soup(r: ClientResponse):
+    info: set[SoupInfo] = set()
+    soup = buildSoup(str(r.url), await r.text())
+    for script in map(get_text, soup.select("script")):
+        if not script:
+            continue
+        for m in re.findall(r'{id:(\d+),[^{}]+,sessionStart:"([\d\-: ]+)"', script):
+            info.add(SoupInfo(
+                id=int(m[0]),
+                sessionStart=m[1]
+            ))
+    return tuple(sorted(info))
+
+
+async def rq_to_mapa(r: ClientResponse):
+    soup = buildSoup(str(r.url), await r.text())
+    mapa_url = str(r.url).rstrip("/")+"/mapa"
+    if soup.find("a", href=mapa_url):
+        return mapa_url
+
+
 def timestamp_to_date(timestamp: int):
     tz = timezone('Europe/Madrid')
     d = datetime.fromtimestamp(timestamp, tz)
@@ -62,19 +94,105 @@ class SoupInfo(NamedTuple):
         return SoupInfo(**obj)
 
 
+class Data(NamedTuple):
+    state: dict
+    info: dict[int, dict]
+    soup: dict[int, tuple[SoupInfo, ...]]
+
+    @staticmethod
+    def build(*args, **kwargs):
+        obj = get_obj(*args, **kwargs)
+        if obj is None:
+            return None
+        info = {}
+        for k, v in obj.get('info', {}).items():
+            info[int(k)] = v
+        obj['info'] = info
+        soup = {}
+        for k, v in obj.get('soup', {}).items():
+            soup[int(k)] = tuple(map(lambda x: SoupInfo(*x), v))
+        obj['soup'] = soup
+        return Data(**obj)
+
+
+HEADERS = {
+    'Host': 'api-tienda.madrid-destino.com',
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'X-SaleChannel': '3c4b1c81-e854-4324-830f-d59bec8cf9a2',
+    'X-Locale': 'es',
+    'Origin': 'https://tienda.madrid-destino.com',
+    'DNT': '1',
+    'Connection': 'keep-alive',
+    'Referer': 'https://tienda.madrid-destino.com/',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-site',
+    'Pragma': 'no-cache',
+    'Cache-Control': 'no-cache',
+    'TE': 'trailers'
+}
+
+
 class MadridDestino:
     URL = "https://tienda.madrid-destino.com/es"
 
     def __init__(self):
         self.__full_session: set[str] = set()
+        self.__info_getter = Getter(
+            onread=rq_to_data,
+            headers=HEADERS
+        )
+        self.__soup_getter = Getter(
+            onread=rq_to_info_soup,
+            headers=HEADERS
+        )
+        self.__map_getter = Getter(
+            onread=rq_to_mapa,
+            headers=HEADERS
+        )
 
     @property
     def full_sessions(self):
         return tuple(sorted(self.__full_session))
 
-    @Cache("rec/madriddestino/state.json", compact=True)
-    def __get_state(self) -> Dict:
-        return self.get_state_from_url(MadridDestino.URL)
+    @TupleCache("rec/madriddestino/data.json", builder=Data.build)
+    def __get_data(self):
+        state = self.get_state_from_url(MadridDestino.URL)
+        info_url: dict[str, int] = {}
+        soup_url: dict[str, int] = {}
+        orgs: dict[int] = {}
+
+        for org in state['organizations']:
+            if isinstance(org, dict):
+                org_id = org.get('id')
+                if org_id is not None:
+                    orgs[org_id] = org
+
+        for e in state['events']:
+            e_id = e.get('id')
+            if e_id is not None:
+                info_url[f"https://api-tienda.madrid-destino.com/public_api/events/{e_id}/info"] = e_id
+
+            org = orgs.get(e['organization_id'])
+            if org:
+                soup_url[MadridDestino.URL+'/'+org['slug']+'/'+e['slug']] = e_id
+
+        info: dict[int, dict] = {}
+        for k, v in self.__info_getter.get(*info_url.keys()).items():
+            info[info_url[k]] = v
+
+        soup: dict[int, dict] = {}
+        for k, v in self.__soup_getter.get(*soup_url.keys()).items():
+            soup[soup_url[k]] = v
+
+        return Data(
+            state=state,
+            info=info,
+            soup=soup
+        )
 
     @HashCache("rec/madriddestino/state/{}.json")
     def get_state_from_url(self, url: str) -> Dict:
@@ -92,22 +210,15 @@ class MadridDestino:
             return obj
 
     @cached_property
-    def state(self):
-        return self.__get_state()
+    def data(self):
+        return self.__get_data()
 
-    @Cache("rec/madriddestino/{}.json")
-    def get_event_info(self, id) -> Dict:
-        url = f"https://api-tienda.madrid-destino.com/public_api/events/{id}/info"
-        logger.debug(url)
-        data = S.get(url).json()['data']
-        return data
-
-    @Cache("rec/madriddestino/session/{}.json")
-    def get_info_session(self, id):
-        url = f"https://api-tienda.madrid-destino.com/public_api/sessions/{id}"
-        logger.debug(url)
-        data = S.get(url).json()['data']
-        return data
+    #@Cache("rec/madriddestino/session/{}.json")
+    #def get_info_session(self, id):
+    #    url = f"https://api-tienda.madrid-destino.com/public_api/sessions/{id}"
+    #    logger.debug(url)
+    #    data = S.get(url).json()['data']
+    #    return data
 
     @staticmethod
     def mk_id(id: int) -> int:
@@ -118,7 +229,7 @@ class MadridDestino:
     def events(self):
         logger.info("Madrid Destino: Buscando eventos")
         events: Set[Event] = set()
-        for e in self.state['events']:
+        for e in self.data.state['events']:
             #if len(e['eventCategories']) == 0:
             #    continue
             #if e['freeCapacity'] == 0:
@@ -127,7 +238,8 @@ class MadridDestino:
             if org is None:
                 continue
             logger.debug("event.id="+str(e['id']))
-            info = self.get_event_info(e['id'])
+            info = self.data.info[e['id']]
+            soup = self.data.soup.get(e['id'])
             url = MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
             id = MadridDestino.mk_id(e['id'])
             more = info.get('webSource')
@@ -141,13 +253,29 @@ class MadridDestino:
                 duration=durt if durt is not None else 60,
                 category=self.__find_category(id, e, info),
                 place=self.__find_place(e),
-                sessions=self.__find_sessions(url, e),
+                sessions=self.__find_sessions(url, e, soup),
                 more=None if more in KO_MORE else more
             )
             ev = self.__complete(ev, info)
             events.add(ev)
-        logger.info(f"Madrid Destino: Buscando eventos {len(events)}")
-        return tuple(sorted(events))
+        url_session: set[str] = set()
+        for e in events:
+            for s in e.sessions:
+                url_session.add(s.url)
+        url_to_map = self.__map_getter.get(*url_session)
+        evs: list[Event] = []
+        for e in sorted(events):
+            sessions = list(e.sessions)
+            for i, s in enumerate(sessions):
+                mp = url_to_map.get(s.url)
+                if mp is not None:
+                    if s.url in self.__full_session:
+                        self.__full_session.add(mp)
+                    sessions[i] = s._replace(url=mp)
+            e = e.merge(sessions=tuple(sessions))
+            evs.append(e)
+        logger.info(f"Madrid Destino: Buscando eventos {len(evs)}")
+        return tuple(evs)
 
     def __complete(self, ev: Event, info: dict):
         ori_more = ev.more or ''
@@ -229,8 +357,8 @@ class MadridDestino:
             address=space['address']
         )
 
-    def __find_sessions(self, source: str, e: Dict):
-        id_session = self.__get_session_from_soup(e['id'], source)
+    def __find_sessions(self, source: str, e: Dict, soup: tuple[SoupInfo, ...]):
+        id_session = self.__get_session_from_soup(soup)
         sessions: Set[Session] = set()
         for s in e['uAvailableDates']:
             dt = timestamp_to_date(s)
@@ -246,23 +374,9 @@ class MadridDestino:
             ))
         return tuple(sorted(sessions, key=lambda s: s.date))
 
-    @TupleCache("rec/madriddestino/{}_soup.json", builder=SoupInfo.build)
-    def get_info_from_soup(self, id: int, url: str):
-        info: set[SoupInfo] = set()
-        soup = WEB.get_cached_soup(url)
-        for script in map(get_text, soup.select("script")):
-            if not script:
-                continue
-            for m in re.findall(r'{id:(\d+),[^{}]+,sessionStart:"([\d\-: ]+)"', script):
-                info.add(SoupInfo(
-                    id=int(m[0]),
-                    sessionStart=m[1]
-                ))
-        return tuple(sorted(info))
-
-    def __get_session_from_soup(self, id: int, url: str):
+    def __get_session_from_soup(self, soup: tuple[SoupInfo, ...]):
         data: dict[str, set[int]] = defaultdict(set)
-        for s in self.get_info_from_soup(id, url):
+        for s in soup:
             dt = s.sessionStart[:16]
             data[dt].add(s.id)
         id_data: dict[str, int] = dict()
@@ -273,15 +387,15 @@ class MadridDestino:
 
     @cache
     def __find(self, k: str, id: int):
-        for i in self.state[k]:
+        for i in self.data.state[k]:
             if isinstance(i, dict) and i.get('id') == id:
                 return i
-        logger.warning(str(FieldNotFound(f"{k}.id={id}", self.state[k])))
+        logger.warning(str(FieldNotFound(f"{k}.id={id}", self.data.state[k])))
 
     def __find_category(self, id: str, e: Dict, info: Dict):
         cats: Set[str] = set()
         eventCategories = e.get('eventCategories') or []
-        for c in self.state['categories']:
+        for c in self.data.state['categories']:
             if c['id'] in eventCategories:
                 cats.add(c['label'])
             for ch in c.get('children', []):

@@ -1,7 +1,6 @@
 from dataclasses import dataclass, asdict, fields, replace, is_dataclass
-from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set
-from core.util import get_obj, plain_text, get_domain, get_img_src, re_or, re_and, get_main_value
-from portal.util.madrides import find_more_url as find_more_url_madrides
+from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set, Callable
+from core.util import get_obj, plain_text, get_domain, get_img_src, re_or, re_and, get_main_value, capitalize
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
@@ -183,6 +182,8 @@ class Category(IntEnum):
             return "fiesta"
         if self == Category.DUPE:
             return "duplicada"
+        if self == Category.MATERNITY:
+            return "maternidad"
         raise ValueError(self.value)
 
     def __lt__(self, other):
@@ -300,6 +301,8 @@ class Place:
                 v = v.strip()
                 if len(v) == 0 and f.name != 'zone':
                     v = None
+            if f.name == "name":
+                v = capitalize(v)
             object.__setattr__(self, f.name, v)
         self.__fix()
 
@@ -320,7 +323,6 @@ class Place:
         fix_val = fnc()
         if fix_val == old_val:
             return False
-        logger.debug(f"Place._fix_field: {name}={fix_val} <- {old_val}")
         object.__setattr__(self, name, fix_val)
         return True
 
@@ -348,9 +350,9 @@ class Place:
         if re_or(name, "matadero", "cineteca", "Casa del Reloj", "Nave Terneras", "La Lonja", flags=re.I):
             return "Legazpi"
         if re_and(addr, "conde duque", "28015"):
-            return "Conde Duque y alrededores"
+            return "Plaza España"
         if re_or(name, "clara del rey"):
-            return "Conde Duque y alrededores"
+            return "Plaza España"
         if self.latlon:
             lat, lon = map(float, self.latlon.split(","))
             for zn in (
@@ -366,6 +368,10 @@ class Place:
                 Zones.MARQUES_DE_VADILLO,
                 Zones.USERA,
                 Zones.VALLECAS,
+                Zones.MANUEL_BECERRA,
+                Zones.NUNEZ_BOLBOA,
+                Zones.ALCALA_DE_HENARES,
+                Zones.AV_AMERICA
             ):
                 z = zn.value
                 if z.is_in(lat, lon):
@@ -383,7 +389,12 @@ class Place:
         address = self.address or ''
         if re.match(r"^Faro de (la )?Moncloa$", name, flags=re.I):
             return Places.FARO_MONCLOA.value
-        if re.match(r"^Conde Duque$", name, flags=re.I):
+        if re_or(
+            name,
+            r"^Conde ?Duque$",
+            (r"Contempor[aá]nea", r"Conde ?Duque"),
+            flags=re.I
+        ):
             return Places.CONDE_DUQUE.value
         if re.match(r"^Sala Berlanga$", name, flags=re.I) and re.search(r"Andr[ée]s Mellado.*53", address, flags=re.I):
             return Places.SALA_BERLANGA.value
@@ -415,6 +426,26 @@ class Place:
             return Places.LIBRERIA_SANTANDER.value
         if re.search(r"mary read", name, flags=re.I) and re.search(r"Marqu[eé]s (de )?Toca", address, flags=re.I):
             return Places.LIBRERIA_MARY_READ.value
+        if re_and(self.name, "ateneo", "madrid", flags=re.I) and re_and(self.address, "prado", flags=re.I):
+            return Places.ATENEO_MADRID.value
+        if re_and(self.name, "ateneo", "maliciosa", flags=re.I) and re_and(self.address, "peñuelas", flags=re.I):
+            return Places.ATENEO_MALICIOSA.value
+        if re_and(self.name, "espacio", flags=re.I) and re_and(self.address, "Sierra Carbonera.* 32", flags=re.I):
+            return Places.ESPACIO.value
+        if re_and(self.name, "templo", "debod", flags=re.I) and re_and(self.address, "ferraz", flags=re.I):
+            return Places.DEBOD.value
+        if re_or(self.name, "Biblioteca David Gistau", "Centro cultural Buenavista", flags=re.I) and re_and(self.address, "toreros,? 5", flags=re.I):
+            return Places.BUENAVISTA.value
+        if re_or(self.name, "MakeSpace", ("Make", "Space"), flags=re.I) and re_and(self.address, "ruiz palacios,? 7", flags=re.I):
+            return Places.MAKESPACE.value
+        if re_or(self.name, "ASOCIACI[Óo]N GALEGA CORREDOR DO HENARES", flags=re.I) and re_and(self.address, "28806", flags=re.I):
+            return Places.ALCALA_HENARES_GALEGA.value
+        if re.search(r"CS[ROA]* [lL]a [rR]osa", name) and re.search(r"bastero", self.address, flags=re.I):
+            return Places.CSO_ROSA.value
+        if re_and(self.address, r"CNT", "embajadores", flags=re.I):
+            return Places.CNT_EMBAJADORES.value
+        if re_and(self.name, "museo", "prado", flags=re.I):
+            return Places.MUSEO_PRADO.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -430,6 +461,12 @@ class Places(Enum):
         address="C/ de Zurbano, 3, Chamberí, 28010 Madrid",
         latlon="40.427566448169316,-3.6939387798888634",
         zone='Moncloa'
+    )
+    MUSEO_PRADO = Place(
+        name="Museo del Prado",
+        address="Paseo del Prado s/n, 28014 Madrid",
+        latlon="40.41391229422596,-3.692084176021338",
+        zone='Paseo del Pardo'
     )
     CAIXA_FORUM = Place(
         name="Caixa Forum",
@@ -517,6 +554,7 @@ class Places(Enum):
     TEATRO_MONUMENTAL = Place(
         name="Teatro Monumental",
         address="C. de Atocha, 65, Centro, 28012 Madrid",
+        latlon='40.41248873703834,-3.699161734460963',
         zone='Sol'
     )
     EKO = Place(
@@ -547,6 +585,12 @@ class Places(Enum):
         address="C. de Antoñita Jiménez, 60, Carabanchel, 28019 Madrid",
         latlon="40.39131044903329,-3.7197457145163964",
         zone="Marques de Vadillo"
+    )
+    CSO_ROSA = Place(
+        name="CSO la Rosa",
+        address="C. del Bastero, 1, Centro, Centro, 28005 Madrid",
+        latlon="40.409645939312156,-3.7096701288640967",
+        zone="Sol"
     )
     SALA_CLAMORES = Place(
         name="Sala Clamaroes",
@@ -583,6 +627,48 @@ class Places(Enum):
         address="C. del Prado, 21, Centro, 28014 Madrid",
         latlon="40.41526343432519,-3.698205767581124",
         zone="Sol"
+    )
+    ATENEO_MALICIOSA = Place(
+        name="Ateneo la maliciosa",
+        address="Calle de las Peñuelas, 12, Arganzuela, 28005 Madrid",
+        latlon="40.40362500123191,-3.7043296154194074",
+        zone="Embajadores"
+    )
+    ESPACIO = Place(
+        name="El espacio",
+        address="C/ de Sierra Carbonera, 32, Puente de Vallecas, 28053 Madrid",
+        latlon="40.39225251088216,-3.6642723003364335",
+        zone="Vallecas"
+    )
+    DEBOD = Place(
+        name="Templo de Debod",
+        address="C. de Ferraz, 1, Moncloa - Aravaca, 28008 Madrid",
+        latlon="40.42442583459242,-3.7177694868554996",
+        zone="Plaza España"
+    )
+    BUENAVISTA = Place(
+        name="Centro cultural Buenavista",
+        address="Av. de los Toreros, 5, Salamanca, 28028 Madrid",
+        latlon="40.43225106824249,-3.670682203781317",
+        zone="Manuel Becerra"
+    )
+    MAKESPACE = Place(
+        name="MakeSpace",
+        address="Calle Ruiz Palacios, 7, Tetuán, 28039 Madrid",
+        latlon="40.46212420746715,-3.7043117038105775",
+        zone="Tetuán"
+    )
+    ALCALA_HENARES_GALEGA = Place(
+        name="Asociación Galega Corredor do Henares",
+        address="C. de Campo Real, 1, 28806 Alcalá de Henares, Madrid",
+        latlon="40.49593546319083,-3.3790130490260237",
+        zone="Alcalá de Henares"
+    )
+    CNT_EMBAJADORES = Place(
+        name="CNT Embajadores",
+        address="Glorieta Embajadores, 7, Arganzuela, 28012 Madrid",
+        latlon="40.40454139223952,-3.702903411452709",
+        zone="Embajadores"
     )
 
 
@@ -622,6 +708,12 @@ def _clean_name(name: str, place: str):
             "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.I)
+        name = re.sub(r"\s*[\-\.]+\s*Moncloa[ \-\.]+Aravaca\s*$", "", name, flags=re.I)
+        name = re.sub(r"\s*[\-\.]+\s*(Villaverde|Centro)\s*$", "", name, flags=re.I)
+        name = re.sub(r"^(Magia|Teatro|Cine):\s*'(.+)'\s*$", r"\1", name, flags=re.I)
+        name = re.sub(r"\.\.\.\s*", "... ", name)
+        name = re.sub(r"(la) maravillas", r"\1s maravillas", name, flags=re.I)
+        name = re.sub(r"'\s*(Rompiendo Muros)\s*'", r"'\1'", name, flags=re.I)
         name = re.sub(r"^Taller para adultos:\s*", "", name, flags=re.I)
         name = re.sub(r"^POM Condeduque [\d\-]+\s*", "", name, flags=re.I)
         name = re.sub(r"\s*en el Espacio de Igualdad Lourdes Hernández$", "", name, flags=re.I)
@@ -656,7 +748,8 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"CinePlaza:.*?> (Proyección|Cine)[^:]*:\s+", "", name, flags=re.I)
         name = re.sub(r"^Teatro:?\s+'([^']+)'$", r"\1", name, flags=re.I)
         name = re.sub(r"^Representaci[óo]n teatral:?\s+'([^']+)'$", r"\1", name, flags=re.I)
-        name = re.sub(r"^Obra de teatro\.\s+", "", name, flags=re.I)
+        name = re.sub(r"^(Obra de )?teatro\.\s+", "", name, flags=re.I)
+        name = capitalize(name)
         name = unquote(name.strip(". "))
         if len(name) < 2:
             name = bak[-1]
@@ -753,7 +846,8 @@ class Event:
             if f.name == "price" and isinstance(v, float) and int(v) == v:
                 v = int(v)
             if v != old_val or (type(v) is not type(old_val)):
-                logger.debug(f"[{self.id}].__post_init__ {f.name}={v} <- {old_val}")
+                if v != old_val:
+                    logger.debug(f"[{self.id}].__post_init__ {f.name}={v} <- {old_val}")
                 object.__setattr__(self, f.name, v)
 
     def fix(self, **kwargs):
@@ -890,44 +984,11 @@ class Event:
             return self.category
         if self.category == Category.CONFERENCE and get_domain(self.more) == "goodreads.com":
             return Category.LITERATURE
-        if get_domain(self.url) == "madrid.es":
-            soup = WEB.get_cached_soup(self.url)
-            for txt in map(plain_text, soup.select("div.tramites-content div.tiny-text")):
-                if re_or(
-                    txt,
-                    "actividad dirigida a familias",
-                    "para que menores y mayores aprendan",
-                    "teatro infantil",
-                    "concierto familiar",
-                    "relatos en familia",
-                    r"musical? infantil",
-                    r"actividad (diseñada )?para familias",
-                    flags=re.I
-                ):
-                    return Category.CHILDISH
-                #if re_or(
-                #    txt,
-                #    "Presentación de la novela",
-                #    "presentación del libro",
-                #    "la autora firmar[áa]",
-                #    "el autor firmar[áa]",
-                #    "Publica la editorial Edelvives",
-                #    ("encuentro literario", "el autor conversar[áa] sobre su novela")
-                #    flags=re.I
-                #):
-                #    return Category.LITERATURE
         return self.category
 
     def _get_img_from_url(self, url: str):
         if url is None:
             return None
-        dom = get_domain(url)
-        if dom == "madrid.es":
-            soup = WEB.get_cached_soup(url)
-            nodes = soup.select("div.image-content img, div.tramites-content div.tiny-text img, div.detalle img")
-            for src in map(get_img_src, nodes):
-                if src:
-                    return src
 
     def merge(self, **kwargs):
         return replace(self, **kwargs)
@@ -965,14 +1026,14 @@ class Event:
         if self.more:
             return self.more
         urls = self.__get_urls()
-        if get_domain(self.url) == "madrid.es":
-            if self.category in (Category.CONFERENCE, Category.LITERATURE):
-                books = GR.find(self.name)
-                if books:
-                    return books[0].url
-            href = find_more_url_madrides(self.url)
-            if href and href not in urls:
-                return href
+        dom = get_domain(self.url)
+        if self.category in {
+            "madrid.es": (Category.CONFERENCE, Category.LITERATURE),
+            "ateneodemadrid.com": (Category.LITERATURE, )
+        }.get(dom, tuple()):
+            books = GR.find(self.name)
+            if books:
+                return books[0].url
 
     @property
     def dates(self):
@@ -1021,6 +1082,22 @@ class Event:
                     logger.debug(f"[{self.id}] Sesión {s.date} {w[d.weekday()]} eliminada por estar en horario de trabajo. {s.url or self.url}")
                 continue
             sessions.append(s)
+        object.__setattr__(self, 'sessions', tuple(sessions))
+
+    def remove_ko_sessions(
+        self,
+        isOkDate: Callable[[datetime], bool],
+        to_log: bool = True
+    ):
+        sessions = []
+        w = 'LMXJVSD'
+        for s in self.sessions:
+            d = s.get_date()
+            if isOkDate(d):
+                sessions.append(s)
+                continue
+            if to_log:
+                logger.debug(f"[{self.id}] Sesión {s.date} {w[d.weekday()]} eliminada por estar fuera de horario. {s.url or self.url}")
         object.__setattr__(self, 'sessions', tuple(sessions))
 
     def isSimilar(self, e: "Event"):
@@ -1159,7 +1236,10 @@ class Event:
     def _fix_cycle(self):
         if self.cycle:
             return self.cycle
+        urls = set(self.iter_urls())
         name = self.name or ''
+        if re.search(r"Charlas de astronomía para profanos", name):
+            return "Charlas de astronomía para profanos"
         if re.search(r"^Derechos [dD]igitales: ", name):
             return "Derechos digitales"
         if re.search(r"^Nuevos [Ii]maginarios: ", name):
@@ -1183,6 +1263,8 @@ class Event:
                 return "Los Clásicos en el Museo"
             if self.more == "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Codigo-eterno-codigo-secreto-Las-lenguas-clasicas-y-sus-misterios-XXXIII-Ciclo-de-Conferencias-de-Otono-/?vgnextfmt=default&vgnextoid=abf8a70a5ac39910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD":
                 return "Las lenguas clásicas y sus misterios"
+            if self.more == "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-de-la-Sociedad-Espanola-de-Retorica/?vgnextfmt=default&vgnextoid=6b8c61df8f06b910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD":
+                return "Sociedad Española de Retórica"
         if self.category == Category.CINEMA and self.place.name == "Cineteca":
             if re.search(r"^(Esc[áa]ner|Mrgente|Sesi[oó]n) \d+$", name, flags=re.I) or re.search("Stop Motion exquisito|Alzo mi voz.*realidades animadas", name, flags=re.I):
                 return "Cortometrajes"
@@ -1201,6 +1283,44 @@ class Event:
             return "Rutas por el Retiro"
         if self.category == Category.CONFERENCE and re_or(self.name, "Ciclo conferencias Maqueta León Gil de Palacio", flags=re.I):
             return "Maqueta León Gil de Palacio"
+        if urls.intersection((
+            "https://www.centrocentro.org/musica/limo-2026",
+            "https://www.centrocentro.org/musica/kali-malone",
+            "https://www.centrocentro.org/musica/arianna-casellas-y-kaue",
+            "https://www.centrocentro.org/musica/ustad-noor-bakhsh",
+            "https://www.centrocentro.org/musica/lucrecia-dalt",
+            "https://www.centrocentro.org/musica/senyawa",
+            "https://www.centrocentro.org/musica/lise-barkas"
+        )):
+            return "Musica corriente"
+        if urls.intersection((
+            "https://www.centrocentro.org/musica/vang-VIII-musicas-en-vanguardia",
+            "https://www.centrocentro.org/musica/jurg-frey-y-phill-niblock-cuartetos-de-cuerda",
+            "https://www.centrocentro.org/musica/vacio-musica-de-ustvolskaya-y-feldman-en-dialogo-con-musica-barroca",
+            "https://www.centrocentro.org/musica/maryanne-amacher-plaything"
+        )):
+            return "Música de vanguardía"
+        if urls.intersection((
+            "https://www.centrocentro.org/musica/sinetiq-2026",
+            "https://www.centrocentro.org/musica/raul-rodriguez-3f-power-trio",
+            "https://www.centrocentro.org/musica/zaruk-iris-azquinecer-rainer-seiferth",
+            "https://www.centrocentro.org/musica/antonio-serrano-kaele-jimenez",
+            "https://www.centrocentro.org/musica/javier-ruibal",
+            "https://www.centrocentro.org/musica/maria-toro-en-cuarteto",
+            "https://www.centrocentro.org/musica/feten-feten"
+        )):
+            return "Música sin etiquetas"
+        if urls.intersection({
+            "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Charlas-taller-de-cactus-y-suculentas/?vgnextfmt=default&vgnextoid=d452d3d3508b7810VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
+        }):
+            return "Charlas-taller de cactus y suculentas"
+        if re_and(
+            self.name,
+            "Escribo lo que soy",
+            "taller de escritura",
+            flags=re.I
+        ):
+            return "Escribo lo que soy: taller de escritura"
         return None
 
 
@@ -1248,29 +1368,6 @@ class Cinema(Event):
     def _fix_year(self):
         if self.year is not None:
             return self.year
-        yrs: set[int] = set()
-        for url in self.iter_urls():
-            dom = get_domain(url)
-            if dom == "madrid.es":
-                soup = WEB.get_cached_soup(url)
-                desc = get_text(soup.select_one("div.tramites-content div.tiny-text"))
-                for y in map(int, re.findall(r"Año:?\s*((?:19|20)\d+)", desc or "")):
-                    if y >= 1900 and y <= (TODAY.year+1):
-                        yrs.add(y)
-        if len(yrs) == 1:
-            return yrs.pop()
-        if len(yrs) > 1:
-            return None
-        for url in self.iter_urls():
-            dom = get_domain(url)
-            if dom == "madrid.es":
-                soup = WEB.get_cached_soup(url)
-                desc = get_text(soup.select_one("div.tramites-content div.tiny-text"))
-                for y in map(int, re.findall(r"\([^\(\)\d]*((?:19|20)\d+)\)", desc or "")):
-                    if y >= 1900 and y <= (TODAY.year+1):
-                        yrs.add(y)
-        if len(yrs) == 1:
-            return yrs.pop()
         if self.imdb:
             return DB.one("select year from MOVIE where id = ?", self.imdb)
 

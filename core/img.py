@@ -1,6 +1,7 @@
 from PIL import Image, UnidentifiedImageError, ImageChops
+from PIL.Image import DecompressionBombError
 from requests import Session
-from requests.exceptions import SSLError, RequestException
+from requests.exceptions import SSLError, RequestException, ConnectTimeout
 from io import BytesIO
 import logging
 from os.path import dirname
@@ -14,12 +15,27 @@ import warnings
 from core.util import get_domain
 from time import sleep
 from core.my_session import buildSession
+from core.fetcher import Getter
+from aiohttp import ClientResponse
+from types import MappingProxyType
 
 warnings.filterwarnings("ignore", module="PIL")
 
 logger = logging.getLogger(__name__)
 S = buildSession()
 ReqSession = Session()
+
+
+async def rq_to_img(r: ClientResponse):
+    try:
+        r.raise_for_status()
+        body = await r.read()
+        fp = BytesIO(body)
+        im = Image.open(fp)
+        im = im.convert('RGB')
+        return im
+    except Exception as e:
+        return e
 
 
 class CornerColor(NamedTuple):
@@ -42,11 +58,18 @@ class CornerColor(NamedTuple):
 
 
 class MyImage:
-    def __init__(self, image: Union[str, Image.Image], parent: Image.Image = None, background: Tuple[int, int, int]=None):
+    def __init__(
+        self,
+        image: Union[str, Image.Image],
+        parent: Image.Image = None,
+        background: Tuple[int, int, int] = None,
+        im: Image = None
+    ):
         self.__path_or_image = image
         self.__url = None
         self.__parent = parent
         self.__background = background
+        self.__im = im
         if self.__background is None:
             corner = self.get_corner_colors()
             if corner:
@@ -91,6 +114,8 @@ class MyImage:
 
     @cached_property
     def im(self):
+        if isinstance(self.__im, Image.Image):
+            return self.__im
         if isinstance(self.__path_or_image, Image.Image):
             return self.__path_or_image
         path = str(self.path)
@@ -106,17 +131,29 @@ class MyImage:
             logger.critical("No se pudo descargar la imagen "+str(self.path), exc_info=True)
         except UnidentifiedImageError:
             logger.critical("La ruta no apunta a una imagen válida "+str(self.path), exc_info=True)
+        except DecompressionBombError as e:
+            logger.critical(f"{e} {self.path}")
         return None
+
+    def __get_request(self, url: str):
+        methods = (
+            S.get,
+            lambda x: ReqSession.get(x, verify=False)
+        )
+        for i, fnc in enumerate(methods, start=len(methods)+1):
+            try:
+                return fnc(url)
+            except Exception as e:
+                if i == 0:
+                    logger.critical(f"{url} {e}")
+                pass
 
     def __get(self, url: str):
         dom = get_domain(url)
         isSalaBerlanga = dom == "salaberlanga.com"
         if not isSalaBerlanga:
-            try:
-                r = S.get(url)
-            except SSLError:
-                r = ReqSession.get(url, verify=False)
-            if r.status_code != 403 and r.content:
+            r = self.__get_request(url)
+            if r is not None and r.status_code != 403 and r.content:
                 return BytesIO(r.content)
         with Driver(browser="firefox") as f:
             f.get(url)
@@ -233,3 +270,30 @@ class MyImage:
         while p.parent is not None:
             p = p.parent
         return p
+
+    @staticmethod
+    def get_all(*urls: str):
+        r: dict[str, MyImage] = {}
+        data = Getter(
+            raise_for_status=False,
+            onread=rq_to_img,
+            verify=False
+        ).get(*urls)
+        for k, v in list(data.items()):
+            if isinstance(v, Exception):
+                r[k] = MyImage(k)
+            elif isinstance(v, Image.Image):
+                r[k] = MyImage(k, im=v)
+        for url in urls:
+            if url not in r:
+                r[url] = MyImage(url)
+        return MappingProxyType(r)
+
+
+if __name__ == "__main__":
+    from core.filemanager import FM
+    imgs = set(e.get('img') for e in FM.load("out/eventos.json"))
+    imgs.discard(None)
+    imgs = sorted(imgs)
+    obj = MyImage.get_all(*imgs)
+    print(len(imgs), len(obj))

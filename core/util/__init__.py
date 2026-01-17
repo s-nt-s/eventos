@@ -157,7 +157,7 @@ def re_or(s: str, *args: Union[str, Tuple[str]], to_log: str = None, flags=0):
             reg = str(r)
             if reg[0] not in ("^", " "):
                 reg = r"\b" + reg
-            if reg[-1] not in ("$", " "):
+            if reg[-1] not in ("$", " ", ":"):
                 reg = reg + r"\b"
             if re.search(reg, s, flags=flags):
                 if to_log:
@@ -306,26 +306,37 @@ def normalize_url(url: str, *tail: str) -> str:
     return new_unparse
 
 
-def find_euros(prc: str | None):
-    if prc is None:
-        return None
-    if re.match(r"^\s*(gratuito|gratis)\s*$", prc, flags=re.I):
-        return 0
-    if re.search(r"\b(gratuit[ao] (para|con)|(entrada|acceso) (gratuit[oa]|libre)|actividad(es)? gratuitas?)\b", prc, flags=re.I):
-        return 0
-    eur: set[float] = set()
-    for s in re.findall(r"(\d[\d\.,]*)\s*(?:€|euros?)", prc, flags=re.I):
-        p = float(s.replace(",", "."))
-        if p == int(p):
-            p = int(p)
-        eur.add(p)
-    if len(eur):
-        return max(eur)
+def find_euros(*prices: str | None) -> None | float | int:
+    for prc in prices:
+        if prc is None:
+            continue
+        if re.match(r"^\s*(gratuito|gratis)\s*$", prc, flags=re.I):
+            return 0
+        if re.search(
+            r"\b(gratuit[ao] (para|con)|(entrada|acceso) (gratuit[oa]|libre)|actividad(es)? gratuitas?)\b",
+            prc,
+            flags=re.I
+        ):
+            return 0
+        if re.search(
+            r"Taller(es)? gratuitos?\b",
+            prc,
+            flags=re.I
+        ):
+            return 0
+        eur: set[float] = set()
+        for s in re.findall(r"(\d[\d\.,]*)\s*(?:€|euros?)", prc, flags=re.I):
+            p = float(s.replace(",", "."))
+            if p == int(p):
+                p = int(p)
+            eur.add(p)
+        if len(eur):
+            return max(eur)
 
 
 @cache
 def get_festivos(year: int):
-    dates: set[str] = set()
+    dates: set[date] = set()
     r = requests.get(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
     r.raise_for_status()
     soup = BeautifulSoup(r.content, 'html.parser')
@@ -336,14 +347,101 @@ def get_festivos(year: int):
     return tuple(sorted(dates))
 
 
-def isWorkingHours(dt: datetime):
+def isWorkingHours(dt: datetime, min_hour=16):
     if dt is None:
         return False
-    hm = dt.hour + (dt.minute/100)
-    if hm == 0 or hm > 15:
+    hm = dt.hour + (dt.minute/60)
+    if hm == 0 or hm >= min_hour:
         return False
     if dt.weekday() in (5, 6):
         return False
     if dt.date() in get_festivos(dt.year):
         return False
     return True
+
+
+def un_camel(x: str):
+    if x is None or " " in x:
+        return x
+    return re.sub(
+        r"(?<!^)(?=[A-ZÁÉÍÓÚÜÑ])",
+        " ",
+        x
+    )
+
+
+KO_IMG = (
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/MadridPlat%C3%B3Cine_260.png',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Infantiles_Juveniles/Cine/ficheros/2504_CineForumPerezGaldos_260x260.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Teatro_Performance/ficheros/250429_BuscandoHogar_260x260.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/Cineclub_javierdelatorre_260.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Conferencias/ficheros/Ajam_260x260.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/ficheros/Bohemios.jpg',
+    'https://www.madrid.es/UnidadWeb/Contenidos/Ficheros/TemaCulturaYOcio/Bohemios.jpg',
+    'https://www.madrid.es/UnidadWeb/Contenidos/Ficheros/canalcasareloj.png',
+    'https://www.casamerica.es/themes/casamerica/images/cabecera_generica.jpg',
+    'https://cdn.lacasaencendida.es/storage/39522/conversions/stivijoes-6-adricuerdo-adria?n-cuerdojpg-detail.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/EntidadesYOrganismos/CulturaYOcio/InstalacionesCulturales/CentrosCulturalesMunicipales/CCArganzuela/centrodotacionalArganzuela.png',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/Cine_260x260.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20JUNIO/CineVeranoRetiro25-001.jpg',
+    'https://entradasfilmoteca.gob.es//Contenido/ImagenesEspectaculos/00_5077/Jazz%20On%20A%20Summer',
+    'https://www.madrid.es/UnidadesDescentralizadas/MuseosMunicipales/DepartamentoExposiciones/Actividades/Ciclo%20Cine%20Una%20tarde%20con%20%20Marilyn/Cartel%20Marilyn%20jpg.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20ENERO/18%20enero%20%20CONCIERTO%20Ra%C3%ADzes-001.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/EntidadesYOrganismos/CulturaYOcio/InstalacionesCulturales/CentrosCulturalesMunicipales/CCVillaverde/Ficheros/CentroSocioCult.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Cine_Audiovisuales/ficheros/esqueria_260x260.png',
+    'https://cdn.tenemosplan.com/tenemosplan/default_image.jpg',
+)
+
+KO_MORE = (
+    'https://www.semanacienciamadrid.org/',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Dotacional-Integrado-Arganzuela-Angel-del-Rio/?vgnextfmt=default&vgnextoid=0758c4a248991910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Sociocultural-Oporto/?vgnextfmt=default&vgnextoid=e990f36edd371910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Casa-del-Reloj/?vgnextfmt=default&vgnextoid=b8ce2420dc891910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Fernando-Lazaro-Carreter/?vgnextfmt=default&vgnextoid=25bff36edd371910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Programacion-Cultural-Chamberi/?vgnextfmt=default&vgnextoid=5ea6daba65bc4910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Espacio-Sociocultural-Marta-Escudero-Diaz-Tejeiro/?vgnextfmt=default&vgnextoid=d7e6b95f6495a910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Festividad-de-San-Anton-2026/?vgnextfmt=default&vgnextoid=4ad7b5e5b979b910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/44-Semana-de-cine-espanol-de-Carabanchel/?vgnextfmt=default&vgnextoid=626e8c7843cab910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Sociocultural-Bohemios/?vgnextfmt=default&vgnextoid=51dcd15c0bfe4910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Aula-Ambiental-La-Cabana-del-Retiro/?vgnextfmt=default&vgnextoid=2f682316c35ba910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Casa-de-Vacas/?vgnextfmt=default&vgnextoid=eba1c5a51e2c9910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Lavapies/?vgnextfmt=default&vgnextoid=06dec9f1b5902910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Clara-del-Rey-Museo-ABC/?vgnextfmt=default&vgnextoid=2eb1b01c7d402910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Programacion-cultural-de-febrero-y-marzo/?vgnextfmt=default&vgnextoid=2275dc8de040c910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Carnaval-en-Arganzuela/?vgnextfmt=default&vgnextoid=669c11abd940c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/FormularioElectronico/Inicio/Buscador/Visita-Guiada/?vgnextfmt=default&vgnextoid=bd5fc2c8ca51a910VgnVCM100000891ecb1aRCRD&vgnextchannel=7db8fc12aa936610VgnVCM1000008a4a900aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Puerta-de-Toledo/?vgnextfmt=default&vgnextoid=8d42fd00f7902910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Sociocultural-Santa-Petronila/?vgnextfmt=default&vgnextoid=fe7ed15c0bfe4910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Talleres-presenciales-ciudades-sostenibles-/?vgnextfmt=default&vgnextoid=d2a0924d36704910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'imccwem.munimadrid.es'
+)
+
+
+def capitalize(name: str):
+    if name == name.upper():
+        name = name.capitalize()
+    for x in (
+        "María la Rica",
+        "Cervantes",
+        "Alcalá",
+        "Henares",
+        "Antezana",
+        "Santiago",
+        "Complutense",
+        "Mononoke",
+        "IV",
+        "BSMM",
+        "Paco de Lucía",
+        "AWWZ",
+        "CSO",
+        "EKO",
+        "IA",
+        "AI",
+        "centro cultural",
+    ):
+        name = re.sub(r"\b"+re.escape(x)+r"\b", x, name, flags=re.I)
+    w1 = name[0]
+    if w1.isalpha():
+        name = w1.upper()+name[1:]
+    return name

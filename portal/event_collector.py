@@ -7,13 +7,14 @@ from portal.salaequis import SalaEquis
 from portal.casaamerica import CasaAmerica
 from portal.academiacine import AcademiaCine
 from portal.caixaforum import CaixaForum
-from portal.madrides import MadridEs
+from portal.madrid_es import MadridEs
 from portal.telefonica import Telefonica
 from portal.teatromonumental import TeatroMonumental
 from portal.mad_convoca import MadConvoca
 from portal.universidad import Universidad
-from datetime import datetime
-from core.util import get_domain, to_uuid, find_duplicates, get_main_value
+from portal.alcala import Alcala
+from datetime import datetime, date
+from core.util import get_domain, to_uuid, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
 import logging
 from typing import Tuple
 from core.cache import TupleCache
@@ -23,10 +24,11 @@ from collections import defaultdict
 from core.wiki import WIKI
 from core.filmaffinity import FilmAffinityApi
 from core.dblite import DB
-from core.web import WEB
 from functools import cache
 from core.zone import Circles
-from core.event import Place
+from core.event import Place, Places
+from portal.fundacionmarch import FundacionMarch
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +37,60 @@ def gNow():
     return datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
-KO_PLACES = (
+def isOut(dt: datetime):
+    d = dt.date()
+    if d >= date(2026, 2, 22) and d <= date(2026, 2, 27):
+        return True
+    return False
 
-)
+
+def isHoll(dt: datetime):
+    if isOut(dt):
+        return False
+    d = dt.date()
+    if d.weekday() == 0 and dt.hour in (16, 17, 18):
+        return False
+    if d < date(2026, 2, 18) or d > date(2026, 3, 4):
+        return False
+    return True
+
+
+def getMin(weekday: int) -> int:
+    return [
+        18.5,
+        17,
+        15.5,
+        15.5,
+        15.5,
+        0,
+        0
+    ][weekday]
+
+
+def isAlcalaOkDate(dt: datetime):
+    if isOut(dt):
+        return False
+    min_hour = max(17, getMin(dt.weekday()))+1
+    return not isWorkingHours(
+        dt,
+        min_hour=min_hour
+    )
+
+
+def isOkDate(dt: datetime):
+    d = dt.date()
+    if d == date(2026, 2, 18) and dt.hour in (10, 11, 12, 18, 19, 20, 21):
+        return False
+    if isOut(dt):
+        return False
+    if isHoll(dt):
+        return True
+    if dt.date() in get_festivos(dt.year):
+        return True
+    min_hour = getMin(dt.weekday())
+    if min_hour > 0:
+        min_hour = min_hour + 0.5
+    return not isWorkingHours(dt, min_hour=min_hour)
 
 
 @cache
@@ -55,7 +108,42 @@ def isOkPlace(p: Place | tuple[float, float] | str):
     if all(x is None for x in (latlon, name)):
         return True
     if name:
-        if re.search(r"\bcentro juvenil\b", name, flags=re.I):
+        if re_or(
+            name,
+            "Centro cultural Maestro Alonso",
+            "centro juvenil",
+            "Centro cultural Lope de Vega",
+            "Espacio Abierto Quinta de los Molinos",
+            "Parroquia Nuestra Señora de Guadalupe",
+            ("La Pedriza", "Manzanares"),
+            "AV La Vecinal del Barrio Bilbao y Pueblo Nuevo",
+            'Quinta de la Fuente del Berro',
+            'Espacio de igualdad María Telo',
+            # Collado Villaba
+            'CSO La Tejedora',
+            # Colón
+            'Centro cultural Emilia Pardo Bazán',
+            # Carabanchel
+            'Espacio de igualdad María de Maeztu',
+            'Espacio de igualdad Lourdes Hernández',
+            # Vallecas
+            'Mercado Numancia',
+            '^El espacio$',
+            'Centro cultural Las Californias',
+            'Centro cultural Alberto Sánchez',
+            'Biblioteca Miguel Delibes',
+            # Villaverde
+            'Espacio de igualdad Clara Campoamor',
+            # Usera
+            ("centro", 'Maris Stella'),
+            # Manuel Becerra
+            ('Centro', 'Rafael Altamira'),
+            ('Centro', 'Buenavista'),
+            # Urgel
+            ('Centro', 'Fernando Lázaro Carreter'),
+            flags=re.I
+        ):
+            logger.debug(f"Lugar descartado por name={name}")
             return False
     if latlon is None:
         return True
@@ -67,6 +155,19 @@ def isOkPlace(p: Place | tuple[float, float] | str):
             return True
     k = round(min(kms))
     logger.debug(f"Lugar descartado {k}km {p.name} {p.url}")
+    return False
+
+
+def isKoEvent(e: Event):
+    if e.place == Places.TEATRO_PRICE.value:
+        if re_or(e.name, r'hop!?', flags=re.I):
+            return True
+    if e.place == Places.CAIXA_FORUM.value:
+        if re_or(e.name, "Conoce CaixaForum", "Descubre el jardín vertical", flags=re.I):
+            return True
+    if re_or(e.place.zone, "alcal[aá]( de)?henares", flags=re.I):
+        if re_and(e.name, r"cu[ée]ntame", r"experiencia", flags=re.I):
+            return True
     return False
 
 
@@ -109,16 +210,12 @@ class EventCollector:
         self,
         max_price: dict[Category, float],
         max_sessions: int,
-        avoid_working_sessions: bool,
         publish: dict[str, str],
-        ko_places: Tuple[str],
         categories: Tuple[Category, ...],
     ):
         self.__max_price = max_price
         self.__max_sessions = max_sessions
         self.__categories = categories
-        self.__ko_places = ko_places
-        self.__avoid_working_sessions = avoid_working_sessions
         self.__publish = publish
         self.__madrid_destino = MadridDestino()
         self.__avoid_categories = tuple(set({
@@ -148,24 +245,39 @@ class EventCollector:
         md_events = self.__madrid_destino.events
         md_places = tuple(sorted(set(e.place for e in md_events if e.place)))
         eventos = \
+            FundacionMarch().get_events() + \
+            Alcala(
+                isOkDate=isAlcalaOkDate
+            ).events + \
             Universidad.get_events(
                 "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
                 "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
                 "https://eventos.uam.es/ics/location/espana/lo-1.ics",
                 "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
+                "https://eventos.uah.es/ics/location/espana/lo-1.ics",
                 verify_ssl=False,
                 isOkPlace=isOkPlace,
-                avoid_working_sessions=self.__avoid_working_sessions,
+                isOkDate=isOkDate,
             ) + \
             MadConvoca(
-                avoid_working_sessions=self.__avoid_working_sessions,
+                isOkDate=isOkDate,
             ).events + \
             MadridEs(
-                remove_working_sessions=self.__avoid_working_sessions,
+                isOkDate=isOkDate,
                 places_with_store=md_places,
                 max_price=max(self.__max_price.values()),
                 avoid_categories=self.__avoid_categories,
-                isOkPlace=isOkPlace
+                isOkPlace=isOkPlace,
+                districts=(
+                    "arganzuela",
+                    "centro",
+                    "moncloa",
+                    "chamber[ií]",
+                    "retiro",
+                    "salamanca",
+                    "villaverde",
+                    "carabanchel",
+                )
             ).events + \
             Dore().events + \
             md_events + \
@@ -201,7 +313,9 @@ class EventCollector:
         return max(self.__max_price.values())
 
     def __filter(self, e: Event, to_log=True):
-        if e.place.name in self.__ko_places:
+        if isKoEvent(e):
+            return False
+        if not isOkPlace(e.place.name):
             if to_log:
                 logger.debug(f"Descartada por place={e.place.name} {e.url}")
             return False
@@ -223,7 +337,7 @@ class EventCollector:
         #        return False
 
         e.remove_old_sessions(gNow())
-        e.remove_working_sessions(to_log=to_log)
+        e.remove_ko_sessions(isOkDate=isOkDate, to_log=to_log)
 
         count_session = len(e.sessions)
         if count_session == 0:
@@ -425,21 +539,16 @@ class EventCollector:
             None,
             "madrid.es"
         ))))
-        need_check_domain = ok_doms in (
+        main_doms = ok_doms in (
             ("tienda.madrid-destino.com", ),
         )
 
         sessions: list[Session] = []
         for s in e.sessions:
-            if need_check_domain and get_domain(s.url) not in ok_doms:
+            if main_doms and get_domain(s.url) not in ok_doms:
                 continue
             if s.url in self.__madrid_destino.full_sessions:
                 continue
-            if s.url and re.match(r"https://tienda\.madrid-destino\.com/.*/\d+/?$", s.url):
-                soup = WEB.get_cached_soup(s.url)
-                mapa_url = s.url.rstrip("/")+"/mapa"
-                if soup.find("a", href=mapa_url):
-                    s = s._replace(url=mapa_url)
             sessions.append(s)
         return e.merge(sessions=tuple(sessions))
 

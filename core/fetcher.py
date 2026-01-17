@@ -7,6 +7,8 @@ import enum
 from yarl import URL
 from requests.cookies import RequestsCookieJar
 from aiohttp import ClientResponse
+from core.my_session import getProxy
+from core.web import get_domain
 
 ProcessedResponse = TypeVar("ProcessedResponse")
 AsyncResponseHandler = Callable[[ClientResponse], Awaitable[ProcessedResponse]]
@@ -14,6 +16,12 @@ AsyncResponseHandler = Callable[[ClientResponse], Awaitable[ProcessedResponse]]
 T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
+
+
+def _getProxy(url: str):
+    p = getProxy(get_domain(url))
+    if p:
+        return p.get_full_url()
 
 
 async def rq_to_text(r: ClientResponse):
@@ -59,33 +67,43 @@ class AsyncFetcher(Generic[ProcessedResponse]):
         self,
         onread: AsyncResponseHandler,
         max_concurrency: int = 40,
-        timeout: float = 10.0,
+        timeout: float = 30.0,
         raise_for_status: bool = True,
         cookie_jar: Optional[CookieJar | RequestsCookieJar] = None,
         headers: Optional[Dict[str, str]] = None,
         rate_limit: Optional[float] = None,
-        proxy: Optional[str] = None,
         auth: Optional[BasicAuth] = None,
-        retries: int = 0,
-        retry_delay: float = 0.5,
+        retries: int = 1,
+        retry_delay: float = 1,
+        verify: bool = True
     ):
-        if isinstance(cookie_jar, RequestsCookieJar):
-            cookie_jar = aio_cookiejar_from_requests(cookie_jar)
-        if cookie_jar is not None and not isinstance(cookie_jar, CookieJar):
-            raise ValueError("cookie_jar must be a CookieJar or RequestsCookieJar")
         self.__cookie_jar = cookie_jar
         self.__max_concurrency = max_concurrency
-        self.__timeout = ClientTimeout(total=timeout)
+        self.__timeout = ClientTimeout(
+            total=timeout,
+            connect=timeout,
+            sock_read=timeout,
+            sock_connect=timeout
+        )
         self.__onread = onread
         self.__raise_for_status = raise_for_status
         self.__headers = headers or {}
         self.__rate_limit = rate_limit
-        self.__proxy = proxy
         self.__auth = auth
         self.__last_request = 0.0
         self.__retries = retries
         self.__retry_delay = retry_delay
         self.__rate_lock = Lock()
+        self.__verify = verify
+
+    def __build_cookie_jar(self):
+        if self.__cookie_jar is None:
+            return None
+        if isinstance(self.__cookie_jar, RequestsCookieJar):
+            return aio_cookiejar_from_requests(self.__cookie_jar)
+        if not isinstance(self.__cookie_jar, CookieJar):
+            raise ValueError("cookie_jar must be a CookieJar or RequestsCookieJar")
+        return self.__cookie_jar
 
     async def __respect_rate_limit(self):
         if not self.__rate_limit:
@@ -106,13 +124,13 @@ class AsyncFetcher(Generic[ProcessedResponse]):
     ):
         async with semaphore:
             await self.__respect_rate_limit()
-
             async with session.request(
                 rqs.method,
                 rqs.url,
                 data=rqs.data,
-                proxy=self.__proxy,
+                proxy=_getProxy(rqs.url),
                 auth=self.__auth,
+                verify_ssl=self.__verify
             ) as response:
                 if self.__raise_for_status:
                     response.raise_for_status()
@@ -156,7 +174,7 @@ class AsyncFetcher(Generic[ProcessedResponse]):
             timeout=self.__timeout,
             headers=self.__headers,
             raise_for_status=self.__raise_for_status,
-            cookie_jar=self.__cookie_jar,
+            cookie_jar=self.__build_cookie_jar(),
         ) as session:
             tasks = [
                 self.__fetch_with_retries(
@@ -184,20 +202,27 @@ class Getter(Generic[ProcessedResponse]):
         onread: AsyncResponseHandler,
         headers: Optional[Dict[str, str]] = None,
         cookie_jar: Optional[CookieJar | RequestsCookieJar] = None,
+        raise_for_status: bool = True,
+        verify: bool = True,
     ):
         self.__fetcher = AsyncFetcher(
             onread=onread,
             headers=headers,
-            cookie_jar=cookie_jar
+            cookie_jar=cookie_jar,
+            raise_for_status=raise_for_status,
+            verify=verify
         )
 
     def get(self, *urls: str) -> dict[str, ProcessedResponse]:
-        if len(urls) == 0:
+        all_urls = set(urls)
+        all_urls.discard(None)
+        if len(all_urls) == 0:
             return {}
-        urls = sorted(set(urls))
+        urls = sorted(all_urls)
         logger.debug(f"Fetching {len(urls)} URLs")
         bodies = self.__fetcher.run(*urls)
         return dict(zip(urls, bodies))
+
 
 if __name__ == "__main__":
     GT = Getter(

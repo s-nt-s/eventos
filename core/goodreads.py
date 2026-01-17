@@ -4,6 +4,8 @@ from typing import NamedTuple
 import re
 from functools import cache
 
+re_dot = re.compile(r"([:,…]|\.+) ")
+
 
 class Book(NamedTuple):
     url: str
@@ -11,6 +13,13 @@ class Book(NamedTuple):
     author: tuple[str, ...]
     rate: float
     reviews: int
+
+
+def _match(text: str, *rgx: str, flags: int = 0):
+    for r in rgx:
+        m = re.match(r, text, flags=flags)
+        if m:
+            return m
 
 
 class GoodReads:
@@ -46,55 +55,90 @@ class GoodReads:
         )))
         return rtn
 
-    def search(self, title: str, author: str) -> tuple[Book, ...]:
-        re_dot = re.compile(r"[:,] ")
+    def __search_query(self, query: str):
+        done = set()
         books: list[Book] = []
+        url = "https://www.goodreads.com/search?utf8=%E2%9C%93&query="+quote(query)
+        for b in self.__search(url):
+            if len(b.author) == 0:
+                continue
+            k = (b.title, b.author)
+            if k in done:
+                continue
+            books.append(b)
+            done.add(k)
+        return tuple(books)
 
+    def search_by_title_author(self, title: str, author: str) -> tuple[Book, ...]:
         for qr in (
             f"{title} {author}",
             title,
         ):
-            url = "https://www.goodreads.com/search?utf8=%E2%9C%93&query="+quote(qr)
-            for b in self.__search(url):
-                if len(b.author) == 0:
-                    continue
-                t1 = title.lower()
-                t2 = b.title.lower()
-                matchTitle = re_dot.sub(" ", t1) == re_dot.sub(" ", t2) or (t1.startswith(t2+": ") or t2.startswith(t1+": "))
-                likeTitle = (t1 in t2) or (t2 in t1)
-                if not matchTitle and not likeTitle:
-                    continue
-                if len(b.author) == 1:
-                    a1 = b.author[0].lower()
-                    a2 = author.lower()
-                    if a1 == a2:
-                        books.append(b)
-                        continue
-                    if matchTitle and ((a1 in a2) or (a2 in a1)):
-                        books.append(b)
-                        continue
-                if not matchTitle:
-                    continue
-                check_author = str(author)
-                for a in b.author:
-                    check_author = re.sub(re.escape(a), "", check_author, flags=re.I)
-                if len(check_author) < len(author):
-                    books.append(b)
+            books = self.__search_by_title_author(qr, title, author)
             if books:
-                return tuple(books)
+                return books
         return tuple()
 
+    def __search_by_title_author(self, qr: str, title: str, author: str):
+        books: list[Book] = []
+        for b in self.__search_query(qr):
+            t1 = title.lower()
+            t2 = b.title.lower()
+            matchTitle = re_dot.sub(" ", t1) == re_dot.sub(" ", t2) or (t1.startswith(t2+": ") or t2.startswith(t1+": "))
+            likeTitle = (t1 in t2) or (t2 in t1)
+            if not matchTitle and not likeTitle:
+                continue
+            if len(b.author) == 1:
+                a1 = b.author[0].lower()
+                a2 = author.lower()
+                if a1 == a2:
+                    books.append(b)
+                    continue
+                if matchTitle and ((a1 in a2) or (a2 in a1)):
+                    books.append(b)
+                    continue
+            if not matchTitle:
+                continue
+            check_author = str(author)
+            for a in b.author:
+                check_author = re.sub(re.escape(a), "", check_author, flags=re.I)
+            if len(check_author) < len(author):
+                books.append(b)
+        return tuple(books)
+
+    def search_by_title(self, title: str):
+        books: list[Book] = []
+        for b in self.__search_query(title):
+            t1 = title.lower()
+            t2 = b.title.lower()
+            matchTitle = re_dot.sub(" ", t1) == re_dot.sub(" ", t2) or (t1.startswith(t2+": ") or t2.startswith(t1+": "))
+            if matchTitle:
+                books.append(b)
+        return tuple(books)
+
     def find(self, title_author: str):
-        for r in (
-            re.compile(r"^'(.+)',?\s*escrito por (.+)$"),
-            re.compile(r"^'(.+)',\s*de (.+)$"),
-            re.compile(r"^'(.+)'\s*de (.+)$"),
-            re.compile(r"^(.+),\s*de (.+)$"),
-            re.compile(r"^(.+) de (.+)$"),
-        ):
-            m = r.match(title_author)
-            if m:
-                return self.search(m.group(1), m.group(2))
+        m = _match(
+            title_author,
+            r"^'(.+)',?\s*escrito por (.+)$",
+            r"^'(.+)',\s*de (.+)$",
+            r"^'(.+)'\s*de (.+)$",
+            r"^(.+),\s*de (.+)$",
+            r"^(.+) de (.+)$",
+        )
+        if m:
+            book = self.search_by_title_author(m.group(1), m.group(2))
+            if book:
+                return book
+
+        m = _match(
+            title_author,
+            r".*Presentaci[oó]n del libro '([^']+?)'.*",
+            flags=re.I
+        )
+        if m:
+            book = self.search_by_title(m.group(1))
+            if len(book):
+                return book
 
 
 GR = GoodReads()

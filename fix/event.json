@@ -1,19 +1,200 @@
 {
-    "md6538": {
-        "filmaffinity": 927383
-    },
-    "sb9789": {
-        "filmaffinity": 945637
-    },
-    "md6677": {
-        "filmaffinity": 642285
-    },
+    "md6538": { "filmaffinity": 927383 },
+    "sb9789": { "filmaffinity": 945637 },
+    "md6677": { "filmaffinity": 642285 },
+    "ac684": { "filmaffinity": 493738 },
+    "ac682": { "filmaffinity": 957271 },
+    "ac707": { "filmaffinity": 699169 },
+    "ac720": { "filmaffinity": 665782 },
+    "ac672": { "filmaffinity": 320033 },
+    "am45766": { "filmaffinity": 354096 },
+    "ce15362": { "filmaffinity": 365421 },
+    "ce15361": { "filmaffinity": 747811 },
+    "ac670": { "filmaffinity": 399102 },
+    "ce15369": { "filmaffinity": 741724 },
+    "md6804": { "filmaffinity": 763831 },
+    "sb10022": { "filmaffinity": 513809 },
+    "sb10026": { "filmaffinity": 584300 },
+    "sb10053": { "filmaffinity": 162277 },
+    "am45805": { "filmaffinity": 263343 },
+    "sb10071": { "filmaffinity": 647014 },
+    "ac685": { "filmaffinity": 548527 },
+    "sb10086": { "filmaffinity": 881465 },
+    "md7009": { "filmaffinity": 684079 },
+    "md7011": { "filmaffinity": 777463 },
+    "md7018": { "filmaffinity": 909855 },
+    "ac690": { "filmaffinity": 397329 },
+    "sb10109": { "filmaffinity": 685690 },
+    "sb10119": { "filmaffinity": 625647 },
+    "ce15384": { "filmaffinity": 112826 },
+    "ac701": { "filmaffinity": 846712 },
+    "md7056": { "filmaffinity": 950792 },
+    "md7060": { "filmaffinity": 243601 },
+    "md7062": { "filmaffinity": 579002 },
+    "md7066": { "filmaffinity": 340082 },
+    "sb10157": { "filmaffinity": 324758 },
+    "sb10174": { "filmaffinity": 355035 },
+    "sb10180": { "filmaffinity": 649438 },
+    "md6807": { "filmaffinity": 843687 },
+    "ce15388": { "filmaffinity": 124761 },
+    "ce15389": { "filmaffinity": 110692 },
+    "ce15397": { "filmaffinity": 894138 },
+    "md7156": { "filmaffinity": 490840 },
+    "md7164": { "filmaffinity": 918430 },
+    "md7165": { "filmaffinity": 217490 },
+    "md7170": { "filmaffinity": 690734 },
+    "md7171": { "filmaffinity": 585152 },
+    "sb10244": { "filmaffinity": 225563 },
+    "ac731": { "filmaffinity": 414800 },
+    "am45874": { "filmaffinity": 889584 },
+    "md7102": { "filmaffinity": 405416 },
+    "md7213": { "filmaffinity": 982000 },
+    "sb10309": { "filmaffinity": 584711 },
+    "ce15456": { "filmaffinity": 706877 },
+    "md7236": { "filmaffinity": 621222 },
+    "md7251": { "filmaffinity": 304633 },
+    "ac748": { "filmaffinity": 516472 },
+    "am45957": { "filmaffinity": 862573 },
+    "am45960": { "filmaffinity": 640263 },
+    "sb10331": { "filmaffinity": 584300 },
+    "sb10349": { "filmaffinity": 709668 },
+    "sb10365": { "filmaffinity": 590855 },
+    "sb10369": { "filmaffinity": 381570 },
+    "cf175205303": { "filmaffinity": 779034 },
+    "ce15475": { "filmaffinity": 132739 },
+    "sb10571": { "filmaffinity": 183448 },
+    "sb10577": { "filmaffinity": 716179 },
+    "sb10501": { "filmaffinity": 375556 },
+    "md7312": { "filmaffinity": 946993 },
+    "md7341": { "filmaffinity": 290287 },
+    "md7311": { "filmaffinity": 117518 },
+    "al45783": { "filmaffinity": 375780 },
+    "al53788": { "filmaffinity": 544481 },
+    "al53869": { "filmaffinity": 187905 },
+    "sb9905": { "filmaffinity": 397455 },
+    "sb9892": { "filmaffinity": 385993 },
+    "md6797": { "filmaffinity": 606854 },
+    "md6783": { "filmaffinity": 748016 },
+    "md6744": { "filmaffinity": 702370 },
+    "cf1092641": { "filmaffinity": 779034 },
+    "msa8340e0a6880c910VgnVCM200000f921e388RCRD": { "filmaffinity": 148269 },
+    "msab9fc9a280e4a910VgnVCM100000891ecb1aRCRD": { "filmaffinity": 964888 },
+    "msa4e5d868ae33a910VgnVCM200000f921e388RCRD": { "filmaffinity": 156332 },
+    "ms4333c9a280e4a910VgnVCM100000891ecb1aRCRD": { "filmaffinity": 744246 },
+    "ms6493f7996fd39910VgnVCM100000891ecb1aRCRD": { "filmaffinity": 414124 },
+    "msb0ee7f3291fba910VgnVCM100000891ecb1aRCRD": { "filmaffinity": 450595 },
+    "mse9c58c7843cab910VgnVCM200000f921e388RCRD": { "filmaffinity": 132739 },
+    "ms101c4c5f561bb910VgnVCM200000f921e388RCRD": { "filmaffinity": 165862 },
+    "ms8f14c154a67bb910VgnVCM100000891ecb1aRCRD": { "filmaffinity": 821116 },
+    "fm88B90D82-960D-5C3D-BF9E-715CFE79D5B6": { "filmaffinity": 830195 },
+    "fm1DADBDEE-92F6-5B31-B767-E17FA8FB20E0": { "filmaffinity": 790301 },
+    "mc55452-1770316200-1770316200@ateneodemadrid.com": { "filmaffinity": 544481 },
+    "ms62a0940db7e7b910VgnVCM100000891ecb1aRCRD": { "price": 10 },
+    "ce15333": { "price": 3 },
+    "sb10208": { "price": 7.4 },
+    "sb10211": { "price": 7.4 },
+    "md6667": { "cycle": "Cortometrajes" },
+    "md6758": { "cycle": "Cortometrajes" },
+    "sb9861": { "cycle": "Cortometrajes" },
+    "md6645": { "cycle": "Cortometrajes" },
+    "md6600": { "cycle": "Cortometrajes" },
+    "ce15346": { "cycle": "Cortometrajes" },
+    "md6542": { "imdb": "tt20720210" },
+    "am45667": { "category": "SPAM" },
+    "md6601": { "imdb": null },
+    "md6809": { "cycle": "Cortometrajes" },
+    "md6810": { "cycle": "Cortometrajes" },
+    "md6625": { "cycle": "Cortometrajes" },
+    "md6494": { "category": "CONFERENCE" },
+    "md6561": { "category": "CONFERENCE" },
+    "md6568": { "category": "CONFERENCE" },
+    "md6570": { "category": "CONFERENCE" },
+    "md6571": { "category": "CONFERENCE" },
+    "md6562": { "category": "EXPO" },
+    "md6638": { "imdb": "tt32395247" },
+    "mse9aa7ee248519910VgnVCM200000f921e388RCRD": { "category": "CHILDISH" },
+    "msfdda365445339910VgnVCM200000f921e388RCRD": { "category": "EXPO" },
+    "ms0c27b4d724339910VgnVCM200000f921e388RCRD": { "category": "CONFERENCE" },
+    "msa747b4d724339910VgnVCM200000f921e388RCRD": { "category": "CONFERENCE" },
+    "ms0bb3292c8ed5a910VgnVCM100000891ecb1aRCRD": { "category": "CONFERENCE" },
+    "ms340546f354599910VgnVCM200000f921e388RCRD": { "category": "MUSIC" },
+    "msa768cce6dee2a910VgnVCM200000f921e388RCRD": { "category": "CONFERENCE" },
+    "ms342beadf2652a910VgnVCM200000f921e388RCRD": { "category": "MUSIC" },
+    "ms4da38ef9aec7a910VgnVCM100000891ecb1aRCRD": { "category": "CONFERENCE" },
+    "am45677": { "category": "CONFERENCE" },
+    "am45732": { "category": "CONFERENCE" },
+    "cf173691418": { "category": "CONFERENCE" },
+    "am45747": { "category": "CONFERENCE" },
+    "md6838": { "cycle": "Cortometrajes" },
+    "md6845": { "imdb": "tt23837538" },
+    "md6853":{ "imdb": "tt18163368" },
+    "md6841": { "category": "YOUTH" },
+    "am45780": { "category": "SPAM" },
+    "am45782": { "category": "CONFERENCE" },
+    "md6995": { "imdb": "tt38448241" },
+    "am45850": { "category": "SPAM" },
+    "ce15393": { "category": "CONFERENCE" },
+    "ce15395": { "category": "CONFERENCE" },
+    "ms1021c2af5263a910VgnVCM200000f921e388RCRD": { "category": "POETRY" },
+    "ms3e736dc1f3f3a910VgnVCM200000f921e388RCRD": { "category": "POETRY" },
+    "msc796fac3cb52a910VgnVCM200000f921e388RCRD": { "category": "CHILDISH" },
+    "ms383fbed2b2aba910VgnVCM100000891ecb1aRCRD": { "category": "CINEMA" },
+    "msfca1bed2b2aba910VgnVCM100000891ecb1aRCRD": { "category": "CINEMA" },
+    "ms0da4bed2b2aba910VgnVCM100000891ecb1aRCRD": { "category": "CINEMA" },
+    "ce15462": { "category": "WORKSHOP" },
+    "msfca5817478bba910VgnVCM100000891ecb1aRCRD": { "category": "POETRY" },
+    "md6615": { "category": "CONFERENCE" },
+    "md6616": { "category": "CONFERENCE" },
+    "md6617": { "category": "CONFERENCE" },
+    "msfe57b4d724339910VgnVCM200000f921e388RCRD": { "category": "CONFERENCE" },
+    "ms8f4e60b36cc49910VgnVCM200000f921e388RCRD": { "category": "CONFERENCE" },
+    "ms53a5a9ca4ddea910VgnVCM200000f921e388RCRD": { "category": "LITERATURE" },
+    "msf2752892905fa810VgnVCM1000001d4a900aRCRD": { "category": "CHILDISH" },
+    "msb52a5a847243a910VgnVCM200000f921e388RCRD": { "category": "CHILDISH" },
+    "ms9cd835db9ae6b910VgnVCM100000891ecb1aRCRD": { "category": "MUSIC" },
+    "mc26569": { "category": "ACTIVISM" },
+    "msf522b5d5fb79b910VgnVCM100000891ecb1aRCRD": { "category":  "SPAM" },
+    "ms3522b5d5fb79b910VgnVCM100000891ecb1aRCRD": { "category": "CHILDISH" },
+    "msc722b5d5fb79b910VgnVCM100000891ecb1aRCRD": { "category": "NON_GENERAL_PUBLIC" },
+    "ms74d356f27289b910VgnVCM100000891ecb1aRCRD": { "category": "CHILDISH" },
+    "mc26598": { "category": "CONFERENCE" },
+    "mc26608": { "category": "PARTY" },
+    "am45967": { "category": "CONFERENCE" },
+    "ms9ce7dd5e7e6bb910VgnVCM100000891ecb1aRCRD": { "cycle": "Oriente próximo" },
+    "ms520f8194107bb910VgnVCM100000891ecb1aRCRD": { "cycle": "Oriente próximo" },
+    "msf246f939527bb910VgnVCM100000891ecb1aRCRD": { "cycle": "Oriente próximo" },
+    "ms951fcfdd837bb910VgnVCM100000891ecb1aRCRD": { "cycle": "Oriente próximo" },
+    "ms5f2aa9a0b47bb910VgnVCM100000891ecb1aRCRD": { "cycle": "Oriente próximo" },
+    "ms8fd3b841c57bb910VgnVCM100000891ecb1aRCRD": { "cycle": "Oriente próximo" },
+    "ce15518": { "cycle": "Piezas sobre Tecnocapitalismo" },
+    "ce15517": { "cycle": "Piezas sobre Tecnocapitalismo" },
+    "20260204150000Z-143708@eventos.urjc.es": { "category": "SPAM" },
+    "20260203150000Z-146181@eventos.urjc.es": { "category": "SPAM" },
+    "mc26687": { "category": "NO_EVENT" },
+    "am45974": { "category": "CONFERENCE" },
+    "mc26686": { "category": "READING_CLUB" },
+    "mc26693": { "category": "ACTIVISM" },
+    "mc55239-1769538600-1769538600@ateneodemadrid.com": { "category": "CONFERENCE" },
+    "mc55143-1769544000-1769544000@ateneodemadrid.com": { "category": "MUSIC" },
+    "mc55001-1769626800-1769626800@ateneodemadrid.com": { "category": "LITERATURE" },
+    "mc26685": { "category": "ACTIVISM" },
+    "mc26684": { "category": "PARTY" },
+    "mc26695": { "category": "CONFERENCE" },
+    "ms51992effa12bb910VgnVCM200000f921e388RCRD": { "category": "MUSIC", "more": "https://21distritos.es/evento/encuentros-con-altura-ssiege-y-nono-2/" },
+    "msdb5fd5d07a499910VgnVCM100000891ecb1aRCRD": { "category": "VISIT" },
+    "msdd2baf6138133810VgnVCM2000001f4a900aRCRD": { "category": "VISIT" },
+    "ms449360b36cc49910VgnVCM200000f921e388RCRD": { "category": "CONFERENCE" },
+    "msea6bfe5cbec49910VgnVCM200000f921e388RCRD": { "category": "MUSIC" },
+    "mc26714": { "category": "ACTIVISM" },
+    "mc26715": { "category": "CONFERENCE" },
+    "mc26724": { "category": "ACTIVISM" },
+    "mc26726": { "category": "CONFERENCE" },
+    "mc26729": { "category": "WORKSHOP" },
+    "mc26703": { "imdb": "tt37504320" },
+    "msf308b9bc60bfb910VgnVCM200000f921e388RCRD": { "category": "MUSIC" },
     "md6633": {
         "imdb": "tt32102899",
         "filmaffinity": 460834
-    },
-    "md6638": {
-        "imdb": "tt32395247"
     },
     "fmFAEB36C1-A407-549A-97DC-5EF25C122AE3": {
         "imdb": "tt9848536",
@@ -43,36 +224,6 @@
         "name": "Salt & Pepper",
         "img": "https://salaberlanga.com/wp-content/uploads/2025/07/salt-pepper-cine-sordo-724x1024.jpg"
     },
-    "md6667": {
-        "cycle": "Cortometrajes"
-    },
-    "md6758": {
-        "cycle": "Cortometrajes"
-    },
-    "sb9861": {
-        "cycle": "Cortometrajes"
-    },
-    "md6645": {
-        "cycle": "Cortometrajes"
-    },
-    "md6600": {
-        "cycle": "Cortometrajes"
-    },
-    "ce15346": {
-        "cycle": "Cortometrajes"
-    },
-    "md6542": {
-        "imdb": "tt20720210"
-    },
-    "mse9aa7ee248519910VgnVCM200000f921e388RCRD": {
-        "category": "CHILDISH"
-    },
-    "am45667": {
-        "category": "SPAM"
-    },
-    "md6601": {
-        "imdb": null
-    },
     "am45717": {
         "imdb": "tt34499565",
         "filmaffinity": 587362
@@ -84,68 +235,8 @@
         "url": "https://www.teatroespanol.es/la-puesta-en-escena-de-luces-de-bohemia",
         "img": "https://www.teatroespanol.es/sites/default/files/styles/imagen_destacada_ficha_large_1100_550/public/media/image/2025/07/ramon_del_valle_inclan_2ok.jpg.webp"
     },
-    "sb9905": {
-        "filmaffinity": 397455
-    },
-    "md6809": {
-        "cycle": "Cortometrajes"
-    },
-    "md6810": {
-        "cycle": "Cortometrajes"
-    },
-    "sb9892": {
-        "filmaffinity": 385993
-    },
-    "md6625": {
-        "cycle": "Cortometrajes"
-    },
-    "md6494": {
-        "category": "CONFERENCE"
-    },
     "md6560": {
         "url": "https://www.condeduquemadrid.es/actividades/tatoo-tarot-dos-viejos-nuevos-fenomenos-culturales",
-        "category": "CONFERENCE"
-    },
-    "md6797": {
-        "filmaffinity": 606854
-    },
-    "md6783": {
-        "filmaffinity": 748016
-    },
-    "md6744": {
-        "filmaffinity": 702370
-    },
-    "md6561": {
-        "category": "CONFERENCE"
-    },
-    "md6568": {
-        "category": "CONFERENCE"
-    },
-    "md6570": {
-        "category": "CONFERENCE"
-    },
-    "md6571": {
-        "category": "CONFERENCE"
-    },
-    "md6562": {
-        "category": "EXPO"
-    },
-    "msfdda365445339910VgnVCM200000f921e388RCRD": {
-        "category": "EXPO"
-    },
-    "ms0c27b4d724339910VgnVCM200000f921e388RCRD": {
-        "category": "CONFERENCE"
-    },
-    "msa747b4d724339910VgnVCM200000f921e388RCRD": {
-        "category": "CONFERENCE"
-    },
-    "am45677": {
-        "category": "CONFERENCE"
-    },
-    "am45732": {
-        "category": "CONFERENCE"
-    },
-    "cf173691418": {
         "category": "CONFERENCE"
     },
     "md6773": {
@@ -160,18 +251,6 @@
         "imdb": "tt21278500",
         "filmaffinity": 611674
     },
-    "am45747": {
-        "category": "CONFERENCE"
-    },
-    "md6838": {
-        "cycle": "Cortometrajes"
-    },
-    "md6845": {
-        "imdb": "tt23837538"
-    },
-    "md6853":{
-        "imdb": "tt18163368"
-    },
     "md6858": {
         "imdb": "tt31841789",
         "filmaffinity": 127989
@@ -179,12 +258,6 @@
     "am45745": {
         "imdb": "tt33111403",
         "filmaffinity": 263343
-    },
-    "ce15333": {
-        "price": 3
-    },
-    "md6841": {
-        "category": "YOUTH"
     },
     "sb9939": {
         "category": "THEATER",
@@ -206,42 +279,9 @@
         "cycle": "Misterios de Lisboa",
         "filmaffinity": 887252
     },
-    "ac672": {
-        "filmaffinity": 320033
-    },
-    "fm88B90D82-960D-5C3D-BF9E-715CFE79D5B6": {
-        "filmaffinity": 830195
-    },
-    "am45766": {
-        "filmaffinity": 354096
-    },
-    "ce15362": {
-        "filmaffinity": 365421
-    },
-    "ce15361": {
-        "filmaffinity": 747811
-    },
-    "ac670": {
-        "filmaffinity": 399102
-    },
-    "ce15369": {
-        "filmaffinity": 741724
-    },
-    "am45780": {
-        "category": "SPAM"
-    },
     "md6789": {
         "imdb": null,
         "filmaffinity": 302373
-    },
-    "ac684": {
-        "filmaffinity": 493738
-    },
-    "ac682": {
-        "filmaffinity": 957271
-    },
-    "am45782": {
-        "category": "CONFERENCE"
     },
     "am45796": {
         "imdb": "tt27717667",
@@ -263,110 +303,17 @@
         "imdb": "tt26923797",
         "filmaffinity": 132739
     },
-    "md6804": {
-        "filmaffinity": 763831
-    },
-    "sb10022": {
-        "filmaffinity": 513809
-    },
-    "sb10026": {
-        "filmaffinity": 584300
-    },
     "sb10030":{
         "imdb": "tt34678593",
         "filmaffinity": 111461,
         "img": "https://salaberlanga.com/wp-content/uploads/2025/10/ruido-620544140-large-724x1024.jpg"
     },
-    "sb10053": {
-        "filmaffinity": 162277
-    },
-    "am45805": {
-        "filmaffinity": 263343
-    },
-    "sb10071": {
-        "filmaffinity": 647014
-    },
-    "ac685": {
-        "filmaffinity": 548527
-    },
-    "md6995": {
-        "imdb": "tt38448241"
-    },
-    "sb10086": {
-        "filmaffinity": 881465
-    },
-    "md7009": {
-        "filmaffinity": 684079
-    },
-    "md7011": {
-        "filmaffinity": 777463
-    },
-    "md7018": {
-        "filmaffinity": 909855
-    },
     "md6957": {
         "url": "https://www.teatrocircoprice.es/programacion/ventriloquia"
-    },
-    "ac690": {
-        "filmaffinity": 397329
-    },
-    "sb10109": {
-        "filmaffinity": 685690
-    },
-    "sb10119": {
-        "filmaffinity": 625647
-    },
-    "ce15384": {
-        "filmaffinity": 112826
-    },
-    "ac701": {
-        "filmaffinity": 846712
-    },
-    "md7056": {
-        "filmaffinity": 950792
-    },
-    "md7060": {
-        "filmaffinity": 243601
-    },
-    "md7062": {
-        "filmaffinity": 579002
-    },
-    "md7066": {
-        "filmaffinity": 340082
-    },
-    "sb10157": {
-        "filmaffinity": 324758
-    },
-    "sb10174": {
-        "filmaffinity": 355035
-    },
-    "sb10180": {
-        "filmaffinity": 649438
-    },
-    "md6807": {
-        "filmaffinity": 843687
-    },
-    "am45850": {
-        "category": "SPAM"
-    },
-    "ce15393": {
-        "category": "CONFERENCE"
-    },
-    "ce15388": {
-        "filmaffinity": 124761
-    },
-    "ce15389": {
-        "filmaffinity": 110692
     },
     "ce15394": {
         "name": "La felicidad de mi hermana",
         "filmaffinity": 858487
-    },
-    "ce15395": {
-        "category": "CONFERENCE"
-    },
-    "ce15397": {
-        "filmaffinity": 894138
     },
     "ce15390": {
         "name": "El camino soñado",
@@ -382,42 +329,9 @@
         "img": "https://m.media-amazon.com/images/M/MV5BN2EyYTYyZTYtZTg0NS00MTBhLWFiNDItZTFjYjE2MDIwZTc4XkEyXkFqcGc@._V1_.jpg",
         "category": "CINEMA"
     },
-    "ms0bb3292c8ed5a910VgnVCM100000891ecb1aRCRD": {
-        "category": "CONFERENCE"
-    },
     "msc3a9a0020be5a910VgnVCM100000891ecb1aRCRD": {
         "category": "CONFERENCE",
         "more": "https://www.goodreads.com/book/show/240093294"
-    },
-    "msab9fc9a280e4a910VgnVCM100000891ecb1aRCRD": {
-        "filmaffinity": 964888
-    },
-    "ms340546f354599910VgnVCM200000f921e388RCRD": {
-        "category": "MUSIC"
-    },
-    "msa4e5d868ae33a910VgnVCM200000f921e388RCRD": {
-        "filmaffinity": 156332
-    },
-    "msa768cce6dee2a910VgnVCM200000f921e388RCRD": {
-        "category": "CONFERENCE"
-    },
-    "ac707": {
-        "filmaffinity": 699169
-    },
-    "ms4333c9a280e4a910VgnVCM100000891ecb1aRCRD": {
-        "filmaffinity": 744246
-    },
-    "ms6493f7996fd39910VgnVCM100000891ecb1aRCRD": {
-        "filmaffinity": 414124
-    },
-    "ms342beadf2652a910VgnVCM200000f921e388RCRD": {
-        "category": "MUSIC"
-    },
-    "ac720": {
-        "filmaffinity": 665782
-    },
-    "ms4da38ef9aec7a910VgnVCM100000891ecb1aRCRD": {
-        "category": "CONFERENCE"
     },
     "ms2466412b9ba3a910VgnVCM200000f921e388RCRD": {
         "more": "https://www.goodreads.com/book/show/137954995"
@@ -427,12 +341,6 @@
     },
     "msfc6b6ffea853a910VgnVCM100000891ecb1aRCRD": {
         "more": "https://www.goodreads.com/book/show/243059365"
-    },
-    "ms1021c2af5263a910VgnVCM200000f921e388RCRD": {
-        "category": "POETRY"
-    },
-    "ms3e736dc1f3f3a910VgnVCM200000f921e388RCRD": {
-        "category": "POETRY"
     },
     "ms63df460156c7a910VgnVCM200000f921e388RCRD": {
         "more": "https://www.goodreads.com/book/show/243217685"
@@ -457,29 +365,8 @@
     },
     "ms725a31851d589910VgnVCM200000f921e388RCRD_2025-11-20 19:00": "https://tienda.madrid-destino.com/es/conde-duque/bienal-ciudad-y-ciencia/92746/mapa",
     "ms2e6236485a589910VgnVCM200000f921e388RCRD_2025-11-19 19:00": "https://tienda.madrid-destino.com/es/conde-duque/bienal-ciudad-y-ciencia/92715/mapa",
-    "sb10208": {
-        "price": 7.4
-    },
-    "sb10211": {
-        "price": 7.4
-    },
     "ms6108450e03e7a910VgnVCM100000891ecb1aRCRD": {
         "more": "https://www.goodreads.com/book/show/242017073"
-    },
-    "md7156": {
-        "filmaffinity": 490840
-    },
-    "md7164": {
-        "filmaffinity": 918430
-    },
-    "md7165": {
-        "filmaffinity": 217490
-    },
-    "md7170": {
-        "filmaffinity": 690734
-    },
-    "md7171": {
-        "filmaffinity": 585152
     },
     "msb355948a3629a910VgnVCM100000891ecb1aRCRD": {
         "category": "CONFERENCE",
@@ -489,66 +376,12 @@
         "category": "CONFERENCE",
         "duration": 90
     },
-    "sb10244": {
-        "filmaffinity": 225563
-    },
     "mse8f4090e2379a910VgnVCM100000891ecb1aRCRD": {
         "more": "https://www.goodreads.com/book/show/234713762"
-    },
-    "ac731": {
-        "filmaffinity": 414800
-    },
-    "msc796fac3cb52a910VgnVCM200000f921e388RCRD": {
-        "category": "CHILDISH"
-    },
-    "ms383fbed2b2aba910VgnVCM100000891ecb1aRCRD": {
-        "category": "CINEMA"
-    },
-    "msfca1bed2b2aba910VgnVCM100000891ecb1aRCRD": {
-        "category": "CINEMA"
-    },
-    "ms0da4bed2b2aba910VgnVCM100000891ecb1aRCRD": {
-        "category": "CINEMA"
-    },
-    "ce15462": {
-        "category": "WORKSHOP"
     },
     "am45877": {
         "more": "https://www.casamerica.es/musica/centenario-del-nacimiento-de-celia-cruz",
         "img": "https://www.casamerica.es/sites/default/files/styles/articulo_cab_1270x460/public/2025-06/celiahome.jpg?itok=JKbAiTxr"
-    },
-    "am45874": {
-        "filmaffinity": 889584
-    },
-    "md7102": {
-        "filmaffinity": 405416
-    },
-    "msb0ee7f3291fba910VgnVCM100000891ecb1aRCRD": {
-        "filmaffinity": 450595
-    },
-    "msfca5817478bba910VgnVCM100000891ecb1aRCRD": {
-        "category": "POETRY"
-    },
-    "md7213": {
-        "filmaffinity": 982000
-    },
-    "sb10309": {
-        "filmaffinity": 584711
-    },
-    "md6615": {
-        "category": "CONFERENCE"
-    },
-    "md6616": {
-        "category": "CONFERENCE"
-    },
-    "md6617": {
-        "category": "CONFERENCE"
-    },
-    "msfe57b4d724339910VgnVCM200000f921e388RCRD": {
-        "category": "CONFERENCE"
-    },
-    "ms8f4e60b36cc49910VgnVCM200000f921e388RCRD": {
-        "category": "CONFERENCE"
     },
     "msb299365445339910VgnVCM200000f921e388RCRD": {
         "category": "CONFERENCE",
@@ -565,21 +398,9 @@
     "msea2d9793521aa910VgnVCM200000f921e388RCRD": {
         "more": "https://www.condeduquemadrid.es/actividades/coro-del-ies-lope-de-vega"
     },
-    "ms53a5a9ca4ddea910VgnVCM200000f921e388RCRD": {
-        "category": "LITERATURE"
-    },
-    "ce15456": {
-        "filmaffinity": 706877
-    },
-    "md7236": {
-        "filmaffinity": 621222
-    },
     "md7237": {
         "more": "https://www.filmaffinity.com/es/search.php?stype=cast&stext=Hotel%20Diaries%20John%20Smith&orderby=year",
         "url": "https://www.cinetecamadrid.com/programacion/hotel-diaries-1-7"
-    },
-    "md7251": {
-        "filmaffinity": 304633
     },
     "md7244": {
         "more": "https://www.cinetecamadrid.com/ciclo/retrospectiva-germaine-dulac",
@@ -600,15 +421,6 @@
         "more": "https://www.cinetecamadrid.com/ciclo/retrospectiva-germaine-dulac",
         "cycle": "Germaine Dulac",
         "also_in": ["https://es.wikipedia.org/wiki/Germaine_Dulac"]
-    },
-    "ac748": {
-        "filmaffinity": 516472
-    },
-    "am45957": {
-        "filmaffinity": 862573
-    },
-    "am45960": {
-        "filmaffinity": 640263
     },
     "msb2b215d028bc8910VgnVCM100000891ecb1aRCRD": {
         "price": 7,
@@ -636,14 +448,8 @@
         "more": "https://www.mataderomadrid.org/programacion/talleres-para-adultos-sobre-la-exposicion-lengua-en-coro-cuenta-de-cristina-mejias"
     },
     "ms4ad356187a8ea910VgnVCM200000f921e388RCRD_2025-12-16 19:30": "https://teatromonumental.entradas.com/webshop/webticket/shop?event=407",
-    "msf2752892905fa810VgnVCM1000001d4a900aRCRD": {
-        "category": "CHILDISH"
-    },
     "ms4cf707f005117910VgnVCM2000001f4a900aRCRD": {
         "more": "https://www.centrocentro.org/musica/fahmi-alqhai-accademia-del-piacere"
-    },
-    "msb52a5a847243a910VgnVCM200000f921e388RCRD": {
-        "category": "CHILDISH"
     },
     "msdc98d7d62c5ba910VgnVCM200000f921e388RCRD": {
         "category": "CHILDISH",
@@ -660,24 +466,9 @@
         "more": "https://tienda.madrid-destino.com/es/nave-10/solea-morente-4/",
         "also_in": ["https://www.nave10matadero.es/actividades/solea-morente"]
     },
-    "sb10331": {
-        "filmaffinity": 584300
-    },
-    "sb10349": {
-        "filmaffinity": 709668
-    },
-    "sb10365": {
-        "filmaffinity": 590855
-    },
-    "sb10369": {
-        "filmaffinity": 381570
-    },
     "md6614": {
         "category": "CINEMA",
         "filmaffinity": 317618
-    },
-    "cf175205303": {
-        "filmaffinity": 779034
     },
     "ms3fef9bad2fb4b910VgnVCM200000f921e388RCRD": {
         "category": "LITERATURE",
@@ -692,41 +483,17 @@
         "category": "MUSIC",
         "more": "https://21distritos.es/evento/fernanda-cabral/"
     },
-    "ms9cd835db9ae6b910VgnVCM100000891ecb1aRCRD": {
-        "category": "MUSIC"
-    },
     "ms9fa5817478bba910VgnVCM100000891ecb1aRCRD": {
         "name": "Dauna: Lo que lleva el río",
         "filmaffinity": 813212,
         "img": "https://pics.filmaffinity.com/dauna_lo_que_lleva_el_rio-745221561-large.jpg"
     },
-    "fm1DADBDEE-92F6-5B31-B767-E17FA8FB20E0": {
-        "filmaffinity": 790301
-    },
-    "mc26569": {
-        "category": "ACTIVISM"
-    },
     "mc26583": {
         "category": "CINEMA",
         "filmaffinity": 152338
     },
-    "msf522b5d5fb79b910VgnVCM100000891ecb1aRCRD": {
-        "category":  "SPAM"
-    },
-    "ms3522b5d5fb79b910VgnVCM100000891ecb1aRCRD": {
-        "category": "CHILDISH"
-    },
-    "msc722b5d5fb79b910VgnVCM100000891ecb1aRCRD": {
-        "category": "NON_GENERAL_PUBLIC"
-    },
-    "ms74d356f27289b910VgnVCM100000891ecb1aRCRD": {
-        "category": "CHILDISH"
-    },
     "ce15487": {
         "img": "https://cdn.lacasaencendida.es/storage/40733/responsive-images/julia%3Fn-ge%3Fnissonpng___detail_783_424.jpg"
-    },
-    "mc26598": {
-        "category": "CONFERENCE"
     },
     "mc41895-1767985200-1767992400@fal.cnt.es": {
         "more": "https://www.goodreads.com/book/show/25042005"
@@ -734,38 +501,14 @@
     "mc41994-1768417200-1768424400@fal.cnt.es": {
         "more": "https://www.goodreads.com/book/show/32950260"
     },
-    "ce15475": {
-        "filmaffinity": 132739
-    },
-    "ms62a0940db7e7b910VgnVCM100000891ecb1aRCRD": {
-        "price": 10
-    },
     "mc26607": {
         "name": "Jubilee",
         "filmaffinity": 108143
-    },
-    "mc26608": {
-        "category": "PARTY"
-    },
-    "mse9c58c7843cab910VgnVCM200000f921e388RCRD": {
-        "filmaffinity": 132739
     },
     "ms97dac117381bb910VgnVCM200000f921e388RCRD": {
         "category": "CONFERENCE",
         "more": "https://semanacinecarabanchel.es/edicion-2026/homenaje-mujeres-de-cine-2026/"
     },
-    "ms101c4c5f561bb910VgnVCM200000f921e388RCRD": {
-        "filmaffinity": 165862
-    },
-    "am45967": {
-        "category": "CONFERENCE"
-    },
-    "ms9ce7dd5e7e6bb910VgnVCM100000891ecb1aRCRD": {"cycle": "Oriente próximo"},
-    "ms520f8194107bb910VgnVCM100000891ecb1aRCRD": {"cycle": "Oriente próximo"},
-    "msf246f939527bb910VgnVCM100000891ecb1aRCRD": {"cycle": "Oriente próximo"},
-    "ms951fcfdd837bb910VgnVCM100000891ecb1aRCRD": {"cycle": "Oriente próximo"},
-    "ms5f2aa9a0b47bb910VgnVCM100000891ecb1aRCRD": {"cycle": "Oriente próximo"},
-    "ms8fd3b841c57bb910VgnVCM100000891ecb1aRCRD": {"cycle": "Oriente próximo"},
     "cf175352396":{
         "category": "CINEMA",
         "filmaffinity": 888904
@@ -800,7 +543,7 @@
     },
     "ce15516": {
         "category": "CINEMA",
-        "name": "Knit’s Island",
+        "name": "Knit's Island",
         "filmaffinity": 269894,
         "cycle": "Piezas sobre Tecnocapitalismo"
     },
@@ -810,8 +553,6 @@
         "filmaffinity": 689748,
         "cycle": "Piezas sobre Tecnocapitalismo"
     },
-    "ce15518": {"cycle": "Piezas sobre Tecnocapitalismo"},
-    "ce15517": {"cycle": "Piezas sobre Tecnocapitalismo"},
     "tl8887D819-B844-5C03-BAA0-580751F48B08": {
         "category": "LITERATURE",
         "more": "https://www.goodreads.com/book/show/242254766"
@@ -825,12 +566,157 @@
         "more": "https://ateneodemadrid.com/evento/llm-large-language-models/",
         "name": "LLM 'Large Language Models'"
     },
-    "20260204150000Z-143708@eventos.urjc.es": {"category": "SPAM"},
-    "20260203150000Z-146181@eventos.urjc.es": {"category": "SPAM"},
-    "cf1092641": {
-        "filmaffinity": 779034
-    },
     "msf58951860e5cb910VgnVCM200000f921e388RCRD": {
         "img": "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1762626242i/243375667.jpg"
-    }
+    },
+    "md6839": {
+        "category": "READING_CLUB",
+        "more": "https://www.condeduquemadrid.es/actividades/ensayos-graficos"
+    },
+    "mc26704": {
+        "name": "Gummo",
+        "filmaffinity": 834914
+    },
+    "mc26713": {
+        "name": "Els Buits",
+        "filmaffinity": 153197,
+        "category": "CINEMA",
+        "img": "https://pics.filmaffinity.com/els_buits-244202726-large.jpg"
+    },
+    "md7308": {
+        "category": "CONFERENCE",
+        "img": "https://21distritos.es/wp-content/uploads/2026/01/web-photo-2025-07-11-21-12-33.jpg"
+    },
+    "mc26719": {
+        "name": "Guarapo",
+        "filmaffinity": 775508
+    },
+    "md7309": {
+        "img": "https://21distritos.es/wp-content/uploads/2026/01/1-alessandro-ruggeri-xuse.less-.useless.words--scaled.jpg",
+        "more": "https://21distritos.es/evento/encuentros-con-altura-ssiege-y-nono-2/"
+    },
+    "20260228080000Z-147358@eventos.uc3m.es": {
+        "img": "https://eventos.uc3m.es/_files/_event/_147358/_header_img/_219734.jpe",
+        "more": "https://docs.google.com/forms/d/e/1FAIpQLSef9RbTaPU-0WO1C5TAC3CPffmDoGLZdo9lDjtK9EI_nKRHSA/viewform"
+    },
+    "mc26722": {
+        "category": "LITERATURE",
+        "more": "https://www.goodreads.com/book/show/239030921"
+    },
+    "ms68216a6923ffb910VgnVCM100000891ecb1aRCRD": {
+        "category": "CINEMA",
+        "more": "https://www.youtube.com/watch?v=qpDlcfsRdhI"
+    },
+    "20260204150000Z-147580@eventos.uc3m.es": {
+        "category": "CONFERENCE",
+        "more": "https://mastergestioncultural.eu/jornadas-abiertas-inteligencia-artificial/",
+        "img": "https://mastergestioncultural.eu/wp-content/uploads/2026/01/jornadas-abiertas-inteligencia-artificial.jpg"
+    },
+    "tl88CAD5EE-E1CF-5DA4-928D-7F9286903F37": {
+        "category": "CONFERENCE"
+    },
+    "mc26744": {
+        "name": "Chica con jacintos",
+        "filmaffinity": 321900
+    },
+    "al53812": {
+        "category": "THEATER",
+        "more": "https://visitalcala.es/cuentame-experience-experiencia-cuentame-alcala-visita-teatralizada-guateque-20-marzo-2026"
+    },
+    "mc26752": {
+        "category": "PARTY",
+        "more": "https://diversadivulga.blogspot.com/2026/01/ollita-migra-22-ollita-carnavalera.html"
+    },
+    "20260206150000Z-147706@eventos.uc3m.es": {
+        "category": "CINEMA"
+    },
+    "msf6dbbae071f0c910VgnVCM200000f921e388RCRD": {
+        "category": "CONFERENCE"
+    },
+    "msae9cbcfc65e0c910VgnVCM200000f921e388RCRD": {
+        "name": "Cria cuervos...",
+        "filmaffinity": 641823,
+        "img": "https://pics.filmaffinity.com/cria_cuervos-283282908-large.jpg"
+    },
+    "ms43f5f33ec740c910VgnVCM200000f921e388RCRD": {
+        "name": "El carnaval: Más allá de la máscara"
+    },
+    "msee9515aa8840c910VgnVCM200000f921e388RCRD": {
+        "name": "Las mujeres escritoras de la Generación del 27"
+    },
+    "msf46b4270ea40c910VgnVCM200000f921e388RCRD": {
+        "name": "Noche de mitos y de leyendas"
+    },
+    "ms95723df86f40c910VgnVCM200000f921e388RCRD": {
+        "name": "Dos hermanas"
+    },
+    "ms96b0b8ac1150c910VgnVCM200000f921e388RCRD": {
+        "name": "La casa de Bernarda Alba"
+    },
+    "ms2a01b8ac1150c910VgnVCM200000f921e388RCRD": {
+        "name": "Guerra y paz"
+    },
+    "msb8ae680bbfd1c910VgnVCM100000891ecb1aRCRD": {
+        "category": "SPAM"
+    },
+    "ms942cea2fb3e1c910VgnVCM200000f921e388RCRD": {
+        "category": "SPAM"
+    },
+    "mc26784": {
+        "category": "LITERATURE",
+        "more": "https://www.goodreads.com/book/show/135020551"
+    },
+    "msfc6f29318640c910VgnVCM200000f921e388RCRD": {
+        "more": "https://21distritos.es/evento/ay-amor-ay-ausencia-2/"
+    },
+    "ms25bea098c292c910VgnVCM200000f921e388RCRD": {
+        "name": "Las mujeres escritoras del siglo de oro"
+    },
+    "mc26799": {
+        "category": "ACTIVISM"
+    },
+    "ms5c05d26bd632c910VgnVCM100000891ecb1aRCRD": {
+        "category": "YOUTH"
+    },
+    "md6225": {
+        "img": "https://www.teatrocircoprice.es/sites/default/files/styles/activity_gallery/public/2026-01/HOP_736x530.jpg.webp"
+    },
+    "sb10534": {
+        "category": "SPAM"
+    },
+    "mc26637": {
+        "more": "https://www.goodreads.com/book/show/214329174"
+    },
+    "am45950": {
+        "more": "https://www.goodreads.com/book/show/224434940"
+    },
+    "am45998": {
+        "more": "https://www.goodreads.com/book/show/247580000"
+    },
+    "ms30cbf5497c82c910VgnVCM100000891ecb1aRCRD": {
+        "category": "SPAM"
+    },
+    "msb7e304bb387cb910VgnVCM200000f921e388RCRD": {
+        "more": "https://www.goodreads.com/book/show/243648433"
+    },
+    "ms99c877fdab22c910VgnVCM200000f921e388RCRD": {
+        "more": "https://www.goodreads.com/book/show/243349126"
+    },
+    "ms945fcd99e134c910VgnVCM100000891ecb1aRCRD": {
+        "more": "https://www.goodreads.com/book/show/245555490"
+    },
+    "mc55720-1770836400-1770836400@ateneodemadrid.com": {
+        "filmaffinity": 351942
+    },
+    "mc26824": {"category": "ACTIVISM"},
+    "20260213161500Z-142102@eventos.urjc.es": {"category": "VISIT"},
+    "tl512FB24C-F5E2-50AC-8022-11F5DCE0F9B5": {"category": "SPAM"},
+    "tlD8EE97A0-CCA9-567E-95C7-20A0C3120BC4": {"category": "LITERATURE", "more": "https://www.goodreads.com/book/show/246440434"},
+    "ms372811eac624c910VgnVCM200000f921e388RCRD": {"filmaffinity": 378659},
+    "msde2611eac624c910VgnVCM200000f921e388RCRD": {"filmaffinity": 600146},
+    "mse2d25ad68724c910VgnVCM200000f921e388RCRD": {"filmaffinity": 370698},
+    "msfc9111eac624c910VgnVCM200000f921e388RCRD": {"filmaffinity": 695552, "name": "Doce hombres sin piedad"},
+    "ms861411eac624c910VgnVCM200000f921e388RCRD": {"filmaffinity": 494004},
+    "mc55681-1771669800-1771669800@ateneodemadrid.com": {"filmaffinity": 917148, "name": "El abrazo de la serpiente"},
+    "sb10632": {"filmaffinity": 295464}
 }

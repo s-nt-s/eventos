@@ -4,8 +4,8 @@ import pytz
 from dataclasses import dataclass, asdict
 import re
 from core.filemanager import FM
-from typing import Union
-from core.util import to_uuid, isWorkingHours
+from typing import Union, Callable
+from core.util import to_uuid
 from icalendar import Calendar, vDDDTypes, Component, vText
 from icalendar.prop import vCategory
 from datetime import date
@@ -124,8 +124,8 @@ class IcsEventInvalid(ValueError):
 
 
 class IcsEventMandatory(ValueError):
-    def __init__(self, field: str):
-        super().__init__(f"Campo obligatorio {field} es None")
+    def __init__(self, field: str, source: str):
+        super().__init__(f"Campo obligatorio {field} es None en {source}")
 
 
 class IcsEventWrapper:
@@ -144,7 +144,7 @@ class IcsEventWrapper:
         val = self.__event.get(key)
         if val is None:
             if mandatory:
-                raise IcsEventMandatory(key)
+                raise IcsEventMandatory(key, self.__source)
             return None
         if not isinstance(val, vDDDTypes):
             raise IcsEventInvalid(f"Valor no es vDDDTypes: {val!r}")
@@ -247,11 +247,16 @@ class IcsEventWrapper:
 
 
 class IcsReader:
-    def __init__(self, *urls: str, verify_ssl: bool = True, avoid_working_sessions: bool = False):
+    def __init__(
+        self,
+        *urls: str,
+        verify_ssl: bool = True,
+        isOkDate: Callable[[datetime], bool] = None,
+    ):
         self.__urls = urls
         self.__s = buildSession()
         self.__verify_ssl = verify_ssl
-        self.__avoid_working_sessions = avoid_working_sessions
+        self.__isOkDate = isOkDate or (lambda x: True)
 
     def __from_ical(self, url: str):
         r = self.__s.get(url, timeout=10, verify=self.__verify_ssl)
@@ -280,7 +285,7 @@ class IcsReader:
                 for e in cal.walk("VEVENT"):
                     e = IcsEventWrapper(e, source=url)
                     try:
-                        if self.__avoid_working_sessions and isWorkingHours(e.DTSTART):
+                        if not self.__isOkDate(e.DTSTART):
                             continue
                         if None not in (
                             e.UID,

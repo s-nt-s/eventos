@@ -221,6 +221,8 @@ class CasaAmerica(Web):
             return Category.CHILDISH
         if re_or(aut, "Ciclo Am[eé]rica Vota", flags=re.I):
             return Category.INSTITUTIONAL_POLICY
+        if re_or(tit, r"Rumbo a las urnas", flags=re.I):
+            return Category.INSTITUTIONAL_POLICY
         if re_or(plain_content, "presentacion (del )?libro"):
             return Category.LITERATURE
         if cat == "cine":

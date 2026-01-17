@@ -1,6 +1,6 @@
 from core.ics import IcsReader, IcsEventWrapper
 from functools import cached_property
-from core.event import Event, Place, Session, Category, Places
+from core.event import Event, Place, Session, Category, Places, CategoryUnknown
 from core.util import re_or, re_and
 import requests
 import re
@@ -21,7 +21,7 @@ import pytz
 import urllib3
 import warnings
 import json
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
@@ -36,6 +36,7 @@ class Info(NamedTuple):
     ldj: dict
     sym: dict
     pog: dict
+    description: Optional[str] = None
 
     def get_img(self):
         if self.pog:
@@ -105,7 +106,7 @@ class Universidad:
         ics: str,
         verify_ssl=True,
         isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
-        avoid_working_sessions: bool = False
+        isOkDate: Callable[[datetime], bool] = None,
     ):
         self.__verify_ssl = verify_ssl
         self.__ics_url = ics
@@ -113,7 +114,7 @@ class Universidad:
         self.__ics = IcsReader(
             ics,
             verify_ssl=verify_ssl,
-            avoid_working_sessions=avoid_working_sessions
+            isOkDate=isOkDate
         )
         self.__kml_url = re.sub(
             r"/ics/location/(.+)/(.+)\.ics$",
@@ -161,24 +162,51 @@ class Universidad:
                     v = re_sp.sub(r" ", v).strip()
                     if len(v):
                         pog[k] = v
+        desc = soup.select_one(".ag_description")
+        description = str(desc) if desc else None
         return Info(
             ldj=ldj,
             sym=sym,
-            pog=pog
+            pog=pog,
+            description=description
         )
 
-    @cache
-    def __get_description(self, url: str, name: str) -> str:
+    def __find_description(self, url: str, name: str) -> str:
         for i in self.__rss.entries:
             if i.link in (url, url + ".html"):
-                return buildSoup(url, i.description)
+                return i.description
         for p in self.__kml_soup.select("Placemark:has(name):has(description)"):
             n = p.find("name").text.strip()
             if n != name:
                 continue
             c = p.find("description").text.strip()
             if len(c) == 0:
-                return buildSoup(url, c)
+                return c
+        info = self.__get_info(url)
+        if info:
+            return info.description
+
+    @cache
+    def __get_description(self, url: str, name: str) -> str:
+        html = self.__find_description(url, name)
+        if html is None:
+            return None
+        soup = buildSoup(url, html)
+        for t in soup.select("p, br, caption, li, td, th, h1, h2, h3, h4, h5, h6"):
+            t.insert_after("\n")
+        return get_text(soup)
+
+    @cache
+    def __get_more(self, url: str, name: str) -> str:
+        html = self.__find_description(url, name)
+        if html is None:
+            return None
+        soup = buildSoup(url, html)
+        a = soup.find("a", string=re.compile(r".*m[áa]s informaci[óo]n.*", flags=re.I))
+        if a:
+            href = a.attrs.get("href")
+            if re.match(r"^https?://\S+$", href or '', flags=re.I):
+                return href
 
     @cache
     def __find_coordinates(self, name: str):
@@ -215,7 +243,6 @@ class Universidad:
 
     @cached_property
     def events(self):
-        logger.info("Buscando eventos en universidades")
         events: set[Event] = set()
         for e in self.__ics.events:
             if e.DTSTART <= NOW:
@@ -248,10 +275,10 @@ class Universidad:
                         date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
                     ),
                 ),
+                more=self.__get_more(link, e.SUMMARY)
             )
             events.add(event)
         evs = tuple(sorted(events))
-        logger.info(f"Buscando eventos en universidades = {len(evs)}")
         return evs
 
     def __find_place(self, e: IcsEventWrapper):
@@ -270,23 +297,51 @@ class Universidad:
         )
 
     def __find_category(self, link: str, e: IcsEventWrapper) -> Category:
-        if re_or(e.SUMMARY, r"Actividad formativa de Doctorado", flags=re.I):
+        if re_or(
+            e.SUMMARY,
+            r"Actividad formativa de Doctorado",
+            r"pr[aá]cticas y empleo",
+            flags=re.I
+        ):
             return Category.NO_EVENT
         if re_or(e.SUMMARY, r"UN REGRESO DE CINE", flags=re.I):
             return Category.CINEMA
         if re_or(e.SUMMARY, "Presentaci[óo]n de la asociaci[óo]n", flags=re.I):
             return Category.CONFERENCE
-        description = get_text(self.__get_description(link, e.SUMMARY))
-        if re_or(description, r"Encuentro con", flags=re.I):
+        if re_or(
+            e.SUMMARY,
+            "^taller",
+            "Hackathon",
+            flags=re.I
+        ):
+            return Category.WORKSHOP
+        description = self.__get_description(link, e.SUMMARY)
+        if re_or(
+            description,
+            r"Actividad para alumnos[^\.]*? (ESO|Primaria)",
+            flags=re.I
+        ):
+            return Category.CHILDISH
+        if re_or(
+            description,
+            r"Encuentro con",
+            r"Varios(/as)? ponentes",
+            flags=re.I
+        ):
             return Category.CONFERENCE
         if re_or(description, "obra esc[eé]nica", flags=re.I):
             return Category.THEATER
         info = self.__get_info(link)
-        if info:
-            cat = info.get_categories() or tuple()
-            for c in cat:
-                if re_or(c, "teatro"):
-                    return Category.THEATER
+        categories = (info.get_categories() if info else None) or tuple()
+        for c in categories:
+            if re_or(c, "teatro"):
+                return Category.THEATER
+            if re_or(c, "crossfit"):
+                return Category.SPORT
+            if re_or(c, "divulgaci[oó]n"):
+                return Category.CONFERENCE
+
+        logger.critical(str(CategoryUnknown(link, f"categories={categories} {e}")))
         return Category.UNKNOWN
 
     def __find_url(self, e: IcsEventWrapper):
@@ -303,7 +358,7 @@ class Universidad:
             return info.get_img()
 
     def __find_price(self, link: str, e: IcsEventWrapper) -> float | int:
-        description = get_text(self.__get_description(link, e.SUMMARY))
+        description = self.__get_description(link, e.SUMMARY)
         prc = find_euros(description)
         if prc is not None:
             return prc
@@ -320,17 +375,20 @@ class Universidad:
         *urls: str,
         verify_ssl=True,
         isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
-        avoid_working_sessions: bool = False
+        isOkDate: Callable[[datetime], bool] = None,
     ):
+        logger.info("Buscando eventos en universidades")
         events: set[Event] = set()
         for url in urls:
             events.update(cls(
                 url,
                 verify_ssl=verify_ssl,
                 isOkPlace=isOkPlace,
-                avoid_working_sessions=avoid_working_sessions
+                isOkDate=isOkDate
             ).events)
-        return tuple(sorted(events))
+        evs = tuple(sorted(events))
+        logger.info(f"Buscando eventos en universidades = {len(evs)}")
+        return evs
 
 
 if __name__ == "__main__":
@@ -340,9 +398,10 @@ if __name__ == "__main__":
     # https://eventos.urjc.es/kml.html
     evs = Universidad.get_events(
         "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
-        "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
-        "https://eventos.uam.es/ics/location/espana/lo-1.ics",
-        "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
+        #"https://eventos.ucm.es/ics/location/espana/lo-1.ics",
+        #"https://eventos.uam.es/ics/location/espana/lo-1.ics",
+        #"https://eventos.urjc.es/ics/location/espana/lo-1.ics",
+        #"https://eventos.uah.es/ics/location/espana/lo-1.ics",
         verify_ssl=False
     )
     for event in evs:

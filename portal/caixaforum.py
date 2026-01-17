@@ -51,14 +51,15 @@ class CaixaForum:
     @HashCache("rec/caixaforum/{}_sp.txt")
     def __get_html(self, url: str):
         self.__driver.get(url)
-        self.__driver.wait_ready()
         if re.search(r"_a\d+$", url):
-            for slc in (
-                "div.card-detail div.card-block-btn span",
-                "#description-read",
-                "div.card-detail div.reserva-ficha"
-            ):
-                self.__driver.safe_wait(slc, by=By.CSS_SELECTOR)
+            self.__driver.safe_waitjs(' && '.join([
+                '(window.document.readyState === "complete")',
+                '(document.querySelector("div.card-detail div.card-block-btn span")!=null)'
+                '(document.querySelector("#description-read")!=null)'
+                '(document.querySelector("div.card-detail div.reserva-ficha")!=null)'
+            ]))
+        else:
+            self.__driver.wait_ready()
         return str(self.__driver.get_soup())
 
     @HashCache("rec/caixaforum/{}_ld.json")
@@ -151,7 +152,7 @@ class CaixaForum:
         if price < 0:
             return None
         category = self.__find_category(div, event_soup)
-        return Event(
+        ev = Event(
             id=f"cf{div.id}",
             url=url,
             name=get_text(h2),
@@ -167,6 +168,17 @@ class CaixaForum:
             sessions=sessions,
             place=Places.CAIXA_FORUM.value
         )
+        ev = ev.merge(cycle=self.__find_cycle(ev))
+        return ev
+
+    def __find_cycle(self, ev: Event):
+        if ev.category == Category.CINEMA:
+            return
+        soup = self.get_soup(ev.url)
+        txt = get_text(soup.node.select_one("div.filters-form-container li:last-child"))
+        cycle = re.match(r"^Ciclo: (.+)$", txt or "", flags=re.I)
+        if cycle:
+            return cycle.group(1)
 
     def __find_img(self, div: MyTag):
         try:
@@ -232,9 +244,6 @@ class CaixaForum:
         if len(prcs) == 0:
             n = div.select_one("#description-read")
             prcs = tuple(map(int, re.findall(r"(\d+)\s*€", get_text(n))))
-        if div.url == "https://caixaforum.org/es/madrid/p/ndv-normalmente-o-viceversa_a172958300":
-            with open("/tmp/a.html", "w") as f:
-                f.write(str(div.node))
         if len(prcs) == 0:
             logger.warning(str(FieldNotFound("price", div.url)))
             return 0
