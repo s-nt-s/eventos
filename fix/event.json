@@ -683,7 +683,8 @@
         "name": "IA: Jugar o romper la baraja"
     },
     "ms9e067b5e09e6b910VgnVCM100000891ecb1aRCRD": {
-        "category": "MUSIC"
+        "category": "MUSIC",
+        "more": "https://21distritos.es/evento/fernanda-cabral/"
     },
     "ms9cd835db9ae6b910VgnVCM100000891ecb1aRCRD": {
         "category": "MUSIC"
@@ -815,5 +816,11 @@
     },
     "20260126173000Z-146195@eventos.ucm.es": {"category": "CONFERENCE"},
     "20260204150000Z-143708@eventos.urjc.es": {"category": "SPAM"},
-    "20260203150000Z-146181@eventos.urjc.es": {"category": "SPAM"}
+    "20260203150000Z-146181@eventos.urjc.es": {"category": "SPAM"},
+    "cf1092641": {
+        "filmaffinity": 779034
+    },
+    "msf58951860e5cb910VgnVCM200000f921e388RCRD": {
+        "img": "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1762626242i/243375667.jpg"
+    }
 }

@@ -183,8 +183,8 @@ class IcsEventWrapper:
         return self.__get_datetime("DTSTART", mandatory=True)
 
     @property
-    def LOCATION(self) -> str:
-        return self.__get_text("LOCATION", mandatory=True)
+    def LOCATION(self):
+        return self.__get_text("LOCATION")
 
     @property
     def DTEND(self):
@@ -282,8 +282,7 @@ class IcsReader:
                         if None not in (
                             e.UID,
                             e.DTSTART,
-                            e.SUMMARY,
-                            e.LOCATION
+                            e.SUMMARY
                         ):
                             yield e
                     except IcsEventMandatory as err:

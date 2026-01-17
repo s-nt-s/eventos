@@ -1,6 +1,6 @@
 from core.ics import IcsReader, IcsEventWrapper
 from functools import cached_property
-from core.event import Event, Place, Session, Category
+from core.event import Event, Place, Session, Category, Places
 from core.util import re_or, re_and
 import requests
 import re
@@ -188,6 +188,7 @@ class Universidad:
             lat, lon = coord.pop()
             return f"{lat},{lon}"
 
+    @cache
     def __get_locations(self):
         loc: dict[str, set[str]] = defaultdict(set)
         for e in self.__ics.events:
@@ -203,19 +204,14 @@ class Universidad:
     @cached_property
     def events(self):
         logger.info("Buscando eventos en universidades")
-        loc_latlon = self.__get_locations()
         events: set[Event] = set()
         for e in self.__ics.events:
             if e.DTSTART <= NOW:
                 continue
-            latlon = self.__find_coordinates(e.SUMMARY)
-            if latlon is None:
-                latlon = loc_latlon.get(e.LOCATION)
-            place = Place(
-                name=clean_place_name(e.LOCATION),
-                address=e.LOCATION,
-                latlon=latlon
-            ).normalize()
+            place = self.__find_place(e)
+            if place is None:
+                continue
+            place = place.normalize()
             if not self.__isOkPlace(place):
                 continue
             link = self.__find_url(e)
@@ -245,6 +241,21 @@ class Universidad:
         evs = tuple(sorted(events))
         logger.info(f"Buscando eventos en universidades = {len(evs)}")
         return evs
+
+    def __find_place(self, e: IcsEventWrapper):
+        if not e.LOCATION:
+            return None
+        if re_and(e.LOCATION, "ateneo (de )?Madrid", flags=re.I):
+            return Places.ATENEO_MADRID.value
+        latlon = self.__find_coordinates(e.SUMMARY)
+        if latlon is None:
+            loc_latlon = self.__get_locations()
+            latlon = loc_latlon.get(e.LOCATION)
+        return Place(
+            name=clean_place_name(e.LOCATION),
+            address=e.LOCATION,
+            latlon=latlon
+        )
 
     def __find_category(self, link: str, e: IcsEventWrapper) -> Category:
         if re_or(e.SUMMARY, r"Actividad formativa de Doctorado", flags=re.I):

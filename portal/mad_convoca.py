@@ -1,8 +1,8 @@
 from portal.gancio import GancioPortal
 from core.ics import IcsReader, IcsEventWrapper
-from core.event import Event, Place, Category, Session, CategoryUnknown
+from core.event import Event, Place, Category, Session, CategoryUnknown, Places
 from functools import cached_property
-from core.util import plain_text, find_duplicates, re_or, re_and
+from core.util import plain_text, find_duplicates, re_or, re_and, get_domain
 import re
 import logging
 
@@ -23,7 +23,8 @@ class MadConvoca:
         )
         self.__ics = IcsReader(
             "https://fal.cnt.es/events/lista/?ical=1",
-            "https://lahorizontal.net/events/lista/?ical=1"
+            "https://lahorizontal.net/events/lista/?ical=1",
+            "https://ateneodemadrid.com/eventos/lista/?ical=1"
         )
 
     @cached_property
@@ -31,6 +32,10 @@ class MadConvoca:
         logger.info("Buscando eventos en MadConvoca")
         ok_events = set(self.__mad.events).union(self.__ext.events)
         for e in self.__ics.events:
+            place = self.__find_place(e)
+            if place is None:
+                continue
+            place = place.normalize()
             event = Event(
                 id=e.UID,
                 url=e.URL,
@@ -40,10 +45,7 @@ class MadConvoca:
                 price=0,
                 publish=e.str_publish,
                 category=self.__find_category(e),
-                place=Place(
-                    name=e.LOCATION,
-                    address=e.LOCATION
-                ),
+                place=place,
                 sessions=(
                     Session(
                         date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
@@ -78,11 +80,42 @@ class MadConvoca:
         return rt
 
     def __find_category(self, e: IcsEventWrapper):
+        if re_or(e.SUMMARY, r"Acto anual de gratitud a las socias y los socios", flags=re.I, to_log=e.UID):
+            return Category.NO_EVENT
         if re_and(e.SUMMARY, "presentaci[oó]n del?", ("libro", "novela"), flags=re.I, to_log=e.UID):
             return Category.LITERATURE
         if re_or(e.SUMMARY, "exposici[oó]n", flags=re.I, to_log=e.UID):
             return Category.EXPO
         if re_or(e.SUMMARY, "taller", "formaci[óo]n", flags=re.I, to_log=e.UID):
             return Category.WORKSHOP
-        logger.critical(str(CategoryUnknown(e.source, f"{e}")))
+        for c in e.CATEGORIES:
+            if re_or(c, r"Proyecci[óo]n", flags=re.I):
+                return Category.CINEMA
+            if re_or(c, r"Presentaci[óo]n del disco", "concierto", flags=re.I):
+                return Category.MUSIC
+            if re_or(c, r"mon[oó]logo", flags=re.I):
+                return Category.THEATER
+            if re_or(c, r"Mesa redonda", "Conferencias", flags=re.I):
+                return Category.CONFERENCE
+            if re_or(c, r"Presentación del libro", flags=re.I):
+                return Category.LITERATURE
+        if re_and(e.DESCRIPTION, "M[úu]sica", ("compositor", "voz", "viol[íi]n"), flags=re.I):
+            return Category.MUSIC
+        if re_and(e.DESCRIPTION, ("Abre el acto", "Presenta", "modera"), ("Intervienen", "con: "), flags=re.I):
+            return Category.CONFERENCE
+        logger.critical(str(CategoryUnknown(e.source, f"{e.CATEGORIES} -- {e.SUMMARY}")))
         return Category.UNKNOWN
+
+    def __find_place(self, e: IcsEventWrapper):
+        if e.LOCATION:
+            return Place(
+                name=e.LOCATION,
+                address=e.LOCATION
+            )
+        if get_domain(e.URL) == "ateneodemadrid.com":
+            return Places.ATENEO_MADRID.value
+
+
+if __name__ == "__main__":
+    m = MadConvoca()
+    e = m.events

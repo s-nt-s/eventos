@@ -599,6 +599,12 @@ class Places(Enum):
         latlon="40.41033677820543,-3.6960205749461768",
         zone="Paseo del Pradro"
     )
+    ATENEO_MADRID = Place(
+        name="Ateneo Madrid",
+        address="C. del Prado, 21, Centro, 28014 Madrid",
+        latlon="40.41526343432519,-3.698205767581124",
+        zone="Sol"
+    )
 
 
 def unquote(s: str):
@@ -1214,6 +1220,8 @@ class Event:
             return "Mujer y muerte en el mundo antiguo"
         if self.category == Category.VISIT and re_and(self.name, "ruta", "retiro", flags=re.I):
             return "Rutas por el Retiro"
+        if self.category == Category.CONFERENCE and re_or(self.name, "Ciclo conferencias Maqueta León Gil de Palacio", flags=re.I):
+            return "Maqueta León Gil de Palacio"
         return None
 
 
