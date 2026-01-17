@@ -8,7 +8,7 @@ import re
 from core.web import get_text, buildSoup, WEB
 import feedparser
 from zoneinfo import ZoneInfo
-from core.dictwraper import DictWraper
+from core.dictwraper import DictWrapper
 from bs4 import Tag
 
 
@@ -64,7 +64,7 @@ class GancioPortal:
         soup = WEB.get_cached_soup(url)
         return soup.select_one("div.p-description")
 
-    def __obj_to_event(self, e: DictWraper) -> Event:
+    def __obj_to_event(self, e: DictWrapper) -> Event:
         p = e.get_dict("place")
         latitude = p.get_float_or_none('latitude')
         longitude = p.get_float_or_none('longitude')
@@ -124,7 +124,7 @@ class GancioPortal:
             sessions.append(Session(date=dt.strftime("%Y-%m-%d %H:%M")))
         return duration, tuple(sessions)
 
-    def __find_category(self, url: str, place: Place, e: DictWraper) -> Category:
+    def __find_category(self, url: str, place: Place, e: DictWrapper) -> Category:
         _id_ = e.get_int('id')
         tags: set[str] = set()
         for t in map(str.lower, e.get_list_or_empty('tags')):
@@ -223,7 +223,7 @@ class GancioPortal:
     def events(self):
         logger.info(f"Buscando eventos en {self.__root}")
         all_events: set[Event] = set()
-        for e in map(DictWraper, self.list_events()):
+        for e in map(DictWrapper, self.list_events()):
             event = self.__obj_to_event(e)
             if event:
                 all_events.add(event)

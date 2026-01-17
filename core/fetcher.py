@@ -1,16 +1,31 @@
 from asyncio import Semaphore, Lock, sleep, gather, get_event_loop, run
 from aiohttp import ClientSession, BasicAuth, ClientTimeout, FormData, CookieJar
 
-from typing import Dict, Optional, NamedTuple
+from typing import Dict, Optional, NamedTuple, Callable, Awaitable, TypeVar, Generic
 import logging
 import enum
-from typing import TypeVar, Generic
 from yarl import URL
 from requests.cookies import RequestsCookieJar
+from aiohttp import ClientResponse
+
+ProcessedResponse = TypeVar("ProcessedResponse")
+AsyncResponseHandler = Callable[[ClientResponse], Awaitable[ProcessedResponse]]
 
 T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
+
+
+async def rq_to_text(r: ClientResponse):
+    return await r.text()
+
+
+async def rq_to_bytes(r: ClientResponse):
+    return await r.read()
+
+
+async def rq_to_json(r: ClientResponse):
+    return await r.json()
 
 
 def aio_cookiejar_from_requests(req_cookies: RequestsCookieJar):
@@ -39,10 +54,10 @@ class URLRequest(NamedTuple):
     data: Optional[FormData] = None
 
 
-class AsyncFetcher(Generic[T]):
+class AsyncFetcher(Generic[ProcessedResponse]):
     def __init__(
         self,
-        response_type: ResponseType | str,
+        onread: AsyncResponseHandler,
         max_concurrency: int = 40,
         timeout: float = 10.0,
         raise_for_status: bool = True,
@@ -54,10 +69,6 @@ class AsyncFetcher(Generic[T]):
         retries: int = 0,
         retry_delay: float = 0.5,
     ):
-        if isinstance(response_type, str):
-            response_type = ResponseType(response_type)
-        if not isinstance(response_type, ResponseType):
-            raise ValueError("response_type must be a ResponseType or str")
         if isinstance(cookie_jar, RequestsCookieJar):
             cookie_jar = aio_cookiejar_from_requests(cookie_jar)
         if cookie_jar is not None and not isinstance(cookie_jar, CookieJar):
@@ -65,7 +76,7 @@ class AsyncFetcher(Generic[T]):
         self.__cookie_jar = cookie_jar
         self.__max_concurrency = max_concurrency
         self.__timeout = ClientTimeout(total=timeout)
-        self.__response_type = response_type
+        self.__onread = onread
         self.__raise_for_status = raise_for_status
         self.__headers = headers or {}
         self.__rate_limit = rate_limit
@@ -105,12 +116,7 @@ class AsyncFetcher(Generic[T]):
             ) as response:
                 if self.__raise_for_status:
                     response.raise_for_status()
-                if self.__response_type == ResponseType.TEXT:
-                    return await response.text()
-                if self.__response_type == ResponseType.JSON:
-                    return await response.json()
-                if self.__response_type == ResponseType.BYTES:
-                    return await response.read()
+                return await self.__onread(response)
 
     async def __fetch_with_retries(
         self,
@@ -135,7 +141,7 @@ class AsyncFetcher(Generic[T]):
     async def fetch(
         self,
         *rqs: URLRequest | str
-    ) -> list[T]:
+    ) -> list[ProcessedResponse]:
         if len(rqs) == 0:
             return []
 
@@ -172,86 +178,31 @@ class AsyncFetcher(Generic[T]):
         return run(self.fetch(*rqs))
 
 
-class URLText(NamedTuple):
-    url: str
-    body: str
-
-
-class URLList(NamedTuple):
-    url: str
-    body: list
-
-
-class URLDict(NamedTuple):
-    url: str
-    body: dict
-
-
-class URLByte(NamedTuple):
-    url: str
-    body: bytes
-
-
-class Getter():
+class Getter(Generic[ProcessedResponse]):
     def __init__(
         self,
+        onread: AsyncResponseHandler,
         headers: Optional[Dict[str, str]] = None,
         cookie_jar: Optional[CookieJar | RequestsCookieJar] = None,
     ):
-        self.__fetcher_text = AsyncFetcher[str](
-            response_type=ResponseType.TEXT,
-            headers=headers,
-            cookie_jar=cookie_jar
-        )
-        self.__fetcher_json = AsyncFetcher(
-            response_type=ResponseType.JSON,
-            headers=headers,
-            cookie_jar=cookie_jar
-        )
-        self.__fetcher_bytes = AsyncFetcher[bytes](
-            response_type=ResponseType.BYTES,
+        self.__fetcher = AsyncFetcher(
+            onread=onread,
             headers=headers,
             cookie_jar=cookie_jar
         )
 
-    def __get(self, fetcher: AsyncFetcher[T], *urls: str) -> tuple[list[str], list[T]]:
+    def get(self, *urls: str) -> dict[str, ProcessedResponse]:
         if len(urls) == 0:
-            return [], []
+            return {}
         urls = sorted(set(urls))
         logger.debug(f"Fetching {len(urls)} URLs")
-        bodies = fetcher.run(*urls)
-        #logger.info(f"Fetching {len(urls)} URLs DONE")
-        return urls, bodies
-
-    def get_text(self, *urls: str):
-        urls, bodies = self.__get(self.__fetcher_text, *urls)
-        return tuple(URLText(url=u, body=b) for u, b in zip(urls, bodies))
-
-    def get_bytes(self, *urls: str):
-        urls, bodies = self.__get(self.__fetcher_bytes, *urls)
-        return tuple(URLByte(url=u, body=b) for u, b in zip(urls, bodies))
-
-    def get_list(self, *urls: str):
-        urls, bodies = self.__get(self.__fetcher_json, *urls)
-        arr: list[URLList] = []
-        for u, b in zip(urls, bodies):
-            if not isinstance(b, list):
-                raise ValueError(f"URL {u} did not return a list")
-            arr.append(URLList(url=u, body=b))
-        return tuple(arr)
-
-    def get_dict(self, *urls: str):
-        urls, bodies = self.__get(self.__fetcher_json, *urls)
-        arr: list[URLDict] = []
-        for u, b in zip(urls, bodies):
-            if not isinstance(b, dict):
-                raise ValueError(f"URL {u} did not return a dict")
-            arr.append(URLDict(url=u, body=b))
-        return tuple(arr)
-
+        bodies = self.__fetcher.run(*urls)
+        return dict(zip(urls, bodies))
 
 if __name__ == "__main__":
-    GT = Getter()
+    GT = Getter(
+        onread=rq_to_text
+    )
     from core.filemanager import FM
     urls: set[str] = set()
     for i in FM.load("rec/api_madrid_es/dataset.json"):
@@ -259,5 +210,5 @@ if __name__ == "__main__":
         urls.add(f"https://www.madrid.es/ContentPublisher/jsp/cont/microformatos/obtenerVCal.jsp?vgnextoid={vgnextoid}")
     urls = sorted(urls)
     print(len(urls))
-    results = GT.get_text(*urls)
+    results = GT.get(*urls)
     print(len(urls), len(results))

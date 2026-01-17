@@ -7,7 +7,7 @@ import logging
 from functools import cached_property, cache
 from types import MappingProxyType
 from typing import NamedTuple
-from core.fetcher import Getter
+from core.fetcher import Getter, rq_to_text
 from core.util import normalize_url
 from urllib.parse import urlencode
 
@@ -59,6 +59,7 @@ class FormSearch:
             session=self.__w.s,
         )
         self.__getter = Getter(
+            onread=rq_to_text,
             headers=self.__w.s.headers,
             cookie_jar=self.__w.s.cookies
         )
@@ -111,9 +112,8 @@ class FormSearch:
         if len(urls) == 1:
             self.__get_cached_soup(urls[0])
             return
-        bodies = {i.url: i.body for i in self.__getter.get_text(*urls)}
-        for u in urls:
-            soup = buildSoup(u, bodies[u])
+        for u, b in self.__getter.get(*urls).items():
+            soup = buildSoup(u, b)
             self.__cached_soup[u] = soup
 
     @cache

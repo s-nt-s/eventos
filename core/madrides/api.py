@@ -1,7 +1,7 @@
 from requests.sessions import Session
 import logging
 from typing import NamedTuple, Optional
-from core.dictwraper import DictWraper
+from core.dictwraper import DictWrapper
 from datetime import datetime, date
 from requests.exceptions import JSONDecodeError
 from core.filemanager import FileManager
@@ -9,10 +9,50 @@ from core.cache import HashCache, TupleCache
 from core.util import get_obj, find_euros
 import json
 import re
+from aiohttp import ClientResponse
+from core.fetcher import Getter
 
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
+
+
+async def rq_to_json(r: ClientResponse):
+    try:
+        return await r.json()
+    except JSONDecodeError:
+        text = await r.text()
+        text = re_sp.sub(r" ", text).strip()
+        if len(text) == 0:
+            logger.critical(f"{r.url} is empty: {text}")
+        try:
+            return json.loads(text)
+        except Exception:
+            pass
+        logger.critical(f"{r.url} is not a JSON: {text}")
+        raise
+
+
+async def rq_to_graph_list(r: ClientResponse) -> list[dict]:
+    obj = await rq_to_json(r)
+    if not isinstance(obj, dict):
+        raise ValueError(f"data is not a dict {r.url}")
+    lst = obj.get("@graph")
+    if not isinstance(lst, list):
+        raise ValueError(f"@graph is not list {r.url}")
+    if len(lst) == 0:
+        logger.critical(f"@graph is empty list {r.url}")
+        return []
+    if not all(isinstance(x, dict) for x in lst):
+        raise ValueError(f"@graph is not list[dict] {r.url}")
+    return lst
+
+
+async def rq_to_graph_list_len_1(r: ClientResponse):
+    graph = await rq_to_graph_list(r)
+    if len(graph) != 1:
+        raise ValueError(f"@graph is not len(list[dict]) == 1 {r.url}")
+    return graph[0]
 
 
 class ApiSession:
@@ -124,14 +164,19 @@ class MadridEsEvent(NamedTuple):
         return MadridEsEvent(**obj)
 
 
-class MadridEsDictWraper(DictWraper):
+class MadridEsDictWrapper(DictWrapper):
+
+    def get_api_org(self):
+        url = self.get_dict_or_empty('relation').get_str_or_none('@id') or ''
+        if re.match(r"^https://datos\.madrid\.es/egob/catalogo/tipo/entidadesyorganismos/\S+\.json$", url):
+            return url
 
     @property
     def __organismo(self):
-        url = self.get_dict_or_empty('relation').get_str_or_none('@id') or ''
-        if re.match(r"^https://datos\.madrid\.es/egob/catalogo/tipo/entidadesyorganismos/\S+\.json$", url):
-            return DictWraper(SESSION.get_graph_list_len_1(url))
-        return DictWraper({})
+        url = self.get_api_org()
+        if url:
+            return DictWrapper(SESSION.get_graph_list_len_1(url))
+        return DictWrapper({})
 
     def get_price(self):
         if self.get_bool('free'):
@@ -198,7 +243,7 @@ class MadridEsDictWraper(DictWraper):
 class ApiMadridEs:
 
     def __obj_to_event(self, obj: dict):
-        i = MadridEsDictWraper(obj)
+        i = MadridEsDictWrapper(obj)
         place = None
         dtend = i.get_datetime("dtend", "%Y-%m-%d %H:%M:%S.0")
         loc = i.get_location()
@@ -234,14 +279,14 @@ class ApiMadridEs:
             'https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json',
         )
         events_dict: dict[int, dict] = {}
-        sources = {
-            url: SESSION.get_graph_list(url) for url in (
-                "https://datos.madrid.es/egob/catalogo/300107-0-agenda-actividades-eventos.json",
-                "https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json",
-                "https://datos.madrid.es/egob/catalogo/206974-0-agenda-eventos-culturales-100.json",
-                'https://datos.madrid.es/egob/catalogo/212504-0-agenda-actividades-deportes.json'
-            )
-        }
+        sources: dict[str, list[dict]] = Getter(
+            onread=rq_to_graph_list
+        ).get(
+            "https://datos.madrid.es/egob/catalogo/300107-0-agenda-actividades-eventos.json",
+            "https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json",
+            "https://datos.madrid.es/egob/catalogo/206974-0-agenda-eventos-culturales-100.json",
+            'https://datos.madrid.es/egob/catalogo/212504-0-agenda-actividades-deportes.json'
+        )
         sources = dict(sorted(sources.items(), key=lambda kv: (-len(kv[1]), kv[0])))
         for i, (url, evs) in enumerate(sources.items()):
             logger.info(f"[{len(evs):5d}] {url}")

@@ -18,14 +18,16 @@ from types import MappingProxyType
 from datetime import datetime
 import pytz
 from zoneinfo import ZoneInfo
-from core.fetcher import Getter, URLText
+from core.fetcher import Getter, rq_to_text
 from core.madrides.search import FormSearch, FormSearchResult, get_vgnextoid
 from typing import Callable
 
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
-GETTER = Getter()
+GETTER = Getter(
+    onread=rq_to_text
+)
 
 
 TZ_ZONE = 'Europe/Madrid'
@@ -451,13 +453,13 @@ class MadridEs:
         return rt
 
     def __get_ics_values(self, *vgnextoid: str):
-        ics_values = GETTER.get_text(
+        ics_values = GETTER.get(
             *(
                 f"https://www.madrid.es/ContentPublisher/jsp/cont/microformatos/obtenerVCal.jsp?vgnextoid={i}"
                 for i in vgnextoid
             )
         )
-        id_ics_value = {get_vgnextoid(i.url): i for i in ics_values}
+        id_ics_value = {get_vgnextoid(k): v for k, v in ics_values.items()}
         return id_ics_value
 
     def __is_ko_info(self, vgnextoid: str):
@@ -497,7 +499,7 @@ class MadridEs:
         if price > 0 and place in self.__places_with_store:
             return f"evento de pago en lugar [{place.name}] con store"
 
-    def __get_event(self, r: FormSearchResult, ics_file: URLText):
+    def __get_event(self, r: FormSearchResult, ics_file: str):
         if self.__is_ko_info(r.vgnextoid):
             return None
         place = self.__get_place(r.vgnextoid, r.div)
@@ -544,7 +546,7 @@ class MadridEs:
                 latlon=f"{inf.place.latitude},{inf.place.longitude}"
             ).normalize()
 
-    def __get_sessions(self, url_event: str, ics_file: URLText) -> Tuple[Union[int, None], Tuple[Session, ...]]:
+    def __get_sessions(self, url_event: str, ics_file: str) -> Tuple[Union[int, None], Tuple[Session, ...]]:
         cal = self.__get_cal(ics_file)
         if cal is None:
             return 0, tuple()
@@ -669,9 +671,9 @@ class MadridEs:
         return None
 
     @cache
-    def __get_cal(self, ics_file: URLText):
+    def __get_cal(self, ics_file: str):
         valid_lines: list[str] = []
-        for line in map(str.rstrip, ics_file.body.splitlines()):
+        for line in map(str.rstrip, ics_file.splitlines()):
             if len(line) == 0:
                 continue
             if line.startswith(("BEGIN", "END", " ")):
@@ -692,7 +694,7 @@ class MadridEs:
         try:
             return Calendar("\n".join(valid_lines))
         except (NotImplementedError, FailedParse, KeyError) as e:
-            logger.error(str(e)+" "+ics_file.url)
+            logger.error(str(e)+" "+ics_file)
             return None
 
     def __find_category(self, div: Tag, url_event: str):

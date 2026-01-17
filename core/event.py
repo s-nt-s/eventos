@@ -114,6 +114,7 @@ class Category(IntEnum):
     LITERATURE = 40
     MATERNITY = 41
     INSTITUTIONAL_POLICY = 42
+    DUPE = 43
 
     def __str__(self):
         #if self == Category.OTHERS:
@@ -180,6 +181,8 @@ class Category(IntEnum):
             return "política instucional"
         if self == Category.PARTY:
             return "fiesta"
+        if self == Category.DUPE:
+            return "duplicada"
         raise ValueError(self.value)
 
     def __lt__(self, other):

@@ -5,7 +5,7 @@ from core.web import Driver, buildSoup, get_text
 import re
 from typing import NamedTuple, Optional
 from core.util import get_obj
-from core.dictwraper import DictWraper
+from core.dictwraper import DictWrapper
 import logging
 from datetime import timedelta, date
 from core.util import re_or
@@ -243,14 +243,14 @@ class ApiEsMadrid:
     @TupleCache("rec/esmadrid.json", builder=EsMadridEvent.build)
     def get_events(self):
         events: set[EsMadridEvent] = set()
-        for obj in map(DictWraper, self.get_data()):
+        for obj in map(DictWrapper, self.get_data()):
             e = self.__to_event(obj)
             if e:
                 events.add(e)
         return tuple(sorted(events))
 
     def __to_event(self, o: dict):
-        obj = DictWraper(o)
+        obj = DictWrapper(o)
         id = obj.get_int('@id')
         b = obj.get_dict('basicData')
         g = obj.get_dict('geoData')
@@ -300,14 +300,14 @@ class ApiEsMadrid:
         )
         return e
 
-    def __get_dates(self, obj: DictWraper):
+    def __get_dates(self, obj: DictWrapper):
         set_fechas: set[str] = set()
         e = obj.get_dict('extradata')
         fechas = e.get_dict('fechas')
         exc = fechas.get_list_or_empty('exclusion')
         inc = fechas.get_list_or_empty('inclusion')
         rango = fechas.get_list('rango')
-        for r in map(DictWraper, rango):
+        for r in map(DictWrapper, rango):
             inicio = r.get_date('inicio', '%Y-%m-%d')
             fin = r.get_date('fin', '%Y-%m-%d')
             while inicio <= fin:
@@ -317,7 +317,7 @@ class ApiEsMadrid:
                 inicio = inicio + timedelta(days=1)
         return tuple(sorted(set_fechas))
 
-    def __get_price(self, obj: DictWraper):
+    def __get_price(self, obj: DictWrapper):
         web = obj.get_dict('basicData').get_str('web')
 
         def _get_txt(html: str):
@@ -382,15 +382,15 @@ class ApiEsMadrid:
         logger.debug(f"Precio no encontrado en: {pago}")
         #raise ValueError([text, pago])
 
-    def __get_categorias(self, obj: DictWraper):
+    def __get_categorias(self, obj: DictWrapper):
         def _iter_cat():
-            for i in map(DictWraper, obj.get_dict('extradata').get_list_or_empty('categorias')):
+            for i in map(DictWrapper, obj.get_dict('extradata').get_list_or_empty('categorias')):
                 c = i.get_str('Categoria')
                 subs = i.get_list_or_empty('subcategorias')
                 if len(subs) == 0:
                     yield c
                     continue
-                for x in map(DictWraper, subs):
+                for x in map(DictWrapper, subs):
                     s = x.get_str('SubCategoria')
                     yield f"{c} - {s}"
 

@@ -11,7 +11,7 @@ TZ_ZONE = 'Europe/Madrid'
 T = TypeVar("T")
 
 
-class DictWraper:
+class DictWrapper:
     def __init__(self, obj: dict):
         self.__obj = obj
 
@@ -130,15 +130,15 @@ class DictWraper:
         return v
 
     def get_dict(self, k: str):
-        return DictWraper(self.__get_type(k, dict))
+        return DictWrapper(self.__get_type(k, dict))
 
     def get_dict_or_none(self, k: str):
         obj = self.__get_type(k, dict, NoneType)
         if obj is not None:
-            return DictWraper(obj)
+            return DictWrapper(obj)
 
     def get_dict_or_empty(self, k: str):
-        return DictWraper(self.__get_type(k, dict, NoneType) or {})
+        return DictWrapper(self.__get_type(k, dict, NoneType) or {})
 
     def get_float(self, k: str):
         return self.__get_type(k, float)
