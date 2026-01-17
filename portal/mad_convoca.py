@@ -1,6 +1,6 @@
 from portal.gancio import GancioPortal
 from core.ics import IcsReader, IcsEventWrapper
-from core.event import Event, Place, Category, Session, CategoryUnknown, Places
+from core.event import Event, Place, Category, Session, CategoryUnknown, Places, isWorkingHours
 from functools import cached_property
 from core.util import plain_text, find_duplicates, re_or, re_and, get_domain
 import re
@@ -12,7 +12,8 @@ re_sp = re.compile(r"\s+")
 
 
 class MadConvoca:
-    def __init__(self):
+    def __init__(self, remove_working_sessions: bool = False):
+        self.__remove_working_sessions = remove_working_sessions
         self.__mad = GancioPortal(
             root="https://mad.convoca.la",
             id_prefix=""
@@ -32,6 +33,8 @@ class MadConvoca:
         logger.info("Buscando eventos en MadConvoca")
         ok_events = set(self.__mad.events).union(self.__ext.events)
         for e in self.__ics.events:
+            if self.__remove_working_sessions and isWorkingHours(e.DTSTART):
+                continue
             place = self.__find_place(e)
             if place is None:
                 continue
