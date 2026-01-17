@@ -1,12 +1,10 @@
-from requests.sessions import Session
 import logging
 from typing import NamedTuple, Optional
 from core.dictwraper import DictWrapper
 from datetime import datetime, date
-from requests.exceptions import JSONDecodeError as ReqJSONDecodeError
 from json.decoder import JSONDecodeError
 from core.filemanager import FileManager
-from core.cache import HashCache, TupleCache
+from core.cache import TupleCache
 from core.util import get_obj, find_euros
 import json
 import re
@@ -16,7 +14,7 @@ from core.fetcher import Getter
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
-
+re_org_api = re.compile(r"^https://datos\.madrid\.es/egob/catalogo/tipo/entidadesyorganismos/\S+\.json$")
 
 async def rq_to_json(r: ClientResponse):
     try:
@@ -46,63 +44,15 @@ async def rq_to_graph_list(r: ClientResponse) -> list[dict]:
         return []
     if not all(isinstance(x, dict) for x in lst):
         raise ValueError(f"@graph is not list[dict] {r.url}")
-    return lst
+    return list(FileManager.parse_obj(i, compact=True) for i in lst)
 
 
 async def rq_to_graph_list_len_1(r: ClientResponse):
     graph = await rq_to_graph_list(r)
     if len(graph) != 1:
         raise ValueError(f"@graph is not len(list[dict]) == 1 {r.url}")
-    return graph[0]
-
-
-class ApiSession:
-    def __init__(self):
-        self.__s = Session()
-
-    def __get_json(self, url: str):
-        r = self.__s.get(url)
-        try:
-            return r.json()
-        except ReqJSONDecodeError:
-            text = re_sp.sub(r" ", r.text).strip()
-            if len(text) == 0:
-                logger.critical(f"{url} is empty : {text}")
-            try:
-                return json.loads(text)
-            except Exception:
-                pass
-            logger.critical(f"{url} is not a JSON: {text}")
-            raise
-
-    def __get_dict(self, url: str):
-        obj = self.__get_json(url)
-        if not isinstance(obj, dict):
-            raise ValueError(f"No dict: {url}")
-        return obj
-
-    @HashCache("rec/api_madrid_es/hash/{}.json")
-    def get_graph_list(self, url: str) -> tuple[dict, ...]:
-        obj = self.__get_dict(url)
-        lst = obj.get("@graph")
-        if not isinstance(lst, list):
-            raise ValueError(f"@graph is not list {url}")
-        if len(lst) == 0:
-            logger.critical(f"@graph is empty list {url}")
-            return tuple()
-        if not all(isinstance(x, dict) for x in lst):
-            raise ValueError(f"@graph is not list[dict] {url}")
-        return list(FileManager.parse_obj(i, compact=True) for i in lst)
-
-    def get_graph_list_len_1(self, url: str):
-        graph = self.get_graph_list(url)
-        if len(graph) != 1:
-            raise ValueError(f"@graph is not len(list[dict]) == 1 {url}")
-        obj = FileManager.parse_obj(graph[0], compact=True) or {}
-        return obj
-
-
-SESSION = ApiSession()
+    obj = FileManager.parse_obj(graph[0], compact=True) or {}
+    return obj
 
 
 def str_line(s: str | None):
@@ -174,9 +124,9 @@ class MadridEsDictWrapper(DictWrapper):
 
     @property
     def __organismo(self):
-        url = self.get_api_org()
-        if url:
-            return DictWrapper(SESSION.get_graph_list_len_1(url))
+        org = self.get('__organization__')
+        if isinstance(org, dict):
+            return DictWrapper(org)
         return DictWrapper({})
 
     def get_price(self):
@@ -241,6 +191,18 @@ class MadridEsDictWrapper(DictWrapper):
             return addr
 
 
+class Dataset(NamedTuple):
+    events: list[dict]
+    organizations: dict[str, dict]
+
+    @staticmethod
+    def build(*args, **kwargs):
+        obj = get_obj(*args, **kwargs)
+        if obj is None:
+            return None
+        return MadridEsEvent(**obj)
+
+
 class ApiMadridEs:
 
     def __obj_to_event(self, obj: dict):
@@ -274,7 +236,7 @@ class ApiMadridEs:
         )
         return e
 
-    @HashCache("rec/api_madrid_es/dataset.json")
+    @TupleCache("rec/api_madrid_es/dataset.json", builder=Dataset.build)
     def __get_events(self):
         FREE_IF_IN = (
             'https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json',
@@ -308,14 +270,38 @@ class ApiMadridEs:
             if i > 0:
                 count = len(new_ids)
                 logger.info(f"[+{count:4d}] {url} {', '.join(map(str, sorted(new_ids)))}")
-        return list(events_dict.values())
+
+        events = list(events_dict.values())
+        orgs: set[str] = set()
+        for e in events:
+            relation = e.get("relation")
+            if isinstance(relation, dict):
+                url = relation.get('@id')
+                if isinstance(url, str):
+                    url = url.strip()
+                    if re_org_api.match(url):
+                        orgs.add(url)
+                        e['__organization__'] = url
+
+        org_data: dict[str, dict] = Getter(
+            onread=rq_to_graph_list_len_1
+        ).get(*orgs)
+
+        dts = Dataset(
+            events=list(events_dict.values()),
+            organizations=org_data
+        )
+        return dts
 
     @TupleCache("rec/api_madrid_es.json", builder=MadridEsEvent.build)
     def get_events(self):
-        events_dict = self.__get_events()
-        size = len(events_dict)
+        dataset = self.__get_events()
+        size = len(dataset.events)
         events: set[MadridEsEvent] = set()
-        for e in events_dict:
+        for e in dataset.events:
+            org = dataset.organizations.get(e.get('__organization__'))
+            if isinstance(org, dict):
+                e['__organization__'] = org
             x = self.__obj_to_event(e)
             if x is not None:
                 events.add(x)
