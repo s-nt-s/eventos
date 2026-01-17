@@ -3,7 +3,8 @@ import logging
 from typing import NamedTuple, Optional
 from core.dictwraper import DictWrapper
 from datetime import datetime, date
-from requests.exceptions import JSONDecodeError
+from requests.exceptions import JSONDecodeError as ReqJSONDecodeError
+from json.decoder import JSONDecodeError
 from core.filemanager import FileManager
 from core.cache import HashCache, TupleCache
 from core.util import get_obj, find_euros
@@ -63,7 +64,7 @@ class ApiSession:
         r = self.__s.get(url)
         try:
             return r.json()
-        except JSONDecodeError:
+        except ReqJSONDecodeError:
             text = re_sp.sub(r" ", r.text).strip()
             if len(text) == 0:
                 logger.critical(f"{url} is empty : {text}")
