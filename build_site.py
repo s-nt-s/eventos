@@ -36,7 +36,12 @@ EC = EventCollector(
     },
     max_sessions=30,
     avoid_working_sessions=True,
-    publish={k: v for k, v in FM.load(OUT+"publish.json").items() if v <= STR_TODAY},
+    publish={
+        k: v
+        for k, v in
+        FM.load(OUT+"publish.json").items()
+        if v is not None and v <= STR_TODAY
+    },
     ko_places=(
         "Espacio Abierto Quinta de los Molinos",
         "Parroquia Nuestra Señora de Guadalupe",

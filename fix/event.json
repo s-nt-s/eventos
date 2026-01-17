@@ -814,7 +814,11 @@
         "category": "LITERATURE",
         "more": "https://www.goodreads.com/book/show/123411167"
     },
-    "20260126173000Z-146195@eventos.ucm.es": {"category": "CONFERENCE"},
+    "20260126173000Z-146195@eventos.ucm.es": {
+        "category": "CONFERENCE",
+        "more": "https://ateneodemadrid.com/evento/llm-large-language-models/",
+        "name": "LLM 'Large Language Models'"
+    },
     "20260204150000Z-143708@eventos.urjc.es": {"category": "SPAM"},
     "20260203150000Z-146181@eventos.urjc.es": {"category": "SPAM"},
     "cf1092641": {
@@ -825,5 +829,6 @@
     },
     "md7218": {
         "more": "https://www.mataderomadrid.org/programacion/talleres-para-adultos-sobre-la-exposicion-lengua-en-coro-cuenta-de-cristina-mejias"
-    }
+    },
+    ""
 }
