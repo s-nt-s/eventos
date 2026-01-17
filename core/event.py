@@ -700,6 +700,7 @@ KO_IMG = (
     'https://entradasfilmoteca.gob.es//Contenido/ImagenesEspectaculos/00_5077/Jazz%20On%20A%20Summer',
     'https://www.madrid.es/UnidadesDescentralizadas/MuseosMunicipales/DepartamentoExposiciones/Actividades/Ciclo%20Cine%20Una%20tarde%20con%20%20Marilyn/Cartel%20Marilyn%20jpg.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20ENERO/18%20enero%20%20CONCIERTO%20Ra%C3%ADzes-001.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/EntidadesYOrganismos/CulturaYOcio/InstalacionesCulturales/CentrosCulturalesMunicipales/CCVillaverde/Ficheros/CentroSocioCult.jpg',
     'https://cdn.tenemosplan.com/tenemosplan/default_image.jpg',
 )
 
@@ -1211,6 +1212,8 @@ class Event:
             'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Memento-mori-Mujer-y-muerte-en-el-mundo-antiguo-Ciclo-de-conferencias/?vgnextfmt=default&vgnextoid=1d096787031bb910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
         ):
             return "Mujer y muerte en el mundo antiguo"
+        if self.category == Category.VISIT and re_and(self.name, "ruta", "retiro", flags=re.I):
+            return "Rutas por el Retiro"
         return None
 
 
