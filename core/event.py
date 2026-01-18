@@ -415,6 +415,10 @@ class Place:
             return Places.LIBRERIA_SANTANDER.value
         if re.search(r"mary read", name, flags=re.I) and re.search(r"Marqu[eé]s (de )?Toca", address, flags=re.I):
             return Places.LIBRERIA_MARY_READ.value
+        if re_and(self.name, "ateneo", "madrid", flags=re.I) and re_and(self.address, "prado", flags=re.I):
+            return Places.ATENEO_MADRID.value
+        if re_and(self.name, "ateneo", "maliciosa", flags=re.I) and re_and(self.address, "peñuelas", flags=re.I):
+            return Places.ATENEO_MALICIOSA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -583,6 +587,11 @@ class Places(Enum):
         address="C. del Prado, 21, Centro, 28014 Madrid",
         latlon="40.41526343432519,-3.698205767581124",
         zone="Sol"
+    )
+    ATENEO_MALICIOSA = Place(
+        name="Atenelo la maliciosa",
+        address="Calle de las Peñuelas, 12, Arganzuela, 28005 Madrid",
+        latlon="40.40362500123191,-3.7043296154194074",
     )
 
 
