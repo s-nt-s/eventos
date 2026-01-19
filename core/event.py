@@ -592,6 +592,7 @@ class Places(Enum):
         name="Ateneo la maliciosa",
         address="Calle de las Peñuelas, 12, Arganzuela, 28005 Madrid",
         latlon="40.40362500123191,-3.7043296154194074",
+        zone="Embajadores"
     )
 
 
