@@ -91,7 +91,7 @@ class MadConvoca:
         if re_or(e.SUMMARY, "taller", "formaci[óo]n", flags=re.I, to_log=e.UID):
             return Category.WORKSHOP
         for c in e.CATEGORIES:
-            if re_or(c, r"Proyecci[óo]n", flags=re.I):
+            if re_or(c, r"Proyecci[óo]n", "cinef[óo]rum", flags=re.I):
                 return Category.CINEMA
             if re_or(c, r"Presentaci[óo]n del disco", "concierto", flags=re.I):
                 return Category.MUSIC
