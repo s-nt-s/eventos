@@ -347,3 +347,13 @@ def isWorkingHours(dt: datetime):
     if dt.date() in get_festivos(dt.year):
         return False
     return True
+
+
+def un_camel(x: str):
+    if x is None or " " in x:
+        return x
+    return re.sub(
+        r"(?<!^)(?=[A-ZÁÉÍÓÚÜÑ])",
+        " ",
+        x
+    )

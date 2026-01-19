@@ -2,17 +2,19 @@ from core.web import Web, WebException, Driver, get_text, get_query, buildSoup
 from urllib.parse import urljoin
 from bs4 import Tag, BeautifulSoup
 import re
-from core.util import plain_text, get_domain, trim
+from core.util import get_domain, trim
 import logging
-from functools import cached_property, cache
+from functools import cache
 from types import MappingProxyType
 from typing import NamedTuple
-from core.fetcher import Getter, rq_to_text
+from core.fetcher import Getter
 from core.util import normalize_url, get_obj
 from urllib.parse import urlencode
 from typing import Optional, Iterable
 from aiohttp import ClientResponse
 from core.cache import TupleCache
+from core.madrid_es.tp import Place
+from html import unescape
 
 
 logger = logging.getLogger(__name__)
@@ -39,19 +41,12 @@ def get_vgnextoid(url: str | Tag):
     return id
 
 
-class Place(NamedTuple):
-    latitude: float
-    longitude: float
-    location: str
-    address: str
-
-
 class Item(NamedTuple):
     url: str
     title: str
     place: Optional[Place] = None
     audience: tuple[str, ...] = tuple()
-    typ: tuple[str, ...] = tuple()
+    category: tuple[str, ...] = tuple()
     free: bool = False
 
     @staticmethod
@@ -286,7 +281,7 @@ class FormSearch:
             k = o.attrs["value"]
             v = re_sp.sub(" ", o.get_text()).strip()
             if k != "-1":
-                data[k] = v
+                data[k] = unescape(v)
         return data
 
     def __get_tipos(self):
@@ -295,7 +290,7 @@ class FormSearch:
         for n in soup.find_all('item'):
             value = n.find('value').string.strip()
             text = re_sp.sub(" ", n.find('text').string).strip()
-            data[value] = text
+            data[value] = unescape(text)
         return data
 
     @TupleCache("rec/apimadrides/form.json", builder=Item.build)
@@ -305,17 +300,17 @@ class FormSearch:
         for i in self.__all:
             vid = get_vgnextoid(i.url)
             aud: set[str] = set()
-            typ: set[str] = set()
+            category: set[str] = set()
             for k, v in self.usuarios.items():
                 if vid in self.__user[k]:
                     aud.add(v)
             for k, v in self.tipos.items():
                 if vid in self.__typ[k]:
-                    typ.add(v)
+                    category.add(v)
             i = i._replace(
                 free=vid in self.__free,
                 audience=tuple(sorted(aud)),
-                typ=tuple(sorted(typ))
+                category=tuple(sorted(category))
             )
             items.add(i)
         return tuple(sorted(items))

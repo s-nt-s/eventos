@@ -5,12 +5,13 @@ from datetime import datetime, date
 from json.decoder import JSONDecodeError
 from core.filemanager import FileManager
 from core.cache import TupleCache
-from core.util import get_obj
+from core.util import get_obj, un_camel
 import json
 import re
 from aiohttp import ClientResponse
 from core.fetcher import Getter
 from bs4 import BeautifulSoup
+from core.madrid_es.tp import Place
 
 
 logger = logging.getLogger(__name__)
@@ -71,11 +72,7 @@ async def rq_to_label(r: ClientResponse):
         logger.critical(f"skos:prefLabel not found in {r.url}")
         return None
     about = about.rsplit("/", 1)[-1]
-    about = re.sub(
-        r"(?<!^)(?=[A-ZÁÉÍÓÚÜÑ])",
-        " ",
-        about
-    )
+    about = un_camel(about)
     return about
 
 
@@ -106,13 +103,6 @@ def date_to_str(d: date | datetime | None):
     raise ValueError(d)
 
 
-class Place(NamedTuple):
-    latitude: float
-    longitude: float
-    location: str
-    address: str
-
-
 class Item(NamedTuple):
     id: int
     url: str
@@ -122,9 +112,10 @@ class Item(NamedTuple):
     dtend: str
     recurrence: bool
     audience: tuple[str, ...] = tuple()
-    typ: Optional[str] = None
+    category: Optional[str] = None
     place: Optional[Place] = None
     price: Optional[str] = None
+    free: Optional[bool] = None
 
     @staticmethod
     def build(*args, **kwargs):
@@ -213,7 +204,7 @@ class Dataset(NamedTuple):
         return Dataset(**obj)
 
 
-class ApiMadridEs:
+class DatosMadridEs:
 
     def __obj_to_event(self, obj: dict):
         i = MadridEsDictWrapper(obj)
@@ -232,16 +223,17 @@ class ApiMadridEs:
             logger.critical(f"time={hm_tm} dtstart={dtstart} in {obj}")
         e = Item(
             id=i.get_int('id'),
-            typ=i.get_str_or_none("@type"),
+            category=i.get_str_or_none("@type"),
             url=i.get_str('link'),
             title=str_line(i.get_str('title')),
             price=i.get_str_or_none('price'),
             description=i.get_str_or_none('description'),
             dtstart=date_to_str(dtstart),
             dtend=date_to_str(dtend),
-            audience=str_tuple(i.get_str_or_none("audience"), r"\s*,\s*"),
+            audience=tuple(map(un_camel, str_tuple(i.get_str_or_none("audience"), r"\s*,\s*"))),
             recurrence=i.get("recurrence") is not None,
-            place=place
+            place=place,
+            free=i.is_free()
         )
         return e
 
@@ -321,8 +313,8 @@ class ApiMadridEs:
 
         typs: set[str] = set()
         for e in events:
-            if e.typ:
-                typs.add(e.typ)
+            if e.category:
+                typs.add(e.category)
 
         typs_label: dict[str, list[dict]] = Getter(
             onread=rq_to_label
@@ -331,7 +323,7 @@ class ApiMadridEs:
         evs: set[Item] = set()
         for e in events:
             evs.add(e._replace(
-                typ=typs_label.get(e.typ)
+                category=typs_label.get(e.category)
             ))
 
         return tuple(sorted(evs))
@@ -340,5 +332,5 @@ class ApiMadridEs:
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/apimadrides.log", log_level=(logging.INFO))
-    m = ApiMadridEs()
+    m = DatosMadridEs()
     print(len(m.get_events()))

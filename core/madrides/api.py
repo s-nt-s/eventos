@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
 re_org_api = re.compile(r"^https://datos\.madrid\.es/egob/catalogo/tipo/entidadesyorganismos/\S+\.json$")
 
+
 async def rq_to_json(r: ClientResponse):
     try:
         return await r.json()
