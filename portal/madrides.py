@@ -13,7 +13,7 @@ from collections import defaultdict
 from portal.util.madrides import find_more_url
 from html import unescape
 from tatsu.exceptions import FailedParse
-from core.madrides.api import ApiMadridEs, MadridEsEvent
+from core.madrides.api import ApiMadridEs, Item
 from types import MappingProxyType
 from datetime import datetime
 import pytz
@@ -141,7 +141,7 @@ class MadridEs:
         self.__max_price = max_price
         self.__avoid_categories = avoid_categories
         self.__form = FormSearch()
-        self.__info: MappingProxyType[str, MadridEsEvent] = MappingProxyType({
+        self.__info: MappingProxyType[str, Item] = MappingProxyType({
              get_vgnextoid(i.url): i for i in ApiMadridEs().get_events() if get_vgnextoid(i.url)
         })
 

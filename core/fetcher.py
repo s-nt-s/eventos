@@ -199,6 +199,7 @@ class Getter(Generic[ProcessedResponse]):
         bodies = self.__fetcher.run(*urls)
         return dict(zip(urls, bodies))
 
+
 if __name__ == "__main__":
     GT = Getter(
         onread=rq_to_text

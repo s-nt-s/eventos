@@ -82,24 +82,24 @@ def date_to_str(d: date | datetime | None):
     raise ValueError(d)
 
 
-class MadridEsPlace(NamedTuple):
+class Place(NamedTuple):
     latitude: float
     longitude: float
     location: str
     address: str
 
 
-class MadridEsEvent(NamedTuple):
+class Item(NamedTuple):
     id: int
     url: str
     title: str
     description: str
     dtstart: str
     dtend: str
-    audience: tuple[str, ...]
     recurrence: bool
+    audience: tuple[str, ...] = tuple()
     typ: Optional[str] = None
-    place: Optional[MadridEsPlace] = None
+    place: Optional[Place] = None
     price: Optional[float | int] = None
 
     @staticmethod
@@ -111,8 +111,8 @@ class MadridEsEvent(NamedTuple):
             if isinstance(v, list):
                 obj[k] = tuple(v)
             if k == "place" and isinstance(v, dict):
-                obj[k] = MadridEsPlace(**v)
-        return MadridEsEvent(**obj)
+                obj[k] = Place(**v)
+        return Item(**obj)
 
 
 class MadridEsDictWrapper(DictWrapper):
@@ -200,7 +200,7 @@ class Dataset(NamedTuple):
         obj = get_obj(*args, **kwargs)
         if obj is None:
             return None
-        return MadridEsEvent(**obj)
+        return Item(**obj)
 
 
 class ApiMadridEs:
@@ -211,7 +211,7 @@ class ApiMadridEs:
         dtend = i.get_datetime("dtend", "%Y-%m-%d %H:%M:%S.0")
         loc = i.get_location()
         if loc is not None:
-            place = MadridEsPlace(
+            place = Place(
                 latitude=loc.get_float('latitude'),
                 longitude=loc.get_float('longitude'),
                 location=i.event_location(),
@@ -221,7 +221,7 @@ class ApiMadridEs:
         hm_tm = i.get_str_or_none('time')
         if hm_tm not in (None, dtstart.strftime("%H:%M")):
             logger.critical(f"time={hm_tm} dtstart={dtstart} in {obj}")
-        e = MadridEsEvent(
+        e = Item(
             id=i.get_int('id'),
             typ=i.get_str_or_none("@type"),
             url=i.get_str('link'),
@@ -293,11 +293,11 @@ class ApiMadridEs:
         )
         return dts
 
-    @TupleCache("rec/api_madrid_es.json", builder=MadridEsEvent.build)
+    @TupleCache("rec/api_madrid_es.json", builder=Item.build)
     def get_events(self):
         dataset = self.__get_events()
         size = len(dataset.events)
-        events: set[MadridEsEvent] = set()
+        events: set[Item] = set()
         for e in dataset.events:
             org = dataset.organizations.get(e.get('__organization__'))
             if isinstance(org, dict):
