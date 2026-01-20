@@ -15,12 +15,15 @@ from aiohttp import ClientResponse
 from core.cache import TupleCache
 from core.madrid_es.tp import Place
 from html import unescape
-from iCalendar import Calendar
+from icalendar import Calendar
+from core.ics import IcsEventWrapper
+from core.util import KO_IMG, KO_MORE, get_domain
 
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
 
+KO_URL = KO_MORE + KO_IMG
 
 def get_vgnextoid(url: str | Tag):
     if isinstance(url, Tag):
@@ -43,6 +46,7 @@ def get_vgnextoid(url: str | Tag):
 
 
 class Item(NamedTuple):
+    vgnextoid: str
     url: str
     title: str
     place: Optional[Place] = None
@@ -72,8 +76,60 @@ class Index(NamedTuple):
 class Page(NamedTuple):
     description: Tag
     free: bool
-    price: tuple[str, ...]
-    img: tuple[str, ...]
+    price: tuple[str, ...] = tuple()
+    more: tuple[str, ...] = tuple()
+    img: tuple[str, ...] = tuple()
+
+
+def _get_district(lc: Tag):
+    if lc is None:
+        return None
+    text = get_text(lc)
+    if text is None:
+        return None
+    tail = text.rsplit(".", 1)[-1].strip()
+    if len(tail) > 0 or tail.upper() == tail:
+        return tail.title()
+    for k, v in {
+        "(Retiro)": "Retiro",
+    }.items():
+        if text.endswith(k):
+            return v
+    raise ValueError(f"Distrito no encontrado en {lc}")
+
+
+def _get_attr(lc: Tag, attr: str, cast=None):
+    v = lc.attrs.get(attr)
+    if isinstance(v, str):
+        v = v.strip()
+        if len(v) == 0:
+            return None
+    if v is None:
+        return None
+    if cast:
+        v = cast(v)
+    return v
+
+
+def tag_to_location(lc: Tag):
+    if lc is None:
+        return None
+    address = _get_attr(lc, "data-direction")
+    latitude = _get_attr(lc, "data-latitude", cast=float)
+    longitude = _get_attr(lc, "data-longitude", cast=float)
+    if None in (latitude, longitude):
+        latitude = None
+        longitude = None
+        if address is None:
+            return None
+
+    return Place(
+        latitude=latitude,
+        longitude=longitude,
+        location=_get_attr(lc, "title"),
+        address=address,
+        district=_get_district(lc)
+    )
 
 
 def soup_to_items(soup: BeautifulSoup):
@@ -84,13 +140,9 @@ def soup_to_items(soup: BeautifulSoup):
         if vgnextoid is None:
             continue
         lc = div.select_one("a.event-location")
-        pl = Place(
-            latitude=float(lc.attrs["data-latitude"]),
-            longitude=float(lc.attrs["data-longitude"]),
-            location=trim(lc.attrs["title"]),
-            address=trim(lc.attrs["data-direction"]),
-        ) if lc else None
+        pl = tag_to_location(lc)
         it = Item(
+            vgnextoid=vgnextoid,
             url=a.attrs['href'],
             title=get_text(a),
             place=pl
@@ -113,12 +165,14 @@ def _get_urls(soup: Tag, slc: str):
     urls: list[str] = []
     for x in soup.select(slc):
         attr = obj[x.name]
-        val = a.attrs.get(attr)
-        if val not in urls and isinstance(href, str):
+        val = x.attrs.get(attr)
+        if val not in urls and isinstance(val, str):
             val = val.strip()
-            prc = val.split("://", 1).lower()
+            prc = val.split("://", 1)[0].lower()
             if prc in ("http", "https"):
-                more.append(val)
+                dom = get_domain(val)
+                if val not in KO_URL and dom not in KO_URL:
+                    urls.append(val)
     return tuple(urls)
 
 
@@ -151,11 +205,27 @@ async def rq_to_page(r: ClientResponse):
 
 async def rq_to_ics(r: ClientResponse):
     txt = await r.text()
+    if len(re_sp.sub("", txt)) == 0:
+        logger.critical(f"Calendario vació {r.url}")
+        return tuple()
+    lines = txt.splitlines()
+    for i, ln in enumerate(lines):
+        m = re.match(r"^\s*(DTSTAMP|DTSTART|DTEND)\s*:\s*(\d+T[\d:Z]+)\s*$", ln)
+        if m:
+            k, v = m.groups()
+            if re.match(r"^\d{8}T\d\d:\d\d:\d\dZ$", v):
+                v = v.replace(":", "")[:-1]
+                lines[i] = f"{k}:{v}"
+    txt = "\n".join(lines)
+    arr: list[IcsEventWrapper] = []
     try:
-        return Calendar.from_ical(text)
+        cal = Calendar.from_ical(txt)
+        for e in cal.walk("VEVENT"):
+            e = IcsEventWrapper(e, source=r.url)
+            arr.append(e)
     except Exception as e:
         logger.critical(f"Calendario erróneo {r.url} {e}", exc_info=True)
-    return None
+    return tuple(arr)
 
 
 async def rq_to_index(r: ClientResponse):
@@ -212,22 +282,29 @@ async def rq_to_index(r: ClientResponse):
 
 
 class IdGetter(Getter):
-    
+    def __init__(self, onread, headers = None, cookie_jar = None):
+        super().__init__(onread, headers, cookie_jar)
+        self.__cache = {}
+
     def get(self, *urls: str):
         if len(urls) == 0:
             return MappingProxyType({})
-        urls = sorted(set(urls))
         url_id: dict[str, str] = {}
-        for url in urls:
+        for url in sorted(set(urls)):
             k = get_vgnextoid(url)
             if k is None:
                 raise ValueError(f"vgnextoid not in {url}")
+            if k in self.__cache:
+                data[k] = self.__cache[k]
+                continue
             if k in url_id:
                 raise ValueError(f"vgnextoid {k} duplicates")
             url_id[url] = k
         data: dict[str] = {}
-        for k, v in super().get(*urls).items():
-            data[url_id[k]] = v
+        for k, v in super().get(*url_id.keys()).items():
+            k = url_id[k]
+            self.__cache[k] = v
+            data[k] = v
         return MappingProxyType(data)
 
 
@@ -320,6 +397,13 @@ class FormSearch:
         def _to_ids(arr: Iterable[Item]):
             return tuple(get_vgnextoid(i.url) for i in arr)
 
+        dupes: dict[str, int] = {}
+        for e in all_items:
+            dupes[e.vgnextoid] = dupes.get(e.vgnextoid, 0) + 1
+        dupes = sorted(k for k, v in dupes.items() if v > 1)
+        if dupes:
+            raise ValueError(f"ids duplicates: {', '.join(dupes)}")
+
         self.__all = tuple(all_items)
         self.__free = _to_ids(free_items)
         self.__user = MappingProxyType({
@@ -410,14 +494,13 @@ class FormSearch:
         return tuple(sorted(items))
 
     def get_page(self, *urls: str) -> MappingProxyType[str, Page]:
-        return self.__getter_page.get(*pages)
+        return self.__getter_page.get(*urls)
 
-    def get_ics(self, *ids: str) -> MappingProxyType[str, Calendar]:
+    def get_ics(self, *ids: str) -> MappingProxyType[str, tuple[IcsEventWrapper, ...]]:
         urls: set[str] = set()
         for i in ids:
             urls.add(f"https://www.madrid.es/ContentPublisher/jsp/cont/microformatos/obtenerVCal.jsp?vgnextoid={i}")
         return self.__getter_ics.get(*urls)
-
 
 if __name__ == "__main__":
     from core.log import config_log

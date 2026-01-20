@@ -68,6 +68,7 @@ class AsyncFetcher(Generic[ProcessedResponse]):
         auth: Optional[BasicAuth] = None,
         retries: int = 0,
         retry_delay: float = 0.5,
+        verify: bool = True
     ):
         if isinstance(cookie_jar, RequestsCookieJar):
             cookie_jar = aio_cookiejar_from_requests(cookie_jar)
@@ -86,6 +87,7 @@ class AsyncFetcher(Generic[ProcessedResponse]):
         self.__retries = retries
         self.__retry_delay = retry_delay
         self.__rate_lock = Lock()
+        self.__verify = verify
 
     async def __respect_rate_limit(self):
         if not self.__rate_limit:
@@ -106,13 +108,13 @@ class AsyncFetcher(Generic[ProcessedResponse]):
     ):
         async with semaphore:
             await self.__respect_rate_limit()
-
             async with session.request(
                 rqs.method,
                 rqs.url,
                 data=rqs.data,
                 proxy=self.__proxy,
                 auth=self.__auth,
+                verify_ssl=self.__verify
             ) as response:
                 if self.__raise_for_status:
                     response.raise_for_status()
@@ -184,11 +186,15 @@ class Getter(Generic[ProcessedResponse]):
         onread: AsyncResponseHandler,
         headers: Optional[Dict[str, str]] = None,
         cookie_jar: Optional[CookieJar | RequestsCookieJar] = None,
+        raise_for_status: bool = True,
+        verify: bool = True
     ):
         self.__fetcher = AsyncFetcher(
             onread=onread,
             headers=headers,
-            cookie_jar=cookie_jar
+            cookie_jar=cookie_jar,
+            raise_for_status=raise_for_status,
+            verify=verify
         )
 
     def get(self, *urls: str) -> dict[str, ProcessedResponse]:

@@ -1,6 +1,6 @@
 from core.ics import IcsReader, IcsEventWrapper
 from functools import cached_property
-from core.event import Event, Place, Session, Category, Places
+from core.event import Event, Place, Session, Category, Places, CategoryUnknown
 from core.util import re_or, re_and
 import requests
 import re
@@ -276,17 +276,40 @@ class Universidad:
             return Category.CINEMA
         if re_or(e.SUMMARY, "Presentaci[óo]n de la asociaci[óo]n", flags=re.I):
             return Category.CONFERENCE
+        if re_or(
+            e.SUMMARY,
+            "^taller",
+            "Hackathon",
+            flags=re.I
+        ):
+            return Category.WORKSHOP
         description = get_text(self.__get_description(link, e.SUMMARY))
-        if re_or(description, r"Encuentro con", flags=re.I):
+        if re_or(
+            description,
+            r"Actividad para alumnos[^\.]*? (ESO|Primaria)",
+            flags=re.I
+        ):
+            return Category.CHILDISH
+        if re_or(
+            description,
+            r"Encuentro con",
+            r"Varios(/as)? ponentes",
+            flags=re.I
+        ):
             return Category.CONFERENCE
         if re_or(description, "obra esc[eé]nica", flags=re.I):
             return Category.THEATER
         info = self.__get_info(link)
-        if info:
-            cat = info.get_categories() or tuple()
-            for c in cat:
-                if re_or(c, "teatro"):
-                    return Category.THEATER
+        categories = (info.get_categories() if info else None) or tuple()
+        for c in categories:
+            if re_or(c, "teatro"):
+                return Category.THEATER
+            if re_or(c, "crossfit"):
+                return Category.SPORT
+            if re_or(c, "divulgaci[oó]n"):
+                return Category.CONFERENCE
+
+        logger.critical(str(CategoryUnknown(link, f"categories={categories} {e}")))
         return Category.UNKNOWN
 
     def __find_url(self, e: IcsEventWrapper):
@@ -339,10 +362,11 @@ if __name__ == "__main__":
     # https://eventos.uam.es/kml.html
     # https://eventos.urjc.es/kml.html
     evs = Universidad.get_events(
-        "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
-        "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
-        "https://eventos.uam.es/ics/location/espana/lo-1.ics",
-        "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
+        #"https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
+        #"https://eventos.ucm.es/ics/location/espana/lo-1.ics",
+        #"https://eventos.uam.es/ics/location/espana/lo-1.ics",
+        #"https://eventos.urjc.es/ics/location/espana/lo-1.ics",
+        "https://eventos.uah.es/ics/location/espana/lo-1.ics",
         verify_ssl=False
     )
     for event in evs:

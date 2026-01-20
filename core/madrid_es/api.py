@@ -2,7 +2,7 @@ from core.madrid_es.datos import DatosMadridEs, Item as DatosItem
 from core.madrid_es.form import FormSearch, get_vgnextoid, Item as FormItem
 from typing import NamedTuple, Optional
 from core.madrid_es.tp import Place
-from core.util import find_euros, get_obj
+from core.util import find_euros, get_obj, re_or
 import logging
 from core.cache import TupleCache
 import re
@@ -12,12 +12,15 @@ re_sp = re.compile(r"\s+")
 
 
 class Event(NamedTuple):
+    vgnextoid: str
     title: str
     url: str
     price: Optional[float] = None
     place: Optional[Place] = None
     audience: tuple[str, ...] = tuple()
     category: tuple[str, ...] = tuple()
+    more: tuple[str, ...] = tuple()
+    img: tuple[str, ...] = tuple()
     description: Optional[str] = None
 
     @staticmethod
@@ -31,6 +34,18 @@ class Event(NamedTuple):
             if k == "place" and isinstance(v, dict):
                 obj[k] = Place(**v)
         return Event(**obj)
+
+    def has_audience(self, *vals: str):
+        for c in self.audience:
+            if re_or(c, *vals):
+                return True
+        return False
+
+    def has_category(self, *vals: str):
+        for c in self.category:
+            if re_or(c, *vals, flags=re.I):
+                return True
+        return False
 
 
 def _join(a: str | tuple[str, ...] | None, b: str | tuple[str, ...] | None):
@@ -53,7 +68,7 @@ def _join(a: str | tuple[str, ...] | None, b: str | tuple[str, ...] | None):
         i = {
             "inmigrantesy emigrantes": "inmigrantes y emigrantes",
             "jovenes": "jóvenes",
-            "niños": "niños y niñas",
+            "niños": "niñas y niños",
             "poblacion general": "población general",
         }.get(i, i)
         if i not in arr:
@@ -69,33 +84,25 @@ class Api:
 
     @TupleCache("rec/apimadrides/events.json", builder=Event.build)
     def get_events(self):
-        events: set[Event] = set()
         data = {get_vgnextoid(i.url): i for i in self.__datos.get_events()}
-        for e in self.__form.get_events():
-            _id_ = get_vgnextoid(e.url)
-            if _id_ is None:
-                raise ValueError(e)
-            d = data.get(_id_)
-            i = Event(
-                title=e.title,
-                url=e.url,
-                place=e.place or (d.place if d else None),
-                price=self.__find_price(e, d),
-                audience=_join(e.audience, d.audience if d else None),
-                category=_join(e.category, d.category if d else None),
-                description=d.description if d else None
+        form_events = self.__form.get_events()
+        events: set[Event] = set()
+        for f in form_events:
+            d = data.get(f.vgnextoid)
+            e = Event(
+                vgnextoid=f.vgnextoid,
+                title=f.title,
+                url=f.url,
+                place=f.place or (d.place if d else None),
+                price=self.__find_price(f, d),
+                audience=_join(f.audience, d.audience if d else None),
+                category=_join(f.category, d.category if d else None),
+                description=(d.description if d else None)
             )
-            events.add(i)
-        dupes: dict[str, int] = {}
-        for e in events:
-            _id_ = get_vgnextoid(e.url)
-            dupes[_id_] = dupes.get(_id_, 0) + 1
-        dupes = sorted(k for k, v in dupes.items() if v > 1)
-        if dupes:
-            raise ValueError(f"ids duplicates: {', '.join(dupes)}")
+            events.add(e)
         return tuple(sorted(events))
 
-    def __find_price(self, a: FormItem, b: DatosItem | None):
+    def __find_price(self, a: FormItem, b: DatosItem | None, *txt: str):
         if a.free is True:
             return 0
         if b:
@@ -103,7 +110,8 @@ class Api:
                 return 0
             for txt in (
                 b.price,
-                b.description
+                b.description,
+                *txt
             ):
                 prc = find_euros(txt)
                 if prc is not None:
@@ -114,6 +122,12 @@ class Api:
                 "Consultar descuentos especiales",
             ):
                 logger.critical(f"Campo price inexperado: {prc}")
+
+    def get_ics(self, *ids: str):
+        return self.__form.get_ics(*ids)
+
+    def get_page(self, *urls: str):
+        return self.__form.get_page(*urls)
 
 
 if __name__ == "__main__":

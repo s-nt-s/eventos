@@ -124,8 +124,8 @@ class IcsEventInvalid(ValueError):
 
 
 class IcsEventMandatory(ValueError):
-    def __init__(self, field: str):
-        super().__init__(f"Campo obligatorio {field} es None")
+    def __init__(self, field: str, source: str):
+        super().__init__(f"Campo obligatorio {field} es None en {source}")
 
 
 class IcsEventWrapper:
@@ -144,7 +144,7 @@ class IcsEventWrapper:
         val = self.__event.get(key)
         if val is None:
             if mandatory:
-                raise IcsEventMandatory(key)
+                raise IcsEventMandatory(key, self.__source)
             return None
         if not isinstance(val, vDDDTypes):
             raise IcsEventInvalid(f"Valor no es vDDDTypes: {val!r}")

@@ -183,6 +183,8 @@ class Category(IntEnum):
             return "fiesta"
         if self == Category.DUPE:
             return "duplicada"
+        if self == Category.MATERNITY:
+            return "maternidad"
         raise ValueError(self.value)
 
     def __lt__(self, other):
@@ -320,7 +322,6 @@ class Place:
         fix_val = fnc()
         if fix_val == old_val:
             return False
-        logger.debug(f"Place._fix_field: {name}={fix_val} <- {old_val}")
         object.__setattr__(self, name, fix_val)
         return True
 
@@ -348,9 +349,9 @@ class Place:
         if re_or(name, "matadero", "cineteca", "Casa del Reloj", "Nave Terneras", "La Lonja", flags=re.I):
             return "Legazpi"
         if re_and(addr, "conde duque", "28015"):
-            return "Conde Duque y alrededores"
+            return "Plaza España"
         if re_or(name, "clara del rey"):
-            return "Conde Duque y alrededores"
+            return "Plaza España"
         if self.latlon:
             lat, lon = map(float, self.latlon.split(","))
             for zn in (
@@ -366,6 +367,9 @@ class Place:
                 Zones.MARQUES_DE_VADILLO,
                 Zones.USERA,
                 Zones.VALLECAS,
+                Zones.MANUEL_BECERRA,
+                Zones.NUNEZ_BOLBOA,
+                Zones.ALCALA_DE_HENARES,
             ):
                 z = zn.value
                 if z.is_in(lat, lon):
@@ -419,6 +423,16 @@ class Place:
             return Places.ATENEO_MADRID.value
         if re_and(self.name, "ateneo", "maliciosa", flags=re.I) and re_and(self.address, "peñuelas", flags=re.I):
             return Places.ATENEO_MALICIOSA.value
+        if re_and(self.name, "espacio", flags=re.I) and re_and(self.address, "Sierra Carbonera.* 32", flags=re.I):
+            return Places.ESPACIO.value
+        if re_and(self.name, "templo", "debod", flags=re.I) and re_and(self.address, "ferraz", flags=re.I):
+            return Places.DEBOD.value
+        if re_or(self.name, "Biblioteca David Gistau", "Centro cultural Buenavista", flags=re.I) and re_and(self.address, "toreros,? 5", flags=re.I):
+            return Places.BUENAVISTA.value
+        if re_or(self.name, "MakeSpace", ("Make", "Space"), flags=re.I) and re_and(self.address, "ruiz palacios,? 7", flags=re.I):
+            return Places.MAKESPACE.value
+        if re_or(self.name, "ASOCIACI[Óo]N GALEGA CORREDOR DO HENARES", flags=re.I) and re_and(self.address, "28806", flags=re.I):
+            return Places.ALCALA_HENARES_GALEGA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -594,6 +608,36 @@ class Places(Enum):
         latlon="40.40362500123191,-3.7043296154194074",
         zone="Embajadores"
     )
+    ESPACIO = Place(
+        name="El espacio",
+        address="C/ de Sierra Carbonera, 32, Puente de Vallecas, 28053 Madrid",
+        latlon="40.39225251088216,-3.6642723003364335",
+        zone="Vallecas"
+    )
+    DEBOD = Place(
+        name="Templo de Debod",
+        address="C. de Ferraz, 1, Moncloa - Aravaca, 28008 Madrid",
+        latlon="40.42442583459242,-3.7177694868554996",
+        zone="Plaza España"
+    )
+    BUENAVISTA = Place(
+        name="Centro cultural Buenavista",
+        address="Av. de los Toreros, 5, Salamanca, 28028 Madrid",
+        latlon="40.43225106824249,-3.670682203781317",
+        zone="Manuel Becerra"
+    )
+    MAKESPACE = Place(
+        name="MakeSpace",
+        address="Calle Ruiz Palacios, 7, Tetuán, 28039 Madrid",
+        latlon="40.46212420746715,-3.7043117038105775",
+        zone="Tetuán"
+    )
+    ALCALA_HENARES_GALEGA = Place(
+        name="Asociación Galega Corredor do Henares",
+        address="C. de Campo Real, 1, 28806 Alcalá de Henares, Madrid",
+        latlon="40.49593546319083,-3.3790130490260237",
+        zone="Alcalá de Henares"
+    )
 
 
 def unquote(s: str):
@@ -632,6 +676,10 @@ def _clean_name(name: str, place: str):
             "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.I)
+
+        name = re.sub(r"\.\.\.\s*", "... ", name)
+        name = re.sub(r"(la) maravillas", r"\1s maravillas", name, flags=re.I)
+        name = re.sub(r"'\s*(Rompiendo Muros)\s*'", r"'\1'", name, flags=re.I)
         name = re.sub(r"^Taller para adultos:\s*", "", name, flags=re.I)
         name = re.sub(r"^POM Condeduque [\d\-]+\s*", "", name, flags=re.I)
         name = re.sub(r"\s*en el Espacio de Igualdad Lourdes Hernández$", "", name, flags=re.I)
@@ -763,7 +811,8 @@ class Event:
             if f.name == "price" and isinstance(v, float) and int(v) == v:
                 v = int(v)
             if v != old_val or (type(v) is not type(old_val)):
-                logger.debug(f"[{self.id}].__post_init__ {f.name}={v} <- {old_val}")
+                if v != old_val:
+                    logger.debug(f"[{self.id}].__post_init__ {f.name}={v} <- {old_val}")
                 object.__setattr__(self, f.name, v)
 
     def fix(self, **kwargs):
@@ -975,11 +1024,15 @@ class Event:
         if self.more:
             return self.more
         urls = self.__get_urls()
-        if get_domain(self.url) == "madrid.es":
-            if self.category in (Category.CONFERENCE, Category.LITERATURE):
-                books = GR.find(self.name)
-                if books:
-                    return books[0].url
+        dom = get_domain(self.url)
+        if self.category in {
+            "madrid.es": (Category.CONFERENCE, Category.LITERATURE),
+            "ateneodemadrid.com": (Category.LITERATURE, )
+        }.get(dom, tuple()):
+            books = GR.find(self.name)
+            if books:
+                return books[0].url
+        if dom == "madrid.es":
             href = find_more_url_madrides(self.url)
             if href and href not in urls:
                 return href
@@ -1169,7 +1222,10 @@ class Event:
     def _fix_cycle(self):
         if self.cycle:
             return self.cycle
+        urls = set(self.iter_urls())
         name = self.name or ''
+        if re.search(r"Charlas de astronomía para profanos", name):
+            return "Charlas de astronomía para profanos"
         if re.search(r"^Derechos [dD]igitales: ", name):
             return "Derechos digitales"
         if re.search(r"^Nuevos [Ii]maginarios: ", name):
@@ -1213,6 +1269,33 @@ class Event:
             return "Rutas por el Retiro"
         if self.category == Category.CONFERENCE and re_or(self.name, "Ciclo conferencias Maqueta León Gil de Palacio", flags=re.I):
             return "Maqueta León Gil de Palacio"
+        if urls.intersection((
+            "https://www.centrocentro.org/musica/limo-2026",
+            "https://www.centrocentro.org/musica/kali-malone",
+            "https://www.centrocentro.org/musica/arianna-casellas-y-kaue",
+            "https://www.centrocentro.org/musica/ustad-noor-bakhsh",
+            "https://www.centrocentro.org/musica/lucrecia-dalt",
+            "https://www.centrocentro.org/musica/senyawa",
+            "https://www.centrocentro.org/musica/lise-barkas"
+        )):
+            return "Musica corriente"
+        if urls.intersection((
+            "https://www.centrocentro.org/musica/vang-VIII-musicas-en-vanguardia",
+            "https://www.centrocentro.org/musica/jurg-frey-y-phill-niblock-cuartetos-de-cuerda",
+            "https://www.centrocentro.org/musica/vacio-musica-de-ustvolskaya-y-feldman-en-dialogo-con-musica-barroca",
+            "https://www.centrocentro.org/musica/maryanne-amacher-plaything"
+        )):
+            return "Música de vanguardía"
+        if urls.intersection((
+            "https://www.centrocentro.org/musica/sinetiq-2026",
+            "https://www.centrocentro.org/musica/raul-rodriguez-3f-power-trio",
+            "https://www.centrocentro.org/musica/zaruk-iris-azquinecer-rainer-seiferth",
+            "https://www.centrocentro.org/musica/antonio-serrano-kaele-jimenez",
+            "https://www.centrocentro.org/musica/javier-ruibal",
+            "https://www.centrocentro.org/musica/maria-toro-en-cuarteto",
+            "https://www.centrocentro.org/musica/feten-feten"
+        )):
+            return "Música sin etiquetas"
         return None
 
 

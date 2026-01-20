@@ -2,7 +2,7 @@ from portal.gancio import GancioPortal
 from core.ics import IcsReader, IcsEventWrapper
 from core.event import Event, Place, Category, Session, CategoryUnknown, Places
 from functools import cached_property
-from core.util import plain_text, find_duplicates, re_or, re_and, get_domain
+from core.util import plain_text, find_duplicates, re_or, re_and, get_domain, find_euros
 import re
 import logging
 
@@ -34,6 +34,10 @@ class MadConvoca:
         logger.info("Buscando eventos en MadConvoca")
         ok_events = set(self.__mad.events).union(self.__ext.events)
         for e in self.__ics.events:
+            if e.SUMMARY is None:
+                continue
+            if re.match(r"^\s*CANCELADO[\. ].*", e.SUMMARY):
+                continue
             place = self.__find_place(e)
             if place is None:
                 continue
@@ -44,7 +48,7 @@ class MadConvoca:
                 name=e.SUMMARY,
                 duration=e.duration or 60,
                 img=e.ATTACH,
-                price=0,
+                price=self.__find_price(e),
                 publish=e.str_publish,
                 category=self.__find_category(e),
                 place=place,
@@ -81,7 +85,21 @@ class MadConvoca:
         logger.info(f"Buscando eventos en MadConvoca = {len(rt)}")
         return rt
 
+    def __find_price(self, e: IcsEventWrapper):
+        prc = find_euros(e.DESCRIPTION)
+        if prc is not None:
+            return prc
+        if re_or(
+            e.DESCRIPTION,
+            "venta de entradas",
+            flags=re.I
+        ):
+            return 999
+        return 0
+
     def __find_category(self, e: IcsEventWrapper):
+        if re_or(e.SUMMARY, r"Mesa ciudadana del [aá]rbol", flags=re.I, to_log=e.UID):
+            return Category.ACTIVISM
         if re_or(e.SUMMARY, r"Acto anual de gratitud a las socias y los socios", flags=re.I, to_log=e.UID):
             return Category.NO_EVENT
         if re_and(e.SUMMARY, "presentaci[oó]n del?", ("libro", "novela"), flags=re.I, to_log=e.UID):
@@ -90,6 +108,12 @@ class MadConvoca:
             return Category.EXPO
         if re_or(e.SUMMARY, "taller", "formaci[óo]n", flags=re.I, to_log=e.UID):
             return Category.WORKSHOP
+        if re_or(
+            e.SUMMARY,
+            "Ciclo de conferencias",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
         for c in e.CATEGORIES:
             if re_or(c, r"Proyecci[óo]n", "cinef[óo]rum", flags=re.I):
                 return Category.CINEMA
@@ -97,13 +121,24 @@ class MadConvoca:
                 return Category.MUSIC
             if re_or(c, r"mon[oó]logo", flags=re.I):
                 return Category.THEATER
-            if re_or(c, r"Mesa redonda", "Conferencias", flags=re.I):
+            if re_or(c, r"Mesa redonda", "Conferencias", "Charlas?", flags=re.I):
                 return Category.CONFERENCE
-            if re_or(c, r"Presentación del libro", flags=re.I):
+            if re_or(c, r"Presentación del libro", "Lectura", flags=re.I):
                 return Category.LITERATURE
         if re_and(e.DESCRIPTION, "M[úu]sica", ("compositor", "voz", "viol[íi]n"), flags=re.I):
             return Category.MUSIC
-        if re_and(e.DESCRIPTION, ("Abre el acto", "Presenta", "modera"), ("Intervienen?", "con: "), flags=re.I):
+        if re_and(
+            e.DESCRIPTION,
+            ("Abre el acto", "Presenta", "modera"),
+            ("Intervienen?", "con: "),
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+        if re_or(
+            e.DESCRIPTION,
+            "conversa(re)?mos con",
+            flags=re.I
+        ):
             return Category.CONFERENCE
         if e.CATEGORIES:
             logger.critical(str(CategoryUnknown(e.source, f"{e.CATEGORIES} -- {e.SUMMARY}")))

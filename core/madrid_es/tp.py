@@ -1,8 +1,9 @@
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 
 class Place(NamedTuple):
-    latitude: float
-    longitude: float
     location: str
-    address: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address: Optional[str] = None
+    district: Optional[str] = None

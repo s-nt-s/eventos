@@ -34,9 +34,11 @@ class CasaEncendida:
     def __visit(self, url: str, wait_css: Optional[str] = None):
         if url != self.__driver.current_url:
             self.__driver.get(url)
-            self.__driver.wait_ready()
-            if wait_css:
-                self.__driver.safe_wait(wait_css, by=By.CLASS_NAME)
+            if wait_css is None:
+                return self.__driver.wait_ready()
+            return self.__driver.waitjs(f'window.document.readyState === "complete" && document.querySelector(\'{wait_css}\')!=null')
+            #if wait_css:
+            #    self.__driver.safe_wait(wait_css, by=By.CLASS_NAME)
 
     def __get_soup(self, url: str, wait_css: Optional[str] = None):
         self.__visit(url, wait_css=wait_css)
