@@ -209,6 +209,9 @@ class FormSearch:
             items = set(index.items)
             for x in index.urls:
                 items.update(url_items[x])
+            size = len(items)
+            if size != index.total:
+                logger.critical(f"{size} != {index.total} items {u}")
             return tuple(items)
 
         user_items: dict[str, tuple[Item, ...]] = {}
