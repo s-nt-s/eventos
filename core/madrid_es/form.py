@@ -15,6 +15,7 @@ from aiohttp import ClientResponse
 from core.cache import TupleCache
 from core.madrid_es.tp import Place
 from html import unescape
+from iCalendar import Calendar
 
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,13 @@ class Index(NamedTuple):
     items: tuple[Item, ...] = tuple()
 
 
+class Page(NamedTuple):
+    description: Tag
+    free: bool
+    price: tuple[str, ...]
+    img: tuple[str, ...]
+
+
 def soup_to_items(soup: BeautifulSoup):
     items: set[Item] = set()
     for div in soup.select("#listSearchResults ul.events-results li div.event-info"):
@@ -95,6 +103,59 @@ async def rq_to_items(r: ClientResponse):
     soup = buildSoup(str(r.url), await r.read())
     items = soup_to_items(soup)
     return items
+
+
+def _get_urls(soup: Tag, slc: str):
+    obj = {
+        "a": "href",
+        "img": "src",
+    }
+    urls: list[str] = []
+    for x in soup.select(slc):
+        attr = obj[x.name]
+        val = a.attrs.get(attr)
+        if val not in urls and isinstance(href, str):
+            val = val.strip()
+            prc = val.split("://", 1).lower()
+            if prc in ("http", "https"):
+                more.append(val)
+    return tuple(urls)
+
+
+async def rq_to_page(r: ClientResponse):
+    soup = buildSoup(str(r.url), await r.read())
+    description = soup.select_one("div.tramites-content div.tiny-text")
+    more = _get_urls(
+        soup,
+        "div.tramites-content a[href]",
+    )
+    img = _get_urls(
+        soup,
+        "div.image-content img, div.tramites-content div.tiny-text img, div.detalle img",
+    )
+
+    price: list[str] = []
+    for p in map(get_text, soup.select("div.tramites-content, #importeVenta p")):
+        if p is not None and p not in price:
+            price.append(p)
+    free = soup.select_one("ul li p.gratuita") is not None
+
+    return Page(
+        description=description,
+        price=tuple(price),
+        more=more,
+        img=img,
+        free=free
+    )
+
+
+async def rq_to_ics(r: ClientResponse):
+    txt = await r.text()
+    try:
+        return Calendar.from_ical(text)
+    except Exception as e:
+        logger.critical(f"Calendario erróneo {r.url} {e}", exc_info=True)
+    return None
 
 
 async def rq_to_index(r: ClientResponse):
@@ -150,6 +211,26 @@ async def rq_to_index(r: ClientResponse):
     )
 
 
+class IdGetter(Getter):
+    
+    def get(self, *urls: str):
+        if len(urls) == 0:
+            return MappingProxyType({})
+        urls = sorted(set(urls))
+        url_id: dict[str, str] = {}
+        for url in urls:
+            k = get_vgnextoid(url)
+            if k is None:
+                raise ValueError(f"vgnextoid not in {url}")
+            if k in url_id:
+                raise ValueError(f"vgnextoid {k} duplicates")
+            url_id[url] = k
+        data: dict[str] = {}
+        for k, v in super().get(*urls).items():
+            data[url_id[k]] = v
+        return MappingProxyType(data)
+
+
 class FormSearch:
     AGENDA = "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/?vgnextfmt=default&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"
     TAXONOMIA = "https://www.madrid.es/ContentPublisher/jsp/apl/includes/XMLAutocompletarTaxonomias.jsp?taxonomy=/contenido/actividades&idioma=es&onlyFirstLevel=true"
@@ -168,6 +249,16 @@ class FormSearch:
         )
         self.__getter_items = Getter(
             onread=rq_to_items,
+            headers=self.__w.s.headers,
+            cookie_jar=self.__w.s.cookies
+        )
+        self.__getter_page = IdGetter(
+            onread=rq_to_page,
+            headers=self.__w.s.headers,
+            cookie_jar=self.__w.s.cookies
+        )
+        self.__getter_ics = IdGetter(
+            onread=rq_to_ics,
             headers=self.__w.s.headers,
             cookie_jar=self.__w.s.cookies
         )
@@ -317,6 +408,15 @@ class FormSearch:
             )
             items.add(i)
         return tuple(sorted(items))
+
+    def get_page(self, *urls: str) -> MappingProxyType[str, Page]:
+        return self.__getter_page.get(*pages)
+
+    def get_ics(self, *ids: str) -> MappingProxyType[str, Calendar]:
+        urls: set[str] = set()
+        for i in ids:
+            urls.add(f"https://www.madrid.es/ContentPublisher/jsp/cont/microformatos/obtenerVCal.jsp?vgnextoid={i}")
+        return self.__getter_ics.get(*urls)
 
 
 if __name__ == "__main__":
