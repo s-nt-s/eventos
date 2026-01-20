@@ -60,6 +60,7 @@ async def rq_to_graph_list_len_1(r: ClientResponse):
 
 async def rq_to_label(r: ClientResponse):
     soup = BeautifulSoup(await r.read(), "xml")
+    url = r.history[0].url
     node = soup.find("skos:prefLabel", attrs={"xml:lang": "es"})
     if node is None:
         node = soup.find("skos:prefLabel")
@@ -69,7 +70,13 @@ async def rq_to_label(r: ClientResponse):
     node = soup.find("rdf:Description")
     about = node.attrs.get('rdf:about') if node else None
     if about is None:
-        logger.critical(f"skos:prefLabel not found in {r.url}")
+        val = {
+            "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid%2028042/Distrito/Barajas": "Barajas",
+            "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Fuencarral-ElPardo": "Fuencarral El Pardo"
+        }.get(url)
+        if val is not None:
+            return val
+        logger.critical(f"skos:prefLabel not found in {url}")
         return None
     about = about.rsplit("/", 1)[-1]
     about = un_camel(about)
@@ -183,13 +190,35 @@ class MadridEsDictWrapper(DictWrapper):
         raise ValueError(f"[{self.get('id')}] address no encontrado")
 
     def __get_address(self):
-        addr = self.get_dict_or_none('address')
-        area = self.get_dict_or_none('area')
+        addr = self.get_dict_or_empty('address')
+        area = addr.get_dict_or_none('area')
         if area:
             return area
         addr = self.__organismo.get_dict_or_none("address")
         if addr:
             return addr
+
+    def get_district(self):
+        ko_district = (
+            "https://datos.madrid.es/egob/kos/Provincia/Madrid/Municipio/Madrid/Distrito/Distrito",
+        )
+        is_ko = False
+        for obj in (
+            self.get_dict_or_empty('address'),
+            self.__organismo.get_dict_or_empty("address"),
+        ):
+            aux = obj.get_dict_or_empty('district')
+            district = aux.get_str_or_none('@id')
+            if district is None:
+                continue
+            if district not in ko_district:
+                return district
+            is_ko = True
+        msg = f"[{self.get('id')}] district no encontrado"
+        if is_ko:
+            logger.critical(msg)
+        else:
+            raise ValueError(msg)
 
 
 class Dataset(NamedTuple):
@@ -215,12 +244,17 @@ class DatosMadridEs:
             latitude=loc.get_float('latitude'),
             longitude=loc.get_float('longitude'),
             location=i.event_location(),
-            address=i.get_address()
+            address=i.get_address(),
+            district=i.get_district()
         ) if loc else None
         dtstart = i.get_datetime("dtstart", "%Y-%m-%d %H:%M:%S.0")
         hm_tm = i.get_str_or_none('time')
         if hm_tm not in (None, dtstart.strftime("%H:%M")):
-            logger.critical(f"time={hm_tm} dtstart={dtstart} in {obj}")
+            if dtstart.strftime("%H:%M") == "00:00":
+                h, m = map(int, hm_tm.split(":"))
+                dtstart = dtstart.replace(hour=h, minute=m)
+            else:
+                logger.critical(f"time={hm_tm} dtstart={dtstart} in {obj}")
         e = Item(
             id=i.get_int('id'),
             category=i.get_str_or_none("@type"),
@@ -311,20 +345,28 @@ class DatosMadridEs:
         if discard:
             logger.info(f"[-{discard:4d}] Descartados")
 
-        typs: set[str] = set()
+        url_label: set[str] = set()
         for e in events:
             if e.category:
-                typs.add(e.category)
+                url_label.add(e.category)
+            if e.place and e.place.district:
+                url_label.add(e.place.district)
 
-        typs_label: dict[str, list[dict]] = Getter(
-            onread=rq_to_label
-        ).get(*typs)
+        data_label: dict[str, str] = Getter(
+            onread=rq_to_label,
+            raise_for_status=False
+        ).get(*url_label)
 
         evs: set[Item] = set()
         for e in events:
-            evs.add(e._replace(
-                category=typs_label.get(e.category)
-            ))
+            e = e._replace(
+                category=data_label.get(e.category)
+            )
+            if e.place and e.place.district:
+                e = e._replace(place=e.place._replace(
+                    district=data_label.get(e.place.district)
+                ))
+            evs.add(e)
 
         return tuple(sorted(evs))
 

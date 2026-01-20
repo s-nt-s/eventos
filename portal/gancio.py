@@ -114,7 +114,7 @@ class GancioPortal:
                 aux = end.replace(year=start.year, month=start.month, day=start.day)
                 if aux > start:
                     duration = int((aux-start).total_seconds() / 60)
-                    st = start  + timedelta(days=1)
+                    st = start + timedelta(days=1)
                     nd = end.date()
                     while st.date() <= nd:
                         days.append(st)
@@ -185,10 +185,21 @@ class GancioPortal:
             return Category.MUSIC
         if has_tag_or_title("exposición", "exposicion", "miniexpo", "mini-expo"):
             return Category.EXPO
+        if has_tag_or_title("mesa ciudadana", "movilizaciones por"):
+            return Category.ACTIVISM
 
         desc = self.get_description(url)
         txt_desc = get_text(desc)
-        if re_or(txt_desc, "Charla cr[ií]tica", "vendr[aá]n a conversar sobre", "conferencia", flags=re.I, to_log=_id_):
+        if re_or(
+            txt_desc,
+            "Charla cr[ií]tica",
+            "vendr[aá]n a conversar sobre",
+            "conferencia",
+            "conversaremos con",
+            ("jornada", "auditorio"),
+            flags=re.I,
+            to_log=_id_
+        ):
             return Category.CONFERENCE
         if re_or(txt_desc, "m[uú]sica electr[óo]nica", flags=re.I, to_log=_id_):
             return Category.MUSIC
@@ -198,8 +209,6 @@ class GancioPortal:
             return Category.PARTY
         if re_and(txt_desc, "Karaoke", r"DJ Set(s|lists?)?", to_log=_id_, flags=re.I):
             return Category.PARTY
-        if re_and(txt_desc, "jornada", "auditorio", flags=re.I, to_log=_id_):
-            return Category.CONFERENCE
         if re_or(txt_desc, "comedia perform[aá]tica", flags=re.I, to_log=_id_):
             return Category.THEATER
         if re_or(txt_desc, "taller", "Curso presencial", flags=re.I, to_log=_id_):
@@ -215,6 +224,11 @@ class GancioPortal:
             return Category.PARTY
         if re_or(name, "Presentaci[óo]n del libro", to_log=_id_, flags=re.I):
             return Category.LITERATURE
+
+        if has_tag("poesia"):
+            return Category.POETRY
+        if has_tag_or_title("asamblea abierta"):
+            return Category.ACTIVISM
 
         logger.critical(str(CategoryUnknown(url, f"{e}")))
         return Category.UNKNOWN

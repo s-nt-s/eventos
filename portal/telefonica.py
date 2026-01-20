@@ -148,13 +148,19 @@ class Telefonica(Web):
         cat = plain_text(self.select_one_txt("span.categoria"))
         if cat == "exposicion":
             return Category.EXPO
-        description = plain_text(webpage.get('description', '') + ' ' + self.select_one_txt("#textoread"))
+        description = webpage.get('description', '') + ' ' + self.select_one_txt("#textoread")
+        plain_description = plain_text(description)
         if cat == "taller":
-            if re_or(description, "taller para (familias|niñ[oa@xe]s)", flags=re.I):
+            if re_or(plain_description, "taller para (familias|niñ[oa@xe]s)", flags=re.I):
                 return Category.CHILDISH
             return Category.WORKSHOP
         if re_or(
             description,
+            "CONVERSAN"
+        ):
+            return Category.CONFERENCE
+        if re_or(
+            plain_description,
             r"encuentro con (el|la|los|las) escrito(ra|re)s?",
             r'recibimos al autora?',
             r"El primer encuentro del año",

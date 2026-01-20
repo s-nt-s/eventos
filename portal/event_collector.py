@@ -7,13 +7,14 @@ from portal.salaequis import SalaEquis
 from portal.casaamerica import CasaAmerica
 from portal.academiacine import AcademiaCine
 from portal.caixaforum import CaixaForum
-from portal.madrides import MadridEs
+from portal.madrid_es import MadridEs
 from portal.telefonica import Telefonica
 from portal.teatromonumental import TeatroMonumental
 from portal.mad_convoca import MadConvoca
 from portal.universidad import Universidad
+from portal.alcala import Alcala
 from datetime import datetime
-from core.util import get_domain, to_uuid, find_duplicates, get_main_value
+from core.util import get_domain, to_uuid, find_duplicates, get_main_value, re_or
 import logging
 from typing import Tuple
 from core.cache import TupleCache
@@ -35,11 +36,6 @@ def gNow():
     return datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
-KO_PLACES = (
-
-)
-
-
 @cache
 def isOkPlace(p: Place | tuple[float, float] | str):
     latlon = None
@@ -55,7 +51,41 @@ def isOkPlace(p: Place | tuple[float, float] | str):
     if all(x is None for x in (latlon, name)):
         return True
     if name:
-        if re.search(r"\bcentro juvenil\b", name, flags=re.I):
+        if re_or(
+            name,
+            "Centro cultural Maestro Alonso",
+            "centro juvenil",
+            "Centro cultural Lope de Vega",
+            "Espacio Abierto Quinta de los Molinos",
+            "Parroquia Nuestra Señora de Guadalupe",
+            ("La Pedriza", "Manzanares"),
+            "AV La Vecinal del Barrio Bilbao y Pueblo Nuevo",
+            'CSO La Tejedora',
+            'Quinta de la Fuente del Berro',
+            'Espacio de igualdad María Telo',
+            # Colón
+            'Centro cultural Emilia Pardo Bazán',
+            # Carabanchel
+            'Espacio de igualdad María de Maeztu',
+            'Espacio de igualdad Lourdes Hernández',
+            # Vallecas
+            'Mercado Numancia',
+            '^El espacio$',
+            'Centro cultural Las Californias',
+            'Centro cultural Alberto Sánchez',
+            'Biblioteca Miguel Delibes',
+            # Villaverde
+            'Espacio de igualdad Clara Campoamor',
+            # Usera
+            ("centro", 'Maris Stella'),
+            # Manuel Becerra
+            ('Centro', 'Rafael Altamira'),
+            ('Centro', 'Buenavista'),
+            # Urgel
+            ('Centro', 'Fernando Lázaro Carreter'),
+            flags=re.I
+        ):
+            logger.debug(f"Lugar descartado por name={name}")
             return False
     if latlon is None:
         return True
@@ -111,13 +141,11 @@ class EventCollector:
         max_sessions: int,
         avoid_working_sessions: bool,
         publish: dict[str, str],
-        ko_places: Tuple[str],
         categories: Tuple[Category, ...],
     ):
         self.__max_price = max_price
         self.__max_sessions = max_sessions
         self.__categories = categories
-        self.__ko_places = ko_places
         self.__avoid_working_sessions = avoid_working_sessions
         self.__publish = publish
         self.__madrid_destino = MadridDestino()
@@ -148,11 +176,13 @@ class EventCollector:
         md_events = self.__madrid_destino.events
         md_places = tuple(sorted(set(e.place for e in md_events if e.place)))
         eventos = \
+            Alcala().events + \
             Universidad.get_events(
                 "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
                 "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
                 "https://eventos.uam.es/ics/location/espana/lo-1.ics",
                 "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
+                "https://eventos.uah.es/ics/location/espana/lo-1.ics",
                 verify_ssl=False,
                 isOkPlace=isOkPlace,
                 avoid_working_sessions=self.__avoid_working_sessions,
@@ -165,7 +195,17 @@ class EventCollector:
                 places_with_store=md_places,
                 max_price=max(self.__max_price.values()),
                 avoid_categories=self.__avoid_categories,
-                isOkPlace=isOkPlace
+                isOkPlace=isOkPlace,
+                districts=(
+                    "arganzuela",
+                    "centro",
+                    "moncloa",
+                    "chamber[ií]",
+                    "retiro",
+                    "salamanca",
+                    "villaverde",
+                    "carabanchel",
+                )
             ).events + \
             Dore().events + \
             md_events + \
@@ -201,7 +241,7 @@ class EventCollector:
         return max(self.__max_price.values())
 
     def __filter(self, e: Event, to_log=True):
-        if e.place.name in self.__ko_places:
+        if not isOkPlace(e.place.name):
             if to_log:
                 logger.debug(f"Descartada por place={e.place.name} {e.url}")
             return False

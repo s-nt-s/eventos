@@ -33,7 +33,7 @@
         <option value="novedad" data-txt="Novedades">Novedades ({{clss_count['novedad']}})</option>
         <optgroup label="Categoría">
           {% for c, num in categorias.items()|sort %}
-          <option value="{{c | simplify }}" data-txt="{{(c|string).title()}}">{{(c|string).title()}} ({{num}})</option>
+          <option value="{{c | simplify }}" data-txt="{{(c|string).capitalize()}}">{{(c|string).capitalize()}} ({{num}})</option>
           {% endfor %}
         </optgroup>
         <optgroup label="Zona">
@@ -57,7 +57,7 @@
         {%else %}
         <div class="noimg"></div>
         {% endif %}
-        <span class="categoria">{% if e.more %}<a class="more" href="{{e.more}}">🔗</a> {% endif %}{{(e.category|string).title()}}</span>
+        <span class="categoria">{% if e.more %}<a class="more" href="{{e.more}}">🔗</a> {% endif %}{{(e.category|string).capitalize()}}</span>
         <a class="lugar" href="{{e.place.url}}"{%if e.place.address%} title="{%if e.place.zone%}[{{e.place.zone}}] {%endif%}{{e.place.address}}"{%endif%}>{{e.place.name}}</a>
       </div>
       <div class="info">

@@ -1,6 +1,6 @@
 from PIL import Image, UnidentifiedImageError, ImageChops
 from requests import Session
-from requests.exceptions import SSLError, RequestException
+from requests.exceptions import SSLError, RequestException, ConnectTimeout
 from io import BytesIO
 import logging
 from os.path import dirname
@@ -108,15 +108,25 @@ class MyImage:
             logger.critical("La ruta no apunta a una imagen válida "+str(self.path), exc_info=True)
         return None
 
+    def __get_request(self, url: str):
+            methods = (
+                S.get,
+                lambda x: ReqSession.get(x, verify=False)
+            )
+            for i, fnc in enumerate(methods, start=len(methods)+1):
+                try:
+                    return fnc(url)
+                except Exception as e:
+                    if i == 0:
+                        logger.critical(f"{url} {e}")
+                    pass
+
     def __get(self, url: str):
         dom = get_domain(url)
         isSalaBerlanga = dom == "salaberlanga.com"
         if not isSalaBerlanga:
-            try:
-                r = S.get(url)
-            except SSLError:
-                r = ReqSession.get(url, verify=False)
-            if r.status_code != 403 and r.content:
+            r = self.__get_request(url)
+            if r is not None and r.status_code != 403 and r.content:
                 return BytesIO(r.content)
         with Driver(browser="firefox") as f:
             f.get(url)

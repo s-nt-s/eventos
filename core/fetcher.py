@@ -106,7 +106,6 @@ class AsyncFetcher(Generic[ProcessedResponse]):
     ):
         async with semaphore:
             await self.__respect_rate_limit()
-
             async with session.request(
                 rqs.method,
                 rqs.url,
@@ -184,11 +183,13 @@ class Getter(Generic[ProcessedResponse]):
         onread: AsyncResponseHandler,
         headers: Optional[Dict[str, str]] = None,
         cookie_jar: Optional[CookieJar | RequestsCookieJar] = None,
+        raise_for_status: bool = True
     ):
         self.__fetcher = AsyncFetcher(
             onread=onread,
             headers=headers,
-            cookie_jar=cookie_jar
+            cookie_jar=cookie_jar,
+            raise_for_status=raise_for_status
         )
 
     def get(self, *urls: str) -> dict[str, ProcessedResponse]:
