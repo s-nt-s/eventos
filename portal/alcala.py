@@ -36,9 +36,11 @@ def _capitalize(name: str):
         "Cervantes",
         "Alcalá",
         "Henares",
-        "Antezana"
+        "Antezana",
+        "Santiago",
+        "Complutense",
     ):
-        name = re.sub(re.escape(x), x, name, flags=re.I)
+        name = re.sub(r"\b"+re.escape(x)+r"\b", x, name, flags=re.I)
     return name
 
 
