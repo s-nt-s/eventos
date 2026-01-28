@@ -676,7 +676,7 @@ def _clean_name(name: str, place: str):
             "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.I)
-        
+
         name = re.sub(r"\.\.\.\s*", "... ", name)
         name = re.sub(r"(la) maravillas", r"\1s maravillas", name, flags=re.I)
         name = re.sub(r"'\s*(Rompiendo Muros)\s*'", r"'\1'", name, flags=re.I)
