@@ -633,7 +633,7 @@ class Places(Enum):
         zone="Tetuán"
     )
     ALCALA_HENARES_GALEGA = Place(
-        name="Asociación Galega Corredor Do Henares",
+        name="Asociación Galega Corredor do Henares",
         address="C. de Campo Real, 1, 28806 Alcalá de Henares, Madrid",
         latlon="40.49593546319083,-3.3790130490260237",
         zone="Alcalá de Henares"
