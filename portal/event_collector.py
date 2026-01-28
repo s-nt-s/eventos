@@ -14,7 +14,7 @@ from portal.mad_convoca import MadConvoca
 from portal.universidad import Universidad
 from portal.alcala import Alcala
 from datetime import datetime
-from core.util import get_domain, to_uuid, find_duplicates, get_main_value, re_or
+from core.util import get_domain, to_uuid, find_duplicates, get_main_value, re_or, isWorkingHours
 import logging
 from typing import Tuple
 from core.cache import TupleCache
@@ -34,6 +34,10 @@ logger = logging.getLogger(__name__)
 
 def gNow():
     return datetime.now(tz=pytz.timezone('Europe/Madrid'))
+
+
+def isAlcalaOkDate(dt: datetime):
+    return not isWorkingHours(dt, min_hour=18)
 
 
 @cache
@@ -176,7 +180,9 @@ class EventCollector:
         md_events = self.__madrid_destino.events
         md_places = tuple(sorted(set(e.place for e in md_events if e.place)))
         eventos = \
-            Alcala().events + \
+            Alcala(
+                isOkDate=isAlcalaOkDate
+            ).events + \
             Universidad.get_events(
                 "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
                 "https://eventos.ucm.es/ics/location/espana/lo-1.ics",

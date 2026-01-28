@@ -347,11 +347,11 @@ def get_festivos(year: int):
     return tuple(sorted(dates))
 
 
-def isWorkingHours(dt: datetime):
+def isWorkingHours(dt: datetime, min_hour=16):
     if dt is None:
         return False
     hm = dt.hour + (dt.minute/100)
-    if hm == 0 or hm > 15:
+    if hm == 0 or hm >= min_hour:
         return False
     if dt.weekday() in (5, 6):
         return False

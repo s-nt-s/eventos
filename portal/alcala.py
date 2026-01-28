@@ -5,6 +5,7 @@ from core.util import find_euros
 import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from typing import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -14,10 +15,13 @@ def to_datetime(i: int):
     return dt.astimezone(ZoneInfo("Europe/Madrid"))
 
 
-
 class Alcala:
-    def __init__(self):
+    def __init__(
+            self,
+            isOkDate: Callable[[datetime], bool] = None,
+    ):
         self.__eventon = EventOn("https://culturalcala.es/wp-json")
+        self.__isOkDate = isOkDate or (lambda x: True)
 
     @cached_property
     def events(self):
@@ -30,13 +34,13 @@ class Alcala:
         evs = tuple(events)
         logger.info(f"Alcala: Buscando eventos = {len(evs)}")
         return evs
-    
+
     def __eventon_to_event(self, x: EventOnEvent):
         place = self.__get_place(x)
         if place is None:
             logger.critical(f"place=None {x.permalink}")
             return None
-        price = price=self.__find_price(x)
+        price = self.__find_price(x)
         if price is None:
             logger.critical(f"price=None {x.permalink}")
             return None
@@ -68,12 +72,12 @@ class Alcala:
             address=x.location_address,
             latlon=latlon
         ).normalize()
-    
+
     def __find_price(self, x: EventOnEvent):
         return find_euros(
             *x.customfields
         )
-    
+
     def __find_category(self, x: EventOnEvent):
         if not x.event_types:
             logger.critical(f"event_types=None {x.permalink}")
@@ -91,7 +95,7 @@ class Alcala:
             return cat
         logger.critical(str(CategoryUnknown(x.permalink, ', '.join(x.event_types))))
         return Category.UNKNOWN
-    
+
     def __find_session(self, x: EventOnEvent):
         durations: set[int] = set()
         sessions: set[Session] = set()
@@ -103,6 +107,8 @@ class Alcala:
             st = to_datetime(s)
             en = to_datetime(e)
             durations.add((en-st).seconds // 60)
+            if not self.__isOkDate(st):
+                continue
             sessions.add(Session(
                 date=st.strftime("%Y-%m-%d %H:%M")
             ))
