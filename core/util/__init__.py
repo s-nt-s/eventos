@@ -407,3 +407,22 @@ KO_MORE = (
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Casa-de-Vacas/?vgnextfmt=default&vgnextoid=eba1c5a51e2c9910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'imccwem.munimadrid.es'
 )
+
+
+def capitalize(name: str):
+    if name == name.upper():
+        name = name.capitalize()
+    for x in (
+        "María la Rica",
+        "Cervantes",
+        "Alcalá",
+        "Henares",
+        "Antezana",
+        "Santiago",
+        "Complutense",
+        "Mononoke",
+        "IV",
+        "BSMM",
+    ):
+        name = re.sub(r"\b"+re.escape(x)+r"\b", x, name, flags=re.I)
+    return name

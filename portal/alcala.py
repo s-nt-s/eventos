@@ -1,7 +1,7 @@
 from core.eventon import EventOn, Event as EventOnEvent
 from core.event import Event, Place, Session, Category, CategoryUnknown
 from functools import cached_property
-from core.util import find_euros, re_or, re_and
+from core.util import find_euros, re_or, re_and, capitalize
 import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -24,24 +24,8 @@ def _clean_name_place(name: str):
     if re_and("parador", "Alcalá", "Henares", flags=re.I):
         return "Parador Alcalá de Henares"
     if re_and("HOSPITAL", "SANTA", "MAR[ÍI]A", "RICA", flags=re.I):
-        return "Hospital santa María la Rica"
-    return _capitalize(name)
-
-
-def _capitalize(name: str):
-    if name == name.upper():
-        name = name.capitalize()
-    for x in (
-        "María la Rica",
-        "Cervantes",
-        "Alcalá",
-        "Henares",
-        "Antezana",
-        "Santiago",
-        "Complutense",
-    ):
-        name = re.sub(r"\b"+re.escape(x)+r"\b", x, name, flags=re.I)
-    return name
+        return "Hospital Santa María la Rica"
+    return capitalize(name)
 
 
 class Alcala:
@@ -80,7 +64,7 @@ class Alcala:
         e = Event(
             id=f"al{x.id}",
             url=x.permalink,
-            name=_capitalize(x.name),
+            name=capitalize(x.name),
             price=self.__find_price(x),
             category=self.__find_category(x),
             place=place,
