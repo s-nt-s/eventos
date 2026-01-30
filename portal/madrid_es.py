@@ -577,7 +577,7 @@ class MadridEs:
             return Category.CONFERENCE
         if re_or(
             i.description,
-            r"Presentación del libro de",
+            r"Presentaci[óo]n del? libro",
             flags=re.I
         ):
             return Category.LITERATURE
