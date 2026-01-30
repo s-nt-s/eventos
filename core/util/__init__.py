@@ -407,6 +407,9 @@ KO_MORE = (
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Casa-de-Vacas/?vgnextfmt=default&vgnextoid=eba1c5a51e2c9910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Lavapies/?vgnextfmt=default&vgnextoid=06dec9f1b5902910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Clara-del-Rey-Museo-ABC/?vgnextfmt=default&vgnextoid=2eb1b01c7d402910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Programacion-cultural-de-febrero-y-marzo/?vgnextfmt=default&vgnextoid=2275dc8de040c910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Carnaval-en-Arganzuela/?vgnextfmt=default&vgnextoid=669c11abd940c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/FormularioElectronico/Inicio/Buscador/Visita-Guiada/?vgnextfmt=default&vgnextoid=bd5fc2c8ca51a910VgnVCM100000891ecb1aRCRD&vgnextchannel=7db8fc12aa936610VgnVCM1000008a4a900aRCRD',
     'imccwem.munimadrid.es'
 )
 
