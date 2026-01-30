@@ -231,7 +231,8 @@ class GancioPortal:
             return Category.ACTIVISM
         if has_tag("marcha", "lavapiesallimite"):
             return Category.ACTIVISM
-            
+        if has_tag("excursión") and has_tag("somosierra"):
+            return Category.SPORT
         logger.critical(str(CategoryUnknown(url, f"{e}")))
         return Category.UNKNOWN
 
