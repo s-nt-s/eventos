@@ -3,7 +3,7 @@ from bs4 import Tag
 import re
 from typing import Set, Tuple, Optional
 from core.event import Event, Session, Place, Category, CategoryUnknown, FIX_EVENT
-from core.util import plain_text, re_or, re_and, get_domain, isWorkingHours, find_euros
+from core.util import plain_text, re_or, re_and, get_domain, isWorkingHours, find_euros, KO_MORE
 from arrow import Arrow
 import logging
 from core.cache import TupleCache
@@ -170,6 +170,8 @@ class MadridEs:
     def __get_api_info(self):
         events: dict[str, ApiEvent] = {}
         for e in self.__api.get_events():
+            if e.url in KO_MORE:
+                continue
             if e.place is None:
                 logger.debug(f"Descartado por place=None {e.url}")
                 continue
