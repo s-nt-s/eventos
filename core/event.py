@@ -1,7 +1,6 @@
 from dataclasses import dataclass, asdict, fields, replace, is_dataclass
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set
 from core.util import get_obj, plain_text, get_domain, get_img_src, re_or, re_and, get_main_value
-from portal.util.madrides import find_more_url as find_more_url_madrides
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
@@ -1032,10 +1031,6 @@ class Event:
             books = GR.find(self.name)
             if books:
                 return books[0].url
-        if dom == "madrid.es":
-            href = find_more_url_madrides(self.url)
-            if href and href not in urls:
-                return href
 
     @property
     def dates(self):

@@ -2,7 +2,6 @@ from core.web import Web, WebException, Driver, get_text, get_query, buildSoup
 from urllib.parse import urljoin
 from bs4 import Tag, BeautifulSoup
 import re
-from core.util import get_domain, trim
 import logging
 from functools import cache
 from types import MappingProxyType
@@ -24,6 +23,7 @@ logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
 
 KO_URL = KO_MORE + KO_IMG
+
 
 def get_vgnextoid(url: str | Tag):
     if isinstance(url, Tag):

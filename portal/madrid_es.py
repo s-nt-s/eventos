@@ -162,6 +162,8 @@ class MadridEs:
         self.__max_price = max_price
         self.__avoid_categories = avoid_categories,
         self.__districts = districts or tuple()
+        self.__ban_id = set(map(get_vgnextoid, KO_MORE))
+        self.__ban_id.discard(None)
 
     @cached_property
     def __api(self):
@@ -170,7 +172,7 @@ class MadridEs:
     def __get_api_info(self):
         events: dict[str, ApiEvent] = {}
         for e in self.__api.get_events():
-            if e.url in KO_MORE:
+            if e.vgnextoid in self.__ban_id:
                 continue
             if e.place is None:
                 logger.debug(f"Descartado por place=None {e.url}")
@@ -525,6 +527,7 @@ class MadridEs:
             i.title,
             "Mejora tu ingl[eé]s con charlas",
             "Reconocimiento de [aá]rboles",
+            "taller de escritura",
             flags=re.I
         ):
             return Category.WORKSHOP

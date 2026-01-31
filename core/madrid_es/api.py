@@ -97,7 +97,7 @@ class Api:
                 price=self.__find_price(f, d),
                 audience=_join(f.audience, d.audience if d else None),
                 category=_join(f.category, d.category if d else None),
-                description=(d.description if d else None)
+                description=(d.description if d else None),<
             )
             events.add(e)
         return tuple(sorted(events))
