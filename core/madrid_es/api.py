@@ -105,23 +105,26 @@ class Api:
     def __find_price(self, a: FormItem, b: DatosItem | None, *txt: str):
         if a.free is True:
             return 0
-        if b:
-            if b.free is True:
-                return 0
-            for txt in (
-                b.price,
-                b.description,
-                *txt
-            ):
-                prc = find_euros(txt)
-                if prc is not None:
-                    return prc
-            if b.price not in (
-                None,
-                "Entradas disponibles próximamente en entradas.com y en la taquilla del recinto",
-                "Consultar descuentos especiales",
-            ):
-                logger.critical(f"Campo price inexperado: {b.price}")
+        if b is None:
+            return None
+        if b.free is True:
+            return 0
+        for txt in (
+            b.price,
+            b.description,
+            *txt
+        ):
+            prc = find_euros(txt)
+            if prc is not None:
+                return prc
+        if re_or(b.price, r"Matr[ií]cula gratuita ", flags=re.I):
+            return 0
+        if b.price not in (
+            None,
+            "Entradas disponibles próximamente en entradas.com y en la taquilla del recinto",
+            "Consultar descuentos especiales",
+        ):
+            logger.critical(f"Campo price inexperado: {b.price}")
 
     def get_ics(self, *ids: str):
         return self.__form.get_ics(*ids)
