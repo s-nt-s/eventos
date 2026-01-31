@@ -1,21 +1,20 @@
 from core.web import WEB
 from bs4 import Tag
 import re
-from typing import Set, Tuple, Optional
+from typing import Set, Tuple, Optional, NamedTuple
 from core.event import Event, Session, Place, Category, CategoryUnknown, FIX_EVENT
 from core.util import plain_text, re_or, re_and, get_domain, isWorkingHours, find_euros, KO_MORE
 from arrow import Arrow
 import logging
 from core.cache import TupleCache
 from functools import cached_property, cache
-from typing import NamedTuple, Optional
 from datetime import datetime
 import pytz
 from zoneinfo import ZoneInfo
-from core.madrides.search import get_vgnextoid
 from typing import Callable
 from core.madrid_es.api import Api, Event as ApiEvent, Place as ApiPlace
 from core.ics import IcsEventWrapper
+from core.madrid_es.form import get_vgnextoid
 
 
 logger = logging.getLogger(__name__)

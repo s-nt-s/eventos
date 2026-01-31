@@ -215,7 +215,6 @@ class Universidad:
 
     @cached_property
     def events(self):
-        logger.info("Buscando eventos en universidades")
         events: set[Event] = set()
         for e in self.__ics.events:
             if e.DTSTART <= NOW:
@@ -251,7 +250,6 @@ class Universidad:
             )
             events.add(event)
         evs = tuple(sorted(events))
-        logger.info(f"Buscando eventos en universidades = {len(evs)}")
         return evs
 
     def __find_place(self, e: IcsEventWrapper):
@@ -345,6 +343,7 @@ class Universidad:
         isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
         avoid_working_sessions: bool = False
     ):
+        logger.info("Buscando eventos en universidades")
         events: set[Event] = set()
         for url in urls:
             events.update(cls(
@@ -353,7 +352,9 @@ class Universidad:
                 isOkPlace=isOkPlace,
                 avoid_working_sessions=avoid_working_sessions
             ).events)
-        return tuple(sorted(events))
+        evs = tuple(sorted(events))
+        logger.info(f"Buscando eventos en universidades = {len(evs)}")
+        return evs
 
 
 if __name__ == "__main__":
