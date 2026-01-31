@@ -121,7 +121,7 @@ class Api:
                 "Entradas disponibles próximamente en entradas.com y en la taquilla del recinto",
                 "Consultar descuentos especiales",
             ):
-                logger.critical(f"Campo price inexperado: {prc}")
+                logger.critical(f"Campo price inexperado: {b.price}")
 
     def get_ics(self, *ids: str):
         return self.__form.get_ics(*ids)
