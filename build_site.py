@@ -209,7 +209,8 @@ def set_icons(html: str, **kwargs):
             "teatroespanol": "https://www.teatroespanol.es/themes/custom/teatroespanol_v2/favicon.ico",
             "es.wikipedia": "https://es.wikipedia.org/static/favicon/wikipedia.ico",
             "mataderomadrid": "https://www.mataderomadrid.org/themes/custom/new_matadero/favicon.ico",
-            "centrocentro": "https://www.centrocentro.org/sites/default/files/favicon_1.ico"
+            "centrocentro": "https://www.centrocentro.org/sites/default/files/favicon_1.ico",
+            "casalector.fundaciongsr": "https://casalector.fundaciongsr.org/wp-content/uploads/2017/09/apple-touch-icon-72x72.png",
         }.get(dom)
         if ico is None:
             continue

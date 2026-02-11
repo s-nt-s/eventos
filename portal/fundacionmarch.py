@@ -204,7 +204,7 @@ class FundacionMarch:
             "conferencia": Category.CONFERENCE,
             "entrevista": Category.CONFERENCE,
             "debate": Category.CONFERENCE,
-        }.get(cat.lower())
+        }.get(cat)
         if val:
             return val
         logger.critical(str(CategoryUnknown(url, cat)))

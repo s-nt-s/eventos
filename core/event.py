@@ -446,6 +446,8 @@ class Place:
             return Places.CNT_EMBAJADORES.value
         if re_and(self.name, "museo", "prado", flags=re.I):
             return Places.MUSEO_PRADO.value
+        if re_and(self.name, "demo", "Swing", "Lab", flags=re.I) and re_and(self.address, "Magdalena", flags=re.I):
+            return Places.SWING_LAB.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -670,6 +672,12 @@ class Places(Enum):
         latlon="40.40454139223952,-3.702903411452709",
         zone="Embajadores"
     )
+    SWING_LAB = Place(
+        name="La demo swing lab",
+        address="Calle de la Magdalena, 7, Centro, 28012 Madrid",
+        latlon="40.412636935493836,-3.702379332778133",
+        zone="Sol"
+    )
 
 
 def unquote(s: str):
@@ -710,8 +718,8 @@ def _clean_name(name: str, place: str):
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.I)
         name = re.sub(r"\s*[\-\.]+\s*Moncloa[ \-\.]+Aravaca\s*$", "", name, flags=re.I)
         name = re.sub(r"\s*[\-\.]+\s*(Villaverde|Centro)\s*$", "", name, flags=re.I)
-        name = re.sub(r"^(Magia|Teatro|Cine):\s*'(.+)'\s*$", r"\1", name, flags=re.I)
-        name = re.sub(r"\.\.\.\s*", "... ", name)
+        name = re.sub(r"^(Magia|Teatro|Cine):\s*'(.+)'\s*$", r"\2", name, flags=re.I)
+        name = re.sub(r"\.\.\.\s*", "… ", name)
         name = re.sub(r"(la) maravillas", r"\1s maravillas", name, flags=re.I)
         name = re.sub(r"'\s*(Rompiendo Muros)\s*'", r"'\1'", name, flags=re.I)
         name = re.sub(r"^Taller para adultos:\s*", "", name, flags=re.I)
@@ -746,7 +754,6 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"^(Obra de teatro|Noches? de Clásicos?|21 Distritos)\s*[:\-]\s*", r"", name, flags=re.I)
         name = re.sub(r"Piano City (Madrid *'?\d+|Madrid|'?\d+)", r"Piano City", name, flags=re.I)
         name = re.sub(r"CinePlaza:.*?> (Proyección|Cine)[^:]*:\s+", "", name, flags=re.I)
-        name = re.sub(r"^Teatro:?\s+'([^']+)'$", r"\1", name, flags=re.I)
         name = re.sub(r"^Representaci[óo]n teatral:?\s+'([^']+)'$", r"\1", name, flags=re.I)
         name = re.sub(r"^(Obra de )?teatro\.\s+", "", name, flags=re.I)
         name = capitalize(name)
@@ -1136,7 +1143,12 @@ class Event:
                 **obj
             })
             ok, ko_events = my_filter(ko_events, lambda x: x.isSimilar(k))
-            mrg_events.add(Event.fusion(*ok, firstEventUrl=True))
+            if len(ok):
+                mrg_events.add(Event.fusion(*ok, firstEventUrl=True))
+            else:
+                logger.warning(f"fusionIfSimilar: resutado inesperado {e} ~ {k}")
+                ko_events = [x for x in ko_events if x != e]
+                mrg_events.add(e)
         return tuple(sorted(mrg_events))
 
     @staticmethod
@@ -1246,6 +1258,8 @@ class Event:
             return "Nuevos imaginarios"
         if re.search(r"^Los artesanos de la tumba", name):
             return "Los artesanos de la tumba"
+        if re.search(r"^las mujeres escritoras de", name, flags=re.I):
+            return "Las mujeres escritoras de…"
         if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
             return "Teatro en la Berlanga"
         #if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", name):

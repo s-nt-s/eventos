@@ -94,17 +94,24 @@ def isOkDate(dt: datetime):
 
 
 @cache
-def isOkPlace(p: Place | tuple[float, float] | str):
+def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
     latlon = None
     name = None
     if isinstance(p, Place):
         name = p.name
+        address = p.address
         if p.latlon:
             latlon = map(float, p.latlon.split(","))
     elif isinstance(p, str):
         name = p
     elif isinstance(p, tuple) and len(p) == 2:
         latlon = p
+    if re_or(
+        address,
+        r"Milano$",
+        flags=re.I
+    ):
+        return False
     if all(x is None for x in (latlon, name)):
         return True
     if name:
@@ -165,7 +172,7 @@ def isKoEvent(e: Event):
     if e.place == Places.CAIXA_FORUM.value:
         if re_or(e.name, "Conoce CaixaForum", "Descubre el jardín vertical", flags=re.I):
             return True
-    if re_or(e.place.zone, "alcal[aá]( de)?henares", flags=re.I):
+    if re_or(e.place.zone, "alcal[aá]( de)? henares", flags=re.I):
         if re_and(e.name, r"cu[ée]ntame", r"experiencia", flags=re.I):
             return True
     return False
@@ -315,7 +322,7 @@ class EventCollector:
     def __filter(self, e: Event, to_log=True):
         if isKoEvent(e):
             return False
-        if not isOkPlace(e.place.name):
+        if not isOkPlace(e.place.name, e.place.address):
             if to_log:
                 logger.debug(f"Descartada por place={e.place.name} {e.url}")
             return False
@@ -362,6 +369,7 @@ class EventCollector:
             events.append(e.merge(publish=self.__publish.get(e.id, e.publish)))
             if e.id not in self.__publish and e.publish:
                 self.__publish[e.id] = e.publish
+
         events = sorted(
             events,
             key=lambda e: (min(s.date for s in e.sessions), e.name, e.url or '')

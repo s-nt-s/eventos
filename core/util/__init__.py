@@ -391,6 +391,7 @@ KO_IMG = (
     'https://www.madrid.es/UnidadWeb/UGBBDD/EntidadesYOrganismos/CulturaYOcio/InstalacionesCulturales/CentrosCulturalesMunicipales/CCVillaverde/Ficheros/CentroSocioCult.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Cine_Audiovisuales/ficheros/esqueria_260x260.png',
     'https://cdn.tenemosplan.com/tenemosplan/default_image.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/EntidadesYOrganismos/CulturaYOcio/InstalacionesCulturales/CentrosCulturalesMunicipales/CCVillaverde/Ficheros/CSCBohemios.jpg',
 )
 
 KO_MORE = (

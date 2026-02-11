@@ -480,7 +480,12 @@ class MadridEs:
             'online',
         ):
             return Category.ONLINE
-
+        if re_or(
+            i.title,
+            "Voluntarios? por Madrid",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
         if re_or(
             i.title,
             r"d[íi]a mundial de la poes[íi]a",
@@ -538,7 +543,7 @@ class MadridEs:
             ("ficci[óo]n", "cine"),
             r"^cine$",
         ):
-            return True
+            return Category.CINEMA
         if re_or(
             i.description,
             r"Una proyecci[oó]n de la pel[ií]cula",
@@ -595,6 +600,12 @@ class MadridEs:
             flags=re.I
         ):
             return Category.VISIT
+        if re_or(
+            i.title,
+            r"Presentaci[óo]n del? libro",
+            flags=re.I
+        ):
+            return Category.LITERATURE
 
         if re_or(
             i.description,

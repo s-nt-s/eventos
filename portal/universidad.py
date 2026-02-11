@@ -91,7 +91,7 @@ def clean_place_name(name: str) -> str:
     name = re_sp.sub(" ", name).strip()
     if len(name) == 0:
         return None
-    if re_and(name, "URJC", "Quintana", flags=re.I):
+    if re_and(name, ("URJC", "Juan Carlos"), "Quintana", flags=re.I):
         return "URJC Quintana"
     if re_and(name, "Carlos III", "Puerta (de )?Toledo", flags=re.I):
         return "UC3 Puerta Toledo"
@@ -340,7 +340,12 @@ class Universidad:
                 return Category.SPORT
             if re_or(c, "divulgaci[oó]n"):
                 return Category.CONFERENCE
-
+        if re_or(
+            e.SUMMARY,
+            "charla historiogr[aá]fica",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(link, f"categories={categories} {e}")))
         return Category.UNKNOWN
 
