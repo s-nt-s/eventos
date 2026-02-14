@@ -723,5 +723,13 @@
     "sb10651": {"category": "MUSIC", "cycle": "Es letra y se canta"},
     "sb10668": {"category": "MUSIC", "cycle": "Es letra y se canta"},
     "sb10674": {"category": "MUSIC", "cycle": "Es letra y se canta"},
-    "ms935fe4cebd05c910VgnVCM200000f921e388RCRD": {"category": "READING_CLUB"}
+    "ms935fe4cebd05c910VgnVCM200000f921e388RCRD": {"category": "READING_CLUB"},
+    "msa68c7fed23939910VgnVCM200000f921e388RCRD": {"category": "MUSIC"},
+    "ms2026e77de60ca910VgnVCM100000891ecb1aRCRD": {"category": "MUSIC"},
+    "sb10625": {"name": "Esad Ribic y Aneke"},
+    "ms0d54b187ab64c910VgnVCM200000f921e388RCRD": {"category": "DUPE"},
+    "sb10631": {
+        "more": "https://dolmeneditorial.com/tienda/paco-saez-diario-de-un-dibujante-cinematografico/",
+        "img": "https://dolmeneditorial.com/wp-content/uploads/2025/12/Paco-Saez-Diario-de-un-dibujante-cinematografico-Portada-600x901.jpg"
+    }
 }

@@ -31,6 +31,12 @@ def _clean_name_place(name: str):
     return capitalize(name)
 
 
+def _clean_name(name: str):
+    name = re_sp.sub(" ", name)
+    name = re.sub(r"[ /]+Alcal[aá] a escena$", "", name, flags=re.I)
+    return capitalize(name)
+
+
 class Alcala:
     def __init__(
             self,
@@ -67,7 +73,7 @@ class Alcala:
         e = Event(
             id=f"al{x.id}",
             url=x.permalink,
-            name=capitalize(x.name),
+            name=_clean_name(x.name),
             price=self.__find_price(x),
             category=self.__find_category(x),
             place=place,
