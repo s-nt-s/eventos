@@ -158,7 +158,7 @@ class GancioPortal:
             return Category.CHILDISH
         if has_tag("asamblea") or has_tag_or_title('manifestacion', 'concentracion'):
             return Category.ACTIVISM
-        if has_tag_or_title("cine", "cineforum", "cinebollum"):
+        if has_tag_or_title("cine", "cineforum", "cinebollum", "documental"):
             return Category.CINEMA
         if has_tag("deporte") or has_tag_or_title("yoga", "pilates"):
             return Category.SPORT
@@ -198,6 +198,13 @@ class GancioPortal:
             return Category.WORKSHOP
         if re_and(name, "Software", ("Free", "libre"), ("day", "día"), flags=re.I):
             return Category.PARTY
+        if re_or(
+            name,
+            "Ruta",
+            ("naturalista", "jar[áa]ma"),
+            flags=re.I
+        ):
+            return Category.SPORT
         if re_or(
             name,
             "Filosof[ií]a PEC",
