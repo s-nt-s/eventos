@@ -82,9 +82,10 @@ def iterhref(soup: BeautifulSoup):
 
 def buildSoup(root: str, source: str, parser="lxml"):
     soup = BeautifulSoup(source, parser)
-    for n, attr, val in iterhref(soup):
-        val = urljoin(root, val)
-        n.attrs[attr] = val
+    if root:
+        for n, attr, val in iterhref(soup):
+            val = urljoin(root, val)
+            n.attrs[attr] = val
     return soup
 
 

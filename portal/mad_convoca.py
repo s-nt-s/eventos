@@ -8,10 +8,19 @@ import logging
 from typing import Callable
 from datetime import datetime
 from core.web import get_text, buildSoup
+from functools import cache
 
 logger = logging.getLogger(__name__)
 
 re_sp = re.compile(r"\s+")
+
+
+@cache
+def html_to_text(html: str):
+    soup = buildSoup(None, html)
+    for x in soup.select("br, p"):
+        x.append("\n")
+    return get_text(soup)
 
 
 class MadConvoca:
@@ -109,14 +118,27 @@ class MadConvoca:
             ),
             more=e.links[0] if e.links else None
         )
-        event = self.__fix_gancio(event, e) or event
+        event = self.__fix_gancio(e, event) or event
         return event
 
     def __fix_gancio(self, e: GancioEvent, ev: Event):
-        return None
-        if e.description and re_or(e.title, r"Cinefórum de la Rosa", flags=re.I):
-            if re.search(r"^(.+) \((\d+)\), dir. Aki Kaurismäki", e.description, flags=re.I):
-                return ev._replace(name="Hamlet va de negocios (1987), dir. Aki Kaurismäki")
+        if e.description and re_or(e.title, r"Cinef[óo]rum de la Rosa", flags=re.I):
+            text = html_to_text(e.description)
+            m = re.search(
+                r"([^\.\(\)]+?) \((\d{4})\),? dir.? ([^\.\(\)]+)",
+                text,
+                flags=re.I
+            )
+            if m:
+                name, year, dr = map(str.strip, m.groups())
+                ev = ev.merge(
+                    category=Category.CINEMA
+                ).fix_type().merge(
+                    name=name,
+                    year=int(year),
+                    director=(dr, )
+                )
+                return ev
 
     def __ics_to_event(self, e: IcsEventWrapper):
         if e.SUMMARY is None:
@@ -338,7 +360,7 @@ class MadConvoca:
             return Category.EXPO
         if has_tag_or_title("mesa ciudadana", "movilizaciones por"):
             return Category.ACTIVISM
-        if has_tag_or_title("teknokasa"):
+        if has_tag_or_title("teknokasa", 'a-k-m-e'):
             return Category.WORKSHOP
         if re_and(name, "Software", ("Free", "libre"), ("day", "día"), flags=re.I):
             return Category.PARTY
@@ -356,7 +378,7 @@ class MadConvoca:
         ):
             return Category.READING_CLUB
 
-        txt_desc = get_text(buildSoup(e.url, e.description)) if e.description else None
+        txt_desc = html_to_text(e.description) if e.description else None
         if re_or(
             txt_desc,
             "Ven con tus peques",
@@ -391,6 +413,12 @@ class MadConvoca:
             txt_desc,
             "leer un texto",
             "razonar en com[uú]n",
+            flags=re.I
+        ):
+            return Category.READING_CLUB
+        if re_or(
+            txt_desc,
+            "leemos juntas",
             flags=re.I
         ):
             return Category.READING_CLUB
