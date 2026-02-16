@@ -363,6 +363,8 @@ def isWorkingHours(dt: datetime, min_hour=16):
 def un_camel(x: str):
     if x is None or " " in x:
         return x
+    if x in ("LGTBI",):
+        return x
     return re.sub(
         r"(?<!^)(?=[A-ZÁÉÍÓÚÜÑ])",
         " ",
