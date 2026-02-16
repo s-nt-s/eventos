@@ -559,6 +559,7 @@ class MadridEs:
             "Mejora tu ingl[eé]s con charlas",
             "Reconocimiento de [aá]rboles",
             "taller de escritura",
+            "Aprende Chotis",
             flags=re.I
         ):
             return Category.WORKSHOP
@@ -577,12 +578,14 @@ class MadridEs:
         if re_or(
             i.title,
             r"^conciertos?$",
+            r"Composici[oó]n musical para",
             flags=re.I
         ):
             return Category.MUSIC
         if re_or(
             i.title,
             r"^teatros?$",
+            "Audio-?drama",
             flags=re.I
         ):
             return Category.THEATER
@@ -642,6 +645,7 @@ class MadridEs:
             "cortometrajes?",
             "^Pel[íi]cula:",
             "Cinef[oó]rum",
+            "documental",
             flags=re.I
         ):
             return Category.CINEMA
@@ -813,6 +817,7 @@ class MadridEs:
             r"taller(es)? de calidad del aire",
             "compostagram",
             "esquejodromo",
+            r"^Iniciaci[oó]n a",
             flags=re.I
         ):
             return Category.WORKSHOP
