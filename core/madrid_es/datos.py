@@ -25,6 +25,7 @@ async def rq_to_json(r: ClientResponse):
     except JSONDecodeError:
         text = await r.text()
         text = re_sp.sub(r" ", text).strip()
+        text = re.sub('"longitude": --+', '"longitude": -', text)
         if len(text) == 0:
             logger.critical(f"{r.url} is empty: {text}")
         try:
@@ -60,7 +61,7 @@ async def rq_to_graph_list_len_1(r: ClientResponse):
 
 async def rq_to_label(r: ClientResponse):
     soup = BeautifulSoup(await r.read(), "xml")
-    url = r.history[0].url
+    url = r.history[0].url if r.history else r.url
     node = soup.find("skos:prefLabel", attrs={"xml:lang": "es"})
     if node is None:
         node = soup.find("skos:prefLabel")
@@ -182,11 +183,11 @@ class MadridEsDictWrapper(DictWrapper):
     def get_address(self):
         area = self.__get_address()
         if area:
-            return ", ".join([
+            return ", ".join(x for x in [
                 area.get_str('street-address'),
-                area.get_str('postal-code'),
+                area.get_str_or_none('postal-code'),
                 area.get_str('locality')
-            ])
+            ] if x is not None)
         raise ValueError(f"[{self.get('id')}] address no encontrado")
 
     def __get_address(self):
@@ -273,18 +274,30 @@ class DatosMadridEs:
 
     @TupleCache("rec/apimadrides/dataset.json", builder=Dataset.build)
     def __get_events(self):
+        ORGS = (
+            'https://datos.madrid.es/dataset/300331-0-equipamientos-municipales/resource/300331-2-equipamientos-municipales-json/download/300331-2-equipamientos-municipales-json.json',
+        )
         FREE_IF_IN = (
             'https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json',
+        )
+        EVTS = (
+            "https://datos.madrid.es/egob/catalogo/300107-0-agenda-actividades-eventos.json",
+            "https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json",
+            "https://datos.madrid.es/egob/catalogo/206974-0-agenda-eventos-culturales-100.json",
+            'https://datos.madrid.es/egob/catalogo/212504-0-agenda-actividades-deportes.json',
         )
         events_dict: dict[int, dict] = {}
         sources: dict[str, list[dict]] = Getter(
             onread=rq_to_graph_list
         ).get(
-            "https://datos.madrid.es/egob/catalogo/300107-0-agenda-actividades-eventos.json",
-            "https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json",
-            "https://datos.madrid.es/egob/catalogo/206974-0-agenda-eventos-culturales-100.json",
-            'https://datos.madrid.es/egob/catalogo/212504-0-agenda-actividades-deportes.json'
+            *EVTS,
+            *ORGS
         )
+
+        org_list: dict[str, list[dict]] = {}
+        for o in ORGS:
+            org_list[o] = sources.pop(o, [])
+
         sources = dict(sorted(sources.items(), key=lambda kv: (-len(kv[1]), kv[0])))
         for i, (url, evs) in enumerate(sources.items()):
             logger.info(f"[{len(evs):5d}] {url}")
@@ -318,9 +331,21 @@ class DatosMadridEs:
                         orgs.add(url)
                         e['__organization__'] = url
 
-        org_data: dict[str, dict] = Getter(
+        org_data: dict[str, dict] = {}
+        for o_list in org_list.values():
+            for o in o_list:
+                org_data[o['@id']] = o
+                aux = {
+                    'https://datos.madrid.es/egob/catalogo/tipo/entidadesyorganismos/1916-centro-cultura-contemporanea-condeduque.json': 'https://datos.madrid.es/egob/catalogo/tipo/entidadesyorganismos/1916-centro-cultura-contemporanea-conde-duque.json',
+                    'https://datos.madrid.es/egob/catalogo/tipo/entidadesyorganismos/5463464-centro-educacion-ambiental-retiro.json':'https://datos.madrid.es/egob/catalogo/tipo/entidadesyorganismos/5463464-centro-informacion-educacion-ambiental-huerto-retiro.json',
+                }.get(o['@id'])
+                if aux is not None and aux not in org_data:
+                    org_data[aux] = o
+
+        for k, v in Getter(
             onread=rq_to_graph_list_len_1
-        ).get(*orgs)
+        ).get(*orgs.difference(org_data.keys())).items():
+            org_data[k] = v
 
         dts = Dataset(
             events=list(events_dict.values()),

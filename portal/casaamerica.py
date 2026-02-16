@@ -270,6 +270,8 @@ class CasaAmerica(Web):
             return Category.CONFERENCE
         if content and content.lower().count("periodista") > 3:
             return Category.CONFERENCE
+        if cat == "politica":
+            return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(self.url, cat)))
         return Category.UNKNOWN
 

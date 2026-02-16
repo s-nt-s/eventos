@@ -46,6 +46,7 @@ class TeatroMonumental:
                     continue
                 event_id = get_query(url).get("eventId")
                 if event_id is None or not event_id.isdecimal():
+                    logger.warning(f"event_id no esperado = {event_id} en {url}")
                     continue
                 div = next(reversed(a.find_parents("div", class_="row")))
                 dmy = get_nums(div.select_one("div.dateTime-date"))

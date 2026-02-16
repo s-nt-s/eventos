@@ -178,6 +178,7 @@ class Telefonica(Web):
             r"debates?",
             r"coloquios?",
             r"conferencias?",
+            ("CONVERSAN", "MODERA"),
             flags=re.I
         ):
             return Category.CONFERENCE

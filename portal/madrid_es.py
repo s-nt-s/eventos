@@ -33,11 +33,14 @@ def to_place(p: ApiPlace):
     latlon = None
     if None not in (p.latitude, p.longitude):
         latlon = f"{p.latitude},{p.longitude}"
-    return Place(
+    plc = Place(
         name=clean_lugar(p.location),
         address=p.address,
         latlon=latlon
     ).normalize()
+    if not plc.zone and p.district:
+        plc = plc.merge(zone=p.district)
+    return plc
 
 
 def str_to_datetime(s: str):

@@ -324,6 +324,13 @@ class MadConvoca:
             return Category.CHILDISH
         if has_tag("asamblea") or has_tag_or_title('manifestacion', 'concentracion'):
             return Category.ACTIVISM
+        if re_or(
+            name,
+            "Bienvenida Nuev[oa]s? Rebeldes?",
+            flags=re.I,
+            to_log=e.id
+        ):
+            return Category.ACTIVISM
         if has_tag_or_title("cine", "cineforum", "cinebollum", "documental"):
             return Category.CINEMA
         if has_tag("deporte") or has_tag_or_title("yoga", "pilates"):
@@ -350,7 +357,15 @@ class MadConvoca:
             return Category.SPORT
         if re_and(name, "no", "compres", "cose",  flags=re.I, to_log=e.id):
             return Category.WORKSHOP
-        if re_or(name, "Charla-debate", "conferencia", "Discusi[oó]n cr[ií]tica sobre", flags=re.I, to_log=e.id):
+        if re_or(
+            name,
+            "Charla-debate",
+            "conferencia",
+            "Discusi[oó]n cr[ií]tica sobre",
+            "Presentaci[oó]n Informe",
+            flags=re.I,
+            to_log=e.id
+        ):
             return Category.CONFERENCE
         if re_or(name, "radio comunitaria", flags=re.I, to_log=e.id):
             return Category.WORKSHOP

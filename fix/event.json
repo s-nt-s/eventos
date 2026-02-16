@@ -712,14 +712,14 @@
     "20260213161500Z-142102@eventos.urjc.es": {"category": "VISIT"},
     "tl512FB24C-F5E2-50AC-8022-11F5DCE0F9B5": {"category": "SPAM"},
     "tlD8EE97A0-CCA9-567E-95C7-20A0C3120BC4": {"category": "LITERATURE", "more": "https://www.goodreads.com/book/show/246440434"},
-    "ms372811eac624c910VgnVCM200000f921e388RCRD": {"filmaffinity": 378659},
-    "msde2611eac624c910VgnVCM200000f921e388RCRD": {"filmaffinity": 600146},
-    "mse2d25ad68724c910VgnVCM200000f921e388RCRD": {"filmaffinity": 370698},
-    "msfc9111eac624c910VgnVCM200000f921e388RCRD": {"filmaffinity": 695552, "name": "Doce hombres sin piedad"},
-    "ms861411eac624c910VgnVCM200000f921e388RCRD": {"filmaffinity": 494004},
-    "ms5bbc49c0a715c910VgnVCM200000f921e388RCRD": {"filmaffinity": 298318, "name": "Scaramouche"},
-    "mc55681-1771669800-1771669800@ateneodemadrid.com": {"filmaffinity": 917148, "name": "El abrazo de la serpiente"},
-    "sb10632": {"filmaffinity": 295464},
+    "ms372811eac624c910VgnVCM200000f921e388RCRD": {"category": "CINEMA", "filmaffinity": 378659},
+    "msde2611eac624c910VgnVCM200000f921e388RCRD": {"category": "CINEMA", "filmaffinity": 600146},
+    "mse2d25ad68724c910VgnVCM200000f921e388RCRD": {"category": "CINEMA", "filmaffinity": 370698},
+    "msfc9111eac624c910VgnVCM200000f921e388RCRD": {"category": "CINEMA", "filmaffinity": 695552, "name": "Doce hombres sin piedad"},
+    "ms861411eac624c910VgnVCM200000f921e388RCRD": {"category": "CINEMA", "filmaffinity": 494004},
+    "ms5bbc49c0a715c910VgnVCM200000f921e388RCRD": {"category": "CINEMA", "filmaffinity": 298318, "name": "Scaramouche"},
+    "mc55681-1771669800-1771669800@ateneodemadrid.com": {"category": "CINEMA", "filmaffinity": 917148, "name": "El abrazo de la serpiente"},
+    "sb10632": {"category": "CINEMA", "filmaffinity": 295464},
     "sb10651": {"category": "MUSIC", "cycle": "Es letra y se canta"},
     "sb10668": {"category": "MUSIC", "cycle": "Es letra y se canta"},
     "sb10674": {"category": "MUSIC", "cycle": "Es letra y se canta"},
@@ -731,5 +731,12 @@
     "sb10631": {
         "more": "https://dolmeneditorial.com/tienda/paco-saez-diario-de-un-dibujante-cinematografico/",
         "img": "https://dolmeneditorial.com/wp-content/uploads/2025/12/Paco-Saez-Diario-de-un-dibujante-cinematografico-Portada-600x901.jpg"
+    },
+    "mcmc26870": {
+        "name": "El derecho a tener derechos"
+    },
+    "mcmc26842": {
+        "name": "Manual para romper un cuerpo",
+        "more": "https://www.goodreads.com/book/show/230997755"
     }
 }

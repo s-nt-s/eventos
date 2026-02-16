@@ -306,7 +306,12 @@ class Universidad:
             return Category.NO_EVENT
         if re_or(e.SUMMARY, r"UN REGRESO DE CINE", flags=re.I):
             return Category.CINEMA
-        if re_or(e.SUMMARY, "Presentaci[óo]n de la asociaci[óo]n", flags=re.I):
+        if re_or(
+            e.SUMMARY,
+            "Presentaci[óo]n de la asociaci[óo]n",
+            "coloquio",
+            flags=re.I
+        ):
             return Category.CONFERENCE
         if re_or(
             e.SUMMARY,
@@ -326,19 +331,24 @@ class Universidad:
             description,
             r"Encuentro con",
             r"Varios(/as)? ponentes",
+            r"coloquio posterior",
             flags=re.I
         ):
             return Category.CONFERENCE
-        if re_or(description, "obra esc[eé]nica", flags=re.I):
+        if re_or(
+            description,
+            "obra esc[eé]nica",
+            flags=re.I
+        ):
             return Category.THEATER
         info = self.__get_info(link)
         categories = (info.get_categories() if info else None) or tuple()
         for c in categories:
-            if re_or(c, "teatro"):
+            if re_or(c, "teatro", flags=re.I):
                 return Category.THEATER
-            if re_or(c, "crossfit"):
+            if re_or(c, "crossfit", flags=re.I):
                 return Category.SPORT
-            if re_or(c, "divulgaci[oó]n"):
+            if re_or(c, "divulgaci[oó]n", "docencia", flags=re.I):
                 return Category.CONFERENCE
         if re_or(
             e.SUMMARY,

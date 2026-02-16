@@ -267,6 +267,9 @@ class Place:
     latlon: str = None
     zone: str = None
 
+    def merge(self, **kwargs):
+        return replace(self, **kwargs)
+
     def _asdict(self):
         return asdict(self)
 
@@ -448,6 +451,8 @@ class Place:
             return Places.MUSEO_PRADO.value
         if re_and(self.name, "demo", "Swing", "Lab", flags=re.I) and re_and(self.address, "Magdalena", flags=re.I):
             return Places.SWING_LAB.value
+        if re_and(address, r"Dr\. Fourquet,? 18", "28012", flags=re.I):
+            return Places.ARCHIVO_ARKHE.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -677,6 +682,12 @@ class Places(Enum):
         address="Calle de la Magdalena, 7, Centro, 28012 Madrid",
         latlon="40.412636935493836,-3.702379332778133",
         zone="Sol"
+    )
+    ARCHIVO_ARKHE = Place(
+        name="Archivo Arkhé",
+        address="Calle del Dr. Fourquet, 18, planta baja, Centro, 28012 Madrid",
+        latlon="40.40776391373512,-3.6975274443272483",
+        zone="Lavapies"
     )
 
 
@@ -1032,7 +1043,6 @@ class Event:
     def _fix_more(self):
         if self.more:
             return self.more
-        urls = self.__get_urls()
         dom = get_domain(self.url)
         if self.category in {
             "madrid.es": (Category.CONFERENCE, Category.LITERATURE),

@@ -6,7 +6,6 @@ from core.filemanager import FM
 import re
 from typing import NamedTuple
 from core.util import get_obj, trim
-from types import MappingProxyType
 
 
 class Event(NamedTuple):
@@ -75,8 +74,6 @@ def extract_prefix(url: str, obj: dict, prefix: str):
             yield ord, v
 
 
-
-
 class EventOn:
     def __init__(self, root: str):
         self.__s = Session()
@@ -86,7 +83,7 @@ class EventOn:
         r = self.__s.get(url)
         js = r.json()
         return js
-    
+
     def __get_dict(self, url: str):
         js = self.__get_json(url)
         if not isinstance(js, dict):
@@ -188,7 +185,6 @@ class EventOn:
             )
             events.add(x)
         return tuple(sorted(events, key=lambda x: x.id))
-
 
 
 if __name__ == "__main__":
