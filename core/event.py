@@ -41,14 +41,17 @@ re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
 def safe_expand_url(url: str):
     if not isinstance(url, str):
         return url
-    if re.match(r"^https?://\S+/node/\d+$", url):
+    if re_or(
+        url,
+        r"^https?://\S+/node/\d+$"
+        r"^https?://21distritos\.es/.*\bp=\d+.*"
+    ):
         dom = get_domain(url)
+        new_dom = {
+            "forms.gle": "docs.google.com",
+        }.get(dom, dom)
         WEB.get(url)
-        if isinstance(WEB.url, str) and get_domain(WEB.url) == dom:
-            return WEB.url
-    if re.match(r"^https://forms.gle/\w+$", url):
-        WEB.get(url)
-        if isinstance(WEB.url, str) and get_domain(WEB.url) == "docs.google.com":
+        if isinstance(WEB.url, str) and get_domain(WEB.url) == new_dom:
             return WEB.url
     return url
 
