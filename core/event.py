@@ -43,8 +43,9 @@ def safe_expand_url(url: str):
         return url
     if re_or(
         url,
-        r"^https?://\S+/node/\d+$"
-        r"^https?://21distritos\.es/.*\bp=\d+.*"
+        r"^https?://\S+/node/\d+$",
+        r"^https?://21distritos\.es/.*\bp=\d+.*$",
+        r"^https://forms.gle/\w+$",
     ):
         dom = get_domain(url)
         new_dom = {
