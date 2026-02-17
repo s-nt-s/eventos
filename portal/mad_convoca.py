@@ -105,7 +105,7 @@ class MadConvoca:
         event = Event(
             url=e.url,
             id=self.__pre[get_domain(e.url)] + str(e.id),
-            price=0,
+            price=self.__find_gancio_price(e),
             name=e.title,
             img=e.media[0] if e.media else None,
             category=self.__find_gancio_category(e),
@@ -459,8 +459,16 @@ class MadConvoca:
             return Category.SPORT
         if has_tag_or_title("dramaturgia"):
             return Category.THEATER
+        if re_and(e.place.name, "^desde", "hasta", flags=re.I):
+            return Category.ACTIVISM
         logger.critical(str(CategoryUnknown(e.url, f"{e}")))
         return Category.UNKNOWN
+
+    def __find_gancio_price(self, e: GancioEvent):
+        prc = find_euros(e.description)
+        if prc is not None:
+            return prc
+        return 0
 
 
 if __name__ == "__main__":

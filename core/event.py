@@ -453,6 +453,8 @@ class Place:
             return Places.SWING_LAB.value
         if re_and(address, r"Dr\. Fourquet,? 18", "28012", flags=re.I):
             return Places.ARCHIVO_ARKHE.value
+        if re_or(name, "tu patio", flags=re.I) and re_and(address, "Eduardo Marquina", flags=re.I):
+            return Places.TU_PATIO.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -688,6 +690,12 @@ class Places(Enum):
         address="Calle del Dr. Fourquet, 18, planta baja, Centro, 28012 Madrid",
         latlon="40.40776391373512,-3.6975274443272483",
         zone="Lavapies"
+    )
+    TU_PATIO = Place(
+        name="Tu patio",
+        address="C. de Eduardo Marquina, 7, Carabanchel, 28019 Madrid",
+        latlon="40.393677424170875,-3.7124811902926353",
+        zone="Marques de Vadillo"
     )
 
 
