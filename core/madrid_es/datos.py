@@ -278,13 +278,18 @@ class DatosMadridEs:
             'https://datos.madrid.es/dataset/300331-0-equipamientos-municipales/resource/300331-2-equipamientos-municipales-json/download/300331-2-equipamientos-municipales-json.json',
         )
         FREE_IF_IN = (
-            'https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json',
+            'https://datos.madrid.es/dataset/206717-0-agenda-eventos-bibliotecas/resource/206717-1-agenda-eventos-bibliotecas-json/download/206717-1-agenda-eventos-bibliotecas-json.json',
+            #'https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json',
         )
         EVTS = (
-            "https://datos.madrid.es/egob/catalogo/300107-0-agenda-actividades-eventos.json",
-            "https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json",
-            "https://datos.madrid.es/egob/catalogo/206974-0-agenda-eventos-culturales-100.json",
-            'https://datos.madrid.es/egob/catalogo/212504-0-agenda-actividades-deportes.json',
+            'https://datos.madrid.es/dataset/300107-0-agenda-actividades-eventos/resource/300107-5-agenda-actividades-eventos-json/download/300107-5-agenda-actividades-eventos-json.json',
+            #"https://datos.madrid.es/egob/catalogo/300107-0-agenda-actividades-eventos.json",
+            'https://datos.madrid.es/dataset/206717-0-agenda-eventos-bibliotecas/resource/206717-1-agenda-eventos-bibliotecas-json/download/206717-1-agenda-eventos-bibliotecas-json.json',
+            #"https://datos.madrid.es/egob/catalogo/206717-0-agenda-eventos-bibliotecas.json",
+            'https://datos.madrid.es/dataset/206974-0-agenda-eventos-culturales-100/resource/206974-0-agenda-eventos-culturales-100-json/download/206974-0-agenda-eventos-culturales-100-json.json',
+            #"https://datos.madrid.es/egob/catalogo/206974-0-agenda-eventos-culturales-100.json",
+            'https://datos.madrid.es/dataset/212504-0-agenda-actividades-deportes/resource/212504-2-agenda-actividades-deportes-json/download/212504-2-agenda-actividades-deportes-json.json',
+            #'https://datos.madrid.es/egob/catalogo/212504-0-agenda-actividades-deportes.json',
         )
         events_dict: dict[int, dict] = {}
         sources: dict[str, list[dict]] = Getter(
