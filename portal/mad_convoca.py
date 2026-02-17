@@ -461,6 +461,8 @@ class MadConvoca:
             return Category.THEATER
         if re_and(e.place.name, "^desde", "hasta", flags=re.I):
             return Category.ACTIVISM
+        if re_or(e.title, "Plenario", flags=re.I):
+            return Category.ACTIVISM
         logger.critical(str(CategoryUnknown(e.url, f"{e}")))
         return Category.UNKNOWN
 
