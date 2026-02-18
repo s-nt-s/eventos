@@ -332,6 +332,7 @@ class Universidad:
             r"Encuentro con",
             r"Varios(/as)? ponentes",
             r"coloquio posterior",
+            r"seminario",
             flags=re.I
         ):
             return Category.CONFERENCE

@@ -174,6 +174,7 @@ class Alcala:
             "teatro": Category.THEATER,
             "talleres": Category.WORKSHOP,
             "literatura y conferencias": Category.CONFERENCE,
+            "programación familiar": Category.CHILDISH,
         }.get(tp)
         if cat == Category.THEATER:
             if re_and(txt_content, r"CLOW", r"P[UÚ]BLICO FAMILIAR"):

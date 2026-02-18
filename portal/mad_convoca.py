@@ -364,6 +364,7 @@ class MadConvoca:
             "Discusi[oó]n cr[ií]tica sobre",
             "Presentaci[oó]n Informe",
             "^Charla:",
+            "^Charla",
             flags=re.I,
             to_log=e.id
         ):
@@ -409,6 +410,7 @@ class MadConvoca:
             "conferencia",
             "conversaremos con",
             ("jornada", "auditorio"),
+            "A lo largo de la charla",
             flags=re.I,
             to_log=e.id
         ):
