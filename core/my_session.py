@@ -56,7 +56,7 @@ SPAIN_PROXY = MyProxy.build(environ.get("SPAIN_PROXY"))
 @cache
 def getProxy(dom: str):
     if SPAIN_PROXY and dom:
-        if dom in ("march.es", ): #("madrid.es", ):
+        if dom in ("march.es", "giglon.com"): #("madrid.es", ):
             logger.info(f"{dom} usará SPAIN_PROXY")
             return SPAIN_PROXY
 
