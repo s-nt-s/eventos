@@ -11,7 +11,7 @@ import re
 from collections import defaultdict
 from core.fetcher import Getter
 from aiohttp import ClientResponse
-from core.web import Driver
+from core.web import WEB
 
 
 logger = logging.getLogger(__name__)
@@ -61,17 +61,10 @@ class Alcala:
     ):
         self.__eventon = EventOn("https://culturalcala.es/wp-json")
         self.__isOkDate = isOkDate or (lambda x: True)
-
-    @cached_property
-    def __get_store(self):
-        s = Driver.to_session(
-            "firefox",
-            "https://www.giglon.com/"
-        )
-        return Getter(
+        self.__get_store = Getter(
             onread=rq_to_dates,
-            headers=s.headers,
-            cookie_jar=s.cookies
+            max_concurrency=10,
+            timeout=60
         )
 
     @cached_property

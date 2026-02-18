@@ -204,13 +204,17 @@ class Getter(Generic[ProcessedResponse]):
         cookie_jar: Optional[CookieJar | RequestsCookieJar] = None,
         raise_for_status: bool = True,
         verify: bool = True,
+        max_concurrency: int = 40,
+        timeout: float = 30.0,
     ):
         self.__fetcher = AsyncFetcher(
             onread=onread,
             headers=headers,
             cookie_jar=cookie_jar,
             raise_for_status=raise_for_status,
-            verify=verify
+            verify=verify,
+            max_concurrency=max_concurrency,
+            timeout=timeout
         )
 
     def get(self, *urls: str) -> dict[str, ProcessedResponse]:
