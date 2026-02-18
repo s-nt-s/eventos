@@ -160,8 +160,14 @@ class EventOn:
             event_types: list[str] = []
             for et in e['event_types']:
                 for t in et.values():
-                    if t not in event_types:
+                    if t is not None and t not in event_types:
                         event_types.append(t)
+            customfields: list[str] = []
+            for cf in e['customfields']:
+                for k in ("value", "valueL"):
+                    v = cf.get(k)
+                    if v is not None and v not in customfields:
+                        customfields.append(v)
             x = Event(
                 id=e['_id_'],
                 name=trim(e['name']),
@@ -175,7 +181,7 @@ class EventOn:
                 location_lat=e.get('location_lat'),
                 location_lon=e.get('location_lon'),
                 event_types=tuple(event_types),
-                customfields=tuple(i['value'] for i in e['customfields']),
+                customfields=tuple(customfields),
                 content=trim(e['content']),
                 details=trim(e['details']),
                 repeats=repeats,

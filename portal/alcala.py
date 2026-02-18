@@ -8,6 +8,10 @@ from zoneinfo import ZoneInfo
 from typing import Callable
 from core.web import buildSoup, get_text
 import re
+from collections import defaultdict
+from core.fetcher import Getter
+from aiohttp import ClientResponse
+
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
@@ -37,6 +41,18 @@ def _clean_name(name: str):
     return capitalize(name)
 
 
+async def rq_to_dates(r: ClientResponse):
+    soup = buildSoup(str(r.url), await r.text())
+    span = get_text(soup.select_one("span.event-time-sala"))
+    if len(span) == 0:
+        return tuple()
+    dts: set[datetime] = set()
+    for x in re.findall(r"(\d{2})/(\d{2})/(\d{4}) (\d{2}):(\d{2})", span):
+        d, m, y, h, mm = map(int, x)
+        dts.add(datetime(y, m, d, h, mm))
+    return tuple(sorted(dts))
+
+
 class Alcala:
     def __init__(
             self,
@@ -44,18 +60,48 @@ class Alcala:
     ):
         self.__eventon = EventOn("https://culturalcala.es/wp-json")
         self.__isOkDate = isOkDate or (lambda x: True)
+        self.__get_store = Getter(
+            onread=rq_to_dates
+        )
 
     @cached_property
     def events(self):
+        id_store: dict[str, list[str]] = defaultdict(list)
         logger.info("Alcala: Buscando eventos")
-        events: set[Event] = set()
+        events: dict[str, Event] = {}
         for x in self.__eventon.get_eventon():
             e = self.__eventon_to_event(x)
             if e is not None:
-                events.add(e)
-        evs = tuple(events)
+                for c in x.customfields:
+                    if c.startswith("https://www.giglon.com/evento/"):
+                        id_store[e.id].append(c)
+                events[e.id] = e
+        sessions = self.__find_session_in_store(id_store)
+        for id, ses in sessions.items():
+            if len(ses):
+                events[id] = events[id].merge(sessions=tuple(sorted(ses)))
+        for id, ev in list(events.items()):
+            if len(ev.sessions) == 0:
+                logger.critical(f"sessions=None {ev.url}")
+                del events[id]
+        evs = tuple(events.values())
         logger.info(f"Alcala: Buscando eventos = {len(evs)}")
         return evs
+
+    def __find_session_in_store(self, id_store: dict[str, list[str]]):
+        store_url: set[str] = set()
+        sessions: dict[str, set[str]] = defaultdict(set)
+        for id, urls in id_store.items():
+            store_url.update(urls)
+        store_dates = self.__get_store.get(*store_url)
+        for id, urls in id_store.items():
+            for u in urls:
+                for d in store_dates.get(u, []):
+                    if self.__isOkDate(d):
+                        sessions[id].add(Session(
+                            date=d.strftime("%Y-%m-%d %H:%M")
+                        ))
+        return sessions
 
     def __eventon_to_event(self, x: EventOnEvent):
         place = self.__get_place(x)
@@ -67,9 +113,6 @@ class Alcala:
             logger.critical(f"price=None {x.permalink}")
             return None
         duration, sessions = self.__find_session(x)
-        if len(sessions) == 0:
-            logger.critical(f"NO sessions {x.permalink}")
-            return None
         e = Event(
             id=f"al{x.id}",
             url=x.permalink,
