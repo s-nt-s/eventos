@@ -739,7 +739,10 @@
         "name": "Manual para romper un cuerpo",
         "more": "https://www.goodreads.com/book/show/230997755"
     },
-    "sb10683": {"category": "NO_EVENT"},
+    "sb10683": {
+        "category": "CONFERENCE",
+        "more": "https://docs.google.com/forms/d/e/1FAIpQLSfXbdBcNw2GURfGzT9jM9obBLWbOpdeNiYfgbFhSHnw1pqy_A/viewform"
+    },
     "md7430": {
         "filmaffinity": 359947
     }
