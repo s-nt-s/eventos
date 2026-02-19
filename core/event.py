@@ -459,6 +459,8 @@ class Place:
             return Places.ARCHIVO_ARKHE.value
         if re_or(name, "tu patio", flags=re.I) and re_and(address, "Eduardo Marquina", flags=re.I):
             return Places.TU_PATIO.value
+        if re_and(name, "cso", "enredadera", flags=re.I) and re_and(address, "coruña", flags=re.I):
+            return Places.CSO_LA_ENREDADERA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -700,6 +702,12 @@ class Places(Enum):
         address="C. de Eduardo Marquina, 7, Carabanchel, 28019 Madrid",
         latlon="40.393677424170875,-3.7124811902926353",
         zone="Marques de Vadillo"
+    )
+    CSO_LA_ENREDADERA = Place(
+        name="CSO la Enredadera",
+        address="C/ de la Coruña, 5, Tetuán, 28020 Madrid",
+        latlon="40.45585417293838,-3.701519330690853",
+        zone="Tetuan"
     )
 
 
