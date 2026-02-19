@@ -444,6 +444,7 @@ def capitalize(name: str):
         "centro cultural",
         "XXX",
         "VHZ",
+        "XXV",
     ):
         name = re.sub(r"\b"+re.escape(x)+r"\b", x, name, flags=re.I)
     w1 = name[0]
