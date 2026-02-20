@@ -712,7 +712,7 @@ class Places(Enum):
         zone="Tetuan"
     )
     AVA = Place(
-        name="Asociación Vecinal Aluche",
+        name="Asociación vecinal Aluche",
         address="C. de Quero, 69, Latina, 28024 Madrid",
         latlon="40.39019457364059,-3.7608253422986184",
         zone="Aluche"
