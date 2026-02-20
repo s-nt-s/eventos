@@ -377,7 +377,7 @@ class MadConvoca:
             return Category.EXPO
         if has_tag_or_title("mesa ciudadana", "movilizaciones por"):
             return Category.ACTIVISM
-        if has_tag_or_title("teknokasa", 'a-k-m-e'):
+        if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin'):
             return Category.WORKSHOP
         if re_and(name, "Software", ("Free", "libre"), ("day", "día"), flags=re.I):
             return Category.PARTY
@@ -411,6 +411,7 @@ class MadConvoca:
             "conversaremos con",
             ("jornada", "auditorio"),
             "A lo largo de la charla",
+            "conservatorio",
             flags=re.I,
             to_log=e.id
         ):

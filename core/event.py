@@ -459,8 +459,10 @@ class Place:
             return Places.ARCHIVO_ARKHE.value
         if re_or(name, "tu patio", flags=re.I) and re_and(address, "Eduardo Marquina", flags=re.I):
             return Places.TU_PATIO.value
-        if re_and(name, "cso", "enredadera", flags=re.I) and re_and(address, "coruña", flags=re.I):
+        if re_and(name, "csoa?", "enredadera", flags=re.I) and re_and(address, "coruña", flags=re.I):
             return Places.CSO_LA_ENREDADERA.value
+        if re_or(name, "AVA", ("[aA]socaci[oó]n", "[vV]ecinal", "[aA]luche")) and re_and(address, "quero", flags=re.I):
+            return Places.AVA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -708,6 +710,12 @@ class Places(Enum):
         address="C/ de la Coruña, 5, Tetuán, 28020 Madrid",
         latlon="40.45585417293838,-3.701519330690853",
         zone="Tetuan"
+    )
+    AVA = Place(
+        name="Asociación Vecinal Aluche",
+        address="C. de Quero, 69, Latina, 28024 Madrid",
+        latlon="40.39019457364059,-3.7608253422986184",
+        zone="Aluche"
     )
 
 
