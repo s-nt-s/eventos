@@ -445,6 +445,7 @@ def capitalize(name: str):
         "XXX",
         "VHZ",
         "XXV",
+        "Quijote",
     ):
         name = re.sub(r"\b"+re.escape(x)+r"\b", x, name, flags=re.I)
     w1 = name[0]
