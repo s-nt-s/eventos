@@ -16,7 +16,8 @@ def getProxy(dom: str):
     if dom in ("march.es", "giglon.com"): #("madrid.es", ):
         prx = PM.get_proxy()
         if prx:
-            logger.info(f"{dom} usará proxy {prx}")
+            lb = re.sub("://.+@", "://", prx)
+            logger.info(f"{dom} usará proxy {lb}")
             return prx
 
 
