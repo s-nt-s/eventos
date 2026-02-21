@@ -83,6 +83,8 @@ class ProxyManager:
     def __check_proxy(self, proxy: str) -> bool:
         if not self.__check_status(proxy):
             return False
+        if proxy == self.__spain_proxy:
+            return True
         real_ip = self.__get_ip()
         proxy_ip = self.__get_ip(proxy)
         if None in (real_ip, proxy_ip):
