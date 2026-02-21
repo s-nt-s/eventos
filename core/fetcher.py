@@ -20,8 +20,7 @@ logger = logging.getLogger(__name__)
 
 def _getProxy(url: str):
     p = getProxy(get_domain(url))
-    if p:
-        return p.get_full_url()
+    return p
 
 
 async def rq_to_text(r: ClientResponse):
