@@ -44,6 +44,15 @@ class ProxyManager:
             'https://proxyelite.info/free/europe/portugal/',
             'https://proxyelite.info/free/europe/france/',
             'https://proxyelite.info/free/europe/italy/',
+            'https://proxyelite.info/free/europe/Sweden/',
+            'https://proxyelite.info/free/europe/Finland/',
+            'https://proxyelite.info/free/europe/Ireland/',
+            'https://proxyelite.info/free/europe/Netherlands/',
+            'https://proxyelite.info/free/europe/United%20Kingdom/',
+            'https://proxyelite.info/free/europe/Ukraine/',
+            'https://proxyelite.info/free/europe/Serbia/',
+            'https://proxyelite.info/free/europe/Hungary/',
+            'https://proxyelite.info/free/europe/'
         ):
             r = self.__s.get(u)
             soup = BeautifulSoup(
@@ -111,9 +120,10 @@ class ProxyManager:
             )
             if r.status_code == 200 and r.text.strip() == "success":
                 return True
-            logger.debug(f"proxy={lb} url={url} -> {r.status_code} {r.text}")
+            #logger.debug(f"proxy={lb} url={url} -> {r.status_code} {r.text}")
         except requests.RequestException as e:
-            logger.debug(f"proxy={lb} url={url} -> {e}")
+            #logger.debug(f"proxy={lb} url={url} -> {e}")
+            pass
         return False
 
     @cache
