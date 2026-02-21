@@ -86,8 +86,8 @@ class ProxyManager:
         proxy_ip = self.__get_ip(proxy)
         if proxy_ip is None:
             return False
-        if proxy == self.__spain_proxy:
-            return True
+        #if proxy == self.__spain_proxy:
+        #    return True
         real_ip = self.__get_ip()
         if real_ip is None:
             logger.warning("No se pudo obtener la IP real")

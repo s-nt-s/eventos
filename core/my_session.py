@@ -45,8 +45,8 @@ def buildScraper():
         prx = getProxy(get_domain(url))
         if prx:
             kw.setdefault("proxies", {
-                "http": prx.get_full_url(),
-                "https": prx.get_full_url()
+                "http": prx,
+                "https": prx
             })
         return _orig(method, url, *a, **kw)
 
