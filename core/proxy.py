@@ -75,10 +75,11 @@ class ProxyManager:
     @cache
     def get_proxy(self):
         for p in self.iter_proxies():
+            lb = re.sub("://.+@", "://", p)
             if self.__check_proxy(p):
-                logger.info(f"[OK] {p}")
+                logger.info(f"[OK] {lb}")
                 return p
-            logger.info(f"[KO] {p}")
+            logger.info(f"[KO] {lb}")
 
     def __check_proxy(self, proxy: str) -> bool:
         if not self.__check_status(proxy):
@@ -93,12 +94,14 @@ class ProxyManager:
             logger.warning("No se pudo obtener la IP real")
             return True
         if real_ip == proxy_ip:
-            logger.debug(f"proxy={proxy} no cambia IP")
+            lb = re.sub("://.+@", "://", proxy)
+            logger.debug(f"proxy={lb} no cambia IP")
             return False
         return True
 
     @cache
     def __check_status(self, proxy: str) -> bool:
+        lb = re.sub("://.+@", "://", proxy)
         url = 'https://detectportal.firefox.com/success.txt'
         try:
             r = requests.get(
@@ -108,9 +111,9 @@ class ProxyManager:
             )
             if r.status_code == 200 and r.text.strip() == "success":
                 return True
-            logger.debug(f"proxy={proxy} url={url} -> {r.status_code} {r.text}")
+            logger.debug(f"proxy={lb} url={url} -> {r.status_code} {r.text}")
         except requests.RequestException as e:
-            logger.debug(f"proxy={proxy} url={url} -> {e}")
+            logger.debug(f"proxy={lb} url={url} -> {e}")
         return False
 
     @cache
@@ -133,6 +136,7 @@ class ProxyManager:
 
         url = 'https://httpbin.org/ip'
         proxies = {"http": proxy, "https": proxy} if proxy else None
+        lb = re.sub("://.+@", "://", proxy) if proxy else None
         try:
             r = requests.get(
                 url,
@@ -143,12 +147,12 @@ class ProxyManager:
             if ip is not None:
                 return ip
             if proxy:
-                logger.debug(f"proxy={proxy} url={url} -> {r.status_code} {r.text}")
+                logger.debug(f"proxy={lb} url={url} -> {r.status_code} {r.text}")
             else:
                 logger.debug(f"url={url} -> {r.status_code} {r.text}")
         except requests.RequestException as e:
             if proxy:
-                logger.debug(f"proxy={proxy} url={url} -> {e}")
+                logger.debug(f"proxy={lb} url={url} -> {e}")
             else:
                 logger.debug(f"url={url} -> {e}")
 
