@@ -64,7 +64,8 @@ class Alcala:
         self.__get_store = Getter(
             onread=rq_to_dates,
             max_concurrency=10,
-            timeout=60
+            timeout=60,
+            raise_for_status=False,
         )
 
     @cached_property
