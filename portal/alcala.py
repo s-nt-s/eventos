@@ -45,7 +45,7 @@ def _clean_name(name: str):
 async def rq_to_dates(r: ClientResponse):
     soup = buildSoup(str(r.url), await r.text())
     span = get_text(soup.select_one("span.event-time-sala"))
-    if len(span) == 0:
+    if span is None or len(span) == 0:
         return tuple()
     dts: set[datetime] = set()
     for x in re.findall(r"(\d{2})/(\d{2})/(\d{4}) (\d{2}):(\d{2})", span):
