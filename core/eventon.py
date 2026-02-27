@@ -177,7 +177,7 @@ class EventOn:
                 event_subtitle=trim(e['event_subtitle']),
                 image_url=trim(e['image_url']),
                 location_name=trim(e['location_name']),
-                location_address=trim(e['location_address']),
+                location_address=trim(e.get('location_address')),
                 location_lat=e.get('location_lat'),
                 location_lon=e.get('location_lon'),
                 event_types=tuple(event_types),

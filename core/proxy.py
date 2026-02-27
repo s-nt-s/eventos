@@ -39,40 +39,40 @@ class ProxyManager:
     def __iter_proxies(self):
         if self.__spain_proxy:
             yield self.__spain_proxy
-        for u in (
-            'https://proxyelite.info/free/europe/spain/',
-            'https://proxyelite.info/free/europe/portugal/',
-            'https://proxyelite.info/free/europe/france/',
-            'https://proxyelite.info/free/europe/italy/',
-            'https://proxyelite.info/free/europe/Sweden/',
-            'https://proxyelite.info/free/europe/Finland/',
-            'https://proxyelite.info/free/europe/Ireland/',
-            'https://proxyelite.info/free/europe/Netherlands/',
-            'https://proxyelite.info/free/europe/United%20Kingdom/',
-            'https://proxyelite.info/free/europe/Ukraine/',
-            'https://proxyelite.info/free/europe/Serbia/',
-            'https://proxyelite.info/free/europe/Hungary/',
-            'https://proxyelite.info/free/europe/'
-        ):
-            r = self.__s.get(u)
-            soup = BeautifulSoup(
-                r.content,
-                "html.parser"
-            )
-            table = soup.select_one("#proxylister-table")
-            for tr in table.select("tr"):
-                tds = tr.select("td")
-                if len(tds) < 3:
-                    continue
-                ip = tds[0].text.strip()
-                port = tds[1].text.strip()
-                prot = tds[2].text.strip().lower()
-                if prot != "http":
-                    continue
-                if not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip) or not re.match(r"^\d{1,5}$", port):
-                    continue
-                pr = f"{prot}://{ip}:{port}"
-                yield pr
+            for u in (
+                'https://proxyelite.info/free/europe/spain/',
+                'https://proxyelite.info/free/europe/portugal/',
+                'https://proxyelite.info/free/europe/france/',
+                'https://proxyelite.info/free/europe/italy/',
+                'https://proxyelite.info/free/europe/Sweden/',
+                'https://proxyelite.info/free/europe/Finland/',
+                'https://proxyelite.info/free/europe/Ireland/',
+                'https://proxyelite.info/free/europe/Netherlands/',
+                'https://proxyelite.info/free/europe/United%20Kingdom/',
+                'https://proxyelite.info/free/europe/Ukraine/',
+                'https://proxyelite.info/free/europe/Serbia/',
+                'https://proxyelite.info/free/europe/Hungary/',
+                'https://proxyelite.info/free/europe/'
+            ):
+                r = self.__s.get(u)
+                soup = BeautifulSoup(
+                    r.content,
+                    "html.parser"
+                )
+                table = soup.select_one("#proxylister-table")
+                for tr in table.select("tr"):
+                    tds = tr.select("td")
+                    if len(tds) < 3:
+                        continue
+                    ip = tds[0].text.strip()
+                    port = tds[1].text.strip()
+                    prot = tds[2].text.strip().lower()
+                    if prot != "http":
+                        continue
+                    if not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip) or not re.match(r"^\d{1,5}$", port):
+                        continue
+                    pr = f"{prot}://{ip}:{port}"
+                    yield pr
 
     def iter_proxies(self):
         done: set[str] = set()
