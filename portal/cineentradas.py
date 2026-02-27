@@ -3,7 +3,7 @@ from typing import Dict, Set, List, Union
 from functools import cached_property
 import logging
 import json
-from core.web import Web, WebException
+from core.web import Web, WebException, get_text
 from core.cache import Cache, TupleCache
 from core.event import Event, Session, Place, Category, FieldNotFound
 from core.filemanager import FM
@@ -101,20 +101,33 @@ class CineEntradas:
         root = f"https://cine.entradas.com/cine/{city}/{cinema}"
         logger.debug(root)
 
-        def __get(slc: str, *urls):
+        def __get(*urls) -> dict:
+            slc1 = 'script[type="application/ld+json"]'
+            slc2 = '#__NUXT_DATA__'
             w = Web()
             w.s.headers.update({'Accept-Encoding': 'gzip, deflate'})
             for i, url in enumerate(urls):
                 w.get(url)
-                try:
-                    return w.select_one(slc)
-                except WebException:
-                    if i == len(urls)-1:
-                        raise
-        n = __get('script[type="application/ld+json"]', root, root+"/sesiones")
-        js = n.get_text()
-        while isinstance(js, str):
-            js = json.loads(js)
+                txt = get_text(w.soup.select_one(slc1))
+                if isinstance(txt, str):
+                    js = json.loads(txt)
+                    if isinstance(js, dict):
+                        return js
+                txt = get_text(w.soup.select_one(slc2))
+                if isinstance(txt, str):
+                    js = json.loads(txt)
+                    from core.filemanager import FM
+                    FM.dump(f"/tmp/ce_{i}.json", js)
+                    if isinstance(js, list):
+                        for i in js:
+                            if isinstance(i, str) and i.startswith('{"@context":'):
+                                return json.loads(i)
+            raise WebException(f"No se pudo obtener el JSON de {urls[-1]}")
+
+        js = __get(
+            root,
+            root+"/sesiones"
+        )
         ad = js['address']
         dt['address'] = ", ".join((
             ad['streetAddress'].title(),
