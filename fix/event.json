@@ -745,5 +745,88 @@
     },
     "md7430": {
         "filmaffinity": 359947
+    },
+    "mcmc26931": {
+        "filmaffinity": 927664,
+        "name": "Los renglones torcidos de Dios",
+        "category": "CINEMA"
+    },
+    "md7413": {
+        "filmaffinity": 360396,
+        "name": "Dom dobry",
+        "category": "CINEMA"
+    },
+    "ac836": {
+        "filmaffinity": 898988,
+        "category": "CINEMA"
+    },
+    "sb10612": {
+        "filmaffinity": 265317,
+        "category": "CINEMA"
+    },
+    "ms0929bdfa1649c910VgnVCM200000f921e388RCRD": {
+        "filmaffinity": 489364,
+        "name": "El hombre sin piernas (El castigo)",
+        "category": "CINEMA",
+        "img": "https://pics.filmaffinity.com/the_penalty-670620383-large.jpg"
+    },
+    "ms68e54dd7f1f9c910VgnVCM100000891ecb1aRCRD": {
+        "filmaffinity": 309973,
+        "category": "CINEMA"
+    },
+    "md7457": {
+        "filmaffinity": 571201,
+        "category": "CINEMA"
+    },
+    "mc56617-1774380600-1774380600@ateneodemadrid.com": {
+        "filmaffinity": 196369,
+        "category": "CINEMA"
+    },
+    "ms203d29344cf6c910VgnVCM200000f921e388RCRD": {
+        "category": "CINEMA"
+    },
+    "ms35fa28f354bdb910VgnVCM200000f921e388RCRD": {
+        "category": "DANCE"
+    },
+    "msdc5a411974a8c910VgnVCM100000891ecb1aRCRD": {
+        "category": "CONFERENCE"
+    },
+    "mscc1c4b66ab09c910VgnVCM200000f921e388RCRD": {
+        "category": "CHILDISH"
+    },
+    "msdd44a33ecde8c910VgnVCM100000891ecb1aRCRD": {
+        "category": "MUSIC"
+    },
+    "ms93c85c6796e0c910VgnVCM200000f921e388RCRD": {
+        "category": "WORKSHOP"
+    },
+    "mcmc26943": {
+        "category": "ACTIVISM"
+    },
+    "mcmc26929": {
+        "category": "EXPO"
+    },
+    "mcmc26942": { "category": "ACTIVISM" },
+    "mcmc26938": { "category": "ACTIVISM" },
+    "mcmc26936": { "category": "ACTIVISM" },
+    "mcmc26928": { "category": "CONFERENCE" },
+    "mc34539-1772967600-1772982000@madrid.cnt.es": { "category": "ACTIVISM" },
+    "mc34536-1772825400-1772830800@madrid.cnt.es": { "category": "ACTIVISM" },
+    "msdae689e52509c910VgnVCM200000f921e388RCRD": { "category": "NO_EVENT" },
+    "ms0437df0e08b7c910VgnVCM200000f921e388RCRD": { "category": "DANCE" },
+    "ms823dbdfa1649c910VgnVCM200000f921e388RCRD": {
+        "category": "CINEMA",
+        "filmaffinity": 608039,
+        "name": "La escopeta nacional",
+        "img": "https://pics.filmaffinity.com/la_escopeta_nacional-587555234-large.jpg"
+    },
+    "msbf32e7ce1450c910VgnVCM200000f921e388RCRD": {
+        "category": "CINEMA",
+        "filmaffinity": 795317
+    },
+    "ms826eeec4aba8c910VgnVCM200000f921e388RCRD": {
+        "category": "CINEMA",
+        "filmaffinity": 463106,
+        "img": "https://pics.filmaffinity.com/el_manzano_azul-255315383-large.jpg"
     }
 }

@@ -1300,6 +1300,8 @@ class Event:
             return "Las mujeres escritoras de…"
         if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
             return "Teatro en la Berlanga"
+        if self.category == Category.DANCE and self.place.name == "Sala Berlanga":
+            return "Bailar en la Berlanga"
         #if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", name):
         #    return "Teatro en la Berlanga"
         m = re.match(r"^(Interautor 20\d+)\b.*", name)

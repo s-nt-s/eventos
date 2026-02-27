@@ -189,7 +189,10 @@ class SalaBerlanga:
         elif re_or(cat, "M[uú]sica", flags=re.I):
             ev = ev.merge(category=Category.MUSIC)
         elif re_or(cat, "Artes? esc[eé]nicass?", flags=re.I):
-            ev = ev.merge(category=Category.THEATER)
+            if re_and(ev, "bailar", "berlanga", flags=re.I):
+                ev = ev.merge(category=Category.DANCE)
+            else:
+                ev = ev.merge(category=Category.THEATER)
         if ev.img is None:
             ev = ev.merge(img=get_attr(item.tag.select_one("img"), "src"))
         content = buildSoup(item.inf['link'], item.inf['content']['rendered'])

@@ -414,6 +414,7 @@ class MadridEs:
             r"Visita familiar",
             r"taller familiar",
             r"huerto familiar",
+            r"Taller infantil",
             r"Pedag[óo]gico Infantil",
             (r"dia", r"internacional", r"familias?"),
             (r"taller", r"pequeños"),
@@ -585,6 +586,7 @@ class MadridEs:
         if re_or(
             i.title,
             r"^teatros?$",
+            r"^Microteatros?",
             "Audio-?drama",
             flags=re.I
         ):
