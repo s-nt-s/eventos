@@ -116,8 +116,6 @@ class CineEntradas:
                 txt = get_text(w.soup.select_one(slc2))
                 if isinstance(txt, str):
                     js = json.loads(txt)
-                    from core.filemanager import FM
-                    FM.dump(f"/tmp/ce_{i}.json", js)
                     if isinstance(js, list):
                         for i in js:
                             if isinstance(i, str) and i.startswith('{"@context":'):
