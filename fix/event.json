@@ -726,7 +726,12 @@
     "ms935fe4cebd05c910VgnVCM200000f921e388RCRD": {"category": "READING_CLUB"},
     "msa68c7fed23939910VgnVCM200000f921e388RCRD": {"category": "MUSIC"},
     "ms2026e77de60ca910VgnVCM100000891ecb1aRCRD": {"category": "MUSIC"},
-    "sb10625": {"name": "Esad Ribic y Aneke"},
+    "sb10625": {
+        "name": "Esad Ribic y Aneke",
+        "category": "CONFERENCE"
+    },
+    "mse26b73ad26a8c910VgnVCM200000f921e388RCRD": {"category": "MUSIC" },
+    "ms095892e21b49c910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
     "ms0d54b187ab64c910VgnVCM200000f921e388RCRD": {"category": "DUPE"},
     "sb10631": {
         "more": "https://dolmeneditorial.com/tienda/paco-saez-diario-de-un-dibujante-cinematografico/",
@@ -829,5 +834,13 @@
         "filmaffinity": 463106,
         "img": "https://pics.filmaffinity.com/el_manzano_azul-255315383-large.jpg"
     },
-    "20260306153000Z-148783@eventos.urjc.es": {"category": "VISIT" }
+    "fmFC3BAB30-5408-54AA-9BE1-55B639C99603": {
+        "category": "CINEMA",
+        "filmaffinity": 496959
+    },
+    "20260306153000Z-148783@eventos.urjc.es": {"category": "VISIT" },
+    "fm94716632-AEA8-5FAC-9F74-FC5099635762": {
+        "category": "CINEMA",
+        "filmaffinity": 378140
+    }
 }
