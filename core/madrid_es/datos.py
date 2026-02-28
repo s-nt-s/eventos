@@ -384,7 +384,7 @@ class DatosMadridEs:
 
         data_label: dict[str, str] = Getter(
             onread=rq_to_label,
-            raise_for_status=False
+            raise_for_status=False,
         ).get(*url_label)
 
         evs: set[Item] = set()

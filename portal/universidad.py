@@ -354,6 +354,7 @@ class Universidad:
         if re_or(
             e.SUMMARY,
             "charla historiogr[aá]fica",
+            "conservatorio",
             flags=re.I
         ):
             return Category.CONFERENCE

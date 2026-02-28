@@ -148,8 +148,11 @@ class AsyncFetcher(Generic[ProcessedResponse]):
                     session,
                     rqs,
                 )
-            except Exception:
+            except Exception as e:
                 if attempt >= self.__retries:
+                    if not self.__raise_for_status:
+                        logger.error(f"Failed to fetch {rqs.url} {e}")
+                        return None
                     raise
                 await sleep(self.__retry_delay)
 
