@@ -1327,7 +1327,11 @@ class Event:
                 return "Cortometrajes"
         if re.search(r"cat[áa]logo.*Madrid entre libros", self.name, flags=re.I):
             return "Madrid entre libros"
-        if self.category == Category.CONFERENCE and self.img in ("https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Arganzuela/Eventos/ficheros/Roma.png", ):
+        if self.category == Category.CONFERENCE and (
+            self.img in ("https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Arganzuela/Eventos/ficheros/Roma.png", )
+            or
+            re_or(self.name, "Tardes romanas", flags=re.I)
+        ):
             return "Tardes romanas"
         if self.category == Category.CONFERENCE and self.more in (
             'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Memento-mori-Mujer-y-muerte-en-el-mundo-antiguo-Ciclo-de-conferencias/?vgnextfmt=default&vgnextoid=1d096787031bb910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
