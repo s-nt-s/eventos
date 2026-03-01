@@ -93,6 +93,8 @@ def clean_place_name(name: str) -> str:
         return None
     if re_and(name, ("URJC", "Juan Carlos"), "Quintana", flags=re.I):
         return "URJC Quintana"
+    if re_and(name, "Quintana,? 21", flags=re.I):
+        return "URJC Quintana"
     if re_and(name, "Carlos III", "Puerta (de )?Toledo", flags=re.I):
         return "UC3 Puerta Toledo"
     if re_and(name, "ateneo (de )?Madrid", flags=re.I):
