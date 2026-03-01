@@ -173,9 +173,9 @@ class MadridDestino:
 
         for e in state['events']:
             e_id = e.get('id')
-            if e_id is not None:
-                info_url[f"https://api-tienda.madrid-destino.com/public_api/events/{e_id}/info"] = e_id
-
+            if e_id is None:
+                continue
+            info_url[f"https://api-tienda.madrid-destino.com/public_api/events/{e_id}/info"] = e_id
             org = orgs.get(e['organization_id'])
             if org:
                 soup_url[MadridDestino.URL+'/'+org['slug']+'/'+e['slug']] = e_id
@@ -183,10 +183,14 @@ class MadridDestino:
         info: dict[int, dict] = {}
         for k, v in self.__info_getter.get(*info_url.keys()).items():
             info[info_url[k]] = v
+        if info_url and len(info) == 0:
+            logger.warning("No se ha recuperado ninguna Info")
 
         soup: dict[int, dict] = {}
         for k, v in self.__soup_getter.get(*soup_url.keys()).items():
             soup[soup_url[k]] = v
+        if soup_url and len(soup) == 0:
+            logger.warning("No se ha recuperado ninguna SoupInfo")
 
         return Data(
             state=state,
