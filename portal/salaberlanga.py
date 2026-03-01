@@ -164,6 +164,8 @@ class SalaBerlanga:
             )
         if isGratis:
             ev = ev.merge(price=0)
+        if ev.img is None:
+            ev = ev.merge(img=get_attr(item.tag.select_one("img"), "src"))
         cat = get_text(item.tag.select_one("div.categoria-sala-berlanga")) or ''
         m = re.match(r"^(Charla|Podcast): (.+)$", ev.name or '', flags=re.I)
         if m:
@@ -193,8 +195,6 @@ class SalaBerlanga:
                 ev = ev.merge(category=Category.DANCE)
             else:
                 ev = ev.merge(category=Category.THEATER)
-        if ev.img is None:
-            ev = ev.merge(img=get_attr(item.tag.select_one("img"), "src"))
         content = buildSoup(item.inf['link'], item.inf['content']['rendered'])
         #txt_content = (ev.name+' '+(get_text(content) or '')).strip()
         #if re_or(txt_content, r"\bInterautor Teatro\b") or re_or(ev.name, r"\s*\-\s*Teatro en la [Bb]erlanga$"):
