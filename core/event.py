@@ -463,6 +463,8 @@ class Place:
             return Places.CSO_LA_ENREDADERA.value
         if re_or(name, "AVA", ("[aA]socaci[oó]n", "[vV]ecinal", "[aA]luche")) and re_and(address, "quero", flags=re.I):
             return Places.AVA.value
+        if re_or(name, "Serrer[ií]a Belga", flags=re.I) and re_and(address, "alameda", flags=re.I):
+            return Places.SERRERIA_BELGA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -716,6 +718,12 @@ class Places(Enum):
         address="C. de Quero, 69, Latina, 28024 Madrid",
         latlon="40.39019457364059,-3.7608253422986184",
         zone="Aluche"
+    )
+    SERRERIA_BELGA = Place(
+        name="Serraría belga",
+        address="C. de la Alameda, 15, Centro, 28014 Madrid",
+        latlon="40.4106964292281,-3.6936188373826417",
+        zone='Paseo del Pardo'
     )
 
 
