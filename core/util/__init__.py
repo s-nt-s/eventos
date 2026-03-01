@@ -13,6 +13,8 @@ from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse, ParseResult
 from functools import cache
 import requests
 from datetime import date
+import holidays
+
 
 import uuid
 
@@ -336,6 +338,12 @@ def find_euros(*prices: str | None) -> None | float | int:
 
 @cache
 def get_festivos(year: int):
+    hol = holidays.country_holidays(
+        country="ES",
+        subdiv="MD",
+        years=year
+    )
+    return tuple(sorted(hol.keys()))
     dates: set[date] = set()
     r = requests.get(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
     r.raise_for_status()
