@@ -189,7 +189,7 @@ class SalaBerlanga:
         elif re_or(cat, "M[uú]sica", flags=re.I):
             ev = ev.merge(category=Category.MUSIC)
         elif re_or(cat, "Artes? esc[eé]nicass?", flags=re.I):
-            if re.search(r"[\-_]bailar[\-_]", ev.img or '', flags=re.I):
+            if re.search(r"[\-_]Bailar[\-_]", ev.img or '', flags=re.I):
                 ev = ev.merge(category=Category.DANCE)
             else:
                 ev = ev.merge(category=Category.THEATER)

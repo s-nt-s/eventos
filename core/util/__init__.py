@@ -338,21 +338,45 @@ def find_euros(*prices: str | None) -> None | float | int:
 
 @cache
 def get_festivos(year: int):
+    dates = _get_festivos_from_calendarioslaborales(year)
+    if len(dates) > 0:
+        return tuple(sorted(dates))
     hol = holidays.country_holidays(
         country="ES",
         subdiv="MD",
         years=year
     )
     return tuple(sorted(hol.keys()))
+
+
+def _safe_soup(url: str):
+    try:
+        r = requests.get(url)
+        r.raise_for_status()
+        return BeautifulSoup(r.content, 'html.parser')
+    except Exception as e:
+        logger.critical(f"{url} {e}")
+
+
+def _get_festivos_from_calendarioslaborales(year: int):
     dates: set[date] = set()
-    r = requests.get(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
-    r.raise_for_status()
-    soup = BeautifulSoup(r.content, 'html.parser')
-    for month, div in enumerate(soup.select("#wrapIntoMeses div.mes")):
-        for day in map(get_text, div.select("td[class^='cajaFestivo']")):
-            dt = date(year, month+1, int(day))
-            dates.add(dt)
-    return tuple(sorted(dates))
+    soup = _safe_soup(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
+    if soup is None:
+        return dates
+    for month, div in enumerate(soup.select("div.calendar-row div.month")):
+        for td in div.select("td"):
+            cls = td.attrs.get('class')
+            if isinstance(cls, str):
+                cls = cls.strip().split()
+            if cls is None or len(cls) == 0:
+                continue
+            if not isinstance(cls, list):
+                raise ValueError(f"class={cls} in {td}")
+            for i in cls:
+                if re.search(r"holiday", i, flags=re.I):
+                    dt = date(year, month+1, int(get_text(td)))
+                    dates.add(dt)
+    return dates
 
 
 def isWorkingHours(dt: datetime, min_hour=16):

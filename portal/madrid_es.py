@@ -782,6 +782,7 @@ class MadridEs:
             r"^conferencias?$",
             r"^pregon$",
             r'[Mm]ocrofestival, tableros y pantallas',
+            r"^Tardes romanas",
         ):
             return Category.CONFERENCE
         if re_or(
