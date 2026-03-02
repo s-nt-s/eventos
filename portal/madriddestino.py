@@ -154,7 +154,9 @@ class MadridDestino:
             onread=rq_to_mapa,
             headers=HEADERS,
             raise_for_status=False,
-            skip=({}, None, tuple(), [])
+            skip=({}, None, tuple(), []),
+            max_concurrency=10,
+            timeout=60,
         )
 
     @property
