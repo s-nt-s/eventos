@@ -720,7 +720,7 @@ class Places(Enum):
         zone="Aluche"
     )
     SERRERIA_BELGA = Place(
-        name="Serraría belga",
+        name="Serrería belga",
         address="C. de la Alameda, 15, Centro, 28014 Madrid",
         latlon="40.4106964292281,-3.6936188373826417",
         zone='Paseo del Pardo'
@@ -747,6 +747,10 @@ def unquote(s: str):
 def _clean_name(name: str, place: str):
     if name is None:
         return None
+    if not isinstance(name, str):
+        raise ValueError(f"name must be a str, but is a {type(name)}: {name}")
+    if place is not None and not isinstance(place, str):
+        raise ValueError(f"place must be a str, but is a {type(place)}: {place}")
     if re.search(r"Visitas? dialogadas? Matadero", name):
         return "Visita dialogada Matadero"
     place = plain_text((place or "").lower())
