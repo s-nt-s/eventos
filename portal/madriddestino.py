@@ -180,17 +180,15 @@ class MadridDestino:
             if org:
                 soup_url[MadridDestino.URL+'/'+org['slug']+'/'+e['slug']] = e_id
 
-        info: dict[int, dict] = {}
-        for k, v in self.__info_getter.get(*info_url.keys()).items():
-            info[info_url[k]] = v
-        if info_url and len(info) == 0:
-            logger.warning("No se ha recuperado ninguna Info")
+        info: dict[int, dict] = self.__info_getter.get_from_url_id(
+            info_url,
+            skip=({}, None)
+        )
 
-        soup: dict[int, dict] = {}
-        for k, v in self.__soup_getter.get(*soup_url.keys()).items():
-            soup[soup_url[k]] = v
-        if soup_url and len(soup) == 0:
-            logger.warning("No se ha recuperado ninguna SoupInfo")
+        soup: dict[int, dict] = self.__soup_getter.get_from_url_id(
+            soup_url,
+            skip=(tuple(), None)
+        )
 
         return Data(
             state=state,

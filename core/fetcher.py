@@ -229,6 +229,20 @@ class Getter(Generic[ProcessedResponse]):
         bodies = self.__fetcher.run(*urls)
         return dict(zip(urls, bodies))
 
+    def get_from_url_id(
+        self,
+        url_id: dict,
+        skip=tuple()
+    ):
+        data = {}
+        for k, v in self.get(*url_id.keys()).items():
+            if v in skip:
+                continue
+            data[url_id[k]] = v
+        l_data, l_url = map(len, (data, url_id))
+        if l_data < l_url:
+            logger.warning(f"Se pidió {l_url} urls y se obtuvo {l_data} objetos")
+        return data
 
 if __name__ == "__main__":
     GT = Getter(
