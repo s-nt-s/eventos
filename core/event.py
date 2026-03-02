@@ -1301,7 +1301,7 @@ class Event:
         urls = set(self.iter_urls())
         name = self.name or ''
         if re.search(r"Festival Centro al comp[áa]s", name, flags=re.I):
-            return "Festival Centro al compás",
+            return "Festival Centro al compás"
         if re.search(r"Charlas de astronomía para profanos", name):
             return "Charlas de astronomía para profanos"
         if re.search(r"^Derechos [dD]igitales: ", name):

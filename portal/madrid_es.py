@@ -428,9 +428,9 @@ class MadridEs:
             r"teatro infantil",
             r"relatos en familia",
             r"concierto familiar",
-            r"bienestar de niños y niñas",
+            r"bienestar de niñ[ao]s y niñ[oa]s",
             (r"cuentacuentos", r"en familia"),
-            r"donde los niños y niñas pueden",
+            r"donde los niñ[ao]s y niñ[oa]s pueden",
             flags=re.I
         ):
             return Category.CHILDISH
@@ -450,7 +450,7 @@ class MadridEs:
         if re_or(
             i.title,
             r"Grupo de crianza",
-            "La Liga de la Leche",
+            r"La Liga de la Leche",
             flags=re.I
         ):
             return Category.MATERNITY
@@ -484,6 +484,7 @@ class MadridEs:
             'online',
         ):
             return Category.ONLINE
+
         if re_or(
             i.title,
             "Voluntarios? por Madrid",
@@ -610,6 +611,14 @@ class MadridEs:
             flags=re.I
         ):
             return Category.VISIT
+
+        if re_or(
+            i.description,
+            r"En estos versos el autor",
+            flags=re.I
+        ):
+            return Category.POETRY
+
         if re_or(
             i.title,
             r"Presentaci[óo]n del? libro",
