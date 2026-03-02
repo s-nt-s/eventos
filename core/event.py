@@ -118,6 +118,8 @@ class Category(IntEnum):
     MATERNITY = 41
     INSTITUTIONAL_POLICY = 42
     DUPE = 43
+    NARRATIVE = 44
+    ENTERPRISE = 45
 
     def __str__(self):
         #if self == Category.OTHERS:

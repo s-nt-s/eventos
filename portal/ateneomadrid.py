@@ -115,13 +115,34 @@ class AteneoMadrid:
 
     def __find_category(self, e: IcsEventWrapper):
         cat = self.__find_category_basic(e)
+        if cat == Category.LITERATURE:
+            if re_or(
+                e.DESCRIPTION,
+                r"Intervienen los poetas",
+                flags=re.I
+            ):
+                return Category.POETRY
+            if re_or(
+                e.DESCRIPTION,
+                "Secci[oó]n de Literatura",
+                flags=re.I
+            ):
+                return Category.NARRATIVE
+            if re_or(
+                e.DESCRIPTION,
+                "Secci[oó]n de Fotograf[ií]a",
+                flags=re.I
+            ):
+                return Category.EXPO
         if cat in (Category.CONFERENCE, Category.LITERATURE):
             if re_or(
                 e.DESCRIPTION,
-
-                flags=re.I
+                "Andrés Trapiello",
+                "Pablo Díaz Espí",
+                "Agrupación Sabatini",
+                "de opinión de El Mundo",
             ):
-                pass
+                Category.INSTITUTIONAL_POLICY
         if cat is not None:
             return cat
         if e.CATEGORIES:
@@ -144,6 +165,20 @@ class AteneoMadrid:
             to_log=e.UID
         ):
             return Category.NO_EVENT
+        if re_or(
+            e.SUMMARY,
+            "comunicaci[óo]n corporativa",
+            flags=re.I
+        ):
+            return Category.ENTERPRISE
+        if re_or(
+            e.SUMMARY,
+            r"Los poetas leen a",
+            r"poetas leen su",
+            r"Voces que habitan el verso",
+            flags=re.I
+        ):
+            return Category.POETRY
 
         if re_and(
             e.SUMMARY,
@@ -162,7 +197,7 @@ class AteneoMadrid:
             return Category.THEATER
         if _has_cat(r"Presentación del libro", 'Libros'):
             return Category.LITERATURE
-        if _has_cat(r"Mesa redonda", "Conferencias", "Charlas?", 'Homenaje'):
+        if _has_cat(r"Mesa redonda", "Conferencias", "Charlas?", 'Homenaje', 'Congreso'):
             return Category.CONFERENCE
 
         if re_and(
