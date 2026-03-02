@@ -151,6 +151,8 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
             ('Centro', 'Fernando Lázaro Carreter'),
             # Getafe
             ('Edificio Concepción Arenal', 'Getafe'),
+            # El pozo
+            ("palomeras bajas", "felipe( de)? diego"),
             flags=re.I
         ):
             logger.debug(f"Lugar descartado por name={name}")

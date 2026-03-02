@@ -484,9 +484,7 @@
         "more": "https://21distritos.es/evento/fernanda-cabral/"
     },
     "ms9fa5817478bba910VgnVCM100000891ecb1aRCRD": {
-        "name": "Dauna: Lo que lleva el río",
-        "filmaffinity": 813212,
-        "img": "https://pics.filmaffinity.com/dauna_lo_que_lleva_el_rio-745221561-large.jpg"
+        "category": "NON_GENERAL_PUBLIC"
     },
     "mc26583": {
         "category": "CINEMA",
@@ -890,5 +888,9 @@
     "msf9f46b27fdf9c910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
     "mseea54bb32ba9c910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
     "ms5d58e141866bb910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
-    "ms89bcb02cc717c910VgnVCM200000f921e388RCRD": {"category": "MUSIC"}
+    "ms89bcb02cc717c910VgnVCM200000f921e388RCRD": {"category": "MUSIC"},
+    "ms3f27be4733eac910VgnVCM200000f921e388RCRD": {"category": "DANCE"},
+    "msfee40edcccdac910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
+    "mcmc26947": {"category": "CONFERENCE"},
+    "ms2521969f1bdac910VgnVCM100000891ecb1aRCRD": {"category": "THEATER"}
 }

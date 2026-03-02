@@ -580,6 +580,8 @@ class MadridEs:
             i.title,
             r"^conciertos?$",
             r"Composici[oó]n musical para",
+            r"Festival Centro al comp[áa]s",
+            r"Cuarteto de Cuerda",
             flags=re.I
         ):
             return Category.MUSIC
