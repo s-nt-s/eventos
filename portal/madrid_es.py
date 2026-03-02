@@ -478,6 +478,13 @@ class MadridEs:
             'animales',
         ):
             return Category.NON_GENERAL_PUBLIC
+        if re_or(
+            i.title,
+            "Jornada de intercambio de semillas",
+            "^Reparto de [aá]rboles",
+            flags=re.I
+        ):
+            return Category.NON_GENERAL_PUBLIC
 
         if i.has_category(
             'en linea',
@@ -558,10 +565,11 @@ class MadridEs:
 
         if re_or(
             i.title,
-            "Mejora tu ingl[eé]s con charlas",
-            "Reconocimiento de [aá]rboles",
+            r"Mejora tu ingl[eé]s con charlas",
+            r"Reconocimiento de [aá]rboles",
             "taller de escritura",
             "Aprende Chotis",
+            r"Iniciaci[oó]n al cultivo",
             flags=re.I
         ):
             return Category.WORKSHOP

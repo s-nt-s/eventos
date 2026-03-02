@@ -12,6 +12,7 @@ from portal.telefonica import Telefonica
 from portal.teatromonumental import TeatroMonumental
 from portal.mad_convoca import MadConvoca
 from portal.universidad import Universidad
+from portal.ateneomadrid import AteneoMadrid
 from portal.alcala import Alcala
 from datetime import datetime, date
 from core.util import get_domain, to_uuid, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
@@ -140,6 +141,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
             'Centro cultural Las Californias',
             'Centro cultural Alberto Sánchez',
             'Biblioteca Miguel Delibes',
+            'Biblioteca Pública Miguel Hernández',
             # Villaverde
             'Espacio de igualdad Clara Campoamor',
             # Usera
@@ -182,6 +184,32 @@ def isKoEvent(e: Event):
     if re_or(e.place.zone, "alcal[aá]( de)? henares", flags=re.I):
         if re_and(e.name, r"cu[ée]ntame", r"experiencia", flags=re.I):
             return True
+    if re_or(
+        e.place.name,
+        "Centro cultural Oporto",
+        "Centro cultural Galileo",
+        "Centro cultural Clara del Rey",
+        "Centro cultural Casa de Vacas",
+        "Biblioteca Mario Vargas Llosa",
+        "Biblioteca La Chata",
+        'Biblioteca Francisco Umbral',
+        'Biblioteca Eugenio Trías',
+        'Biblioteca Benito Pérez Galdós',
+        'Biblioteca Ana María Matute',
+        flags=re.I
+    ):
+        if e.price == 0 and e.category in (
+            Category.THEATER,
+            Category.VISIT,
+            Category.LITERATURE
+        ):
+            return True
+    if e.price == 0 and e.category == Category.MUSIC and re_or(
+        e.title,
+        "Roc[ií]o D[uú]rcal",
+        flags=re.I
+    ):
+        return True
     return False
 
 
@@ -274,6 +302,9 @@ class EventCollector:
                 isOkDate=isOkDate,
             ) + \
             MadConvoca(
+                isOkDate=isOkDate,
+            ).events + \
+            AteneoMadrid(
                 isOkDate=isOkDate,
             ).events + \
             MadridEs(

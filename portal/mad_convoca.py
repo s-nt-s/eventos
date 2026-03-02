@@ -49,10 +49,6 @@ class MadConvoca:
             "https://fal.cnt.es/events/lista/?ical=1",
             "https://lahorizontal.net/events/lista/?ical=1",
             "https://madrid.cnt.es/agenda/lista/?ical=1",
-            "https://ateneodemadrid.com/eventos/lista/?ical=1",
-            "https://ateneodemadrid.com/eventos/lista/p%C3%A1gina/2/?ical=1",
-            "https://ateneodemadrid.com/eventos/lista/p%C3%A1gina/3/?ical=1",
-            "https://ateneodemadrid.com/eventos/lista/p%C3%A1gina/4/?ical=1",
             isOkDate=isOkDate
         )
 
