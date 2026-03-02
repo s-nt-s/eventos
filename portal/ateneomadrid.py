@@ -125,6 +125,7 @@ class AteneoMadrid:
             if re_or(
                 e.DESCRIPTION,
                 "Secci[oó]n de Literatura",
+                "Lectura de fragmentos de la obra por",
                 flags=re.I
             ):
                 return Category.NARRATIVE
@@ -143,7 +144,7 @@ class AteneoMadrid:
                 "de opinión de El Mundo",
                 "María Zaplana Barceló",
             ):
-                Category.INSTITUTIONAL_POLICY
+                return Category.INSTITUTIONAL_POLICY
         if cat is not None:
             return cat
         if e.CATEGORIES:
