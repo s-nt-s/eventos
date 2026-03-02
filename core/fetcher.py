@@ -208,6 +208,7 @@ class Getter(Generic[ProcessedResponse]):
         verify: bool = True,
         max_concurrency: int = 40,
         timeout: float = 30.0,
+        skip: tuple = None
     ):
         self.__fetcher = AsyncFetcher(
             onread=onread,
@@ -218,6 +219,7 @@ class Getter(Generic[ProcessedResponse]):
             max_concurrency=max_concurrency,
             timeout=timeout
         )
+        self.__skip = skip or tuple()
 
     def get(self, *urls: str) -> dict[str, ProcessedResponse]:
         all_urls = set(urls)
@@ -227,22 +229,27 @@ class Getter(Generic[ProcessedResponse]):
         urls = sorted(all_urls)
         logger.debug(f"Fetching {len(urls)} URLs")
         bodies = self.__fetcher.run(*urls)
-        return dict(zip(urls, bodies))
+        data = dict(zip(urls, bodies))
+        ko: set[str] = set()
+        if self.__skip:
+            for k, v in list(data.items()):
+                if v in self.__skip:
+                    ko.add(k)
+                    del data[k]
+        if ko:
+            l_data, l_url = map(len, (data, all_urls))
+            logger.warning(f"Se pidió {l_url} urls y se obtuvo {l_data} objetos, ej: {sorted(ko)[0]}")
+        return data
 
     def get_from_url_id(
         self,
-        url_id: dict,
-        skip=tuple()
+        url_id: dict
     ):
         data = {}
         for k, v in self.get(*url_id.keys()).items():
-            if v in skip:
-                continue
             data[url_id[k]] = v
-        l_data, l_url = map(len, (data, url_id))
-        if l_data < l_url:
-            logger.warning(f"Se pidió {l_url} urls y se obtuvo {l_data} objetos")
         return data
+
 
 if __name__ == "__main__":
     GT = Getter(

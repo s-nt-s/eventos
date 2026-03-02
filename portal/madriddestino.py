@@ -110,7 +110,7 @@ class Data(NamedTuple):
         obj['info'] = info
         soup = {}
         for k, v in obj.get('soup', {}).items():
-            soup[int(k)] = tuple(map(lambda x: SoupInfo(*x), v))
+            soup[int(k)] = tuple(map(lambda x: SoupInfo(**x), v))
         obj['soup'] = soup
         return Data(**obj)
 
@@ -147,11 +147,14 @@ class MadridDestino:
         )
         self.__soup_getter = Getter(
             onread=rq_to_info_soup,
-            headers=HEADERS
+            headers=HEADERS,
+            skip=({}, None, tuple(), [])
         )
         self.__map_getter = Getter(
             onread=rq_to_mapa,
-            headers=HEADERS
+            headers=HEADERS,
+            raise_for_status=False,
+            skip=({}, None, tuple(), [])
         )
 
     @property
@@ -181,13 +184,11 @@ class MadridDestino:
                 soup_url[MadridDestino.URL+'/'+org['slug']+'/'+e['slug']] = e_id
 
         info: dict[int, dict] = self.__info_getter.get_from_url_id(
-            info_url,
-            skip=({}, None)
+            info_url
         )
 
         soup: dict[int, dict] = self.__soup_getter.get_from_url_id(
-            soup_url,
-            skip=(tuple(), None)
+            soup_url
         )
 
         return Data(
