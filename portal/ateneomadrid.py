@@ -141,6 +141,7 @@ class AteneoMadrid:
                 "Pablo Díaz Espí",
                 "Agrupación Sabatini",
                 "de opinión de El Mundo",
+                "María Zaplana Barceló",
             ):
                 Category.INSTITUTIONAL_POLICY
         if cat is not None:
@@ -228,6 +229,12 @@ class AteneoMadrid:
             flags=re.I
         ):
             return Category.MUSIC
+        if re_or(
+            e.DESCRIPTION,
+            "Secci[oó]n de Yoga",
+            flags=re.I
+        ):
+            return Category.SPORT
         if get_domain(e.URL) == "ateneodemadrid.com":
             return Category.CONFERENCE
 
