@@ -342,14 +342,18 @@ class DatosMadridEs:
                 org_data[o['@id']] = o
                 aux = {
                     'https://datos.madrid.es/egob/catalogo/tipo/entidadesyorganismos/1916-centro-cultura-contemporanea-condeduque.json': 'https://datos.madrid.es/egob/catalogo/tipo/entidadesyorganismos/1916-centro-cultura-contemporanea-conde-duque.json',
-                    'https://datos.madrid.es/egob/catalogo/tipo/entidadesyorganismos/5463464-centro-educacion-ambiental-retiro.json':'https://datos.madrid.es/egob/catalogo/tipo/entidadesyorganismos/5463464-centro-informacion-educacion-ambiental-huerto-retiro.json',
+                    'https://datos.madrid.es/egob/catalogo/tipo/entidadesyorganismos/5463464-centro-educacion-ambiental-retiro.json': 'https://datos.madrid.es/egob/catalogo/tipo/entidadesyorganismos/5463464-centro-informacion-educacion-ambiental-huerto-retiro.json',
                 }.get(o['@id'])
                 if aux is not None and aux not in org_data:
                     org_data[aux] = o
 
         for k, v in Getter(
-            onread=rq_to_graph_list_len_1
+            onread=rq_to_graph_list_len_1,
+            raise_for_status=False
         ).get(*orgs.difference(org_data.keys())).items():
+            if v is None:
+                logger.warning(f"NOT FOUND {k}")
+                continue
             org_data[k] = v
 
         dts = Dataset(
