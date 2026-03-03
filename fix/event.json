@@ -148,7 +148,6 @@
     "md6617": { "category": "CONFERENCE" },
     "msfe57b4d724339910VgnVCM200000f921e388RCRD": { "category": "CONFERENCE" },
     "ms8f4e60b36cc49910VgnVCM200000f921e388RCRD": { "category": "CONFERENCE" },
-    "ms53a5a9ca4ddea910VgnVCM200000f921e388RCRD": { "category": "LITERATURE" },
     "msf2752892905fa810VgnVCM1000001d4a900aRCRD": { "category": "CHILDISH" },
     "msb52a5a847243a910VgnVCM200000f921e388RCRD": { "category": "CHILDISH" },
     "ms9cd835db9ae6b910VgnVCM100000891ecb1aRCRD": { "category": "MUSIC" },
@@ -175,7 +174,6 @@
     "mc26693": { "category": "ACTIVISM" },
     "am55239-1769538600-1769538600@ateneodemadrid.com": { "category": "CONFERENCE" },
     "am55143-1769544000-1769544000@ateneodemadrid.com": { "category": "MUSIC" },
-    "am55001-1769626800-1769626800@ateneodemadrid.com": { "category": "LITERATURE" },
     "mc26685": { "category": "ACTIVISM" },
     "mc26684": { "category": "PARTY" },
     "mc26695": { "category": "CONFERENCE" },
@@ -469,10 +467,6 @@
         "category": "CINEMA",
         "filmaffinity": 317618
     },
-    "ms3fef9bad2fb4b910VgnVCM200000f921e388RCRD": {
-        "category": "LITERATURE",
-        "more": "https://www.goodreads.com/book/show/243762573"
-    },
     "ms9e067b5e09e6b910VgnVCM100000891ecb1aRCRD": {
         "category": "MUSIC",
         "more": "https://21distritos.es/evento/fernanda-cabral/"
@@ -523,16 +517,6 @@
         "img": "https://21distritos.es/wp-content/uploads/2026/01/web-foto-7.jpg",
         "duration": 70
     },
-    "mc26651": {
-        "category": "LITERATURE",
-        "name": "IA: Jugar o romper la baraja",
-        "more": "https://www.goodreads.com/book/show/243332431"
-    },
-    "mc26663": {
-        "category": "LITERATURE",
-        "name": "IA: Jugar o romper la baraja",
-        "more": "https://www.goodreads.com/book/show/243332431"
-    },
     "ce15516": {
         "category": "CINEMA",
         "name": "Knit's Island",
@@ -544,14 +528,6 @@
         "name": "Incels, criptomonedas y vendehúmos",
         "filmaffinity": 689748,
         "cycle": "Piezas sobre Tecnocapitalismo"
-    },
-    "tl8887D819-B844-5C03-BAA0-580751F48B08": {
-        "category": "LITERATURE",
-        "more": "https://www.goodreads.com/book/show/242254766"
-    },
-    "20260212180000Z-146723@eventos.uc3m.es": {
-        "category": "LITERATURE",
-        "more": "https://www.goodreads.com/book/show/123411167"
     },
     "20260126173000Z-146195@eventos.ucm.es": {
         "category": "CONFERENCE",
@@ -586,10 +562,6 @@
     "20260228080000Z-147358@eventos.uc3m.es": {
         "img": "https://eventos.uc3m.es/_files/_event/_147358/_header_img/_219734.jpe",
         "more": "https://docs.google.com/forms/d/e/1FAIpQLSef9RbTaPU-0WO1C5TAC3CPffmDoGLZdo9lDjtK9EI_nKRHSA/viewform"
-    },
-    "mc26722": {
-        "category": "LITERATURE",
-        "more": "https://www.goodreads.com/book/show/239030921"
     },
     "ms68216a6923ffb910VgnVCM100000891ecb1aRCRD": {
         "category": "CINEMA",
@@ -650,10 +622,6 @@
     "ms942cea2fb3e1c910VgnVCM200000f921e388RCRD": {
         "category": "SPAM"
     },
-    "mc26784": {
-        "category": "LITERATURE",
-        "more": "https://www.goodreads.com/book/show/135020551"
-    },
     "msfc6f29318640c910VgnVCM200000f921e388RCRD": {
         "more": "https://21distritos.es/evento/ay-amor-ay-ausencia-2/"
     },
@@ -699,7 +667,6 @@
     "mc26824": {"category": "ACTIVISM"},
     "20260213161500Z-142102@eventos.urjc.es": {"category": "VISIT"},
     "tl512FB24C-F5E2-50AC-8022-11F5DCE0F9B5": {"category": "SPAM"},
-    "tlD8EE97A0-CCA9-567E-95C7-20A0C3120BC4": {"category": "LITERATURE", "more": "https://www.goodreads.com/book/show/246440434"},
     "ms372811eac624c910VgnVCM200000f921e388RCRD": {"category": "CINEMA", "filmaffinity": 378659},
     "msde2611eac624c910VgnVCM200000f921e388RCRD": {"category": "CINEMA", "filmaffinity": 600146},
     "mse2d25ad68724c910VgnVCM200000f921e388RCRD": {"category": "CINEMA", "filmaffinity": 370698},
@@ -842,7 +809,8 @@
     "20260306170000Z-149124@eventos.uc3m.es": {
         "category": "LITERATURE",
         "more": "https://www.goodreads.com/book/show/242017278",
-        "img": "https://eventos.uc3m.es/_files/_event/_149124/_header_img/_223150.png"
+        "img": "https://eventos.uc3m.es/_files/_event/_149124/_header_img/_223150.png",
+        "name": "Sara Torres presenta: El pensamiento erótico"
     },
     "ms7ea04d8ce4a8c910VgnVCM200000f921e388RCRD": {"category": "DANCE"},
     "ms86994dd7f1f9c910VgnVCM100000891ecb1aRCRD": {"category": "THEATER"},
