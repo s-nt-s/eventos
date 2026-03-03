@@ -201,7 +201,7 @@ class SalaBerlanga:
                     category=Category.THEATER,
                     cycle="Teatro en la Berlanga",
                 )
-        elif re.search(r"[\-_]nuevos[\-_]territorios[\-_]", ev.img or '', flags=re.I):
+        if ev.cycle is None and re.search(r"[\-_]nuevos[\-_]territorios[\-_]", ev.img or '', flags=re.I):
             ev = ev.merge(
                 cycle="Nuevos territorios",
             )

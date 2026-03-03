@@ -456,6 +456,7 @@ class MadridEs:
             "presenta su primera novela",
             "Presentaci[oó]n de la novela editada",
             r"El retrato de Dorian Gray",
+            ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
             flags=re.I
         ):
             return Category.NARRATIVE
@@ -694,6 +695,7 @@ class MadridEs:
             i.description,
             r"Ciclo de conferencias",
             r"En esta charla vamos",
+            r"^Conferencia del?",
             flags=re.I
         ):
             return Category.CONFERENCE

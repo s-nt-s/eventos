@@ -211,7 +211,8 @@ def set_icons(html: str, **kwargs):
             "mataderomadrid": "https://www.mataderomadrid.org/themes/custom/new_matadero/favicon.ico",
             "centrocentro": "https://www.centrocentro.org/sites/default/files/favicon_1.ico",
             "casalector.fundaciongsr": "https://casalector.fundaciongsr.org/wp-content/uploads/2017/09/apple-touch-icon-72x72.png",
-            "teatrocircoprice": "https://www.teatrocircoprice.es/themes/custom/circoprice_theme/favicon.ico"
+            "teatrocircoprice": "https://www.teatrocircoprice.es/themes/custom/circoprice_theme/favicon.ico",
+            "teatromonumental": "https://www.teatromonumental.es/wp-content/uploads/fbrfg/favicon.svg",
         }.get(dom)
         if ico is None:
             continue

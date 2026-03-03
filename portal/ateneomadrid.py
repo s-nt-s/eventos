@@ -135,12 +135,6 @@ class AteneoMadrid:
                 flags=re.I
             ):
                 return Category.PHOTO
-            if re_or(
-                e.DESCRIPTION,
-                "Secci[óo]n de Mitos, Religiones y Humanidades",
-                flags=re.I
-            ):
-                return Category.RELIGION
 
         if cat in (Category.CONFERENCE, Category.LITERATURE):
             if re_or(
@@ -153,6 +147,18 @@ class AteneoMadrid:
                 "92 Liberales",
             ):
                 return Category.INSTITUTIONAL_POLICY
+            if re_or(
+                e.DESCRIPTION,
+                "Secci[óo]n de Mitos, Religiones y Humanidades",
+                flags=re.I
+            ):
+                return Category.RELIGION
+            if re_or(
+                e.DESCRIPTION,
+                "Agrupaci[óo]n Estudios pict[oó]ricos y sociales Francisco de Goya",
+                flags=re.I
+            ):
+                return Category.PICTURE
         if cat is not None:
             return cat
         if e.CATEGORIES:
@@ -167,6 +173,12 @@ class AteneoMadrid:
                 if re_or(c, *args, flags=re.I):
                     return True
             return False
+
+        if re_or(
+            'Cine y medicina',
+            flags=re.I
+        ):
+            return Category.CINEMA
 
         if re_or(
             e.SUMMARY,
@@ -268,4 +280,4 @@ if __name__ == "__main__":
     from core.log import config_log
     config_log("log/ateneomadrid.log", log_level=logging.INFO)
     m = AteneoMadrid()
-    e = m.events
+    evs = m.events

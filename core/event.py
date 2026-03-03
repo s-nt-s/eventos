@@ -122,6 +122,7 @@ class Category(IntEnum):
     ENTERPRISE = 45
     RELIGION = 46
     PHOTO = 47
+    PICTURE = 48
 
     def __str__(self):
         #if self == Category.OTHERS:
