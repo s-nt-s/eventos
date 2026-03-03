@@ -377,21 +377,31 @@ class MadridEs:
         if len(sessions) == 0:
             logger.debug(f"Descartado por len(sessions)==0 {i.event.url}")
             return None
+        category = self.__find_category(i)
         e = Event(
             id=MadridEs.get_id(i.event.url),
             url=i.event.url,
             name=i.event.title,
             price=i.event.price,
-            category=self.__find_category(i),
+            category=category,
             place=to_place(i.event.place),
             duration=duration,
             sessions=sessions,
             img=i.event.img[0] if i.event.img else None,
-            more=i.event.more[0] if i.event.more else None
+            more=i.event.more[0] if i.event.more else None,
+            cycle=self.__find_cycle(category, i),
         ).fix_type()
         if isinstance(e, Cinema):
             e = e.merge(year=self.__find_year(i))
         return e
+
+    def __find_cycle(self, cat: Category, i: ApiInfo):
+        if cat == Category.CONFERENCE:
+            if re_or(
+                i.event.description,
+                r"Conferencias? del CSIC",
+            ):
+                return "Conferencias del CSIC"
 
     def __find_year(self, i: ApiInfo) -> Optional[int]:
         yrs: set[int] = set()
@@ -465,10 +475,7 @@ class MadridEs:
     def __find_easy_category(self, i: ApiEvent):
         cat = FIX_EVENT.get(MadridEs.get_id(i.url), {}).get('category')
         if isinstance(cat, str):
-            ct = Category[cat]
-            if ct in (Category.LITERATURE, Category.READING_CLUB):
-                return self.__find_book_category(i, ct)
-            return ct
+            return Category[cat]
         if re_or(
             i.title,
             r"concierto infantil",

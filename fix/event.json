@@ -884,5 +884,17 @@
         "filmaffinity": 858945
     },
     "D7E33971-D06D-5FCB-85CF-CF79C6334E1E": {"cycle": "Luz Madrid"},
-    "md7464": {"cycle": "Luz Madrid"}
+    "md7464": {
+        "cycle": "Luz Madrid",
+        "category": "YOUTH"
+    },
+    "ms74d01a9183c6c910VgnVCM200000f921e388RCRD": {
+        "category": "LITERATURE"
+    },
+    "ms935fe4cebd05c910VgnVCM200000f921e388RCRD": {"category": "NARRATIVE"},
+    "mse8cbbf36b7b6c910VgnVCM200000f921e388RCRD": {
+        "category": "THEATER",
+        "more": "https://casalector.fundaciongsr.org/en-gloria-estamos/"
+    },
+    "mse8cbbf36b7b6c910VgnVCM200000f921e388RCRD_2026-03-08 18:00": "https://www.eventbrite.es/e/en-gloria-estamos-tickets-1982883552082"
 }
