@@ -896,5 +896,25 @@
         "category": "THEATER",
         "more": "https://casalector.fundaciongsr.org/en-gloria-estamos/"
     },
-    "mse8cbbf36b7b6c910VgnVCM200000f921e388RCRD_2026-03-08 18:00": "https://www.eventbrite.es/e/en-gloria-estamos-tickets-1982883552082"
+    "mse8cbbf36b7b6c910VgnVCM200000f921e388RCRD_2026-03-08 18:00": "https://www.eventbrite.es/e/en-gloria-estamos-tickets-1982883552082",
+    "tlEACEBFE4-8AD7-561D-B472-5253A6E81121": {
+        "category": "LITERATURE",
+        "more": "https://www.goodreads.com/book/show/245512227",
+        "name": "Javier Ruescas presenta: ONYMA. Es solo un rumor"
+    },
+    "tl13DF4C10-7A81-5F3E-AAD0-0672098A5C99": {
+        "category": "LITERATURE",
+        "more": "https://www.goodreads.com/book/show/244015071",
+        "name": "Pierre Lemaitre presenta: Grandes promesas"
+    },
+    "tl7D60F926-A8EC-518D-B341-8186F27A9F3A": {
+        "category": "LITERATURE",
+        "more": "https://www.goodreads.com/book/show/247788487",
+        "name": "José Luis Sastre presneta: Plomo"
+    },
+    "tlA1F8E9F4-77AE-5A0B-BE80-8EE0DDC8D3BB": {
+        "category": "LITERATURE",
+        "more": "https://www.goodreads.com/book/show/244465591",
+        "name": "Mar Cabra presenta: Vivir a jornada completa"
+    }
 }
