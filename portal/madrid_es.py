@@ -408,7 +408,6 @@ class MadridEs:
             r"presenta su poemario",
             r"presentan? este poemario de",
             r"poemas in[eé]ditos",
-            r"El retrato de Dorian Gray",
             flags=re.I
         ):
             return Category.POETRY
@@ -418,6 +417,7 @@ class MadridEs:
             "la novela publicada",
             "presenta su primera novela",
             "Presentaci[oó]n de la novela editada",
+            r"El retrato de Dorian Gray",
             flags=re.I
         ):
             return Category.NARRATIVE
