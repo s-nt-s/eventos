@@ -70,7 +70,7 @@ class AteneoMadrid:
             e = Event.fusion(*evs)
             ok_events.add(e)
 
-        rt = tuple(sorted(e.merge(id=f"am{e.id}") for e in ok_events))
+        rt = tuple(sorted(ok_events))
         logger.info(f"Buscando eventos en Ateneo Madrid = {len(rt)}")
         return rt
 
@@ -84,7 +84,7 @@ class AteneoMadrid:
             return
         place = place.normalize()
         event = Event(
-            id=e.UID,
+            id=f"am{e.UID}",
             url=e.URL,
             name=e.SUMMARY,
             duration=e.duration or 60,
@@ -134,7 +134,14 @@ class AteneoMadrid:
                 "Secci[oó]n de Fotograf[ií]a",
                 flags=re.I
             ):
-                return Category.EXPO
+                return Category.PHOTO
+            if re_or(
+                e.DESCRIPTION,
+                "Secci[óo]n de Mitos, Religiones y Humanidades",
+                flags=re.I
+            ):
+                return Category.RELIGION
+
         if cat in (Category.CONFERENCE, Category.LITERATURE):
             if re_or(
                 e.DESCRIPTION,
@@ -143,6 +150,7 @@ class AteneoMadrid:
                 "Agrupación Sabatini",
                 "de opinión de El Mundo",
                 "María Zaplana Barceló",
+                "92 Liberales",
             ):
                 return Category.INSTITUTIONAL_POLICY
         if cat is not None:
@@ -195,7 +203,7 @@ class AteneoMadrid:
             return Category.CINEMA
         if _has_cat(r"Presentaci[óo]n del disco", "concierto"):
             return Category.MUSIC
-        if _has_cat(r"mon[oó]logo", r"Lecturas? dramatizadas?"):
+        if _has_cat(r"mon[oó]logo", r"Lecturas? dramatizadas?", "teatro"):
             return Category.THEATER
         if _has_cat(r"Presentación del libro", 'Libros'):
             return Category.LITERATURE
@@ -230,6 +238,13 @@ class AteneoMadrid:
             flags=re.I
         ):
             return Category.MUSIC
+        if re_or(
+            e.SUMMARY,
+            "Lectura en español y en",
+            flags=re.I
+        ):
+            return Category.THEATER
+
         if re_or(
             e.DESCRIPTION,
             "Secci[oó]n de Yoga",

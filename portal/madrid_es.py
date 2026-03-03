@@ -399,6 +399,29 @@ class MadridEs:
         duration = self.__get_duration(durations, i)
         return duration, tuple(sorted(sessions))
 
+    def __LITERATURE_or(self, i: ApiEvent):
+        if re_or(
+            i.description,
+            r"En estos versos el autor",
+            r"Presentaci[oó]n del poemario",
+            r"recital de poes[íi]a",
+            r"presenta su poemario",
+            r"presentan? este poemario de",
+            r"poemas in[eé]ditos",
+            flags=re.I
+        ):
+            return Category.POETRY
+        if re_or(
+            i.description,
+            "una novela de aventuras",
+            "la novela publicada",
+            "presenta su primera novela",
+            "Presentaci[oó]n de la novela editada",
+            flags=re.I
+        ):
+            return Category.NARRATIVE
+        return Category.LITERATURE
+
     def __find_easy_category(self, i: ApiEvent):
         cat = FIX_EVENT.get(MadridEs.get_id(i.url), {}).get('category')
         if isinstance(cat, str):
@@ -431,6 +454,7 @@ class MadridEs:
             r"bienestar de niñ[ao]s y niñ[oa]s",
             (r"cuentacuentos", r"en familia"),
             r"donde los niñ[ao]s y niñ[oa]s pueden",
+            r"orientad[oa] al p[uú]blico infantil",
             flags=re.I
         ):
             return Category.CHILDISH
@@ -621,18 +645,11 @@ class MadridEs:
             return Category.VISIT
 
         if re_or(
-            i.description,
-            r"En estos versos el autor",
-            flags=re.I
-        ):
-            return Category.POETRY
-
-        if re_or(
             i.title,
             r"Presentaci[óo]n del? libro",
             flags=re.I
         ):
-            return Category.LITERATURE
+            return self.__LITERATURE_or(i)
 
         if re_or(
             i.description,
@@ -646,7 +663,7 @@ class MadridEs:
             r"Presentaci[óo]n del? libro",
             flags=re.I
         ):
-            return Category.LITERATURE
+            return self.__LITERATURE_or(i)
         if re_or(
             i.description,
             r"Este proyecto musical",
@@ -742,7 +759,7 @@ class MadridEs:
             r'presentaci[óo]n(es)?',
             r'actos? literarios?',
         ):
-            return Category.LITERATURE
+            return self.__LITERATURE_or(i)
 
         if i.event.has_category(
             r'congresos?',
@@ -1147,7 +1164,7 @@ class MadridEs:
             (r"autore(es)?", r"autoras?"),
             flags=re.I
         ):
-            return Category.LITERATURE
+            return self.__LITERATURE_or(i)
         if re_and(
             i.event.description,
             "ilusionista",

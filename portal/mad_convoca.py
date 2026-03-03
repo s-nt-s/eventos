@@ -230,6 +230,7 @@ class MadConvoca:
         if re_or(
             e.SUMMARY,
             "Ciclo de conferencias",
+            "Charla Informativa",
             flags=re.I
         ):
             return Category.CONFERENCE
