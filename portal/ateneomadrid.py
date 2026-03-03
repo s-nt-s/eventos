@@ -175,6 +175,7 @@ class AteneoMadrid:
             return False
 
         if re_or(
+            e.SUMMARY,
             'Cine y medicina',
             flags=re.I
         ):
