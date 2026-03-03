@@ -348,12 +348,10 @@ class MadridEs:
         for id, e in events.items():
             if e.description is None and e.url in url_desc:
                 e = e._replace(description=url_desc[e.url])
-
             info.append(ApiInfo(
                 event=e,
                 ics=e_ics[id]
             ))
-
         return tuple(info)
 
     @property
