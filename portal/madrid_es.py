@@ -759,7 +759,7 @@ class MadridEs:
             r'presentaci[óo]n(es)?',
             r'actos? literarios?',
         ):
-            return self.__LITERATURE_or(i)
+            return self.__LITERATURE_or(i.event)
 
         if i.event.has_category(
             r'congresos?',
@@ -1164,7 +1164,7 @@ class MadridEs:
             (r"autore(es)?", r"autoras?"),
             flags=re.I
         ):
-            return self.__LITERATURE_or(i)
+            return self.__LITERATURE_or(i.event)
         if re_and(
             i.event.description,
             "ilusionista",
