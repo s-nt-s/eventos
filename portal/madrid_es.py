@@ -482,6 +482,7 @@ class MadridEs:
             r"huerto familiar",
             r"Taller infantil",
             r"Pedag[óo]gico Infantil",
+            r"Actividad(es)? infantil(es)?",
             (r"dia", r"internacional", r"familias?"),
             (r"taller", r"pequeños"),
             flags=re.I

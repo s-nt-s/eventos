@@ -172,7 +172,6 @@
     "20260203150000Z-146181@eventos.urjc.es": { "category": "SPAM" },
     "mc26687": { "category": "NO_EVENT" },
     "am45974": { "category": "CONFERENCE" },
-    "mc26686": { "category": "READING_CLUB" },
     "mc26693": { "category": "ACTIVISM" },
     "am55239-1769538600-1769538600@ateneodemadrid.com": { "category": "CONFERENCE" },
     "am55143-1769544000-1769544000@ateneodemadrid.com": { "category": "MUSIC" },
@@ -474,11 +473,6 @@
         "category": "LITERATURE",
         "more": "https://www.goodreads.com/book/show/243762573"
     },
-    "mc26529": {
-        "category": "READING_CLUB",
-        "more": "https://traficantes.net/libros/inteligencia-artificial-jugar-o-romper-la-baraja",
-        "name": "IA: Jugar o romper la baraja"
-    },
     "ms9e067b5e09e6b910VgnVCM100000891ecb1aRCRD": {
         "category": "MUSIC",
         "more": "https://21distritos.es/evento/fernanda-cabral/"
@@ -566,10 +560,6 @@
     },
     "msf58951860e5cb910VgnVCM200000f921e388RCRD": {
         "img": "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1762626242i/243375667.jpg"
-    },
-    "md6839": {
-        "category": "READING_CLUB",
-        "more": "https://www.condeduquemadrid.es/actividades/ensayos-graficos"
     },
     "mc26704": {
         "name": "Gummo",
@@ -721,7 +711,6 @@
     "sb10651": {"category": "MUSIC", "cycle": "Es letra y se canta"},
     "sb10668": {"category": "MUSIC", "cycle": "Es letra y se canta"},
     "sb10674": {"category": "MUSIC", "cycle": "Es letra y se canta"},
-    "ms935fe4cebd05c910VgnVCM200000f921e388RCRD": {"category": "READING_CLUB"},
     "msa68c7fed23939910VgnVCM200000f921e388RCRD": {"category": "MUSIC"},
     "ms2026e77de60ca910VgnVCM100000891ecb1aRCRD": {"category": "MUSIC"},
     "sb10625": {
@@ -920,5 +909,10 @@
     "ms26730b4c10e9c910VgnVCM100000891ecb1aRCRD": {"category": "MUSIC"},
     "al54132": {"category": "NO_EVENT"},
     "mcmc26955": {"category": "LITERATURE"},
-    "msd9c699807965c910VgnVCM200000f921e388RCRD": {"category": "MUSIC"}
+    "msd9c699807965c910VgnVCM200000f921e388RCRD": {"category": "MUSIC"},
+    "am56919-1774089000-1774089000@ateneodemadrid.com": {
+        "category": "CINEMA",
+        "name": "La caza",
+        "filmaffinity": 858945
+    }
 }
