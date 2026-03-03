@@ -110,6 +110,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
     if re_or(
         address,
         r"Milano$",
+        r"Hortaleza$",
         flags=re.I
     ):
         return False
@@ -157,6 +158,8 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
             ("palomeras bajas", "felipe( de)? diego"),
             # Pacifico
             ("Espacio de igualdad", "Elena Arnedo Soriano"),
+            # Colmenar Viejo
+            'Colmenar Viejo',
             flags=re.I
         ):
             logger.debug(f"Lugar descartado por name={name}")
