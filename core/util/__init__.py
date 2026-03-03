@@ -449,6 +449,7 @@ KO_MORE = (
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Puerta-de-Toledo/?vgnextfmt=default&vgnextoid=8d42fd00f7902910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Sociocultural-Santa-Petronila/?vgnextfmt=default&vgnextoid=fe7ed15c0bfe4910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Talleres-presenciales-ciudades-sostenibles-/?vgnextfmt=default&vgnextoid=d2a0924d36704910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-Internacional-de-la-Mujer-en-los-Centros-culturales-de-Arganzuela/?vgnextfmt=default&vgnextoid=17b8a0d40799c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'imccwem.munimadrid.es'
 )
 

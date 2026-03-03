@@ -894,7 +894,15 @@
     "mcmc26947": {"category": "CONFERENCE"},
     "ms2521969f1bdac910VgnVCM100000891ecb1aRCRD": {"category": "THEATER"},
     "ms1959a511a999c910VgnVCM200000f921e388RCRD": {"category": "POETRY"},
-    "msb49e01e29c07c910VgnVCM100000891ecb1aRCRD": {"more": "https://www.teatromonumental.es/eventos/extraordinario-dia-de-la-mujer/"},
+    "msb49e01e29c07c910VgnVCM100000891ecb1aRCRD": {
+        "more": "https://www.teatromonumental.es/eventos/extraordinario-dia-de-la-mujer/",
+        "name": "Concierto extraordinario del día de la Mujer",
+        "category": "MUSIC"
+    },
+    "tm5DADB769-CA50-5B68-8D10-42478BE8C4AA": {
+        "name": "Concierto extraordinario del día de la Mujer",
+        "category": "MUSIC"
+    },
     "mcmc26952": {
         "category": "CINEMA",
         "filmaffinity": 440660

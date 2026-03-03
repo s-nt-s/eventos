@@ -192,13 +192,20 @@ class SalaBerlanga:
             ev = ev.merge(category=Category.MUSIC)
         elif re_or(cat, "Artes? esc[eé]nicass?", flags=re.I):
             if re.search(r"[\-_]Bailar[\-_]", ev.img or '', flags=re.I):
-                ev = ev.merge(category=Category.DANCE)
+                ev = ev.merge(
+                    category=Category.DANCE,
+                    cycle="Bailar en la Berlanga",
+                )
             else:
-                ev = ev.merge(category=Category.THEATER)
+                ev = ev.merge(
+                    category=Category.THEATER,
+                    cycle="Teatro en la Berlanga",
+                )
+        elif re.search(r"[\-_]nuevos[\-_]territorios[\-_]", ev.img or '', flags=re.I):
+            ev = ev.merge(
+                cycle="Nuevos territorios",
+            )
         content = buildSoup(item.inf['link'], item.inf['content']['rendered'])
-        #txt_content = (ev.name+' '+(get_text(content) or '')).strip()
-        #if re_or(txt_content, r"\bInterautor Teatro\b") or re_or(ev.name, r"\s*\-\s*Teatro en la [Bb]erlanga$"):
-        #    ev = ev.merge(category=Category.THEATER, cycle="Teatro en la Berlanga")
         ev = ev.fix_type()
         if isinstance(ev, Cinema):
             aka = self.__find_p_strong(content, "Título original")
