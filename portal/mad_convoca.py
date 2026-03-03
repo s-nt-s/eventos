@@ -362,6 +362,7 @@ class MadConvoca:
             "Presentaci[oó]n Informe",
             "^Charla:",
             "^Charla",
+            "Charla Informativa",
             flags=re.I,
             to_log=e.id
         ):
