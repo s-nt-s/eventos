@@ -401,7 +401,7 @@ class MadridEs:
                 i.event.description,
                 r"Conferencias? del CSIC",
             ):
-                return "Conferencias del CSIC"
+                return "Las conferencias del CSIC"
 
     def __find_year(self, i: ApiInfo) -> Optional[int]:
         yrs: set[int] = set()
