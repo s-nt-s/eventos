@@ -465,7 +465,10 @@ class MadridEs:
     def __find_easy_category(self, i: ApiEvent):
         cat = FIX_EVENT.get(MadridEs.get_id(i.url), {}).get('category')
         if isinstance(cat, str):
-            return Category[cat]
+            ct = Category[cat]
+            if ct in (Category.LITERATURE, Category.READING_CLUB):
+                return self.__find_book_category(i, ct)
+            return ct
         if re_or(
             i.title,
             r"concierto infantil",
