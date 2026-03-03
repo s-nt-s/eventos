@@ -467,7 +467,7 @@ class Place:
             return Places.CSO_LA_ENREDADERA.value
         if re_or(name, "AVA", ("[aA]socaci[oó]n", "[vV]ecinal", "[aA]luche")) and re_and(address, "quero", flags=re.I):
             return Places.AVA.value
-        if re_or(name, "Serrer[ií]a Belga", flags=re.I) and re_and(address, "(calle\s*)?alameda", flags=re.I):
+        if re_or(name, r"Serrer[ií]a Belga", flags=re.I) and re_and(address, r"(calle\s*)?alameda", flags=re.I):
             return Places.SERRERIA_BELGA.value
         for plc in Places:
             p = plc.value
