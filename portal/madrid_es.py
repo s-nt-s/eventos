@@ -401,7 +401,7 @@ class MadridEs:
 
     def __find_book_category(self, i: ApiEvent, default: Category):
         if re_or(
-            f"{i.tite or ''} {i.description or ''}".strip(),
+            f"{i.title or ''} {i.description or ''}".strip(),
             r"novela gr[aá]fica",
             r"comic",
             r"tebeo",
