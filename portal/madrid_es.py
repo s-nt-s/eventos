@@ -399,7 +399,7 @@ class MadridEs:
         duration = self.__get_duration(durations, i)
         return duration, tuple(sorted(sessions))
 
-    def __LITERATURE_or(self, i: ApiEvent):
+    def __find_book_category(self, i: ApiEvent, default: Category):
         if re_or(
             i.description,
             r"En estos versos el autor",
@@ -408,6 +408,7 @@ class MadridEs:
             r"presenta su poemario",
             r"presentan? este poemario de",
             r"poemas in[eé]ditos",
+            r"El retrato de Dorian Gray",
             flags=re.I
         ):
             return Category.POETRY
@@ -420,7 +421,7 @@ class MadridEs:
             flags=re.I
         ):
             return Category.NARRATIVE
-        return Category.LITERATURE
+        return default
 
     def __find_easy_category(self, i: ApiEvent):
         cat = FIX_EVENT.get(MadridEs.get_id(i.url), {}).get('category')
@@ -649,7 +650,7 @@ class MadridEs:
             r"Presentaci[óo]n del? libro",
             flags=re.I
         ):
-            return self.__LITERATURE_or(i)
+            return self.__find_book_category(i, Category.LITERATURE)
 
         if re_or(
             i.description,
@@ -663,7 +664,7 @@ class MadridEs:
             r"Presentaci[óo]n del? libro",
             flags=re.I
         ):
-            return self.__LITERATURE_or(i)
+            return self.__find_book_category(i, Category.LITERATURE)
         if re_or(
             i.description,
             r"Este proyecto musical",
@@ -717,7 +718,7 @@ class MadridEs:
         if i.event.has_category(
             r'club(es)? de lectura',
         ):
-            return Category.READING_CLUB
+            return self.__find_book_category(i.event, Category.READING_CLUB)
         if i.event.has_category(
             r'cursos?',
             r'taller(es)?',
@@ -759,7 +760,7 @@ class MadridEs:
             r'presentaci[óo]n(es)?',
             r'actos? literarios?',
         ):
-            return self.__LITERATURE_or(i.event)
+            return self.__find_book_category(i.event, Category.LITERATURE)
 
         if i.event.has_category(
             r'congresos?',
@@ -930,7 +931,7 @@ class MadridEs:
             "club(es)? de lectura",
             flags=re.I
         ):
-            return Category.READING_CLUB
+            return self.__find_book_category(i.event, Category.READING_CLUB)
         if re_or(
             i.event.title,
             ("elaboracion", "artesanal"),
@@ -1164,7 +1165,7 @@ class MadridEs:
             (r"autore(es)?", r"autoras?"),
             flags=re.I
         ):
-            return self.__LITERATURE_or(i.event)
+            return self.__find_book_category(i.event, Category.LITERATURE)
         if re_and(
             i.event.description,
             "ilusionista",
