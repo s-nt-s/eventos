@@ -655,6 +655,7 @@ class MadridEs:
             r"Composici[oó]n musical para",
             r"Festival Centro al comp[áa]s",
             r"Cuarteto de Cuerda",
+            r"tertulia musical",
             flags=re.I
         ):
             return Category.MUSIC
