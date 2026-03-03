@@ -380,11 +380,13 @@ class MadridDestino:
         return tuple(sorted(sessions, key=lambda s: s.date))
 
     def __get_session_from_soup(self, soup: tuple[SoupInfo, ...]):
+        id_data: dict[str, int] = dict()
+        if soup is None:
+            return id_data
         data: dict[str, set[int]] = defaultdict(set)
         for s in soup:
             dt = s.sessionStart[:16]
             data[dt].add(s.id)
-        id_data: dict[str, int] = dict()
         for dt, ids in data.items():
             if len(ids) == 1:
                 id_data[dt] = ids.pop()
