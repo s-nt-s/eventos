@@ -193,7 +193,7 @@ class Category(IntEnum):
             return "duplicada"
         if self == Category.MATERNITY:
             return "maternidad"
-        raise ValueError(self.value)
+        return self.name
 
     def __lt__(self, other):
         if self == Category.UNKNOWN:
