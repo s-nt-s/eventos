@@ -1,4 +1,4 @@
-from core.web import WEB
+from core.web import WEB, buildSoup
 from bs4 import Tag
 import re
 from typing import Set, Tuple, Optional, NamedTuple
@@ -15,6 +15,8 @@ from typing import Callable
 from core.madrid_es.api import Api, Event as ApiEvent, Place as ApiPlace
 from core.ics import IcsEventWrapper
 from core.madrid_es.form import get_vgnextoid
+from core.fetcher import Getter
+from aiohttp import ClientResponse
 
 
 logger = logging.getLogger(__name__)
@@ -24,6 +26,23 @@ TODAY = date.today()
 
 TZ_ZONE = 'Europe/Madrid'
 NOW = datetime.now(tz=pytz.timezone(TZ_ZONE))
+
+
+async def rq_to_text(r: ClientResponse):
+    soup = buildSoup(str(r.url), await r.text())
+    slc = "div.tramites-content"
+    div = soup.select_one(slc)
+    if div is None:
+        logger.warning(f"{slc} not found in {r.url}")
+        return None
+    for n in div.select("br, p"):
+        n.append("\n")
+    txt = get_text(div)
+    if len(txt) == 0:
+        logger.warning(f"{slc} empty in {r.url}")
+        return None
+    return txt
+
 
 
 @cache
@@ -315,8 +334,21 @@ class MadridEs:
                 del events[vgnextoid]
                 continue
 
+        need_desc: set[str] = set()
+        for e in events.values():
+            if e.description is None:
+                need_desc.add(e.url)
+
+        url_desc = Getter(
+            onread=rq_to_text,
+            raise_for_status=False
+        ).get(*need_desc)
+
         info: list[ApiInfo] = []
         for id, e in events.items():
+            if e.description is None and e.url in url_desc:
+                e = e._replace(description=url_desc[e.url])
+
             info.append(ApiInfo(
                 event=e,
                 ics=e_ics[id]
