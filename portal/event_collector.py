@@ -38,24 +38,6 @@ def gNow():
     return datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
-def isOut(dt: datetime):
-    d = dt.date()
-    if d >= date(2026, 2, 22) and d <= date(2026, 2, 27):
-        return True
-    return False
-
-
-def isHoll(dt: datetime):
-    if isOut(dt):
-        return False
-    d = dt.date()
-    if d.weekday() == 0 and dt.hour in (16, 17, 18):
-        return False
-    if d < date(2026, 2, 18) or d > date(2026, 3, 4):
-        return False
-    return True
-
-
 def getMin(weekday: int) -> int:
     return [
         18.5,
@@ -69,9 +51,11 @@ def getMin(weekday: int) -> int:
 
 
 def isAlcalaOkDate(dt: datetime):
-    if isOut(dt):
-        return False
-    min_hour = max(17, getMin(dt.weekday()))+1
+    wd = dt.weekday()
+    min_hour = max(
+        getMin(dt.weekday()) + 1,
+        18.50 if wd in (1, 2) else 18
+    )
     return not isWorkingHours(
         dt,
         min_hour=min_hour
@@ -82,10 +66,6 @@ def isOkDate(dt: datetime):
     d = dt.date()
     if d == date(2026, 2, 18) and dt.hour in (10, 11, 12, 18, 19, 20, 21):
         return False
-    if isOut(dt):
-        return False
-    if isHoll(dt):
-        return True
     if dt.date() in get_festivos(dt.year):
         return True
     min_hour = getMin(dt.weekday())

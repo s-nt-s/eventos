@@ -379,7 +379,7 @@ def _get_festivos_from_calendarioslaborales(year: int):
     return dates
 
 
-def isWorkingHours(dt: datetime, min_hour=16):
+def isWorkingHours(dt: datetime, min_hour: float = 16):
     if dt is None:
         return False
     hm = dt.hour + (dt.minute/60)
