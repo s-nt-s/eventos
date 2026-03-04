@@ -6,7 +6,7 @@ import logging
 from core.event import Places, Event, Session, Category, FieldNotFound, CategoryUnknown
 import re
 from datetime import datetime
-from core.util import plain_text, re_or, re_and
+from core.util import plain_text, re_or
 
 
 logger = logging.getLogger(__name__)

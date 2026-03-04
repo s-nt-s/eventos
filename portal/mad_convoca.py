@@ -9,6 +9,7 @@ from typing import Callable
 from datetime import datetime
 from core.web import get_text, buildSoup
 from functools import cache
+from core.cache import TupleCache
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class MadConvoca:
         self.__pre = {
             "mad.convoca.la": "mc",
             "calendario.extinctionrebellion.es": "ex",
-            "hacker.convoca.la": "hk",  
+            "hacker.convoca.la": "hk",
         }
         self.__mad = GancioPortal(
             root="https://mad.convoca.la",
@@ -53,6 +54,7 @@ class MadConvoca:
         )
 
     @cached_property
+    @TupleCache("rec/madconvoca.json", builder=Event.build)
     def events(self):
         logger.info("Buscando eventos en MadConvoca")
         ok_events: set[Event] = set()
@@ -95,9 +97,36 @@ class MadConvoca:
         logger.info(f"Buscando eventos en MadConvoca = {len(rt)}")
         return rt
 
+    def __is_ko_place(self, url: str, place: Place):
+        if place is None:
+            return True
+        if re_or(
+            f"{place.name} {place.address}",
+            "Robledo de Chavela",
+            flags=re.I
+        ):
+            return True
+        if get_domain(url) in (
+            'calendario.extinctionrebellion.es',
+        ):
+            if not re_or(
+                f"{place.name} {place.address}",
+                "Madrid",
+                flags=re.I
+            ):
+                return True
+        return False
+    
     def __gancio_to_event(self, e: GancioEvent):
         if len(e.sessions) == 0:
             return
+        place = Place(
+            name=e.place.name,
+            address=e.place.address,
+            latlon=e.place.get_latlon()
+        ).normalize()
+        if self.__is_ko_place(e.url, place):
+            return None
         event = Event(
             url=e.url,
             id=self.__pre[get_domain(e.url)] + str(e.id),
@@ -107,11 +136,7 @@ class MadConvoca:
             category=self.__find_gancio_category(e),
             duration=e.duration,
             sessions=tuple(Session(date=s) for s in e.sessions),
-            place=Place(
-                name=e.place.name,
-                address=e.place.address,
-                latlon=e.place.get_latlon()
-            ),
+            place=place,
             more=e.links[0] if e.links else None
         )
         event = self.__fix_gancio(e, event) or event
@@ -145,6 +170,8 @@ class MadConvoca:
         if place is None:
             return
         place = place.normalize()
+        if self.__is_ko_place(e.URL, place):
+            return None
         event = Event(
             id=e.UID,
             url=e.URL,
@@ -186,6 +213,8 @@ class MadConvoca:
             e.SUMMARY,
             r"Asesorías? legal(es)?",
             r"Asesorías? laboral(es)?",
+            ("Redes Libertarias", r"n[úu]mero", "revista"),
+            r"Acto anual de gratitud a las socias y los socios",
             flags=re.I,
             to_log=e.UID
         ):
@@ -197,13 +226,6 @@ class MadConvoca:
             to_log=e.UID
         ):
             return Category.ACTIVISM
-        if re_or(
-            e.SUMMARY,
-            r"Acto anual de gratitud a las socias y los socios",
-            flags=re.I,
-            to_log=e.UID
-        ):
-            return Category.NO_EVENT
         if re_and(
             e.SUMMARY,
             "presentaci[oó]n del?",
@@ -280,8 +302,6 @@ class MadConvoca:
             flags=re.I
         ):
             return Category.MUSIC
-        if get_domain(e.URL) == "ateneodemadrid.com":
-            return Category.CONFERENCE
         if e.CATEGORIES:
             logger.critical(str(CategoryUnknown(e.source, f"{e.CATEGORIES} -- {e.SUMMARY}")))
         else:
@@ -294,10 +314,10 @@ class MadConvoca:
                 name=e.LOCATION,
                 address=e.LOCATION
             )
-        if get_domain(e.URL) == "ateneodemadrid.com":
-            return Places.ATENEO_MADRID.value
 
     def __find_gancio_category(self, e: GancioEvent) -> Category:
+        name = plain_text(e.title)
+        txt_desc = html_to_text(e.description) if e.description else None
         tags: set[str] = set(map(plain_text, map(str.strip, e.tags)))
 
         def has_tag(*args):
@@ -314,7 +334,13 @@ class MadConvoca:
                 return True
             return False
 
-        name = plain_text(e.title)
+        if re_or(
+            txt_desc,
+            "debatiremos sobre la novela",
+            flags=re.I
+        ):
+            return Category.NARRATIVE
+
         if has_tag_or_title("flinta"):
             return Category.NO_EVENT
         if has_tag_or_title("infantil"):
@@ -322,12 +348,23 @@ class MadConvoca:
         if has_tag("asamblea") or has_tag_or_title('manifestacion', 'concentracion'):
             return Category.ACTIVISM
         if re_or(
+            txt_desc,
+            "Ven con tus peques",
+            flags=re.I,
+            to_log=e.id
+        ):
+            return Category.CHILDISH
+        if re_or(
             name,
-            "Bienvenida Nuev[oa]s? Rebeldes?",
+            "Bienvenida Nuev[oax@e]s? Rebeldes?",
+            ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
             flags=re.I,
             to_log=e.id
         ):
             return Category.ACTIVISM
+
+        if has_tag_or_title("kafeta"):
+            return Category.PARTY
         if has_tag_or_title("cine", "cineforum", "cinebollum", "documental"):
             return Category.CINEMA
         if has_tag("deporte") or has_tag_or_title("yoga", "pilates"):
@@ -393,14 +430,6 @@ class MadConvoca:
         ):
             return Category.READING_CLUB
 
-        txt_desc = html_to_text(e.description) if e.description else None
-        if re_or(
-            txt_desc,
-            "Ven con tus peques",
-            flags=re.I,
-            to_log=e.id
-        ):
-            return Category.CHILDISH
         if re_or(
             txt_desc,
             "Charla cr[ií]tica",
@@ -430,6 +459,7 @@ class MadConvoca:
             txt_desc,
             "leer un texto",
             "razonar en com[uú]n",
+            "club de lectura",
             flags=re.I
         ):
             return Category.READING_CLUB
@@ -443,11 +473,14 @@ class MadConvoca:
         if re_or(e.place.name, "librer[íi]a", flags=re.I):
             if re_or(name, "poes[íi]aa?", flags=re.I):
                 return Category.POETRY
-            if re_or(name, "presentaci[oó]n", flags=re.I):
+            if re_or(
+                name,
+                "presentaci[oó]n",
+                "El libro analiza",
+                flags=re.I
+            ):
                 return Category.LITERATURE
 
-        if re_or(name, "kafeta", to_log=e.id, flags=re.I):
-            return Category.PARTY
         if re_or(name, "Presentaci[óo]n del libro", to_log=e.id, flags=re.I):
             return Category.LITERATURE
 
@@ -465,6 +498,49 @@ class MadConvoca:
             return Category.ACTIVISM
         if re_or(e.title, "Plenario", flags=re.I):
             return Category.ACTIVISM
+
+        if re_or(
+            txt_desc,
+            "Hablaremos con .*? sobre su libro",
+            flags=re.I,
+            to_log=e.id
+        ):
+            return Category.LITERATURE
+        if re_or(
+            txt_desc,
+            "proyectamos el documental",
+            flags=re.I,
+            to_log=e.id
+        ):
+            return Category.CINEMA
+        if re_or(
+            txt_desc,
+            "proyectamos el documental",
+            flags=re.I,
+            to_log=e.id
+        ):
+            return Category.CINEMA
+        if re_and(
+            txt_desc,
+            "hablaremos sobre",
+            "trae tu libreta",
+            flags=re.I,
+            to_log=e.id
+        ):
+            return Category.WORKSHOP
+        if re_or(
+            txt_desc,
+            "Tu nube seca mi río",
+            flags=re.I,
+            to_log=e.id
+        ):
+            return Category.CONFERENCE
+        if re_or(
+            name,
+            "Comida bailable",
+            flags=re.I
+        ):
+            return Category.PARTY
         logger.critical(str(CategoryUnknown(e.url, f"{e}")))
         return Category.UNKNOWN
 

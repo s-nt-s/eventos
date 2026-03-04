@@ -7,7 +7,7 @@ from core.event import Event, Places, Session, Category, FieldNotFound, Category
 import re
 from bs4 import Tag
 from datetime import datetime
-from core.util import plain_text, re_or, re_and
+from core.util import plain_text, re_or, re_and, find_euros
 import json
 
 
@@ -184,10 +184,28 @@ class CasaAmerica(Web):
     def __find_price(self):
         prices = set()
         for p in map(get_text, self.soup.select("article p")):
-            if p is None or "General:" not in p:
+            if p is None:
                 continue
-            prices = prices.union(map(float, re.findall(r"([\d,.]+)€", p)))
+            if re_or(
+                p,
+                "Entrada con inscripci[oó]n aqu[ií]",
+                "Entrada libre hasta completar aforo",
+                "Entrada libre previo registro aqu[íi]",
+                "Entrada libre hasta completar aforo",
+                "Entrada con inscripci[óo]n",
+                flags=re.I
+            ):
+                prices.add(0)
+            if not re_or(
+                p,
+                "general",
+                flags=re.I
+            ):
+                continue
+            prices.add(find_euros(p))
+        prices.discard(None)
         if len(prices) == 0:
+            logger.warning(f"NOT FOUND price {self.url}")
             return 0
         return max(prices)
 
@@ -207,6 +225,8 @@ class CasaAmerica(Web):
             return 2*60
         if re.search(r"9.30 a 18.30", content):
             return 9*60
+        if re.search(r"de 11:00 a 19:00", content):
+            return 8*60
         if category in (Category.CONFERENCE, ):
             return 60
         logger.warning(str(FieldNotFound("duration", self.url)))
@@ -223,6 +243,12 @@ class CasaAmerica(Web):
             return Category.INSTITUTIONAL_POLICY
         if re_or(tit, r"Rumbo a las urnas", flags=re.I):
             return Category.INSTITUTIONAL_POLICY
+        if re_and(
+            content,
+            r"Presentaci[óo]n del libro de poes[íi]a",
+            flags=re.I
+        ):
+            return Category.POETRY
         if re_or(plain_content, "presentacion (del )?libro"):
             return Category.LITERATURE
         if cat == "cine":
@@ -279,4 +305,4 @@ class CasaAmerica(Web):
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/casaamerica.log", log_level=(logging.DEBUG))
-    print(CasaAmerica().events)
+    (CasaAmerica().events)

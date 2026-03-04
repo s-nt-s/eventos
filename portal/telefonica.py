@@ -148,13 +148,7 @@ class Telefonica(Web):
 
     def __find_category(self, data: Dict, webpage: Dict):
         name = plain_text(data['name'])
-        if re_or(name, "madresfera"):
-            return Category.MATERNITY
-        if re_or(name, "^encuentro con", flags=re.I):
-            return Category.CONFERENCE
         cat = plain_text(self.select_one_txt("span.categoria"))
-        if cat == "exposicion":
-            return Category.EXPO
         description = webpage.get('description', '') + ' ' + self.select_one_txt("#textoread")
         plain_description = plain_text(description)
         if cat == "taller":
@@ -162,15 +156,22 @@ class Telefonica(Web):
                 return Category.CHILDISH
             return Category.WORKSHOP
         if re_or(
+            plain_description,
+            r"presenta su( [úu]ltima)? novela",
+            r"publicaci[oó]n de su( [úu]ltima| nuevo)? ensayo",
+        ):
+            return Category.LITERATURE
+        if re_or(name, "madresfera"):
+            return Category.MATERNITY
+        if re_or(name, "^encuentro con", flags=re.I):
+            return Category.CONFERENCE
+        if cat == "exposicion":
+            return Category.EXPO
+        if re_or(
             description,
             "CONVERSAN"
         ):
             return Category.CONFERENCE
-        if re_or(
-            plain_description,
-            r"presenta su( [úu]ltima)? novela",
-        ):
-            return Category.LITERATURE
         if re_or(
             plain_description,
             r"encuentro con (el|la|los|las) escrito(ra|re)s?",

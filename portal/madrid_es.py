@@ -172,7 +172,7 @@ def tp_join(a: tuple | None, b: tuple | None):
 class MadridEs:
     def __init__(
         self,
-        isOkDate: Callable[[datetime], bool] = None,
+        isOkDate: dict[str, Callable[[datetime], bool]] = None,
         places_with_store: tuple[Place, ...] = None,
         max_price: Optional[float] = None,
         avoid_categories: tuple[Category, ...] = tuple(),
@@ -180,13 +180,25 @@ class MadridEs:
         districts: tuple[str, ...] = tuple()
     ):
         self.__isOkPlace = isOkPlace or (lambda *_: True)
-        self.__isOkDate = isOkDate or (lambda *_: True)
+        self.__isOkDate = isOkDate or {}
         self.__places_with_store = places_with_store or tuple()
         self.__max_price = max_price
         self.__avoid_categories = avoid_categories,
         self.__districts = districts or tuple()
         self.__ban_id = set(map(get_vgnextoid, KO_MORE))
         self.__ban_id.discard(None)
+
+    def __get_isOkDate(self, district: str):
+        if self.__isOkDate:
+            district = plain_text(district)
+            if district:
+                isOk = self.__isOkDate.get(district.lower())
+                if isOk is not None:
+                    return isOk
+            isOk = self.__isOkDate.get(None)
+            if isOk is not None:
+                return isOk
+        return (lambda *_: True)
 
     @cached_property
     def __api(self):
@@ -294,6 +306,7 @@ class MadridEs:
 
         for vgnextoid in ids:
             e = events[vgnextoid]
+            #e.place.district
             p = to_place(e.place)
             ics = e_ics[vgnextoid]
             page = e_page[vgnextoid]
@@ -316,12 +329,13 @@ class MadridEs:
                     logger.debug(f"Descartado por category={cat} {e.url}")
                     del events[vgnextoid]
                     continue
+            isOkDate = self.__get_isOkDate(e.place.district)
             ics_events: list[IcsEventWrapper] = []
             for i in ics:
                 if i.DTSTART < NOW:
                     logger.debug(f"Fecha  [{i.DTSTART}-{i.DTEND}] < NOW descartada {e.url}")
                     continue
-                if not self.__isOkDate(i.DTSTART):
+                if not isOkDate(i.DTSTART):
                     logger.debug(f"Fecha {i.DTSTART} en horario laboral descartada {e.url}")
                     continue
                 if i.DTEND is not None and i.DTSTART.date() != i.DTEND.date():
@@ -422,11 +436,12 @@ class MadridEs:
         if len(i.ics) == 0:
             raise ValueError(i)
 
+        isOkDate = self.__get_isOkDate(i.event.place.district)
         durations: Set[int] = set()
         sessions: Set[Session] = set()
         for e in i.ics:
             start = self.__get_start(e.DTSTART, i)
-            if not self.__isOkDate(start):
+            if not isOkDate(start):
                 logger.debug(f"Fecha {start} descartada por horario laboral {i.event.url}")
                 continue
             if e.DTEND and e.DTEND.strftime("%H:%M") != "23:59":
@@ -470,6 +485,12 @@ class MadridEs:
             flags=re.I
         ):
             return Category.NARRATIVE
+        if re_or(
+            i.title,
+            "Presentaci[óo]n de la novela",
+            flags=re.I
+        ):
+            return Category.NARRATIVE
         return default
 
     def __find_easy_category(self, i: ApiEvent):
@@ -506,6 +527,7 @@ class MadridEs:
             (r"cuentacuentos", r"en familia"),
             r"donde los niñ[ao]s y niñ[oa]s pueden",
             r"orientad[oa] al p[uú]blico infantil",
+            r"Recomendado para niñ[aox@e]s",
             flags=re.I
         ):
             return Category.CHILDISH
@@ -620,7 +642,8 @@ class MadridEs:
         place = to_place(i.place).name
         if re_or(
             place,
-            "titeres"
+            "t[ií]teres",
+            flags=re.I
         ):
             return Category.PUPPETRY
 
@@ -705,6 +728,7 @@ class MadridEs:
 
         if re_or(
             i.description,
+            r"Conferencia a cargo de",
             r"Ciclo de conferencias",
             r"En esta charla vamos",
             r"^Conferencia del?",

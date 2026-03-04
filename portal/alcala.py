@@ -11,7 +11,7 @@ import re
 from collections import defaultdict
 from core.fetcher import Getter
 from aiohttp import ClientResponse
-from core.web import WEB
+from core.cache import TupleCache
 
 
 logger = logging.getLogger(__name__)
@@ -69,6 +69,7 @@ class Alcala:
         )
 
     @cached_property
+    @TupleCache("rec/alcala.json", builder=Event.build)
     def events(self):
         id_store: dict[str, list[str]] = defaultdict(list)
         logger.info("Alcala: Buscando eventos")
@@ -148,6 +149,13 @@ class Alcala:
         )
 
     def __find_category(self, x: EventOnEvent):
+        if re_or(
+            x.name,
+            "MARCHAS PROCESIONALES",
+            "m[uú]sica procesional",
+            flags=re.I
+        ):
+            return Category.RELIGION
         if not x.event_types:
             logger.critical(f"event_types=None {x.permalink}")
             return Category.UNKNOWN

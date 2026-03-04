@@ -31,7 +31,7 @@ STR_TODAY = date.today().strftime("%Y-%m-%d")
 
 EC = EventCollector(
     max_price={
-        Category.CINEMA: 5,
+        Category.CINEMA: 5.50,
         Category.OTHERS: 10,
     },
     max_sessions=30,
@@ -91,10 +91,9 @@ def add_image(e: Event):
         return (None, e)
     local = f"img/{e.id}.jpg"
     file = OUT+local
-    im = URL_IMG.get(
-        e.img,
-        MyImage.get(e.img)
-    )
+    im = URL_IMG.get(e.img)
+    if im is None:
+        im = MyImage.get(e.img)
     if isfile(file):
         lc = MyImage(file, parent=im, background=im.background)
     else:
@@ -136,11 +135,87 @@ for e in eventos:
 zones = dict(sorted(zones.items(), key=lambda kv: (int(kv[0] == null_zone), kv)))
 
 
-def event_to_ics(now: datetime, e: Event, s: Session):
+def event_to_ics_description(e: Event, s: Session):
+    urls = list(uniq(e.url, *e.also_in, s.url, e.more))
+
+    def _iter_urls(*searchs: str | re.Pattern):
+        for srch in searchs:
+            for i in range(len(urls)-1, -1, -1):
+                u = urls[i]
+                if isinstance(srch, str):
+                    if get_domain(u) == srch:
+                        del urls[i]
+                        yield u
+                elif isinstance(srch, re.Pattern):
+                    if srch.search(u):
+                        del urls[i]
+                        yield u
+
+    lines: list[str] = []
     price = str(int(e.price)) if int(e.price) == e.price else f"{e.price:.2f}"
-    description = (f'{price} €\n\n' + "\n\n".join(
-        uniq(e.url, *e.also_in, s.url, e.more)
-    )).strip()
+
+    url_shop = next(_iter_urls(
+        re.compile(r"\btienda\.madrid-destino\.com/es/.+/\d+(/|$)", flags=re.I),
+        "entradas.aliro.academiadecine.com",
+        "entradasfilmoteca.sacatuentrada.es",
+        "espacio.fundaciontelefonica.com",
+        "kinetike.com",
+        "march.es",
+        "tienda.madrid-destino.com",
+        "tickets.caixaforum.org",
+        "giglon.com",
+        re.compile(r"\blacasaencendida\.es/.*eventId=\d+", flags=re.I),
+        "lacasaencendida.es",
+        "teatromonumental.es",
+    ), None)
+    if url_shop is None and e.price > 0:
+        url_shop = next(_iter_urls(
+            "culturalcala.es",
+            "centrocentro.org",
+            "condeduquemadrid.es",
+            "cinetecamadrid.com",
+            "mataderomadrid.org",
+            "teatrocircoprice.es",
+            "teatroespanol.es"
+        ), None)
+
+    if url_shop is None:
+        lines.append(f"{price} €")
+
+    PAPEL = "gestiona3.madrid.org"
+    DIGITAL = "madrid.ebiblio.es"
+    for u in _iter_urls(
+        "filmaffinity.com",
+        "imdb.com",
+        "goodreads.com",
+        re.compile(r"^https?://[a-z]+\.wikipedia\.org/", flags=re.I),
+        "wikipedia.org",
+        "gestiona3.madrid.org",
+        "madrid.ebiblio.es",
+    ):
+        dom = get_domain(u)
+        if dom == PAPEL:
+            lines.append(f"Disponible en papel en {u}")
+        elif dom == DIGITAL:
+            lines.append(f"Disponible en digital en {u}")
+        else:
+            lines.append(u)
+
+    if url_shop is not None:
+        #d_shop = get_domain(url_shop)
+        if e.price == 0:
+            lines.append(f"Gratis con reserva en {url_shop}")
+        else:
+            lines.append(f"{price} € en {url_shop}")
+
+    for u in urls:
+        lines.append(u)
+
+    return "\n\n".join(lines)
+
+
+def event_to_ics(now: datetime, e: Event, s: Session):
+    description = event_to_ics_description(e, s)
     dtstart = to_datetime(s.date)
     dtend = dtstart + timedelta(minutes=(e.duration or 120))
     return SimpleIcsEvent(
@@ -213,6 +288,8 @@ def set_icons(html: str, **kwargs):
             "casalector.fundaciongsr": "https://casalector.fundaciongsr.org/wp-content/uploads/2017/09/apple-touch-icon-72x72.png",
             "teatrocircoprice": "https://www.teatrocircoprice.es/themes/custom/circoprice_theme/favicon.ico",
             "teatromonumental": "https://www.teatromonumental.es/wp-content/uploads/fbrfg/favicon.svg",
+            "gestiona3.madrid": "https://madrid.ebiblio.es/favicon/espa.ico",
+            "madrid.ebiblio": "https://madrid.ebiblio.es/favicon/espa.ico"
         }.get(dom)
         if ico is None:
             continue

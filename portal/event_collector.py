@@ -11,10 +11,11 @@ from portal.madrid_es import MadridEs
 from portal.telefonica import Telefonica
 from portal.teatromonumental import TeatroMonumental
 from portal.mad_convoca import MadConvoca
-from portal.universidad import Universidad
+from portal.universidad import Universidades
 from portal.ateneomadrid import AteneoMadrid
+from portal.circulobellasartes import CirculoBellasArtes
 from portal.alcala import Alcala
-from datetime import datetime, date
+from datetime import datetime
 from core.util import get_domain, to_uuid, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
 import logging
 from typing import Tuple
@@ -29,9 +30,25 @@ from functools import cache
 from core.zone import Circles
 from core.event import Place, Places
 from portal.fundacionmarch import FundacionMarch
+from concurrent.futures import ThreadPoolExecutor
 
 
 logger = logging.getLogger(__name__)
+
+
+def get_events(source):
+    if isinstance(source, (Alcala, MadConvoca, AteneoMadrid, Universidades, MadridEs)):
+        return source.events
+    return source().events
+
+
+def run_parallel(*sources):
+    with ThreadPoolExecutor() as executor:
+        results = executor.map(get_events, sources)
+    arr: list[Event] = []
+    for r in results:
+        arr.extend(r)
+    return tuple(arr)
 
 
 def gNow():
@@ -62,15 +79,23 @@ def isAlcalaOkDate(dt: datetime):
     )
 
 
-def isOkDate(dt: datetime):
-    d = dt.date()
-    if d == date(2026, 2, 18) and dt.hour in (10, 11, 12, 18, 19, 20, 21):
-        return False
+def isOkDate(dt: datetime, delta: int = 0.5):
     if dt.date() in get_festivos(dt.year):
         return True
     min_hour = getMin(dt.weekday())
     if min_hour > 0:
-        min_hour = min_hour + 0.5
+        min_hour = min_hour + delta
+    return not isWorkingHours(dt, min_hour=min_hour)
+
+
+def isOkDateVillaverde(dt: datetime):
+    if dt.date() in get_festivos(dt.year):
+        return True
+    if not isOkDate(dt):
+        return False
+    min_hour = 18
+    if dt.weekday() == 4:
+        min_hour = 16.5
     return not isWorkingHours(dt, min_hour=min_hour)
 
 
@@ -140,6 +165,8 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
             ("Espacio de igualdad", "Elena Arnedo Soriano"),
             # Colmenar Viejo
             'Colmenar Viejo',
+            # Lucero
+            'CCM Lucero',
             flags=re.I
         ):
             logger.debug(f"Lugar descartado por name={name}")
@@ -187,12 +214,6 @@ def isKoEvent(e: Event):
             Category.LITERATURE
         ):
             return True
-    if e.price == 0 and e.category == Category.MUSIC and re_or(
-        e.title,
-        "Roc[ií]o D[uú]rcal",
-        flags=re.I
-    ):
-        return True
     return False
 
 
@@ -270,53 +291,61 @@ class EventCollector:
         md_events = self.__madrid_destino.events
         md_places = tuple(sorted(set(e.place for e in md_events if e.place)))
         eventos = \
-            FundacionMarch().get_events() + \
-            Alcala(
-                isOkDate=isAlcalaOkDate
-            ).events + \
-            Universidad.get_events(
-                "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
-                "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
-                "https://eventos.uam.es/ics/location/espana/lo-1.ics",
-                "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
-                "https://eventos.uah.es/ics/location/espana/lo-1.ics",
-                verify_ssl=False,
-                isOkPlace=isOkPlace,
-                isOkDate=isOkDate,
-            ) + \
-            MadConvoca(
-                isOkDate=isOkDate,
-            ).events + \
-            AteneoMadrid(
-                isOkDate=isOkDate,
-            ).events + \
-            MadridEs(
-                isOkDate=isOkDate,
-                places_with_store=md_places,
-                max_price=max(self.__max_price.values()),
-                avoid_categories=self.__avoid_categories,
-                isOkPlace=isOkPlace,
-                districts=(
-                    "arganzuela",
-                    "centro",
-                    "moncloa",
-                    "chamber[ií]",
-                    "retiro",
-                    "salamanca",
-                    "villaverde",
-                    "carabanchel",
-                )
-            ).events + \
-            Dore().events + \
             md_events + \
-            CasaEncendida().events + \
-            SalaBerlanga().events + \
-            SalaEquis().events + \
-            CasaAmerica().events + \
-            AcademiaCine().events + \
-            CaixaForum().events + \
-            Telefonica().events + \
-            TeatroMonumental().events
+            run_parallel(
+                MadridEs(
+                    isOkDate={
+                        "villaverde": isOkDateVillaverde,
+                        None: isOkDate
+                    },
+                    places_with_store=md_places,
+                    max_price=max(self.__max_price.values()),
+                    avoid_categories=self.__avoid_categories,
+                    isOkPlace=isOkPlace,
+                    districts=(
+                        "arganzuela",
+                        "centro",
+                        "moncloa",
+                        "chamber[ií]",
+                        "retiro",
+                        "salamanca",
+                        "villaverde",
+                        "carabanchel",
+                    )
+                ),
+                AteneoMadrid(
+                    isOkDate=isOkDate,
+                ),
+                FundacionMarch,
+                Universidades(
+                    "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
+                    "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
+                    "https://eventos.uam.es/ics/location/espana/lo-1.ics",
+                    "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
+                    "https://eventos.uah.es/ics/location/espana/lo-1.ics",
+                    verify_ssl=False,
+                    isOkPlace=isOkPlace,
+                    isOkDate=isOkDate,
+                ),
+            ) + \
+            run_parallel(
+                Alcala(
+                    isOkDate=isAlcalaOkDate
+                ),
+                MadConvoca(
+                    isOkDate=isOkDate,
+                ),
+                CasaAmerica,
+                Telefonica,
+                Dore,
+                CasaEncendida,
+                SalaBerlanga,
+                SalaEquis,
+                AcademiaCine,
+                CaixaForum,
+                TeatroMonumental,
+                CirculoBellasArtes,
+            )
         logger.info(f"{len(eventos)} recuperados")
         eventos = tuple(filter(self.__filter, eventos))
         logger.info(f"{len(eventos)} pasan 1º filtro")

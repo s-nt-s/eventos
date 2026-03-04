@@ -1,23 +1,16 @@
-from core.web import get_text, Driver, MyTag
-from typing import Set, Dict, List, Union, Optional
+from core.web import get_text, MyTag, Web
+from typing import Set, Dict, List, Optional
 from functools import cache
 from core.cache import TupleCache
 import logging
 from core.event import Event, Session, Places, Category, CategoryUnknown
 import re
 from datetime import datetime
-from core.filemanager import FM
-from selenium.webdriver.common.by import By
-from core.util import re_or
+from core.util import re_or, KO_IMG
 
 logger = logging.getLogger(__name__)
 
 months = ('ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic')
-
-SESSION_BAN = (
-    'https://www.lacasaencendida.es/cine/poetas-2025-cine?eventId=7986',
-    'https://www.lacasaencendida.es/cine/poetas-2025-cine?eventId=7987'
-)
 
 
 class CasaEncendidaException(Exception):
@@ -26,55 +19,58 @@ class CasaEncendidaException(Exception):
 
 class CasaEncendida:
     URL = "https://www.lacasaencendida.es/actividades?t[0]=activity_"
-    ACTIVITY = (2, 3)
+    ACTIVITY_OK = {
+        2: Category.CINEMA,
+        3: Category.MUSIC,
+        4: Category.CONFERENCE, # Encuentros
+        5: None, # Escenicas
+    }
+    ACTIVITY_KO = {
+        5: Category.CHILDISH, # Familia
+        14: Category.ONLINE, # Online
+    }
 
     def __init__(self):
-        self.__driver: Union[Driver, None] = None
+        self.__w = Web()
+        self.__w.s.headers.update({'Accept-Encoding': 'gzip, deflate'})
+        self.__url_cat: dict[str, Category] = {}
 
-    def __visit(self, url: str, wait_css: Optional[str] = None):
-        if url != self.__driver.current_url:
-            self.__driver.get(url)
-            if wait_css is None:
-                return self.__driver.wait_ready()
-            return self.__driver.waitjs(f'window.document.readyState === "complete" && document.querySelector(\'{wait_css}\')!=null')
-            #if wait_css:
-            #    self.__driver.safe_wait(wait_css, by=By.CLASS_NAME)
+    def __get_soup(self, url: str):
+        soup = self.__w.get(url)
+        return MyTag(self.__w.url, soup)
 
-    def __get_soup(self, url: str, wait_css: Optional[str] = None):
-        self.__visit(url, wait_css=wait_css)
-        return MyTag(url, self.__driver.get_soup())
-
-    def __get_json(self, url: str) -> Union[Dict, List]:
-        node = self.__get_soup(url)
-        return node.select_one_json("body")
-
-    def __get_ld_json(self, url: str) -> Dict:
+    def __get_ld_json(self, soup: MyTag) -> Dict:
         css_script = 'script[type="application/ld+json"]'
-        js = self.__get_soup(url, wait_css=css_script).select_one_json(css_script)
+        js = soup.select_one_json(css_script)
         return js
 
     @cache
     def get_links(self):
         urls: Set[str] = set()
-        with Driver(browser="firefox") as f:
-            self.__driver = f
-            for a in CasaEncendida.ACTIVITY:
-                urls = urls.union(self.__get_links(CasaEncendida.URL+str(a)))
+        for a, cat in CasaEncendida.ACTIVITY_KO.items():
+            for url in self.__get_links(CasaEncendida.URL+str(a)):
+                if self.__url_cat.get(url) is None:
+                    self.__url_cat[url] = cat
+        for a, cat in CasaEncendida.ACTIVITY_OK.items():
+            for url in self.__get_links(CasaEncendida.URL+str(a)):
+                if self.__url_cat.get(url) is None:
+                    self.__url_cat[url] = cat
+                urls.add(url)
         return tuple(sorted(urls))
 
     def __get_links(self, url_cat):
-        css_list = "div.results-list"
         urls: Set[str] = set()
         page = 0
         while True:
             page = page + 1
-            soup = self.__get_soup(url_cat+f"&page={page}", wait_css=css_list)
-            rsls = soup.select_one(css_list)
-            links = rsls.select("a.results-list__link")
+            soup = self.__w.get(url_cat+f"&page={page}")
+            links = soup.select("div.results-list a.results-list__link")
+            if len(links) == 0:
+                if page == 1:
+                    logger.warning(f"NOT FOUND {url_cat}")
+                return tuple(sorted(urls))
             for a in links:
                 urls.add(a.attrs["href"])
-            if len(links) == 0:
-                return tuple(sorted(urls))
 
     @property
     @TupleCache("rec/casaencendida.json", builder=Event.build)
@@ -88,21 +84,40 @@ class CasaEncendida:
 
     def __url_to_event(self, url):
         soup = self.__get_soup(url)
-        info = self.__get_ld_json(url)
+        info = self.__get_ld_json(soup)
         self.__validate_info_event(info)
         idevent = info[0]['identifier'].split("-")[-1]
-        FM.dump(f"rec/casaencendida/{idevent}.json", info)
-        return Event(
+        category = self.__find_category(soup, info)
+        sessions = self.__find_sessions(soup.url, info)
+        more, cycle = self.__find_more_and_cycle(soup, category)
+        ev = Event(
             id="ce"+idevent,
-            url=url,
+            url=soup.url,
             name=info[0]['name'],
-            category=self.__find_category(soup, info),
-            img=info[0]['image'],
+            category=category,
+            img=self.__find_img(info),
             place=Places.CASA_ENCENDIDA.value,
-            sessions=self.__find_sessions(url, info),
+            sessions=sessions,
             price=self.__find_price(info),
-            duration=self.__find_duration(info)
+            duration=self.__find_duration(info),
+            cycle=cycle,
+            more=more
         )
+        if len(ev.sessions) == 1:
+            s1 = ev.sessions[0]
+            if s1.url and (ev.url is None or s1.url.startswith(ev.url)):
+                ev = ev.merge(
+                    url=s1.url,
+                    sessions=(s1._replace(url=None), )
+                )
+        return ev
+
+    def __find_img(self, info: list[dict]):
+        for i in info:
+            if isinstance(i, dict):
+                img = i.get("image")
+                if img and img not in KO_IMG:
+                    return img
 
     def __validate_info_event(self, info: List):
         if not isinstance(info, list):
@@ -122,19 +137,15 @@ class CasaEncendida:
 
     def __find_sessions(self, url: str, info: List[Dict]):
         if len(info) == 1:
-            if url in SESSION_BAN:
-                return tuple()
             return tuple((Session(
-                url=url,
+                url=None,
                 date=info[0]["startDate"][:16].replace("T", " ")
             ), ))
         sessions: Set[Session] = set()
         for i in info[1:]:
             s_url = i['location']['url']
-            if s_url in SESSION_BAN:
-                continue
             sessions.add(Session(
-                url=s_url,
+                url=s_url if s_url != url else None,
                 date=i["startDate"][:16].replace("T", " ")
             ))
         return tuple(sorted(sessions))
@@ -152,6 +163,7 @@ class CasaEncendida:
         for li in map(get_text, soup.node.select("ul.item-detail__list li")):
             if li and "No está permitida la entrada a mayores si no van acompañados de un menor" in li:
                 return Category.CHILDISH
+        name: str = info[0]['name'].lower()
         tags = set()
         for tag in soup.select_txt(", ".join(
             (
@@ -166,11 +178,37 @@ class CasaEncendida:
                 tags.add(t.lower())
         if tags.intersection(("en familia", "espacio nido")):
             return Category.CHILDISH
+        if re_or(
+            name,
+            "Asamblea de juveniles",
+            flags=re.I
+        ):
+            return Category.YOUTH
+        if re_or(
+            name,
+            "Visita al edificio",
+            flags=re.I
+        ):
+            return Category.VISIT
+        if re_or(
+            name,
+            "master ?class",
+            "mesa redonda",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+        if re_or(
+            name,
+            "Juegatorio",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+        if tags.intersection(("ecoclub de lectura", "club de lectura")):
+            return Category.READING_CLUB
         if tags.intersection(("cine", "audiovisuales")):
             return Category.CINEMA
         if tags.intersection(("conciertos", "música")):
             return Category.MUSIC
-        name: str = info[0]['name'].lower()
         if "concierto" in name:
             return Category.MUSIC
         desc = soup.select_one_txt("div.item-detail__info__content")
@@ -178,8 +216,38 @@ class CasaEncendida:
             return Category.MUSIC
         if re_or(name, r"films?"):
             return Category.CINEMA
+        if re_or(
+            name,
+            "Diario Vivo",
+            flags=re.I
+        ):
+            return Category.THEATER
+        cat = self.__url_cat.get(soup.url)
+        if cat is not None:
+            return cat
         logger.critical(str(CategoryUnknown(soup.url, ", ".join(sorted(tags)))))
         return Category.UNKNOWN
+
+    def __get_group(self, soup: MyTag):
+        a_cycle = soup.node.select_one("div.item-detail__hero__info__content a.group-link")
+        cycle = get_text(a_cycle)
+        if cycle is None:
+            return None, None
+        href = a_cycle.get("href")
+        cycle = re.sub(r"(radio encendida) \d+$", r"\1", cycle, flags=re.I)
+        m = re.match(r"^(conversar)\s*,\s*(.+)\s*$", cycle, flags=re.I)
+        if m:
+            cycle = m.group(2)
+            cycle = cycle[0].upper() + cycle[1:]
+        return href, cycle
+
+    def __find_more_and_cycle(self, soup: MyTag, category: Category):
+        href, group = self.__get_group(soup)
+        if category in (Category.CONFERENCE, ):
+            return href, group
+        if category == Category.MUSIC and re_or(group, "radio encendida", flags=re.I):
+            return href, group
+        return None, None
 
     def __find_duration(self, info: List[Dict]):
         def to_date(s: str):

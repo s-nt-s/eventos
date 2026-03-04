@@ -116,6 +116,8 @@ class SalaBerlanga:
             return ok_name.pop()
 
     def _to_event(self, item: Item):
+        if get_text(item.tag.select_one("p.card-text-dispo")) == "Entradas agotadas":
+            return None
         a = item.tag.select_one("p.card-text-comprar a")
         isGratis = get_text(a) == "Entrada gratuita"
         url_compra = get_attr(a, "href")

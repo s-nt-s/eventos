@@ -1,4 +1,3 @@
-from core.gancio import GancioPortal, Event as GancioEvent
 from core.ics import IcsReader, IcsEventWrapper
 from core.event import Event, Place, Category, Session, CategoryUnknown, Places
 from functools import cached_property
@@ -9,6 +8,7 @@ from typing import Callable
 from datetime import datetime
 from core.web import get_text, buildSoup
 from functools import cache
+from core.cache import TupleCache
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,12 @@ def html_to_text(html: str):
     for x in soup.select("br, p"):
         x.append("\n")
     return get_text(soup)
+
+
+def clean_name(name: str):
+    name = re.sub(r"\. Ciclo .*", "", name)
+    name = re.sub(r"^Ciclo (?:de conferencias )?['«](.*?)['»]$", r"\1", name)
+    return name
 
 
 class AteneoMadrid:
@@ -37,6 +43,7 @@ class AteneoMadrid:
         )
 
     @cached_property
+    @TupleCache("rec/ateneo_madrid.json", builder=Event.build)
     def events(self):
         logger.info("Buscando eventos en Ateneo Madrid")
         ok_events: set[Event] = set()
@@ -86,7 +93,7 @@ class AteneoMadrid:
         event = Event(
             id=f"am{e.UID}",
             url=e.URL,
-            name=e.SUMMARY,
+            name=clean_name(e.SUMMARY),
             duration=e.duration or 60,
             img=e.ATTACH,
             price=self.__find_price(e),
@@ -98,8 +105,14 @@ class AteneoMadrid:
                     date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
                 ),
             ),
+            cycle=self.__find_cycle(e)
         )
         return event
+
+    def __find_cycle(self, e: IcsEventWrapper):
+        m = re.search(r"\. (Ciclo '?[^\.']+)", e.SUMMARY)
+        if m:
+            return m.group(1).strip()
 
     def __find_price(self, e: IcsEventWrapper):
         prc = find_euros(e.DESCRIPTION)
@@ -108,6 +121,7 @@ class AteneoMadrid:
         if re_or(
             e.DESCRIPTION,
             "venta de entradas",
+            "Venta entradas",
             flags=re.I
         ):
             return 999
@@ -145,6 +159,7 @@ class AteneoMadrid:
                 "de opinión de El Mundo",
                 "María Zaplana Barceló",
                 "92 Liberales",
+                "Roc[ií]o Albert",
             ):
                 return Category.INSTITUTIONAL_POLICY
             if re_or(
@@ -264,8 +279,7 @@ class AteneoMadrid:
             flags=re.I
         ):
             return Category.SPORT
-        if get_domain(e.URL) == "ateneodemadrid.com":
-            return Category.CONFERENCE
+        return Category.CONFERENCE
 
     def __find_place(self, e: IcsEventWrapper):
         if e.LOCATION:
@@ -273,8 +287,7 @@ class AteneoMadrid:
                 name=e.LOCATION,
                 address=e.LOCATION
             )
-        if get_domain(e.URL) == "ateneodemadrid.com":
-            return Places.ATENEO_MADRID.value
+        return Places.ATENEO_MADRID.value
 
 
 if __name__ == "__main__":

@@ -46,7 +46,8 @@ class KineTike:
     def __get(self, url: str):
         soup = self.__w.get(url)
         if self.__w.url == KineTike.ERROR_URL:
-            raise ValueError(self.__w.soup.get_text(strip=True))
+            logger.critical(self.__w.soup.get_text(strip=True))
+            return False
         return soup
 
     def __select_one_attr(self, slc: str, attr: str):
@@ -66,7 +67,8 @@ class KineTike:
     @cached_property
     def urls(self):
         urls: set[str] = set()
-        self.__get(self.__root)
+        if self.__get(self.__root) is False:
+            return tuple()
         for i in self.__w.soup.select("input[type='image'][onclick]"):
             click = i.attrs.get("onclick")
             if not isinstance(click, str):

@@ -383,11 +383,18 @@ class Place:
                 Zones.MANUEL_BECERRA,
                 Zones.NUNEZ_BOLBOA,
                 Zones.ALCALA_DE_HENARES,
-                Zones.AV_AMERICA
+                Zones.AV_AMERICA,
+                Zones.COMPLUTENSE,
             ):
                 z = zn.value
                 if z.is_in(lat, lon):
                     return z.name
+        if re_or(
+            self.address,
+            r"Av(\.|enida)? Complutense",
+            flags=re.I
+        ):
+            return Zones.COMPLUTENSE.value.name
         return None
 
     def _fix_latlon(self):
@@ -420,7 +427,12 @@ class Place:
             return Places.CINETECA.value
         if re.search(r"\bESLA EKO\b", name, flags=re.I) or re_and(address, "[aá]nade,? 10", flags=re.I):
             return Places.EKO.value
-        if re.search(r"Fundaci[óo]n Anselmo Lorenzo", name, flags=re.I):
+        if re_or(
+            name,
+            r"FAL",
+            r"Fundaci[óo]n Anselmo Lorenzo",
+            flags=re.I
+        ) and re_and(address, "Peñuelas", flags=re.I):
             return Places.FUNDACION_ALSELMO_LORENZO.value
         if re.search(r"auditorio francisca (martinez|Mtnez\.?) garrido", name, flags=re.I):
             return Places.AUDITORIO_FRANCISCA_MARTINEZ_GARRIDO.value
@@ -470,6 +482,14 @@ class Place:
             return Places.AVA.value
         if re_or(name, r"Serrer[ií]a Belga", flags=re.I) and re_and(address, r"(calle\s*)?alameda", flags=re.I):
             return Places.SERRERIA_BELGA.value
+        if re_or(name, r"3\s*peces?\s*3", flags=re.I) and re_and(address, "peces", flags=re.I):
+            return Places.TRES_PECES_TRES.value
+        if re_and(name, ("ucm", "complutense"), "ciencias", "informaci[oó]", flags=re.I) and re_and(address, r"complutense", flags=re.I):
+            return Places.UCM_CIENCIAS_INFORMACION.value
+        if re_and(name, "catedral", "la almudena", flags=re.I):
+            return Places.LA_ALMUDENA.value
+        if re_and(name, "teatro", "monumental", flags=re.I) and re_and(address, "atocha", flags=re.I):
+            return Places.TEATRO_MONUMENTAL.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -730,6 +750,24 @@ class Places(Enum):
         latlon="40.4106964292281,-3.6936188373826417",
         zone='Paseo del Pardo'
     )
+    TRES_PECES_TRES = Place(
+        name="CSA 3 peces 3",
+        address="Calle de los Tres Peces, 3, Centro, 28012 Madrid",
+        latlon="40.41097432843205,-3.7001688291322816",
+        zone='Lavapies'
+    )
+    UCM_CIENCIAS_INFORMACION = Place(
+        name="CSA 3 peces 3",
+        address="Av. Complutense, 3, 28040 Madrid",
+        latlon="40.44590443938829,-3.7283811785778678",
+        zone='Complutense'
+    )
+    LA_ALMUDENA = Place(
+        name="La Almudena",
+        address="C. de Bailén, 10, Centro, 28013 Madrid",
+        latlon="40.41586328949746,-3.714627123889976",
+        zone='Sol'
+    )
 
 
 def unquote(s: str):
@@ -772,6 +810,7 @@ def _clean_name(name: str, place: str):
             "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.I)
+        name = re.sub(r"^Ciclo de conferencia '(.+?)'$", r"\1", name, flags=re.I)
         name = re.sub(r"\s*[\-\.]+\s*Moncloa[ \-\.]+Aravaca\s*$", "", name, flags=re.I)
         name = re.sub(r"\s*[\-\.]+\s*(Villaverde|Centro)\s*$", "", name, flags=re.I)
         name = re.sub(r"^(Magia|Teatro|Cine):\s*'(.+)'\s*$", r"\2", name, flags=re.I)
@@ -795,7 +834,6 @@ def _clean_name(name: str, place: str):
         name = re.sub(r"^conferencia\s+y\s+audiovisual:\s+", "", name, flags=re.I)
         name = re.sub(r"^(conferencia|visita[^'\"]*)[\s:]+(['\"])", r"\2", name, flags=re.I)
         name = re.sub(r"^(conferencia|concierto|espect[aá]culo|proyección( película)?)\s*[\-:\.]\s*", "", name, flags=re.I)
-        name = re.sub(r"^(conferencia)\s*", "", name, flags=re.I)
         name = re.sub(r"^visita (comentada|guiada)(:| -)\s+", "", name, flags=re.I)
         name = re.sub(r"^Proyección del documental:\s+", "", name, flags=re.I)
         name = re.sub(r"^(Cine .*)?Proyección de (['\"])", r"\2", name, flags=re.I)
@@ -1262,7 +1300,7 @@ class Event:
             if None in st:
                 st.remove(None)
         seen_in = tuple(sorted(set_seen_in))
-        url = seen_in[0]
+        url = seen_in[0] if seen_in else None
         also_in = seen_in[1:]
         sessions_url = set(s.url for s in sessions_with_url if s.url is not None)
         if len(sessions) > 1:
@@ -1393,6 +1431,10 @@ class Event:
             "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Charlas-taller-de-cactus-y-suculentas/?vgnextfmt=default&vgnextoid=d452d3d3508b7810VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
         }):
             return "Charlas-taller de cactus y suculentas"
+        if urls.intersection({
+            'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-con-investigadores-del-CSIC/?vgnextfmt=default&vgnextoid=8f17641cea74c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+        }):
+            return "Las conferencias del CSIC"
         if re_and(
             self.name,
             "Escribo lo que soy",

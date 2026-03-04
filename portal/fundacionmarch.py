@@ -109,8 +109,9 @@ class FundacionMarch:
         })
         return w
 
+    @property
     @TupleCache("rec/fundacionmarch.json", builder=Event.build)
-    def get_events(self):
+    def events(self):
         logger.info("Fundación March: Buscando eventos")
         all_events: set[Event] = set()
         self.__web.get(FundacionMarch.URL)

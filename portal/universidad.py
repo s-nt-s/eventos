@@ -1,7 +1,7 @@
 from core.ics import IcsReader, IcsEventWrapper
 from functools import cached_property
 from core.event import Event, Place, Session, Category, Places, CategoryUnknown
-from core.util import re_or, re_and
+from core.util import re_or, re_and, get_domain
 import requests
 import re
 from bs4 import BeautifulSoup
@@ -15,7 +15,7 @@ from typing import Callable
 from requests import Session as ReqSession
 from bs4 import XMLParsedAsHTMLWarning
 from core.util import find_euros, get_obj
-from core.cache import HashTupleCache
+from core.cache import HashTupleCache, TupleCache
 from datetime import datetime
 import pytz
 import urllib3
@@ -85,7 +85,7 @@ def load_kml_soup(url: str, verify_ssl=True):
     return soup
 
 
-def clean_place_name(name: str) -> str:
+def clean_place_name(name: str, domain: str) -> str:
     if name is None:
         return None
     name = re_sp.sub(" ", name).strip()
@@ -97,8 +97,20 @@ def clean_place_name(name: str) -> str:
         return "URJC Quintana"
     if re_and(name, "Carlos III", "Puerta (de )?Toledo", flags=re.I):
         return "UC3 Puerta Toledo"
+    if domain and "uc3m" in domain and re_and(name, "ronda", "toledo", "28005", flags=re.I):
+        return "UC3 Puerta Toledo"
     if re_and(name, "ateneo (de )?Madrid", flags=re.I):
         return "Ateneo Madrid"
+    if re_and(name, "colegio", "san pedro", "san pablo", flags=re.I):
+        return "Colegio San Pedro y San Pablo"
+    if re_and(name, "Ciencias de la Informaci[oó]n", "Complutense", flags=re.I):
+        return "UCM Ciencias de la información"
+    if re_and(
+        name,
+        "metro tribunal",
+        flags=re.I
+    ):
+        return "Metro Tribunal"
     return name
 
 
@@ -249,13 +261,13 @@ class Universidad:
         for e in self.__ics.events:
             if e.DTSTART <= NOW:
                 continue
-            place = self.__find_place(e)
+            link = self.__find_url(e)
+            place = self.__find_place(e, link)
             if place is None:
                 continue
             place = place.normalize()
             if not self.__isOkPlace(place):
                 continue
-            link = self.__find_url(e)
             if link is None:
                 logger.warning(f"Evento sin URL {e}")
                 continue
@@ -283,7 +295,7 @@ class Universidad:
         evs = tuple(sorted(events))
         return evs
 
-    def __find_place(self, e: IcsEventWrapper):
+    def __find_place(self, e: IcsEventWrapper, url: str):
         if not e.LOCATION:
             return None
         if re_and(e.LOCATION, "ateneo (de )?Madrid", flags=re.I):
@@ -292,8 +304,9 @@ class Universidad:
         if latlon is None:
             loc_latlon = self.__get_locations()
             latlon = loc_latlon.get(e.LOCATION)
+        dom = get_domain(url)
         return Place(
-            name=clean_place_name(e.LOCATION),
+            name=clean_place_name(e.LOCATION, dom),
             address=e.LOCATION,
             latlon=latlon
         )
@@ -303,9 +316,17 @@ class Universidad:
             e.SUMMARY,
             r"Actividad formativa de Doctorado",
             r"pr[aá]cticas y empleo",
+            r"Encuentro AlumniUAH",
             flags=re.I
         ):
             return Category.NO_EVENT
+        description = self.__get_description(link, e.SUMMARY)
+        if re_or(
+            description,
+            r"Actividad para alumnos[^\.]*? (ESO|Primaria)",
+            flags=re.I
+        ):
+            return Category.CHILDISH
         if re_or(e.SUMMARY, r"UN REGRESO DE CINE", flags=re.I):
             return Category.CINEMA
         if re_or(
@@ -322,13 +343,6 @@ class Universidad:
             flags=re.I
         ):
             return Category.WORKSHOP
-        description = self.__get_description(link, e.SUMMARY)
-        if re_or(
-            description,
-            r"Actividad para alumnos[^\.]*? (ESO|Primaria)",
-            flags=re.I
-        ):
-            return Category.CHILDISH
         if re_or(
             description,
             r"Encuentro con",
@@ -341,6 +355,7 @@ class Universidad:
         if re_or(
             description,
             "obra esc[eé]nica",
+            "conferencia teatralizada",
             flags=re.I
         ):
             return Category.THEATER
@@ -357,9 +372,17 @@ class Universidad:
             e.SUMMARY,
             "charla historiogr[aá]fica",
             "conservatorio",
+            "Encuentro con",
+            "Jornada( Universitaria)? sobre",
             flags=re.I
         ):
             return Category.CONFERENCE
+        if re_or(
+            e.SUMMARY,
+            "tour",
+            flags=re.I
+        ):
+            return Category.VISIT
         logger.critical(str(CategoryUnknown(link, f"categories={categories} {e}")))
         return Category.UNKNOWN
 
@@ -388,22 +411,31 @@ class Universidad:
                 return prc
         return 0
 
-    @classmethod
-    def get_events(
-        cls,
+
+class Universidades:
+    def __init__(
+        self,
         *urls: str,
         verify_ssl=True,
         isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
         isOkDate: Callable[[datetime], bool] = None,
     ):
+        self.__urls = urls
+        self.__verify_ssl = verify_ssl
+        self.__isOkPlace = isOkPlace
+        self.__isOkDate = isOkDate
+
+    @property
+    @TupleCache("rec/universidad.json", builder=Event.build)
+    def events(self):
         logger.info("Buscando eventos en universidades")
         events: set[Event] = set()
-        for url in urls:
-            events.update(cls(
+        for url in self.__urls:
+            events.update(Universidad(
                 url,
-                verify_ssl=verify_ssl,
-                isOkPlace=isOkPlace,
-                isOkDate=isOkDate
+                verify_ssl=self.__verify_ssl,
+                isOkPlace=self.__isOkPlace,
+                isOkDate=self.__isOkDate
             ).events)
         evs = tuple(sorted(events))
         logger.info(f"Buscando eventos en universidades = {len(evs)}")

@@ -46,6 +46,7 @@ def get_domain(url: str):
     domain: str = parsed_url.netloc.lower()
     if domain.startswith("www."):
         domain = domain[4:]
+    domain = re.sub(r":\d+$", "", domain)
     return domain
 
 
@@ -145,6 +146,16 @@ def plain_text(s: Union[str, Tag], is_html=False):
     return s
 
 
+@cache
+def _mk_re(s: str, flags: int = 0):
+    reg = str(s)
+    if reg[0] not in ("^", " "):
+        reg = r"\b" + reg
+    if reg[-1] not in ("$", " ", ":"):
+        reg = reg + r"\b"
+    return re.compile(reg, flags=flags)
+
+
 def re_or(s: str, *args: Union[str, Tuple[str]], to_log: str = None, flags=0):
     if s is None or len(s) == 0 or len(args) == 0:
         return None
@@ -156,12 +167,7 @@ def re_or(s: str, *args: Union[str, Tuple[str]], to_log: str = None, flags=0):
                     logger.debug(f"{to_log} cumple {b}")
                 return b
         else:
-            reg = str(r)
-            if reg[0] not in ("^", " "):
-                reg = r"\b" + reg
-            if reg[-1] not in ("$", " ", ":"):
-                reg = reg + r"\b"
-            if re.search(reg, s, flags=flags):
+            if _mk_re(r, flags=flags).search(s):
                 if to_log:
                     logger.debug(f"{to_log} cumple {r}")
                 return r
@@ -178,10 +184,11 @@ def re_and(s: str, *args: Union[str, Tuple[str]], to_log: str = None, flags=0):
             if b is None:
                 return None
             arr.append(b)
-        elif re.search(r"\b" + r + r"\b", s, flags=flags):
-            arr.append(r)
         else:
-            return None
+            if _mk_re(r, flags=flags).search(s):
+                arr.append(r)
+            else:
+                return None
     txt = " AND ".join(arr)
     if to_log:
         logger.debug(f"{to_log} cumple {txt}")
@@ -360,6 +367,8 @@ def _safe_soup(url: str):
 
 def _get_festivos_from_calendarioslaborales(year: int):
     dates: set[date] = set()
+    if year > (date.today().year + 10):
+        return dates
     soup = _safe_soup(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
     if soup is None:
         return dates
@@ -426,6 +435,12 @@ KO_IMG = (
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Cine_Audiovisuales/ficheros/esqueria_260x260.png',
     'https://cdn.tenemosplan.com/tenemosplan/default_image.jpg',
     'https://www.madrid.es/UnidadWeb/UGBBDD/EntidadesYOrganismos/CulturaYOcio/InstalacionesCulturales/CentrosCulturalesMunicipales/CCVillaverde/Ficheros/CSCBohemios.jpg',
+    'https://cdn.lacasaencendida.es/storage/40896/conversions/DW5lxtdq8zdVkRJhr4sobjXn1GkQ9Y-metaQ29tcHJlbmRlciA2LmpwZw==--detail.jpg',
+    'https://cdn.lacasaencendida.es/storage/40897/conversions/PphsaAqOMYFCAuVfQchpE41782kzoW-metaQ29tcHJlbmRlciA2LmpwZw==--detail.jpg',
+    'https://cdn.lacasaencendida.es/storage/40899/conversions/lLuA3U8OV6DsFLdG0s4AnIFgrHPIMo-metaQ29tcHJlbmRlci5qcGc=--detail.jpg',
+    'https://cdn.lacasaencendida.es/storage/40900/conversions/GDlCus77F2aLC6INn4vbg5Su2b3F4R-metaQ29tcHJlbmRlci5qcGc=--detail.jpg',
+    'https://cdn.lacasaencendida.es/storage/40901/conversions/IsU45QqcuKmr67wp0HOpEAoMsc8kKL-metaQ29tcHJlbmRlci5qcGc=--detail.jpg',
+    'https://cdn.lacasaencendida.es/storage/40895/conversions/eEgTqKza8kchV70Ydsqm68WUnTkdOB-metaQ29tcHJlbmRlciA2LmpwZw==--detail.jpg',
 )
 
 KO_MORE = (
@@ -451,38 +466,60 @@ KO_MORE = (
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Talleres-presenciales-ciudades-sostenibles-/?vgnextfmt=default&vgnextoid=d2a0924d36704910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-Internacional-de-la-Mujer-en-los-Centros-culturales-de-Arganzuela/?vgnextfmt=default&vgnextoid=17b8a0d40799c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-Internacional-de-la-Mujer-en-el-Distrito-de-Retiro/?vgnextfmt=default&vgnextoid=54dfcbd2e45eb910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/El-Ayuntamiento/Transformacion-Digital/Madrid-Movil/?vgnextchannel=1827d33f92eab810VgnVCM2000001f4a900aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-Internacional-de-la-Mujer-en-los-Centros-Culturales-de-Chamberi/?vgnextfmt=default&vgnextoid=ee8211c990735910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Edificio-Sociocultural-Marta-Escudero-Diaz-Tejeiro/?vgnextfmt=default&vgnextoid=d7e6b95f6495a910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
     'imccwem.munimadrid.es'
 )
+
+
+_SPECIAL_WORDS = (
+    "María la Rica",
+    "Carmen",
+    "Sevilla",
+    "Cervantes",
+    "Alcalá",
+    "Henares",
+    "Antezana",
+    "Santiago",
+    "Complutense",
+    "Mononoke",
+    "IV",
+    "BSMM",
+    "Paco de Lucía",
+    "AWWZ",
+    "CSO",
+    "EKO",
+    "IA",
+    "AI",
+    "centro cultural",
+    "XXX",
+    "VHZ",
+    "XXV",
+    "Quijote",
+    "Sara Torres",
+    "Karelis Zambrano",
+    "Carmen Rojas"
+)
+
+_RG_SPECIAL_WORDS = re.compile(
+    r"\b(" + "|".join(map(re.escape, _SPECIAL_WORDS)) + r")\b",
+    re.I
+)
+_RE_SPECIAL_WORDS = {x.lower(): x for x in _SPECIAL_WORDS}
 
 
 def capitalize(name: str):
     if name == name.upper():
         name = name.capitalize()
-    for x in (
-        "María la Rica",
-        "Cervantes",
-        "Alcalá",
-        "Henares",
-        "Antezana",
-        "Santiago",
-        "Complutense",
-        "Mononoke",
-        "IV",
-        "BSMM",
-        "Paco de Lucía",
-        "AWWZ",
-        "CSO",
-        "EKO",
-        "IA",
-        "AI",
-        "centro cultural",
-        "XXX",
-        "VHZ",
-        "XXV",
-        "Quijote",
-    ):
-        name = re.sub(r"\b"+re.escape(x)+r"\b", x, name, flags=re.I)
+
+    name = _RG_SPECIAL_WORDS.sub(
+        lambda m: _RE_SPECIAL_WORDS[m.group(0).lower()],
+        name
+    )
+
     w1 = name[0]
     if w1.isalpha():
         name = w1.upper()+name[1:]
+
     return name

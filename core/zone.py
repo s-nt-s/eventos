@@ -158,6 +158,10 @@ class Zones(Enum):
         "Avenida de América",
         Circle(lat=40.43892297245423, lon=-3.6788992647788437, kms=0.7)
     )
+    COMPLUTENSE = Zone.build(
+        "Complutense",
+        Circle(lat=40.443655222892964, lon=-3.7268363944992062, kms=1)
+    )
 
 
 if __name__ == "__main__":

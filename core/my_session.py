@@ -13,7 +13,7 @@ re_sp = re.compile(r"\s+")
 
 @cache
 def getProxy(dom: str):
-    if dom in ("march.es", "giglon.com"): #("madrid.es", ):
+    if dom in ("march.es", "giglon.com", "lacasaencendida.es"): #("madrid.es", ):
         prx = PM.get_proxy()
         if prx:
             lb = re.sub("://.+@", "://", prx)
