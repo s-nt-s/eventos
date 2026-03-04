@@ -186,6 +186,7 @@ class MadConvoca:
             e.SUMMARY,
             r"Asesorías? legal(es)?",
             r"Asesorías? laboral(es)?",
+            ("Redes Libertarias", r"n[úu]mero", "revista"),
             flags=re.I,
             to_log=e.UID
         ):
@@ -298,6 +299,8 @@ class MadConvoca:
             return Places.ATENEO_MADRID.value
 
     def __find_gancio_category(self, e: GancioEvent) -> Category:
+        name = plain_text(e.title)
+        txt_desc = html_to_text(e.description) if e.description else None
         tags: set[str] = set(map(plain_text, map(str.strip, e.tags)))
 
         def has_tag(*args):
@@ -314,7 +317,13 @@ class MadConvoca:
                 return True
             return False
 
-        name = plain_text(e.title)
+        if re_or(
+            txt_desc,
+            "debatiremos sobre la novela",
+            flags=re.I
+        ):
+            return Category.NARRATIVE
+
         if has_tag_or_title("flinta"):
             return Category.NO_EVENT
         if has_tag_or_title("infantil"):
@@ -322,12 +331,22 @@ class MadConvoca:
         if has_tag("asamblea") or has_tag_or_title('manifestacion', 'concentracion'):
             return Category.ACTIVISM
         if re_or(
+            txt_desc,
+            "Ven con tus peques",
+            flags=re.I,
+            to_log=e.id
+        ):
+            return Category.CHILDISH
+        if re_or(
             name,
             "Bienvenida Nuev[oa]s? Rebeldes?",
             flags=re.I,
             to_log=e.id
         ):
             return Category.ACTIVISM
+
+        if has_tag_or_title("kafeta"):
+            return Category.PARTY
         if has_tag_or_title("cine", "cineforum", "cinebollum", "documental"):
             return Category.CINEMA
         if has_tag("deporte") or has_tag_or_title("yoga", "pilates"):
@@ -393,14 +412,6 @@ class MadConvoca:
         ):
             return Category.READING_CLUB
 
-        txt_desc = html_to_text(e.description) if e.description else None
-        if re_or(
-            txt_desc,
-            "Ven con tus peques",
-            flags=re.I,
-            to_log=e.id
-        ):
-            return Category.CHILDISH
         if re_or(
             txt_desc,
             "Charla cr[ií]tica",
@@ -430,6 +441,7 @@ class MadConvoca:
             txt_desc,
             "leer un texto",
             "razonar en com[uú]n",
+            "club de lectura",
             flags=re.I
         ):
             return Category.READING_CLUB
@@ -446,8 +458,6 @@ class MadConvoca:
             if re_or(name, "presentaci[oó]n", flags=re.I):
                 return Category.LITERATURE
 
-        if re_or(name, "kafeta", to_log=e.id, flags=re.I):
-            return Category.PARTY
         if re_or(name, "Presentaci[óo]n del libro", to_log=e.id, flags=re.I):
             return Category.LITERATURE
 

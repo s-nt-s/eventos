@@ -1,4 +1,4 @@
-from core.web import get_text, Driver, MyTag
+from core.web import get_text, MyTag, Web
 from typing import Set, Dict, List, Union, Optional
 from functools import cache
 from core.cache import TupleCache
@@ -7,17 +7,11 @@ from core.event import Event, Session, Places, Category, CategoryUnknown
 import re
 from datetime import datetime
 from core.filemanager import FM
-from selenium.webdriver.common.by import By
 from core.util import re_or
 
 logger = logging.getLogger(__name__)
 
 months = ('ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic')
-
-SESSION_BAN = (
-    'https://www.lacasaencendida.es/cine/poetas-2025-cine?eventId=7986',
-    'https://www.lacasaencendida.es/cine/poetas-2025-cine?eventId=7987'
-)
 
 
 class CasaEncendidaException(Exception):
@@ -30,6 +24,8 @@ class CasaEncendida:
 
     def __init__(self):
         self.__driver: Union[Driver, None] = None
+        self.__w = Web()
+        self.__w.s.headers.update({'Accept-Encoding': 'gzip, deflate'})
 
     def __visit(self, url: str, wait_css: Optional[str] = None):
         if url != self.__driver.current_url:
@@ -41,40 +37,35 @@ class CasaEncendida:
             #    self.__driver.safe_wait(wait_css, by=By.CLASS_NAME)
 
     def __get_soup(self, url: str, wait_css: Optional[str] = None):
-        self.__visit(url, wait_css=wait_css)
-        return MyTag(url, self.__driver.get_soup())
+        soup = self.__w.get(url)
+        return MyTag(url, soup)
 
-    def __get_json(self, url: str) -> Union[Dict, List]:
-        node = self.__get_soup(url)
-        return node.select_one_json("body")
-
-    def __get_ld_json(self, url: str) -> Dict:
+    def __get_ld_json(self, soup: MyTag) -> Dict:
         css_script = 'script[type="application/ld+json"]'
-        js = self.__get_soup(url, wait_css=css_script).select_one_json(css_script)
+        js = soup.select_one_json(css_script)
         return js
 
     @cache
     def get_links(self):
         urls: Set[str] = set()
-        with Driver(browser="firefox") as f:
-            self.__driver = f
-            for a in CasaEncendida.ACTIVITY:
-                urls = urls.union(self.__get_links(CasaEncendida.URL+str(a)))
+        for a in CasaEncendida.ACTIVITY:
+            urls = urls.union(self.__get_links(CasaEncendida.URL+str(a)))
         return tuple(sorted(urls))
 
     def __get_links(self, url_cat):
-        css_list = "div.results-list"
         urls: Set[str] = set()
         page = 0
         while True:
             page = page + 1
-            soup = self.__get_soup(url_cat+f"&page={page}", wait_css=css_list)
-            rsls = soup.select_one(css_list)
-            links = rsls.select("a.results-list__link")
+            soup = self.__w.get(url_cat+f"&page={page}")
+            links = soup.select("div.results-list a.results-list__link")
+            if len(links) == 0:
+                if page == 1:
+                    print(soup)
+                    logger.warning(f"NOT FOUND {url_cat}")
+                return tuple(sorted(urls))
             for a in links:
                 urls.add(a.attrs["href"])
-            if len(links) == 0:
-                return tuple(sorted(urls))
 
     @property
     @TupleCache("rec/casaencendida.json", builder=Event.build)
@@ -88,7 +79,7 @@ class CasaEncendida:
 
     def __url_to_event(self, url):
         soup = self.__get_soup(url)
-        info = self.__get_ld_json(url)
+        info = self.__get_ld_json(soup)
         self.__validate_info_event(info)
         idevent = info[0]['identifier'].split("-")[-1]
         FM.dump(f"rec/casaencendida/{idevent}.json", info)
@@ -122,8 +113,6 @@ class CasaEncendida:
 
     def __find_sessions(self, url: str, info: List[Dict]):
         if len(info) == 1:
-            if url in SESSION_BAN:
-                return tuple()
             return tuple((Session(
                 url=url,
                 date=info[0]["startDate"][:16].replace("T", " ")
@@ -131,8 +120,6 @@ class CasaEncendida:
         sessions: Set[Session] = set()
         for i in info[1:]:
             s_url = i['location']['url']
-            if s_url in SESSION_BAN:
-                continue
             sessions.add(Session(
                 url=s_url,
                 date=i["startDate"][:16].replace("T", " ")

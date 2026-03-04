@@ -871,7 +871,7 @@
     },
     "ms1f482298a43bc910VgnVCM100000891ecb1aRCRD": {"category": "SPORT"},
     "md7462": {"category": "CONFERENCE"},
-    "msd2d12298a43bc910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
+    "msd2d12298a43bc910VgnVCM100000891ecb1aRCRD": {"category": "MUSIC"},
     "al54215": {"category": "RELIGION"},
     "al54147": {"category": "RELIGION"},
     "ms26730b4c10e9c910VgnVCM100000891ecb1aRCRD": {"category": "MUSIC"},
@@ -912,5 +912,37 @@
     "tlA1F8E9F4-77AE-5A0B-BE80-8EE0DDC8D3BB": {
         "category": "LITERATURE",
         "more": "https://www.goodreads.com/book/show/244465591"
-    }
+    },
+    "am56895-1773257400-1773257400@ateneodemadrid.com": {"category": "CONFERENCE"},
+    "am56198-1773430200-1773430200@ateneodemadrid.com": {"category": "CONFERENCE"},
+    "mcmc26999": {"category": "CONFERENCE"},
+    "mcmc27007": {
+        "category": "LITERATURE",
+        "more": "https://www.goodreads.com/book/show/245821908"
+    },
+    "mcmc27001": {"category": "ACTIVISM"},
+    "ms5109f9dcd28bc910VgnVCM100000891ecb1aRCRD": { "category": "SPORT" },
+    "ms4953dafb518bc910VgnVCM100000891ecb1aRCRD": { "category": "SPORT" },
+    "ms2a774901cf7bc910VgnVCM100000891ecb1aRCRD": { "category": "SPORT" },
+    "ac843": {
+        "filmaffinity": 580372
+    },
+    "mcmc27002": {"category": "WORKSHOP"},
+    "al54222": {"category": "POETRY"},
+    "mcmc27000": {"category": "ACTIVISM"},
+    "am57079-1773689400-1773689400@ateneodemadrid.com": {
+        "category": "LITERATURE",
+        "name": "Cesar Rendueles presenta: 'Redes vacías: Tecnología catastrófica y el fin de la democracia'",
+        "more": "https://www.goodreads.com/book/show/244714786"
+    },
+    "ms16d3dc6dddebc910VgnVCM100000891ecb1aRCRD": {"category": "LITERATURE"},
+    "md7436": {"category": "CINEMA"},
+    "mcmc27008": {"category": "NARRATIVE"},
+    "am57102-1774636200-1774636200@ateneodemadrid.com": {"category": "POETRY"},
+    "ms5d67f9e6302cc910VgnVCM200000f921e388RCRD": {"category": "THEATER"},
+    "mcmc27026": {"category": "ACTIVISM"},
+    "mcmc27027": {"category": "ACTIVISM"},
+    "ms06d32b69333cc910VgnVCM200000f921e388RCRD": {"category": "MUSIC"},
+    "mcmc27024": {"category": "NARRATIVE"},
+    "mcmc27030": {"category": "NARRATIVE"}
 }

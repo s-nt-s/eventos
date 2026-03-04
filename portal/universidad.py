@@ -99,6 +99,10 @@ def clean_place_name(name: str) -> str:
         return "UC3 Puerta Toledo"
     if re_and(name, "ateneo (de )?Madrid", flags=re.I):
         return "Ateneo Madrid"
+    if re_and(name, "colegio", "san pedro", "san pablo", flags=re.I):
+        return "Colegio San Pedro y San Pablo"
+    if re_and(name, "Ciencias de la Informaci[oó]n", "Complutense", flags=re.I):
+        return "UCM Ciencias de la información"
     return name
 
 
@@ -303,6 +307,7 @@ class Universidad:
             e.SUMMARY,
             r"Actividad formativa de Doctorado",
             r"pr[aá]cticas y empleo",
+            r"Encuentro AlumniUAH",
             flags=re.I
         ):
             return Category.NO_EVENT

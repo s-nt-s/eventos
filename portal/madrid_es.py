@@ -705,6 +705,7 @@ class MadridEs:
 
         if re_or(
             i.description,
+            r"Conferencia a cargo de",
             r"Ciclo de conferencias",
             r"En esta charla vamos",
             r"^Conferencia del?",

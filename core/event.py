@@ -383,11 +383,18 @@ class Place:
                 Zones.MANUEL_BECERRA,
                 Zones.NUNEZ_BOLBOA,
                 Zones.ALCALA_DE_HENARES,
-                Zones.AV_AMERICA
+                Zones.AV_AMERICA,
+                Zones.COMPLUTENSE,
             ):
                 z = zn.value
                 if z.is_in(lat, lon):
                     return z.name
+        if re_or(
+            self.address,
+            r"Av(\.|enida)? Complutense",
+            flags=re.I
+        ):
+            return Zones.COMPLUTENSE.value.name
         return None
 
     def _fix_latlon(self):
@@ -470,6 +477,10 @@ class Place:
             return Places.AVA.value
         if re_or(name, r"Serrer[ií]a Belga", flags=re.I) and re_and(address, r"(calle\s*)?alameda", flags=re.I):
             return Places.SERRERIA_BELGA.value
+        if re_or(name, r"3\s*peces?\s*3", flags=re.I) and re_and(address, "peces", flags=re.I):
+            return Places.TRES_PECES_TRES.value
+        if re_and(name, ("ucm", "complutense"), "ciencias", "informaci[oó]", flags=re.I) and re_and(address, r"complutense", flags=re.I):
+            return Places.UCM_CIENCIAS_INFORMACION.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -730,6 +741,18 @@ class Places(Enum):
         latlon="40.4106964292281,-3.6936188373826417",
         zone='Paseo del Pardo'
     )
+    TRES_PECES_TRES = Place(
+        name="CSA 3 peces 3",
+        address="Calle de los Tres Peces, 3, Centro, 28012 Madrid",
+        latlon="40.41097432843205,-3.7001688291322816",
+        zone='Lavapies'
+    )
+    UCM_CIENCIAS_INFORMACION = Place(
+        name="CSA 3 peces 3",
+        address="Av. Complutense, 3, 28040 Madrid",
+        latlon="40.44590443938829,-3.7283811785778678",
+        zone='Complutense'
+    )
 
 
 def unquote(s: str):
@@ -772,6 +795,7 @@ def _clean_name(name: str, place: str):
             "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
         }.items():
             name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.I)
+        name = re.sub(r"^Ciclo de conferencia '(.+?)'$", r"\1", name, flags=re.I)
         name = re.sub(r"\s*[\-\.]+\s*Moncloa[ \-\.]+Aravaca\s*$", "", name, flags=re.I)
         name = re.sub(r"\s*[\-\.]+\s*(Villaverde|Centro)\s*$", "", name, flags=re.I)
         name = re.sub(r"^(Magia|Teatro|Cine):\s*'(.+)'\s*$", r"\2", name, flags=re.I)

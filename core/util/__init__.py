@@ -451,38 +451,55 @@ KO_MORE = (
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Talleres-presenciales-ciudades-sostenibles-/?vgnextfmt=default&vgnextoid=d2a0924d36704910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-Internacional-de-la-Mujer-en-los-Centros-culturales-de-Arganzuela/?vgnextfmt=default&vgnextoid=17b8a0d40799c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-Internacional-de-la-Mujer-en-el-Distrito-de-Retiro/?vgnextfmt=default&vgnextoid=54dfcbd2e45eb910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/El-Ayuntamiento/Transformacion-Digital/Madrid-Movil/?vgnextchannel=1827d33f92eab810VgnVCM2000001f4a900aRCRD',
     'imccwem.munimadrid.es'
 )
+
+
+_SPECIAL_WORDS = (
+    "María la Rica",
+    "Carmen",
+    "Sevilla",
+    "Cervantes",
+    "Alcalá",
+    "Henares",
+    "Antezana",
+    "Santiago",
+    "Complutense",
+    "Mononoke",
+    "IV",
+    "BSMM",
+    "Paco de Lucía",
+    "AWWZ",
+    "CSO",
+    "EKO",
+    "IA",
+    "AI",
+    "centro cultural",
+    "XXX",
+    "VHZ",
+    "XXV",
+    "Quijote",
+)
+
+_RG_SPECIAL_WORDS = re.compile(
+    r"\b(" + "|".join(map(re.escape, _SPECIAL_WORDS)) + r")\b",
+    re.I
+)
+_RE_SPECIAL_WORDS = {x.lower(): x for x in _SPECIAL_WORDS}
 
 
 def capitalize(name: str):
     if name == name.upper():
         name = name.capitalize()
-    for x in (
-        "María la Rica",
-        "Cervantes",
-        "Alcalá",
-        "Henares",
-        "Antezana",
-        "Santiago",
-        "Complutense",
-        "Mononoke",
-        "IV",
-        "BSMM",
-        "Paco de Lucía",
-        "AWWZ",
-        "CSO",
-        "EKO",
-        "IA",
-        "AI",
-        "centro cultural",
-        "XXX",
-        "VHZ",
-        "XXV",
-        "Quijote",
-    ):
-        name = re.sub(r"\b"+re.escape(x)+r"\b", x, name, flags=re.I)
+
+    name = _RG_SPECIAL_WORDS.sub(
+        lambda m: _RE_SPECIAL_WORDS[m.group(0).lower()],
+        name
+    )
+
     w1 = name[0]
     if w1.isalpha():
         name = w1.upper()+name[1:]
+
     return name
