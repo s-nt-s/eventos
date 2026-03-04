@@ -114,7 +114,7 @@ class Telefonica(Web):
         if duration > (60*24):
             return None
         name = get_text(self.soup.select_one("span.titulo"))
-        return Event(
+        ev = Event(
             id="tl"+to_uuid(url),
             url=url,
             name=name or data['name'],
@@ -125,6 +125,13 @@ class Telefonica(Web):
             sessions=(session,),
             place=self.__find_place(),
         )
+        if ev.category == Category.LITERATURE:
+            m = re.match(r"^Encuentro con (.+?)\. (.+)$", ev.name, flags=re.I)
+            if m:
+                ev = ev.merge(
+                    name=m.group(1)+" presenta: "+m.group(2)
+                )
+        return ev
 
     def __get_session(self, data: Dict):
         ini = datetime.fromisoformat(data['startDate'])
@@ -159,6 +166,11 @@ class Telefonica(Web):
             "CONVERSAN"
         ):
             return Category.CONFERENCE
+        if re_or(
+            plain_description,
+            r"presenta su( [úu]ltima)? novela",
+        ):
+            return Category.LITERATURE
         if re_or(
             plain_description,
             r"encuentro con (el|la|los|las) escrito(ra|re)s?",

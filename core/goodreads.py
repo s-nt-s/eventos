@@ -119,6 +119,14 @@ class GoodReads:
     def find(self, title_author: str):
         m = _match(
             title_author,
+            r"^(.+?) presenta: (.+)$"
+        )
+        if m:
+            book = self.search_by_title_author(m.group(2), m.group(1))
+            if book:
+                return book
+        m = _match(
+            title_author,
             r"^'(.+)',?\s*escrito por (.+)$",
             r"^'(.+)',\s*de (.+)$",
             r"^'(.+)'\s*de (.+)$",
