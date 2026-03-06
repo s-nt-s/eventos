@@ -1417,6 +1417,10 @@ class Event:
             "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Charlas-taller-de-cactus-y-suculentas/?vgnextfmt=default&vgnextoid=d452d3d3508b7810VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
         }):
             return "Charlas-taller de cactus y suculentas"
+        if urls.intersection({
+            'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-con-investigadores-del-CSIC/?vgnextfmt=default&vgnextoid=8f17641cea74c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+        }):
+            return "Las conferencias del CSIC"
         if re_and(
             self.name,
             "Escribo lo que soy",
