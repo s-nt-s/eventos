@@ -944,5 +944,9 @@
     "mcmc27027": {"category": "ACTIVISM"},
     "ms06d32b69333cc910VgnVCM200000f921e388RCRD": {"category": "MUSIC"},
     "mcmc27024": {"category": "NARRATIVE"},
-    "mcmc27030": {"category": "NARRATIVE"}
+    "mcmc27030": {"category": "NARRATIVE"},
+    "mcmc27009": {
+        "category": "READING_CLUB",
+        "more": "https://traficantes.net/libros/la-democracia-de-propietarios"
+    }
 }
