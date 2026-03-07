@@ -742,7 +742,8 @@
         "category": "CINEMA"
     },
     "ms203d29344cf6c910VgnVCM200000f921e388RCRD": {
-        "category": "CINEMA"
+        "category": "CINEMA",
+        "price": 3.5
     },
     "ms35fa28f354bdb910VgnVCM200000f921e388RCRD": {
         "category": "DANCE"
@@ -946,7 +947,8 @@
     "mcmc27024": {"category": "NARRATIVE"},
     "mcmc27030": {"category": "NARRATIVE"},
     "mcmc27009": {
-        "category": "READING_CLUB",
-        "more": "https://traficantes.net/libros/la-democracia-de-propietarios"
+        "category": "LITERATURE",
+        "more": "https://traficantes.net/libros/la-democracia-de-propietarios",
+        "name": "Pablo Carmona presenta: La democracia de los propietarios"
     }
 }
