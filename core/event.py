@@ -481,6 +481,8 @@ class Place:
             return Places.TRES_PECES_TRES.value
         if re_and(name, ("ucm", "complutense"), "ciencias", "informaci[oó]", flags=re.I) and re_and(address, r"complutense", flags=re.I):
             return Places.UCM_CIENCIAS_INFORMACION.value
+        if re_and(name, "catedral", "la almudena", flags=re.I):
+            return Places.LA_ALMUDENA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -752,6 +754,12 @@ class Places(Enum):
         address="Av. Complutense, 3, 28040 Madrid",
         latlon="40.44590443938829,-3.7283811785778678",
         zone='Complutense'
+    )
+    LA_ALMUDENA = Place(
+        name="La Almudena",
+        address="C. de Bailén, 10, Centro, 28013 Madrid",
+        latlon="40.41586328949746,-3.714627123889976",
+        zone='Sol'
     )
 
 

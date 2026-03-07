@@ -311,6 +311,13 @@ class Universidad:
             flags=re.I
         ):
             return Category.NO_EVENT
+        description = self.__get_description(link, e.SUMMARY)
+        if re_or(
+            description,
+            r"Actividad para alumnos[^\.]*? (ESO|Primaria)",
+            flags=re.I
+        ):
+            return Category.CHILDISH
         if re_or(e.SUMMARY, r"UN REGRESO DE CINE", flags=re.I):
             return Category.CINEMA
         if re_or(
@@ -327,13 +334,6 @@ class Universidad:
             flags=re.I
         ):
             return Category.WORKSHOP
-        description = self.__get_description(link, e.SUMMARY)
-        if re_or(
-            description,
-            r"Actividad para alumnos[^\.]*? (ESO|Primaria)",
-            flags=re.I
-        ):
-            return Category.CHILDISH
         if re_or(
             description,
             r"Encuentro con",
@@ -362,6 +362,7 @@ class Universidad:
             e.SUMMARY,
             "charla historiogr[aá]fica",
             "conservatorio",
+            "Encuentro con",
             flags=re.I
         ):
             return Category.CONFERENCE
