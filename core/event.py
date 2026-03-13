@@ -395,6 +395,12 @@ class Place:
             flags=re.I
         ):
             return Zones.COMPLUTENSE.value.name
+        if re_or(
+            self.address,
+            "parque de san Isidro",
+            flags=re.I
+        ):
+            Zones.MARQUES_DE_VADILLO.value.name
         return None
 
     def _fix_latlon(self):
