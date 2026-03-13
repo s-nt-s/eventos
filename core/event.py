@@ -490,6 +490,16 @@ class Place:
             return Places.LA_ALMUDENA.value
         if re_and(name, "teatro", "monumental", flags=re.I) and re_and(address, "atocha", flags=re.I):
             return Places.TEATRO_MONUMENTAL.value
+        if re_or(
+            name,
+            r"librer[ií]a parent\(?h\)?esis",
+            flags=re.I
+        ) and re_and(
+            address,
+            "valencia",
+            flags=re.I
+        ):
+            return Places.LIBRERIA_PARENTHESIS.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -676,6 +686,12 @@ class Places(Enum):
         name="Ateneo la maliciosa",
         address="Calle de las Peñuelas, 12, Arganzuela, 28005 Madrid",
         latlon="40.40362500123191,-3.7043296154194074",
+        zone="Embajadores"
+    )
+    LIBRERIA_PARENTHESIS = Place(
+        name="Librería parenthesis",
+        address="C. de Valencia, 30, Centro, 28012 Madrid",
+        latlon="40.464932223409676,-3.721768092989676",
         zone="Embajadores"
     )
     ESPACIO = Place(
