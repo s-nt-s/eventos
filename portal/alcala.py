@@ -1,7 +1,8 @@
 from core.eventon import EventOn, Event as EventOnEvent
 from core.event import Event, Place, Session, Category, CategoryUnknown
 from functools import cached_property
-from core.util import find_euros, re_or, re_and, capitalize
+from core.util import find_euros, re_or, re_and
+from core.util.strng import capitalize
 import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -149,6 +150,12 @@ class Alcala:
         )
 
     def __find_category(self, x: EventOnEvent):
+        if re_or(
+            x.name,
+            r"Jornada de puertas abiertas",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
         if re_or(
             x.name,
             "MARCHAS PROCESIONALES",

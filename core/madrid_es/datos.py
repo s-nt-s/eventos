@@ -3,9 +3,8 @@ from typing import NamedTuple, Optional
 from core.dictwraper import DictWrapper
 from datetime import datetime, date
 from json.decoder import JSONDecodeError
-from core.filemanager import FileManager
 from core.cache import TupleCache
-from core.util import get_obj, un_camel
+from core.util import get_obj, un_camel, parse_obj
 import json
 import re
 from aiohttp import ClientResponse
@@ -48,14 +47,14 @@ async def rq_to_graph_list(r: ClientResponse) -> list[dict]:
         return []
     if not all(isinstance(x, dict) for x in lst):
         raise ValueError(f"@graph is not list[dict] {r.url}")
-    return list(FileManager.parse_obj(i, compact=True) for i in lst)
+    return list(parse_obj(i, compact=True) for i in lst)
 
 
 async def rq_to_graph_list_len_1(r: ClientResponse):
     graph = await rq_to_graph_list(r)
     if len(graph) != 1:
         raise ValueError(f"@graph is not len(list[dict]) == 1 {r.url}")
-    obj = FileManager.parse_obj(graph[0], compact=True) or {}
+    obj = parse_obj(graph[0], compact=True) or {}
     return obj
 
 

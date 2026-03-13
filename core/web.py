@@ -626,7 +626,11 @@ class Driver:
             session = buildSession()
         for cookie in self._driver.get_cookies():
             session.cookies.set(cookie['name'], cookie['value'], domain=cookie.get("domain"))
-        session.headers.update({"User-Agent": self._driver.execute_script("return navigator.userAgent;")})
+        for k, v in {
+            "User-Agent": self._driver.execute_script("return navigator.userAgent;")
+        }.items():
+            if v:
+                session.headers.update({k: v})
         return session
 
     def wait_ready(self):

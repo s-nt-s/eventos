@@ -160,6 +160,7 @@ class AteneoMadrid:
                 "María Zaplana Barceló",
                 "92 Liberales",
                 "Roc[ií]o Albert",
+                "OIKOS",
             ):
                 return Category.INSTITUTIONAL_POLICY
             if re_or(

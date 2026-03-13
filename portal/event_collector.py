@@ -15,8 +15,10 @@ from portal.universidad import Universidades
 from portal.ateneomadrid import AteneoMadrid
 from portal.circulobellasartes import CirculoBellasArtes
 from portal.alcala import Alcala
-from datetime import datetime
-from core.util import get_domain, to_uuid, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
+from portal.goethe import Goethe
+from portal.ifrances import InstitutoFrances
+from datetime import datetime, date
+from core.util import round_to_even, get_domain, to_uuid, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
 import logging
 from typing import Tuple
 from core.cache import TupleCache
@@ -31,13 +33,23 @@ from core.zone import Circles
 from core.event import Place, Places
 from portal.fundacionmarch import FundacionMarch
 from concurrent.futures import ThreadPoolExecutor
+from portal.reinasofia import ReinaSofia
 
 
 logger = logging.getLogger(__name__)
 
 
 def get_events(source):
-    if isinstance(source, (Alcala, MadConvoca, AteneoMadrid, Universidades, MadridEs)):
+    if isinstance(
+        source, (
+            Alcala,
+            MadConvoca,
+            AteneoMadrid,
+            Universidades,
+            MadridEs,
+            Goethe
+        )
+    ):
         return source.events
     return source().events
 
@@ -55,7 +67,19 @@ def gNow():
     return datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
-def getMin(weekday: int) -> int:
+def getMin(dt: date | datetime) -> int:
+    if isinstance(dt, datetime):
+        dt = dt.date()
+    if dt in (
+        date(2026,  3, 19),
+        date(2026,  4, 23),
+        date(2026,  5, 21),
+        date(2026,  9, 17),
+        date(2026, 10, 22),
+        date(2026, 11, 19),
+    ):
+        return 18
+    weekday = dt.weekday()
     return [
         18.5,
         17,
@@ -70,7 +94,7 @@ def getMin(weekday: int) -> int:
 def isAlcalaOkDate(dt: datetime):
     wd = dt.weekday()
     min_hour = max(
-        getMin(dt.weekday()) + 1,
+        getMin(dt) + 1,
         18.50 if wd in (1, 2) else 18
     )
     return not isWorkingHours(
@@ -82,7 +106,7 @@ def isAlcalaOkDate(dt: datetime):
 def isOkDate(dt: datetime, delta: int = 0.5):
     if dt.date() in get_festivos(dt.year):
         return True
-    min_hour = getMin(dt.weekday())
+    min_hour = getMin(dt)
     if min_hour > 0:
         min_hour = min_hour + delta
     return not isWorkingHours(dt, min_hour=min_hour)
@@ -116,6 +140,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         address,
         r"Milano$",
         r"Hortaleza$",
+        r"avenida de Betanzos",
         flags=re.I
     ):
         return False
@@ -241,16 +266,6 @@ def find_filmaffinity_if_needed(imdb_film: dict[str, int], e: Cinema):
         return _id_
 
 
-def round_to_even(x):
-    up = int((x + 2) // 2) * 2
-    down = int(x // 2) * 2
-    if x == int(x):
-        return down
-    if abs(x - down) < abs(x - up):
-        return down
-    return up
-
-
 class EventCollector:
     def __init__(
         self,
@@ -290,6 +305,7 @@ class EventCollector:
         logger.info("Recuperar eventos")
         md_events = self.__madrid_destino.events
         md_places = tuple(sorted(set(e.place for e in md_events if e.place)))
+        max_price = max(self.__max_price.values())
         eventos = \
             md_events + \
             run_parallel(
@@ -299,7 +315,7 @@ class EventCollector:
                         None: isOkDate
                     },
                     places_with_store=md_places,
-                    max_price=max(self.__max_price.values()),
+                    max_price=max_price,
                     avoid_categories=self.__avoid_categories,
                     isOkPlace=isOkPlace,
                     districts=(
@@ -327,6 +343,9 @@ class EventCollector:
                     isOkPlace=isOkPlace,
                     isOkDate=isOkDate,
                 ),
+                ReinaSofia,
+                Goethe(max_price=max_price),
+                InstitutoFrances,
             ) + \
             run_parallel(
                 Alcala(
@@ -422,7 +441,13 @@ class EventCollector:
 
         events = sorted(
             events,
-            key=lambda e: (min(s.date for s in e.sessions), e.name, e.url or '')
+            key=lambda e: (
+                min(s.date for s in e.sessions),
+                len(e.sessions),
+                e.duration or 0,
+                e.name or '',
+                e.url or ''
+            )
         )
         return tuple(events)
 

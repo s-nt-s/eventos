@@ -1096,7 +1096,7 @@
     "msdf7481ba531ec910VgnVCM200000f921e388RCRD": {"category": "NARRATIVE"},
     "am57321-1774377000-1774377000@ateneodemadrid.com": {
         "category": "CINEMA",
-        "filmaffinity": 75865
+        "filmaffinity": 875865
     },
     "md7522": {
         "category": "CINEMA",
@@ -1121,5 +1121,118 @@
         "category": "LITERATURE",
         "name": "Amanda González Jiménez presenta: Blas de Lezo. Monumento a un héroe", 
         "more": "https://www.goodreads.com/book/show/244501821"
+    },
+    "mcmc27068": {
+        "category": "CINEMA",
+        "filmaffinity": 815953,
+        "name": "Ellas en la ciudad"
+    },
+    "mcmc27077": {
+        "category": "LITERATURE",
+        "name": "Brigitte Vasallo presenta: La fosa abierta",
+        "more": "https://www.goodreads.com/book/show/244502248"
+    },
+    "20260319183000Z-150730@eventos.ucm.es": {
+        "category": "LITERATURE",
+        "name": "Mar Roda Sánchez presenta: Los nombres borrados. Olvido y silencio en la poética de María Enciso y de Carmen Conde",
+        "more": "https://www.goodreads.com/book/show/238737975"
+    },
+    "mcmc27082": {
+        "category": "CINEMA",
+        "filmaffinity": 812085
+    },
+    "am57005-1773772200-1773772200@ateneodemadrid.com": {
+        "category": "CINEMA",
+        "more": "https://selectedfilms.com/el-sueao-de-alejandria/"
+    },
+    "am57421-1774549800-1774549800@ateneodemadrid.com": {
+        "img": "https://ateneodemadrid.com/wp-content/uploads/2026/03/26.03.2026-Juridicas.jpg"
+    },
+    "mcmc27087": {
+        "category": "READING_CLUB",
+        "more": "https://levantafuego.com/producto/politicas-del-castigo-una-anatomia-del-auge-punitivo/"
+    },
+    "msf88a48b5276fc910VgnVCM100000891ecb1aRCRD": {
+        "more": "https://21distritos.es/evento/4-escenas-4-estilos-2/"
+    },
+    "msebe9e665d77fc910VgnVCM100000891ecb1aRCRD": {
+        "category": "MUSIC"
+    },
+    "20260320180000Z-150933@eventos.ucm.es": {
+        "more": "https://eventos.ucm.es/150933/programme/festival-cultural-universitario-extasis.html#content",
+        "category": "PARTY"
+    },
+    "20260325150000Z-150995@eventos.uc3m.es": {
+        "category": "WORKSHOP"
+    },
+    "20260326183000Z-150993@eventos.uc3m.es": {
+        "category": "CINEMA",
+        "name": "Una fuente para el sediento",
+        "filmaffinity": 226731,
+        "img": "https://pics.filmaffinity.com/krynytsya_dlya_sprahlykh_a_spring_for_the_thirsty-613705548-large.jpg"
+    },
+    "20260325190000Z-150992@eventos.uc3m.es": {
+        "category": "CINEMA",
+        "name": "No Passport for Spain (1969) + La Resistencia en España (1973)"
+    },
+    "rs39235": {
+        "filmaffinity": 136625
+    },
+    "rs39238": {
+        "category": "CINEMA",
+        "imdb": "tt9353770"
+    },
+    "if2498": {
+        "category": "CINEMA",
+        "filmaffinity": 738677
+    },
+    "mcmc27098": {
+        "name": "#S3xpidemIA",
+        "category": "READING_CLUB",
+        "more": "https://www.goodreads.com/book/show/245658781"
+    },
+    "ac854": {
+        "category": "CINEMA",
+        "filmaffinity": 999902
+    },
+    "sb10781": {
+        "category": "CINEMA",
+        "filmaffinity": 186964
+    },
+    "mcmc27121": {
+        "category": "CINEMA",
+        "filmaffinity": 346638
+    },
+    "am57643-1775674800-1775674800@ateneodemadrid.com": {
+        "category": "CINEMA",
+        "filmaffinity": 815018
+    },
+    "am46055": {
+        "category": "MUSIC",
+        "img": "https://www.sonorensemble.com/wp-content/uploads/2016/11/Sonor-Ensemble-Inicio-2017.jpg"
+    },
+    "md7530": {
+        "category": "CONFERENCE",
+        "name": "Flamenco en París"
+    },
+    "am46059": {
+        "category": "CONFERENCE",
+        "img": "https://www.casamerica.es/sites/default/files/styles/articulo_cab_1270x460/public/2026-03/HOME_031126%20Arequipa%20%EF%80%A7%2021%20abr.jpg?itok=wgPxlwc8"
+    },
+    "md7541": {
+        "more": "https://es.wikipedia.org/wiki/Claudine_Eizykman"
+    },
+    "20260324180000Z-151032@eventos.urjc.es": {
+        "category": "CONFERENCE",
+        "name": "Positron: otro IDE para R"
+    },
+    "sb10850": {
+        "category": "CINEMA",
+        "filmaffinity": 160114
+    },
+    "sb10861": {
+        "category": "CINEMA",
+        "filmaffinity": 418539,
+        "name": "El hombre elefante"
     }
 }

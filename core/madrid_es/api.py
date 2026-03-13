@@ -117,7 +117,12 @@ class Api:
             prc = find_euros(txt)
             if prc is not None:
                 return prc
-        if re_or(b.price, r"Matr[ií]cula gratuita ", flags=re.I):
+        if re_or(
+            b.price,
+            r"Matr[ií]cula gratuitas?",
+            r"abierta al p[uú]blico",
+            flags=re.I
+        ):
             return 0
         if b.price not in (
             None,

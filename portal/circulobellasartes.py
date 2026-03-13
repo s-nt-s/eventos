@@ -6,6 +6,7 @@ import re
 from datetime import date, datetime
 from core.fetcher import Getter
 from aiohttp import ClientResponse
+from core.cache import TupleCache
 import logging
 
 logger = logging.getLogger(__name__)
@@ -239,6 +240,7 @@ class CirculoBellasArtes:
         return tuple(sorted(urls))
 
     @cached_property
+    @TupleCache("rec/circulo.json", builder=Event.build)
     def events(self):
         evs: set[Event] = set()
         for x in Getter(

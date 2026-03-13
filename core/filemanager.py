@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup, Tag
 from json.decoder import JSONDecodeError
 from dataclasses import is_dataclass, asdict
 from typing import Optional, Callable, Any
+from core.util import parse_obj
 
 
 logger = logging.getLogger(__name__)
@@ -154,7 +155,7 @@ class FileManager:
 
     def dump_json(self, file, obj, *args, indent=2, compact=False, rm_key: tuple[str,...] = None, **kwargs):
         with open(file, "w") as f:
-            json.dump(self.parse_obj(obj, compact, rm_key), f, *args, indent=indent, **kwargs)
+            json.dump(parse_obj(obj, compact, rm_key), f, *args, indent=indent, **kwargs)
 
     def load_html(self, file, *args, parser="lxml", **kwargs):
         with open(file, "r") as f:
@@ -178,41 +179,6 @@ class FileManager:
             txt = txt.format(*args, **kwargs)
         with open(file, "w") as f:
             f.write(txt)
-
-    @classmethod
-    def parse_obj(
-        cls,
-        obj,
-        compact: bool,
-        rm_key: tuple[str, ...] = None,
-        re_parse: Optional[Callable[[Any], Any]] = None
-    ):
-        if rm_key is None:
-            rm_key = tuple()
-        if getattr(obj, "_asdict", None) is not None:
-            obj = obj._asdict()
-        if is_dataclass(obj):
-            obj = asdict(obj)
-        if isinstance(obj, (list, tuple, set)):
-            obj = list(map(lambda x: cls.parse_obj(x, compact, rm_key, re_parse=re_parse), obj))
-        if isinstance(obj, dict):
-            obj = {k: cls.parse_obj(v, compact, rm_key, re_parse=re_parse) for k, v in obj.items()}
-        if isinstance(obj, dict):
-            obj = {k: v for k, v in obj.items() if k not in rm_key}
-        if compact:
-            if isinstance(obj, str):
-                obj = obj.strip()
-            if isinstance(obj, list):
-                obj = [a for a in obj if a is not None]
-            if isinstance(obj, dict):
-                obj = {k: v for k, v in obj.items() if v is not None}
-            if isinstance(obj, (list, dict, str)) and len(obj) == 0:
-                return None
-        if re_parse is not None:
-            new_obj = re_parse(obj)
-            if new_obj is not None:
-                return new_obj
-        return obj
 
 
 # Mejoras dinamicas en la documentacion

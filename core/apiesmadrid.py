@@ -8,7 +8,7 @@ from core.util import get_obj
 from core.dictwraper import DictWrapper
 import logging
 from datetime import timedelta, date
-from core.util import re_or
+from core.util import re_or, parse_obj
 
 # https://datos.madrid.es/portal/site/egob/menuitem.9e1e2f6404558187cf35cf3584f1a5a0/?vgnextoid=374512b9ace9f310VgnVCM100000171f5a0aRCRD&vgnextchannel=374512b9ace9f310VgnVCM100000171f5a0aRCRD&vgnextfmt=default&page=5
 # https://datos.madrid.es/portal/site/egob/menuitem.c05c1f754a33a9fbe4b2e4b284f1a5a0/?vgnextoid=30c1a0d4c16f3510VgnVCM1000001d4a900aRCRD&vgnextchannel=374512b9ace9f310VgnVCM100000171f5a0aRCRD&vgnextfmt=default
@@ -114,7 +114,7 @@ class ApiEsMadrid:
         obj = xmltodict.parse(
             r.text,
         )
-        obj = FileManager.parse_obj(
+        obj = parse_obj(
             obj,
             compact=True,
             re_parse=list_item_to_obj

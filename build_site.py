@@ -2,7 +2,7 @@
 
 from core.event import Event, Category, Session
 from core.ics import SimpleIcsEvent
-from core.j2 import Jnj2, toTag
+from core.j2 import Jnj2, toTag, dom_simplify
 from datetime import datetime, timedelta, date
 from core.log import config_log
 from core.img import MyImage
@@ -29,12 +29,15 @@ OUT = "out/"
 WHITE = (255, 255, 255)
 STR_TODAY = date.today().strftime("%Y-%m-%d")
 
+CLSS = defaultdict(list)
+CLSS_COUNT = defaultdict(int)
+
 EC = EventCollector(
     max_price={
-        Category.CINEMA: 5.50,
+        Category.CINEMA: 6,
         Category.OTHERS: 10,
     },
-    max_sessions=30,
+    max_sessions=15,
     publish={
         k: v
         for k, v in
@@ -120,11 +123,15 @@ sin_sesiones: Set[int] = set()
 categorias: Dict[Category, int] = {}
 zones: Dict[str, int] = {}
 places: Dict[str, int] = {}
+domains: Dict[str, int] = {}
 
 for e in eventos:
     categorias[e.category] = categorias.get(e.category, 0) + 1
     zones[e.place.zone or null_zone] = zones.get(e.place.zone or null_zone, 0) + 1
     places[e.place.name] = places.get(e.place.name, 0) + 1
+    for d in set(map(get_domain, e.iter_urls())):
+        domains[d] = domains.get(d, 0) + 1
+        CLSS[e.id].append(dom_simplify(d))
     if len(e.sessions) == 0:
         sin_sesiones.add(e.id)
         continue
@@ -279,6 +286,7 @@ def set_icons(html: str, **kwargs):
             "semanacienciamadrid": "https://www.semanacienciamadrid.org/themes/custom/bs5fmmd/favicon.ico",
             "condeduquemadrid": "https://www.condeduquemadrid.es/themes/custom/condebase_theme/icon_app/favicon-16x16.png",
             "docs.google": "https://ssl.gstatic.com/docs/spreadsheets/forms/favicon_qp2.png",
+            "drive.google": "https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png",
             "forms.office": "https://cdn.forms.office.net/images/favicon.ico",
             "goodreads": "https://www.goodreads.com/favicon.ico",
             "teatroespanol": "https://www.teatroespanol.es/themes/custom/teatroespanol_v2/favicon.ico",
@@ -289,7 +297,8 @@ def set_icons(html: str, **kwargs):
             "teatrocircoprice": "https://www.teatrocircoprice.es/themes/custom/circoprice_theme/favicon.ico",
             "teatromonumental": "https://www.teatromonumental.es/wp-content/uploads/fbrfg/favicon.svg",
             "gestiona3.madrid": "https://madrid.ebiblio.es/favicon/espa.ico",
-            "madrid.ebiblio": "https://madrid.ebiblio.es/favicon/espa.ico"
+            "madrid.ebiblio": "https://madrid.ebiblio.es/favicon/espa.ico",
+            "lacasaencendida": "https://cdn.lacasaencendida.es/images/favicon/favicon.svg",
         }.get(dom)
         if ico is None:
             continue
@@ -326,8 +335,6 @@ id_novedad = get_novedad(1)
 if len(id_novedad) > 50:
     id_novedad = get_novedad(0)
 
-CLSS = defaultdict(list)
-CLSS_COUNT = defaultdict(int)
 
 for i in id_novedad:
     CLSS[i].append("novedad")
@@ -353,6 +360,7 @@ j.save(
     categorias=categorias,
     session_ics=session_ics,
     places=places,
+    domains=domains,
     zones=zones,
     null_zone=null_zone,
     count=len(eventos),

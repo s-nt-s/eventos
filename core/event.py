@@ -1,6 +1,7 @@
 from dataclasses import dataclass, asdict, fields, replace, is_dataclass
 from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set, Callable
-from core.util import get_obj, plain_text, get_domain, get_img_src, re_or, re_and, get_main_value, capitalize
+from core.util import get_obj, plain_text, get_domain, get_img_src, re_or, re_and, get_main_value
+from core.util.strng import capitalize
 from urllib.parse import quote
 from enum import IntEnum
 from functools import cached_property
@@ -17,6 +18,7 @@ from core.goodreads import GR
 from core.zone import Zones
 from enum import Enum
 from core.util import my_filter
+from core.util.strng import clean_name
 
 T = TypeVar("T")
 
@@ -275,6 +277,7 @@ class Place:
     address: str
     latlon: str = None
     zone: str = None
+    map: str = None
 
     def merge(self, **kwargs):
         return replace(self, **kwargs)
@@ -340,6 +343,8 @@ class Place:
 
     @property
     def url(self):
+        if self.map is not None:
+            return self.map
         if self.latlon is not None:
             return "https://www.google.com/maps?q=" + self.latlon
         if self.address is None:
@@ -395,6 +400,12 @@ class Place:
             flags=re.I
         ):
             return Zones.COMPLUTENSE.value.name
+        if re_or(
+            self.address,
+            "parque de san Isidro",
+            flags=re.I
+        ):
+            return Zones.MARQUES_DE_VADILLO.value.name
         return None
 
     def _fix_latlon(self):
@@ -500,6 +511,33 @@ class Place:
             flags=re.I
         ):
             return Places.LIBRERIA_PARENTHESIS.value
+        if re_or(
+            name,
+            r"instituto? franc[eé]s",
+            r"instituto? français",
+            "Galerie du 10",
+            flags=re.I
+        ):
+            return Places.INSTITUTO_FRANCES.value
+        if re_or(
+            name,
+            "c[íi]rculo de bellas artes",
+            flags=re.I
+        ):
+            return Places.CIRCULO_BELLAS_ARTES.value
+        if re_or(
+            name,
+            "casa del lector",
+            flags=re.I
+        ):
+            return Places.CASA_DEL_LECTOR.value
+        
+        if re_or(
+            name,
+            "La Marimala de Lavapi[eé]s",
+            flags=re.I
+        ):
+            return Places.LA_MARIMALA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -514,113 +552,139 @@ class Places(Enum):
         name="Academia de cine",
         address="C/ de Zurbano, 3, Chamberí, 28010 Madrid",
         latlon="40.427566448169316,-3.6939387798888634",
-        zone='Moncloa'
+        zone='Alonso Martinez',
+        map="https://maps.app.goo.gl/qV55n7KZ4fXNCg8dA",
     )
     MUSEO_PRADO = Place(
         name="Museo del Prado",
         address="Paseo del Prado s/n, 28014 Madrid",
         latlon="40.41391229422596,-3.692084176021338",
-        zone='Paseo del Pardo'
+        zone='Paseo del Pardo',
+        map="https://maps.app.goo.gl/LUZCvz8ifCcisn17A"
+    )
+    MUSEO_REINA_SOFIA = Place(
+        name="Museo Reina Sofia",
+        address="C. de Sta. Isabel, 52, Centro, 28012 Madrid",
+        latlon="40.40805112459524,-3.694589081934405",
+        zone='Paseo del Pardo',
+        map="https://maps.app.goo.gl/MhKbtxWwpiWCisBN6"
     )
     CAIXA_FORUM = Place(
         name="Caixa Forum",
         address="Paseo del Prado, 36, Centro, 28014 Madrid",
         latlon="40.41134208472603,-3.6935713500263523",
-        zone='Paseo del Pardo'
+        zone='Paseo del Pardo',
+        map="https://maps.app.goo.gl/kNnSrfU2sygXNXBp8"
     )
     CASA_AMERICA = Place(
         name="La casa America",
         address="Plaza Cibeles, s/n, Salamanca, 28014 Madrid",
         latlon="40.419580635299525,-3.693332407512017",
-        zone='Paseo del Pardo'
+        zone='Paseo del Pardo',
+        map="https://maps.app.goo.gl/Zo6QR5VWzUbCSvZt5"
     )
     CASA_ENCENDIDA = Place(
         name="La casa encendida",
         address="Rda. de Valencia, 2, Centro, 28012 Madrid",
         latlon="40.4062337055155,-3.6999346068731525",
-        zone='Lavapies'
+        zone='Lavapiés',
+        map="https://maps.app.goo.gl/RoXc2KPwvFygSPrj7"
     )
     CIRCULO_BELLAS_ARTES = Place(
         name="Circulo de Bellas Artes",
         address="C/ Alcalá, 42, Centro, 28014 Madrid, España",
         latlon="40.4183042,-3.6991136",
-        zone='Sol'
+        zone='Sol',
+        map="https://maps.app.goo.gl/9hybjJzL1BjTzF2a9"
     )
     DORE = Place(
         name="Cine Doré",
         address="C/ de Santa Isabel, 3, Centro, 28012 Madrid",
         latlon="40.411950735826316,-3.699066276358703",
-        zone='Sol'
+        zone='Sol',
+        map="https://maps.app.goo.gl/nCkcBhPr7YmpJYMM6"
     )
     SALA_BERLANGA = Place(
         name="Sala Berlanga",
         address="C/ de Andrés Mellado, 53, Chamberí, 28015 Madrid",
         latlon="40.436106653741795,-3.714403054648641",
-        zone='Moncloa'
+        zone='Moncloa',
+        map="https://maps.app.goo.gl/o92bjiD1dYErb8zd7"
     )
     SALA_EQUIS = Place(
         name="Sala Equis",
         address="C/ del Duque de Alba, 4, Centro, 28012 Madrid, España",
         latlon="40.412126715926796,-3.7059047815506396",
-        zone='Sol'
+        zone='Sol',
+        map="https://maps.app.goo.gl/31Eh8CZjSFUUVab36"
     )
     FUNDACION_TELEFONICA = Place(
         name="Fundación Telefónica",
         address="C/ Fuencarral, 3, Centro, 28004 Madrid",
         latlon="40.42058956643586,-3.7017498812379235",
-        zone='Sol'
+        zone='Sol',
+        map="https://maps.app.goo.gl/s9szJmrimSz7As6J7"
     )
     TEATRO_ESPANOL = Place(
         name="Teatro Español",
         address="C/ del Príncipe, 25, Centro, 28012 Madrid",
         latlon="40.414828532240946,-3.700164949543688",
-        zone='Sol'
+        zone='Sol',
+        map="https://maps.app.goo.gl/VRFfsrbjz4oiDxg3A"
     )
     TEATRO_PRICE = Place(
         name="Teatro Circo Price",
         address="Ronda de Atocha, 35. 28012 Madrid",
         latlon="40.40596936645757,-3.698589986849812",
-        zone='Lavapies'
+        zone='Lavapiés',
+        map="https://maps.app.goo.gl/5PwdoH8Qfqxm89Lf9"
     )
     CENTRO_CENTRO = Place(
         name="Centro Centro",
         address="Pl. Cibeles, 1, Retiro, 28014 Madrid",
         latlon="40.41902261618159,-3.692188193693138",
-        zone='Paseo del Pardo'
+        zone='Paseo del Pardo',
+        map="https://maps.app.goo.gl/LEAyN5ATZFz5a9Mn9"
     )
     CINETECA = Place(
         name="Cineteca",
         address="Pl. de Legazpi, 8, Arganzuela, 28045 Madrid",
         latlon="40.39130985242181,-3.6958028442054074",
-        zone='Legazpi'
+        zone='Legazpi',
+        map="https://maps.app.goo.gl/HqyYqsb1ErsJH5yM6"
     )
     CONDE_DUQUE = Place(
         name="Conde Duque",
         address="C/ del Conde Duque, 11, 28015 Madrid",
-        latlon="40.42739911262292,-3.710589286287491"
+        latlon="40.42739911262292,-3.710589286287491",
+        map="https://maps.app.goo.gl/beRYjJhuqpbGF1rj8"
     )
     FARO_MONCLOA = Place(
         name="Faro de Moncloa",
         address="Av. de la Memoria, 2, 28040 Madrid",
         latlon="40.43727075977316,-3.721682694006853",
-        zone='Moncloa'
+        zone='Moncloa',
+        map="https://maps.app.goo.gl/UdfGgSc7WRUMvWjR8"
     )
     TEATRO_MONUMENTAL = Place(
         name="Teatro Monumental",
         address="C. de Atocha, 65, Centro, 28012 Madrid",
         latlon='40.41248873703834,-3.699161734460963',
-        zone='Sol'
+        zone='Sol',
+        map="https://maps.app.goo.gl/ueu3R2ikfwHBtN7o6"
     )
     EKO = Place(
         name="CSO EKO",
         address="C. del Ánade, 10, Carabanchel, 28019 Madrid",
         latlon="40.391899629090574,-3.7310781522792906",
+        map="https://maps.app.goo.gl/CkMnFa3ph4cNGDXs7"
     )
     FUNDACION_ALSELMO_LORENZO = Place(
         name="Fundación Anselmo Lorenzo",
         address="Calle de las Peñuelas, 41, Arganzuela, 28005 Madrid",
         latlon="40.4008721991779, -3.7021363154852938",
-        zone='Legazpi'
+        zone='Legazpi',
+        map="https://maps.app.goo.gl/g5w42RsHsrom6h5m8"
     )
     AUDITORIO_FRANCISCA_MARTINEZ_GARRIDO = Place(
         name="Auditorio Francisca Martínez Garrido",
@@ -632,7 +696,8 @@ class Places(Enum):
         name="CS La Cheli",
         address="C. de la Iglesia, 12, Carabanchel, 28019 Madrid",
         latlon="40.39584448961841,-3.7177346134909293",
-        zone="Marques de Vadillo"
+        zone="Marques de Vadillo",
+        map="https://maps.app.goo.gl/UVDe5M5jwip47W9h6"
     )
     CSO_DISKORDIA = Place(
         name="CSO Diskordia",
@@ -644,67 +709,78 @@ class Places(Enum):
         name="CSO la Rosa",
         address="C. del Bastero, 1, Centro, Centro, 28005 Madrid",
         latlon="40.409645939312156,-3.7096701288640967",
-        zone="Sol"
+        zone="Sol",
+        map="https://maps.app.goo.gl/aY6g8QTTuCMusmWg8"
     )
     SALA_CLAMORES = Place(
         name="Sala Clamaroes",
         address="C. de Alburquerque, 14, Chamberí, 28010 Madrid",
         latlon="40.431136283125035,-3.7008120268850164",
-        zone="Tribunal"
+        zone="Tribunal",
+        map="https://maps.app.goo.gl/npKXxMALBGBP3Cms8"
     )
     CASA_DEL_BARRIO_CARABANCHEL = Place(
         name="Casa del barrio",
         address="Av. de Carabanchel Alto, 64, Carabanchel, 28044 Madrid",
         latlon="40.37004495963912,-3.7534234636546335",
-        zone="Carabanchel"
+        zone="Carabanchel",
+        map="https://maps.app.goo.gl/kJDkNzgwGF5hByqy5"
     )
     LA_ANONIMA = Place(
         name="La Anónima",
         address="C. de Embajadores, 166, Arganzuela, 28045 Madrid",
         latlon="40.39618124632335,-3.696199766490811",
-        zone="Legazpi"
+        zone="Legazpi",
+        map="https://maps.app.goo.gl/SyVAW8MUHZ4UR9n37"
     )
     LIBRERIA_SANTANDER = Place(
         name="Librería Santander",
         address="C. de Valmojado, 291, Latina, 28047 Madrid",
         latlon="40.38681110054098,-3.7588677722869073",
-        zone="Carabanchel"
+        zone="Carabanchel",
+        map="https://maps.app.goo.gl/3ebMHzCmxqE9Vgz17"
     )
     LIBRERIA_MARY_READ = Place(
         name="Librería Mary Read",
         address="C. del Marqués de Toca, 3, Centro, 28012 Madrid",
         latlon="40.41033677820543,-3.6960205749461768",
-        zone="Paseo del Pradro"
+        zone="Paseo del Pradro",
+        map="https://maps.app.goo.gl/4YzSBMzutmijk6X39"
     )
     ATENEO_MADRID = Place(
         name="Ateneo Madrid",
         address="C. del Prado, 21, Centro, 28014 Madrid",
         latlon="40.41526343432519,-3.698205767581124",
-        zone="Sol"
+        zone="Sol",
+        map="https://maps.app.goo.gl/5k8X6P1cu1vW8o8j6"
     )
     ATENEO_MALICIOSA = Place(
         name="Ateneo la maliciosa",
         address="Calle de las Peñuelas, 12, Arganzuela, 28005 Madrid",
         latlon="40.40362500123191,-3.7043296154194074",
-        zone="Embajadores"
+        zone="Embajadores",
+        map="https://maps.app.goo.gl/YorUQc6wj7M1fLPW6"
     )
     LIBRERIA_PARENTHESIS = Place(
         name="Librería parenthesis",
         address="C. de Valencia, 30, Centro, 28012 Madrid",
-        latlon="40.464932223409676,-3.721768092989676",
-        zone="Embajadores"
+        latlon="40.40644150333828,-3.6997760460139233",
+        zone="Lavapiés",
+        map="https://maps.app.goo.gl/PDwE9N2BHaWAMdWq6"
     )
     ESPACIO = Place(
         name="El espacio",
         address="C/ de Sierra Carbonera, 32, Puente de Vallecas, 28053 Madrid",
         latlon="40.39225251088216,-3.6642723003364335",
-        zone="Vallecas"
+        zone="Vallecas",
+        map="https://maps.app.goo.gl/4s7AYFzgXoag2HJX8"
     )
     DEBOD = Place(
         name="Templo de Debod",
         address="C. de Ferraz, 1, Moncloa - Aravaca, 28008 Madrid",
         latlon="40.42442583459242,-3.7177694868554996",
-        zone="Plaza España"
+        zone="Plaza España",
+        map="https://maps.app.goo.gl/5S17AtYAhd7rKZZ37"
     )
     BUENAVISTA = Place(
         name="Centro cultural Buenavista",
@@ -716,166 +792,142 @@ class Places(Enum):
         name="MakeSpace",
         address="Calle Ruiz Palacios, 7, Tetuán, 28039 Madrid",
         latlon="40.46212420746715,-3.7043117038105775",
-        zone="Tetuán"
+        zone="Tetuán",
+        map="https://maps.app.goo.gl/ACf7PCqB52SGbbZM6"
     )
     ALCALA_HENARES_GALEGA = Place(
         name="Asociación Galega Corredor do Henares",
         address="C. de Campo Real, 1, 28806 Alcalá de Henares, Madrid",
         latlon="40.49593546319083,-3.3790130490260237",
-        zone="Alcalá de Henares"
+        zone="Alcalá de Henares",
+        map="https://maps.app.goo.gl/AFaqSQ6RhN8214Vh7"
     )
     CNT_EMBAJADORES = Place(
         name="CNT Embajadores",
         address="Glorieta Embajadores, 7, Arganzuela, 28012 Madrid",
         latlon="40.40454139223952,-3.702903411452709",
-        zone="Embajadores"
+        zone="Embajadores",
+        map="https://maps.app.goo.gl/XtYSptXMNJ2RUdiR9"
     )
     SWING_LAB = Place(
         name="La demo swing lab",
         address="Calle de la Magdalena, 7, Centro, 28012 Madrid",
         latlon="40.412636935493836,-3.702379332778133",
-        zone="Sol"
+        zone="Sol",
+        map="https://maps.app.goo.gl/3p4bartQPC2EZknV6"
     )
     ARCHIVO_ARKHE = Place(
         name="Archivo Arkhé",
         address="Calle del Dr. Fourquet, 18, planta baja, Centro, 28012 Madrid",
         latlon="40.40776391373512,-3.6975274443272483",
-        zone="Lavapies"
+        zone="Lavapiés",
+        map="https://maps.app.goo.gl/C6TP88rPyi9z1j3g8"
     )
     TU_PATIO = Place(
         name="Tu patio",
         address="C. de Eduardo Marquina, 7, Carabanchel, 28019 Madrid",
         latlon="40.393677424170875,-3.7124811902926353",
-        zone="Marques de Vadillo"
+        zone="Marques de Vadillo",
+        map="https://maps.app.goo.gl/bvHBirqG1AJqTNBD9"
     )
     CSO_LA_ENREDADERA = Place(
         name="CSO la Enredadera",
         address="C/ de la Coruña, 5, Tetuán, 28020 Madrid",
         latlon="40.45585417293838,-3.701519330690853",
-        zone="Tetuan"
+        zone="Tetuan",
+        map="https://maps.app.goo.gl/24aK8BHNPoQcMEPF7"
     )
     AVA = Place(
         name="Asociación vecinal Aluche",
         address="C. de Quero, 69, Latina, 28024 Madrid",
         latlon="40.39019457364059,-3.7608253422986184",
-        zone="Aluche"
+        zone="Aluche",
+        map="https://maps.app.goo.gl/QSKZ7RmN2svJXwnm7"
     )
     SERRERIA_BELGA = Place(
         name="Serrería belga",
         address="C. de la Alameda, 15, Centro, 28014 Madrid",
         latlon="40.4106964292281,-3.6936188373826417",
-        zone='Paseo del Pardo'
+        zone='Paseo del Pardo',
+        map="https://maps.app.goo.gl/GULDeLCgPbx8oTDb7"
     )
     TRES_PECES_TRES = Place(
         name="CSA 3 peces 3",
         address="Calle de los Tres Peces, 3, Centro, 28012 Madrid",
         latlon="40.41097432843205,-3.7001688291322816",
-        zone='Lavapies'
+        zone='Lavapiés',
+        map="https://maps.app.goo.gl/fAs8GXQtUBLbgNSE6"
     )
     UCM_CIENCIAS_INFORMACION = Place(
-        name="CSA 3 peces 3",
+        name="UCM Ciencias información",
         address="Av. Complutense, 3, 28040 Madrid",
         latlon="40.44590443938829,-3.7283811785778678",
-        zone='Complutense'
+        zone='Complutense',
+        map="https://maps.app.goo.gl/YzQUkHfWsCffrmpr9"
     )
     LA_ALMUDENA = Place(
         name="La Almudena",
         address="C. de Bailén, 10, Centro, 28013 Madrid",
         latlon="40.41586328949746,-3.714627123889976",
-        zone='Sol'
+        zone='Sol',
+        map="https://maps.app.goo.gl/VVVy7ALcGj93MZAH9"
     )
-
-
-def unquote(s: str):
-    quotes = ("'", '"')
-    bak = ''
-    while bak != s:
-        bak = str(s)
-        for q in quotes:
-            s = re.sub(rf'^{q}([^{q}]+: {q}[^{q}]+{q})$', r"\1", s)
-        if len(s) > 2 and s[0] == s[-1] and s[0] in quotes:
-            s = s[1:-1]
-        if len(s) > 2 and s[0] in quotes and s[0] not in s[1:]:
-            s = s[1:]
-        if len(s) > 2 and s[-1] in quotes and s[-1] not in s[:-1]:
-            s = s[:-1]
-        s = s.strip()
-    return s
-
-
-def _clean_name(name: str, place: str):
-    if name is None:
-        return None
-    if not isinstance(name, str):
-        raise ValueError(f"name must be a str, but is a {type(name)}: {name}")
-    if place is not None and not isinstance(place, str):
-        raise ValueError(f"place must be a str, but is a {type(place)}: {place}")
-    if re.search(r"Visitas? dialogadas? Matadero", name):
-        return "Visita dialogada Matadero"
-    place = plain_text((place or "").lower())
-    bak = ['']
-    while bak[-1] != name:
-        bak.append(str(name))
-        if "'" not in name:
-            name = re.sub(r'["`´”“‘’]', "'", name)
-        for k, v in {
-            "A.I At War": "A.I. At War",
-            "AI At War": "A.I. At War",
-            "El sorprendente Dr.Clitterhouse": "El sorprendente Dr. Clitterhouse",
-            "El sorprendente Dr.Clitterhousem": "El sorprendente Dr. Clitterhouse",
-            "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
-        }.items():
-            name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split(r"\s+", k))))+r"\s*$", v, name, flags=re.I)
-        name = re.sub(r"^Ciclo de conferencia '(.+?)'$", r"\1", name, flags=re.I)
-        name = re.sub(r"\s*[\-\.]+\s*Moncloa[ \-\.]+Aravaca\s*$", "", name, flags=re.I)
-        name = re.sub(r"\s*[\-\.]+\s*(Villaverde|Centro)\s*$", "", name, flags=re.I)
-        name = re.sub(r"^(Magia|Teatro|Cine):\s*'(.+)'\s*$", r"\2", name, flags=re.I)
-        name = re.sub(r"\.\.\.\s*", "… ", name)
-        name = re.sub(r"(la) maravillas", r"\1s maravillas", name, flags=re.I)
-        name = re.sub(r"'\s*(Rompiendo Muros)\s*'", r"'\1'", name, flags=re.I)
-        name = re.sub(r"^Taller para adultos:\s*", "", name, flags=re.I)
-        name = re.sub(r"^POM Condeduque [\d\-]+\s*", "", name, flags=re.I)
-        name = re.sub(r"\s*en el Espacio de Igualdad Lourdes Hernández$", "", name, flags=re.I)
-        name = re.sub(r"^Música:\s*", "", name, flags=re.I)
-        name = re.sub(r"^Semana de la Ciencia 2025:\s*", "", name, flags=re.I)
-        name = re.sub(r"^[a-zA-ZáéÁÉ]+ con Historia[\.\s]+[vV]isitas guiadas tem[aá]ticas a la colecci[oó]n[\.\s]+[a-zA-Z]+", "Visitas guiadas temáticas a la colección", name)
-        name = re.sub(r"^Charlas con altura:\s+", "", name)
-        name = re.sub(r"[\s\-]+Encuentro con el público$", "", name)
-        name = re.sub(r"^[Pp]el[íi]cula[:\.]\s+", "", name)
-        name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.I)
-        name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.I)
-        name = re.sub(r"\.\s*(conferencia)\s*$", "", name, flags=re.I)
-        name = re.sub(r"Visita a la exposición '([^']+)'\. .*", r"\1", name, flags=re.I)
-        name = re.sub(r"^(lectura dramatizada|presentación del libro|Cinefórum[^:]*|^Madrid, plató de cine)\s*[\.:]\s+", "", name, flags=re.I)
-        name = re.sub(r"^conferencia\s+y\s+audiovisual:\s+", "", name, flags=re.I)
-        name = re.sub(r"^(conferencia|visita[^'\"]*)[\s:]+(['\"])", r"\2", name, flags=re.I)
-        name = re.sub(r"^(conferencia|concierto|espect[aá]culo|proyección( película)?)\s*[\-:\.]\s*", "", name, flags=re.I)
-        name = re.sub(r"^visita (comentada|guiada)(:| -)\s+", "", name, flags=re.I)
-        name = re.sub(r"^Proyección del documental:\s+", "", name, flags=re.I)
-        name = re.sub(r"^(Cine .*)?Proyección de (['\"])", r"\2", name, flags=re.I)
-        name = re.sub(r"^Cineclub con .* '([^']+)'.*", r"\1", name, flags=re.I)
-        name = re.sub(r"\s*-\s*(moncloa|arganzuela|retiro|chamberi)\s*$", "", name, flags=re.I)
-        name = re.sub(r"^(Exposición|Danza|Música):? ([\"'`])(.+)\2$", r"\3", name, flags=re.I)
-        name = re.sub(r"Red de Escuelas Municipales del Ayuntamiento de Madrid", "red de Escuelas", name, flags=re.I)
-        name = re.sub(r".*Ciclo de conferencias de la Sociedad Española de Retórica': (['\"])", r"\1", name, flags=re.I)
-        name = re.sub(r"\s*-\s*$", "", name)
-        name = re.sub(r"Asociación (de )?Jubilados( (del )?Ayuntamiento( de Madrid)?)?", "asociación de jubilados", name, flags=re.I)
-        name = re.sub(r"^Proyección de la película '([^']+)'", r"\1", name, flags=re.I)
-        name = re.sub(r"^(Obra de teatro|Noches? de Clásicos?|21 Distritos)\s*[:\-]\s*", r"", name, flags=re.I)
-        name = re.sub(r"Piano City (Madrid *'?\d+|Madrid|'?\d+)", r"Piano City", name, flags=re.I)
-        name = re.sub(r"CinePlaza:.*?> (Proyección|Cine)[^:]*:\s+", "", name, flags=re.I)
-        name = re.sub(r"^Representaci[óo]n teatral:?\s+'([^']+)'$", r"\1", name, flags=re.I)
-        name = re.sub(r"^(Obra de )?teatro\.\s+", "", name, flags=re.I)
-        name = capitalize(name)
-        name = unquote(name.strip(". "))
-        if len(name) < 2:
-            name = bak[-1]
-    name = unquote(name)
-    w1 = name[0]
-    if w1.isalpha():
-        name = w1.upper()+name[1:]
-    return name
-
+    GOETHE = Place(
+        name="Instituto Goethe",
+        address="C. de Zurbarán, 21, Chamberí, 28010 Madrid",
+        latlon="40.42997093840387,-3.6915048305975926",
+        zone='Alonso Martinez',
+        map="https://maps.app.goo.gl/kiKtgoio8SMSzugA8"
+    )
+    CUARTA_PARED = Place(
+        name="Teatro Cuarta Pared",
+        address="C. de Ercilla, 17, Arganzuela, 28005 Madrid",
+        latlon="40.40299003125452,-3.7025320269818605",
+        zone='Embajadores',
+        map="https://maps.app.goo.gl/zyZaf9mRqeixu7EW9"
+    )
+    VALLE_INCLAN = Place(
+        name="Teatro Valle-Inclán",
+        address="Pl. de Ana Diosdado, s/n, Centro, 28012 Madrid",
+        latlon="40.40855249837478,-3.7005777883635664",
+        zone='Lavapiés',
+        map="https://maps.app.goo.gl/nsUhwMvC9aPR7N2P6"
+    )
+    MARIQUEEN = Place(
+        name="La Mari Queen",
+        address="C. de Barbieri, 10, Centro, 28004 Madrid",
+        latlon="40.4211317930352,-3.698135986509069",
+        zone='Sol',
+        map="https://maps.app.goo.gl/gJvWcZwQcUapc1Cs9"
+    )
+    REPLIKA = Place(
+        name="Teatro Réplika",
+        address="C. de la Explanada, 14, Moncloa - Aravaca, 28040 Madrid",
+        latlon="40.44856348226549,-3.711603184725959",
+        zone='Cuatro Caminos',
+        map="https://maps.app.goo.gl/7K6nALjgv6GfYtWG9"
+    )
+    INSTITUTO_FRANCES = Place(
+        name="Instituto francés",
+        address="Calle del Marqués de la Ensenada, 12, Local 1, Centro, 28004 Madrid",
+        latlon="40.42487366237583,-3.6923599422848086",
+        map="https://maps.app.goo.gl/WtMSrpGw6HybmMGF7",
+        zone='Alonso Martinez',
+    )
+    CASA_DEL_LECTOR = Place(
+        name="Casa del lector",
+        address="P.º de la Chopera, 14, Arganzuela, 28045 Madrid",
+        latlon="40.39276355483462,-3.6984684576727127",
+        map="https://maps.app.goo.gl/HE9kuejYm1ZmtxL56",
+        zone='Legazpi',
+    )
+    LA_MARIMALA = Place(
+        name="La Marimala",
+        address="Calle Provisiones 18 esquina, C. del Mesón de Paredes, 76, 28012 Madrid",
+        latlon="40.40740184292837,-3.702491186509069",
+        map="https://maps.app.goo.gl/uXWbXAJhKAva2Vp46",
+        zone='Lavapiés',
+    )
 
 KO_IMG = (
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
@@ -897,6 +949,7 @@ KO_IMG = (
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20ENERO/18%20enero%20%20CONCIERTO%20Ra%C3%ADzes-001.jpg',
     'https://www.madrid.es/UnidadWeb/UGBBDD/EntidadesYOrganismos/CulturaYOcio/InstalacionesCulturales/CentrosCulturalesMunicipales/CCVillaverde/Ficheros/CentroSocioCult.jpg',
     'https://cdn.tenemosplan.com/tenemosplan/default_image.jpg',
+    'https://www.goethe.de/resources/files/jpg1436/clad-event-02-1000x1000-formatkey-jpg-w320r.jpg',
 )
 
 
@@ -938,7 +991,7 @@ class Event:
         if isinstance(plc, Place):
             plc = plc.normalize()
         object.__setattr__(self, 'place', plc)
-        new_name = _clean_name(self.name, self.place.name)
+        new_name = clean_name(self.name)
         if new_name != self.name:
             logger.debug(f"[{self.id}].__post_init__ name={new_name} <- {self.name}")
             object.__setattr__(self, 'name', new_name)
@@ -1085,7 +1138,7 @@ class Event:
         if get_domain(self.url) == "madrid.es":
             title = get_text(WEB.get_cached_soup(self.url).select_one("title"))
             if title and " - " in title:
-                return _clean_name(title.split(" - ")[0].strip(), self.place.name)
+                return clean_name(title.split(" - ")[0].strip())
 
     def _fix_img(self):
         ko = (None, '') + KO_IMG

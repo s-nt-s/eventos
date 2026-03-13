@@ -46,6 +46,11 @@
           <option value="{{c | simplify }}" data-txt="{{(c)}}">{{(c)}} ({{num}})</option>
           {% endfor %}
         </optgroup>
+        <optgroup label="URL">
+          {% for c, num in domains.items()|sort %}
+          <option value="{{c | dom_simplify }}" data-txt="{{(c)}}">{{(c)}} ({{num}})</option>
+          {% endfor %}
+        </optgroup>
       </select>
     </p>
     {% for (img, e) in eventos %}

@@ -368,6 +368,9 @@ class Universidad:
                 return Category.SPORT
             if re_or(c, "divulgaci[oó]n", "docencia", flags=re.I):
                 return Category.CONFERENCE
+            if re_or(c, "Producci[oó]n audiovisual", flags=re.I):
+                return Category.CINEMA
+
         if re_or(
             e.SUMMARY,
             "charla historiogr[aá]fica",

@@ -524,10 +524,14 @@ class MadridEs:
             r"relatos en familia",
             r"concierto familiar",
             r"bienestar de niñ[ao]s y niñ[oa]s",
-            (r"cuentacuentos", r"en familia"),
             r"donde los niñ[ao]s y niñ[oa]s pueden",
             r"orientad[oa] al p[uú]blico infantil",
             r"Recomendado para niñ[aox@e]s",
+            r"familias con menores",
+            r"familias con niñ[aox@e]s",
+            r"de 6 a 12 años",
+            r"entre 8 y 17 años",
+            (r"cuentacuentos", r"en familia"),
             flags=re.I
         ):
             return Category.CHILDISH
@@ -579,6 +583,7 @@ class MadridEs:
             i.title,
             "Jornada de intercambio de semillas",
             "^Reparto de [aá]rboles",
+            "Emprender con criterio",
             flags=re.I
         ):
             return Category.NON_GENERAL_PUBLIC
@@ -690,6 +695,7 @@ class MadridEs:
             r"Festival Centro al comp[áa]s",
             r"Cuarteto de Cuerda",
             r"tertulia musical",
+            "Folksongs",
             flags=re.I
         ):
             return Category.MUSIC
@@ -705,6 +711,7 @@ class MadridEs:
             i.title,
             r"^danzas?$",
             r"Baile sin cuartel",
+            "D[íi]a Internacional de la Danza",
             flags=re.I
         ):
             return Category.DANCE
@@ -732,6 +739,11 @@ class MadridEs:
             r"Ciclo de conferencias",
             r"En esta charla vamos",
             r"^Conferencia del?",
+            "La charla tiene como objetivo",
+            "La conferencia explora(r[áa])?",
+            "^En esta charla",
+            "acoge la conferencia",
+            "Te invitamos a una charla",
             flags=re.I
         ):
             return Category.CONFERENCE
@@ -744,6 +756,7 @@ class MadridEs:
         if re_or(
             i.description,
             r"Este proyecto musical",
+            ("banda", "tributo"),
             flags=re.I
         ):
             return Category.MUSIC
@@ -896,6 +909,7 @@ class MadridEs:
             r"^pregon$",
             r'[Mm]ocrofestival, tableros y pantallas',
             r"^Tardes romanas",
+            "^[Ii]ntroduci[oó]n (a la|a|al)",
         ):
             return Category.CONFERENCE
         if re_or(
@@ -1274,6 +1288,12 @@ class MadridEs:
             flags=re.I
         ):
             return Category.NO_EVENT
+
+        if re_or(
+            i.event.title,
+            "con Maribel Moreno",
+        ):
+            return Category.CONFERENCE
 
         logger.critical(str(CategoryUnknown(
             i.event.url,

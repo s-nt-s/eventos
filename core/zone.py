@@ -120,7 +120,7 @@ class Zones(Enum):
         Circles.SAN_ISIDRO
     )
     LAVAPIES = Zone.build(
-        "Lavapies",
+        "Lavapiés",
         Circles.LAVAPIES
     )
     PUERTA_TOLEDO = Zone.build(

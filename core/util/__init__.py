@@ -15,6 +15,10 @@ import requests
 from datetime import date
 import holidays
 
+from typing import Any
+from dataclasses import is_dataclass, asdict
+from types import MappingProxyType
+
 
 import uuid
 
@@ -39,6 +43,16 @@ block = heads + ("p", "div", "table", "article")
 inline = ("span", "strong", "i", "em", "u", "b", "del")
 
 
+def round_to_even(x):
+    up = int((x + 2) // 2) * 2
+    down = int(x // 2) * 2
+    if x == int(x):
+        return down
+    if abs(x - down) < abs(x - up):
+        return down
+    return up
+
+
 def get_domain(url: str):
     if url is None or len(url) == 0:
         return None
@@ -47,6 +61,7 @@ def get_domain(url: str):
     if domain.startswith("www."):
         domain = domain[4:]
     domain = re.sub(r":\d+$", "", domain)
+    domain = domain.lower()
     return domain
 
 
@@ -114,7 +129,6 @@ def get_text(n: Tag):
     if len(txt) == 0:
         return None
     return txt
-
 
 
 def dict_add(obj: Dict[str, Set], a: str, b: Union[str, int, List[str], Set[str], Tuple[str]]):
@@ -321,6 +335,8 @@ def find_euros(*prices: str | None) -> None | float | int:
             continue
         if re.match(r"^\s*(gratuito|gratis)\s*$", prc, flags=re.I):
             return 0
+        if re.match(r"^gratis, ", prc, flags=re.I):
+            return 0
         if re.search(
             r"\b(gratuit[ao] (para|con)|(entrada|acceso) (gratuit[oa]|libre)|actividad(es)? gratuitas?)\b",
             prc,
@@ -404,7 +420,9 @@ def isWorkingHours(dt: datetime, min_hour: float = 16):
 def un_camel(x: str):
     if x is None or " " in x:
         return x
-    if x in ("LGTBI",):
+    if x in (
+        "LGTBI",
+    ):
         return x
     return re.sub(
         r"(?<!^)(?=[A-ZÁÉÍÓÚÜÑ])",
@@ -441,6 +459,7 @@ KO_IMG = (
     'https://cdn.lacasaencendida.es/storage/40900/conversions/GDlCus77F2aLC6INn4vbg5Su2b3F4R-metaQ29tcHJlbmRlci5qcGc=--detail.jpg',
     'https://cdn.lacasaencendida.es/storage/40901/conversions/IsU45QqcuKmr67wp0HOpEAoMsc8kKL-metaQ29tcHJlbmRlci5qcGc=--detail.jpg',
     'https://cdn.lacasaencendida.es/storage/40895/conversions/eEgTqKza8kchV70Ydsqm68WUnTkdOB-metaQ29tcHJlbmRlciA2LmpwZw==--detail.jpg',
+    "https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/ActividadesBPM/ProyeccionConciertoDramatizacion/ficheros/CineForum_260x260.jpg",
 )
 
 KO_MORE = (
@@ -473,53 +492,51 @@ KO_MORE = (
 )
 
 
-_SPECIAL_WORDS = (
-    "María la Rica",
-    "Carmen",
-    "Sevilla",
-    "Cervantes",
-    "Alcalá",
-    "Henares",
-    "Antezana",
-    "Santiago",
-    "Complutense",
-    "Mononoke",
-    "IV",
-    "BSMM",
-    "Paco de Lucía",
-    "AWWZ",
-    "CSO",
-    "EKO",
-    "IA",
-    "AI",
-    "centro cultural",
-    "XXX",
-    "VHZ",
-    "XXV",
-    "Quijote",
-    "Sara Torres",
-    "Karelis Zambrano",
-    "Carmen Rojas"
-)
 
-_RG_SPECIAL_WORDS = re.compile(
-    r"\b(" + "|".join(map(re.escape, _SPECIAL_WORDS)) + r")\b",
-    re.I
-)
-_RE_SPECIAL_WORDS = {x.lower(): x for x in _SPECIAL_WORDS}
-
-
-def capitalize(name: str):
-    if name == name.upper():
-        name = name.capitalize()
-
-    name = _RG_SPECIAL_WORDS.sub(
-        lambda m: _RE_SPECIAL_WORDS[m.group(0).lower()],
-        name
-    )
-
-    w1 = name[0]
-    if w1.isalpha():
-        name = w1.upper()+name[1:]
-
-    return name
+def parse_obj(
+    obj,
+    compact: bool,
+    rm_key: tuple[str, ...] = None,
+    re_parse: Optional[Callable[[Any], Any]] = None,
+    keep_re_parse_none: Optional[bool] = False
+):
+    if rm_key is None:
+        rm_key = tuple()
+    if getattr(obj, "_asdict", None) is not None:
+        obj = obj._asdict()
+    if isinstance(obj, MappingProxyType):
+        obj = dict(obj)
+    if is_dataclass(obj):
+        obj = asdict(obj)
+    if isinstance(obj, (list, tuple, set)):
+        obj = list(map(lambda x: parse_obj(
+            x,
+            compact,
+            rm_key,
+            re_parse=re_parse,
+            keep_re_parse_none=keep_re_parse_none
+        ), obj))
+    if isinstance(obj, dict):
+        obj = {k: parse_obj(
+            v,
+            compact,
+            rm_key,
+            re_parse=re_parse,
+            keep_re_parse_none=keep_re_parse_none
+        ) for k, v in obj.items()}
+    if isinstance(obj, dict):
+        obj = {k: v for k, v in obj.items() if k not in rm_key}
+    if compact:
+        if isinstance(obj, str):
+            obj = obj.strip()
+        if isinstance(obj, list):
+            obj = [a for a in obj if a is not None]
+        if isinstance(obj, dict):
+            obj = {k: v for k, v in obj.items() if v is not None}
+        if isinstance(obj, (list, dict, str)) and len(obj) == 0:
+            return None
+    if re_parse is not None:
+        new_obj = re_parse(obj)
+        if new_obj is not None or keep_re_parse_none is True:
+            return new_obj
+    return obj

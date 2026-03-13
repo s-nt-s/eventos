@@ -116,7 +116,7 @@ class MadConvoca:
             ):
                 return True
         return False
-    
+
     def __gancio_to_event(self, e: GancioEvent):
         if len(e.sessions) == 0:
             return
@@ -319,6 +319,7 @@ class MadConvoca:
         name = plain_text(e.title)
         txt_desc = html_to_text(e.description) if e.description else None
         tags: set[str] = set(map(plain_text, map(str.strip, e.tags)))
+        isLibreria = re_or(e.place.name, "librer[íi]a", flags=re.I)
 
         def has_tag(*args):
             for a in args:
@@ -356,8 +357,10 @@ class MadConvoca:
             return Category.CHILDISH
         if re_or(
             name,
+            r"Desayuno en Magdalena",
             "Bienvenida Nuev[oax@e]s? Rebeldes?",
             ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
+            ("Grupo", "masculinidades",),
             flags=re.I,
             to_log=e.id
         ):
@@ -428,7 +431,13 @@ class MadConvoca:
             "Filosof[ií]a PEC",
             flags=re.I
         ):
-            return Category.READING_CLUB
+            return Category.READING_CLUBSPORT
+        if re_or(
+            name,
+            "Pelis y Pili",
+            flags=re.I
+        ):
+            return Category.CINEMA
 
         if re_or(
             txt_desc,
@@ -470,7 +479,7 @@ class MadConvoca:
         ):
             return Category.READING_CLUB
 
-        if re_or(e.place.name, "librer[íi]a", flags=re.I):
+        if isLibreria:
             if re_or(name, "poes[íi]aa?", flags=re.I):
                 return Category.POETRY
             if re_or(
@@ -502,17 +511,11 @@ class MadConvoca:
         if re_or(
             txt_desc,
             "Hablaremos con .*? sobre su libro",
+            "presentamos el nuevo libro",
             flags=re.I,
             to_log=e.id
         ):
             return Category.LITERATURE
-        if re_or(
-            txt_desc,
-            "proyectamos el documental",
-            flags=re.I,
-            to_log=e.id
-        ):
-            return Category.CINEMA
         if re_or(
             txt_desc,
             "proyectamos el documental",
@@ -541,6 +544,8 @@ class MadConvoca:
             flags=re.I
         ):
             return Category.PARTY
+        if isLibreria:
+            return Category.LITERATURE
         logger.critical(str(CategoryUnknown(e.url, f"{e}")))
         return Category.UNKNOWN
 

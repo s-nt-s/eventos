@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from core.filemanager import FM
 import re
 from typing import NamedTuple
-from core.util import get_obj, trim
+from core.util import get_obj, trim, parse_obj
 
 
 class Event(NamedTuple):
@@ -149,7 +149,7 @@ class EventOn:
                     if v is not None:
                         o[k] = cast(v)
 
-        obj: list[dict] = FM.parse_obj(obj, compact=True, re_parse=_re_parse)
+        obj: list[dict] = parse_obj(obj, compact=True, re_parse=_re_parse)
         return obj
 
     def get_eventon(self):

@@ -6,8 +6,7 @@ from core.event import Event, Places, Session, Category, FieldNotFound, Category
 import re
 from bs4 import Tag
 from datetime import datetime
-from selenium.webdriver.common.by import By
-from core.util import plain_text, re_or
+from core.util import plain_text, re_or, find_duplicates, to_uuid, round_to_even
 from bs4 import BeautifulSoup
 from functools import cached_property
 
@@ -99,9 +98,41 @@ class CaixaForum:
             for url in CaixaForum.URLS:
                 divs = self.__get_div_events(url)
                 for div in divs:
-                    events.add(self.__div_to_event(div))
-        if None in events:
-            events.remove(None)
+                    ev = self.__div_to_event(div)
+                    if ev:
+                        events.add(ev)
+
+        def _mk_key_cycle(e: Event):
+            if not e.cycle:
+                return None
+            if e.category == Category.CINEMA:
+                return None
+            return (e.cycle, e.category, e.place, round_to_even(e.price))
+
+        for evs in find_duplicates(
+            events,
+            _mk_key_cycle
+        ):
+            for e in evs:
+                events.remove(e)
+            cycle = evs[0].cycle
+            _id_ = to_uuid("".join(e.id for e in evs))
+            urls = set(i.url for i in evs)
+            max_s = max(len(i.sessions) for i in evs)
+            e = Event.fusion(*evs, firstEventUrl=(max_s == 1)).merge(
+                name=cycle,
+                cycle=cycle,
+                id=_id_,
+                url=urls.pop() if len(urls) == 1 else None
+            )
+            if cycle in ("Vermut y tertulia", "Encuentros con…"):
+                sessions: set[Session] = set()
+                for i in evs:
+                    for s in i.sessions:
+                        sessions.add(s._replace(title=i.name))
+                e = e.merge(sessions=tuple(sorted(sessions)))
+            e = e.fix()
+            events.add(e)
         logger.info(f"Caixa Forum: Buscando eventos {len(events)}")
         return tuple(sorted(events))
 
@@ -152,10 +183,11 @@ class CaixaForum:
         if price < 0:
             return None
         category = self.__find_category(div, event_soup)
+        name = get_text(h2)
         ev = Event(
             id=f"cf{div.id}",
             url=url,
-            name=get_text(h2),
+            name=name,
             img=self.__find_img(event_soup),
             price=price,
             category=category,
@@ -168,12 +200,24 @@ class CaixaForum:
             sessions=sessions,
             place=Places.CAIXA_FORUM.value
         )
-        ev = ev.merge(cycle=self.__find_cycle(ev))
+        ev = ev.merge(cycle=self.__find_cycle(name, ev))
         return ev
 
-    def __find_cycle(self, ev: Event):
+    def __find_cycle(self, name: str, ev: Event):
         if ev.category == Category.CINEMA:
             return
+        if re_or(
+            name,
+            r"Vermut y tertulia",
+            flags=re.I
+        ):
+            return "Vermut y tertulia"
+        if re_or(
+            name,
+            r"Encuentros con\s*(\.\.\.|…)",
+            flags=re.I
+        ):
+            return "Encuentros con…"
         soup = self.get_soup(ev.url)
         txt = get_text(soup.node.select_one("div.filters-form-container li:last-child"))
         cycle = re.match(r"^Ciclo: (.+)$", txt or "", flags=re.I)
