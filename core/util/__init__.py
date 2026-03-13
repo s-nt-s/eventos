@@ -441,6 +441,7 @@ KO_IMG = (
     'https://cdn.lacasaencendida.es/storage/40900/conversions/GDlCus77F2aLC6INn4vbg5Su2b3F4R-metaQ29tcHJlbmRlci5qcGc=--detail.jpg',
     'https://cdn.lacasaencendida.es/storage/40901/conversions/IsU45QqcuKmr67wp0HOpEAoMsc8kKL-metaQ29tcHJlbmRlci5qcGc=--detail.jpg',
     'https://cdn.lacasaencendida.es/storage/40895/conversions/eEgTqKza8kchV70Ydsqm68WUnTkdOB-metaQ29tcHJlbmRlciA2LmpwZw==--detail.jpg',
+    "https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/ActividadesBPM/ProyeccionConciertoDramatizacion/ficheros/CineForum_260x260.jpg",
 )
 
 KO_MORE = (
