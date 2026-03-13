@@ -400,7 +400,7 @@ class Place:
             "parque de san Isidro",
             flags=re.I
         ):
-            Zones.MARQUES_DE_VADILLO.value.name
+            return Zones.MARQUES_DE_VADILLO.value.name
         return None
 
     def _fix_latlon(self):
