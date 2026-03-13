@@ -691,8 +691,8 @@ class Places(Enum):
     LIBRERIA_PARENTHESIS = Place(
         name="Librería parenthesis",
         address="C. de Valencia, 30, Centro, 28012 Madrid",
-        latlon="40.464932223409676,-3.721768092989676",
-        zone="Embajadores"
+        latlon="40.40644150333828,-3.6997760460139233",
+        zone="Lavapies"
     )
     ESPACIO = Place(
         name="El espacio",
