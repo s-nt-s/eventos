@@ -48,10 +48,12 @@ class CaixaForum:
 
     @HashCache("rec/caixaforum/{}_ld.json")
     def __get_ld_json(self, url: str) -> Dict:
-        return self.get_soup(url).select_one_json(
-            'script[type="application/ld+json"]',
-            warning=True
-        )
+        try:
+            return self.get_soup(url).select_one_json(
+                'script[type="application/ld+json"]'
+            )
+        except WebException:
+            return None
 
     def get_soup(self, url: str):
         soup = self.__w.get(url)

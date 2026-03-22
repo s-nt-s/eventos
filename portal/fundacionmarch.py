@@ -99,11 +99,6 @@ class FundacionMarch:
     @cached_property
     def __web(self):
         w = Web()
-        #w.s = Driver.to_session(
-        #    "firefox",
-        #    FundacionMarch.URL,
-        #    session=w.s,
-        #)
         w.s.headers.update({
             'Accept-Encoding': 'gzip, deflate'
         })

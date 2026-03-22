@@ -1,4 +1,4 @@
-from core.web import Driver, get_text, buildSoup
+from core.web import Driver, get_text, buildSoup, get_query
 from functools import cached_property
 from core.event import Cinema, Event, Category, Places, Session
 from portal.cineentradas import CineEntradas
@@ -93,7 +93,7 @@ class SalaBerlanga:
                 tag=buildSoup(SalaBerlanga.HOME, tag),
                 inf=inf
             ))
-        FM.dump("rec/salaberlanga/fichas.json", [i.inf for i in items])
+        #FM.dump("rec/salaberlanga/fichas.json", [i.inf for i in items])
         return tuple(items)
 
     def __get_ficha(self, act: dict, url: str):
@@ -103,17 +103,29 @@ class SalaBerlanga:
         logger.warning(f"{url} not found in {SalaBerlanga.ACTIVIDADES}")
 
     def __get_cine_entrada(self, url: str, name: str):
+        def _showGroups(u: str):
+            sg = get_query(u).get("showGroups")
+            return sg
+
         ok_name: set[Event] = set()
+        ok_showGroups: set[Event] = set()
+        showGroups = _showGroups(url)
         for e in self.__cine_entradas:
             if e.name == name:
                 ok_name.add(e)
             if e.url == url:
                 return e
+            if _showGroups(e.url) == showGroups:
+                ok_showGroups.add(e)
             for s in e.sessions:
                 if s.url == url:
                     return e
+                if _showGroups(s.url) == showGroups:
+                    ok_showGroups.add(e)
         if len(ok_name) == 1:
             return ok_name.pop()
+        if len(ok_showGroups) == 1:
+            return ok_showGroups.pop()
 
     def _to_event(self, item: Item):
         if get_text(item.tag.select_one("p.card-text-dispo")) == "Entradas agotadas":
