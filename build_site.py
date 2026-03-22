@@ -299,6 +299,7 @@ def set_icons(html: str, **kwargs):
             "gestiona3.madrid": "https://madrid.ebiblio.es/favicon/espa.ico",
             "madrid.ebiblio": "https://madrid.ebiblio.es/favicon/espa.ico",
             "lacasaencendida": "https://cdn.lacasaencendida.es/images/favicon/favicon.svg",
+            "caixaforum": "https://sites.fundacionlacaixa.org/favicons/favicon.ico",
         }.get(dom)
         if ico is None:
             continue
