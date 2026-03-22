@@ -92,7 +92,6 @@ def _rm_prefix():
         r"Cap[ií]tulo XXX",
         r"CIMA (?:proyecta|Conversa)",
         r"(?:Grupo|Club) de lectura",
-        r"Vermut y tertulia",
         r"Charla",
         r"Concierto",
         r"Ciclo de conferencias?",
