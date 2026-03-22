@@ -1,4 +1,4 @@
-from core.web import get_text, Driver, WebException, MyTag
+from core.web import get_text, WebException, MyTag, Web, buildSoup
 from core.cache import TupleCache, HashCache
 from typing import Set, Dict, Union, List, Tuple
 import logging
@@ -9,9 +9,48 @@ from datetime import datetime
 from core.util import plain_text, re_or, find_duplicates, get_main_value, round_to_even
 from bs4 import BeautifulSoup
 from functools import cached_property
+from core.fetcher import Getter
+from aiohttp import ClientResponse
 
 logger = logging.getLogger(__name__)
 NOW = datetime.now()
+
+
+async def rq_to_div(r: ClientResponse):
+    soup = buildSoup(str(r.url), await r.text())
+    events: List[MyIdTag] = []
+    warn = get_text(soup.select_one("div.portlet-body div.title-warrings h2"))
+    if warn is not None:
+        logger.warning(f"{warn} {r.url}")
+        return tuple()
+    slc = f"div.card-item:has({CaixaForum.TIT_SELECTOR})"
+    divs = soup.select(slc)
+    if len(divs) == 0:
+        raise WebException(f"{slc} NOT FOUND in {r.url}")
+    for div in divs:
+        h2 = div.select_one(CaixaForum.TIT_SELECTOR)
+        url: str = h2.find_parent("a").attrs["href"]
+        _id_ = None
+        m = re.match(r".*_a(\d+)$", url)
+        if m:
+            _id_ = int(m.group(1))
+        idtag = MyIdTag(
+            id=_id_,
+            url=url,
+            node=div
+        )
+        events.append(idtag)
+    return tuple(events)
+
+
+async def rq_to_id(r: ClientResponse):
+    soup = buildSoup(str(r.url), await r.text())
+    ids: set[int] = set()
+    for script in map(get_text, soup.select("script")):
+        for m in re.findall(r"loadOneBoxTicketsDetailActivity\s*\(\s*['\"](\d+)['\"]", script or ''):
+            ids.add(int(m))
+    if len(ids):
+        return ids.pop()
 
 
 class MyIdTag(MyTag):
@@ -31,35 +70,76 @@ class CaixaForum:
     )
 
     def __init__(self):
-        self.__driver: Union[Driver, None] = None
+        self.__w = Web()
+        self.__w.s.headers.update({'Accept-Encoding': 'gzip, deflate'})
+        self.__w.get("https://caixaforum.org")
+        print(self.__w.response.status_code)
+        self.__getter_divs = Getter(
+            onread=rq_to_div,
+            headers=self.__w.s.headers,
+            cookie_jar=self.__w.s.cookies,
+        )
+        self.__getter_ids = Getter(
+            onread=rq_to_id,
+            headers=self.__w.s.headers,
+            cookie_jar=self.__w.s.cookies,
+        )
+
+    def __get_id_tags(self, *urls: str):
+        done: set[str] = set()
+        id_tags: list[MyIdTag] = []
+        for divs in self.__get_url_id_tags(*urls).values():
+            for d in divs:
+                if d.url not in done:
+                    id_tags.append(d)
+        return tuple(id_tags)
+
+    def __get_url_id_tags(self, *urls: str):
+        obj: dict[str, tuple[MyIdTag, ...]] = self.__getter_divs.get(*urls)
+        url_no_div: set[str] = set()
+        for divs in obj.values():
+            if divs is not None:
+                for d in divs:
+                    if d.id is None:
+                        url_no_div.add(d.url)
+        url_id: dict[str, int] = self.__getter_ids.get(*url_no_div)
+        for k, divs in tuple(obj.items()):
+            dvs: list[MyIdTag] = []
+            if divs is not None:
+                for d in divs:
+                    if d.id is None:
+                        _id_ = url_id.get(d.url)
+                        if _id_ is not None:
+                            d.id = _id_
+                            url_no_div.discard(d.url)
+                    if d.id is not None:
+                        dvs.append(d)
+            if len(dvs) == 0:
+                del obj[k]
+            else:
+                obj[k] = tuple(dvs)
+        for u in sorted(url_no_div):
+            logger.warning(f"ID not found in {u}")
+        return obj
 
     @cached_property
     def __category(self):
         done: Set[int] = set()
         category: Dict[Tuple[int, ...], Category] = {}
-        with Driver(browser="firefox", wait=5) as f:
-            self.__driver = f
-            for cat, url in {
-                Category.CHILDISH: "https://caixaforum.org/es/madrid/familia?p=999",
-            }.items():
-                ids = set(d.id for d in self.__get_div_events(url))
-                category[tuple(sorted(ids.difference(done)))] = cat
-                done = done.union(ids)
+        url_cat = {
+            "https://caixaforum.org/es/madrid/familia?p=999": Category.CHILDISH
+        }
+        for u, divs in self.__get_url_id_tags(*url_cat.keys()).items():
+            cat = url_cat[u]
+            ids = set(d.id for d in divs)
+            category[tuple(sorted(ids.difference(done)))] = cat
+            done = done.union(ids)
         return category
 
     @HashCache("rec/caixaforum/{}_sp.txt")
     def __get_html(self, url: str):
-        self.__driver.get(url)
-        if re.search(r"_a\d+$", url):
-            self.__driver.safe_waitjs(' && '.join([
-                '(window.document.readyState === "complete")',
-                '(document.querySelector("div.card-detail div.card-block-btn span")!=null)'
-                '(document.querySelector("#description-read")!=null)'
-                '(document.querySelector("div.card-detail div.reserva-ficha")!=null)'
-            ]))
-        else:
-            self.__driver.wait_ready()
-        return str(self.__driver.get_soup())
+        soup = self.__w.get(url)
+        return str(soup)
 
     @HashCache("rec/caixaforum/{}_ld.json")
     def __get_ld_json(self, url: str) -> Dict:
@@ -93,14 +173,10 @@ class CaixaForum:
     def events(self):
         logger.info("Caixa Forum: Buscando eventos")
         events: Set[Event] = set()
-        with Driver(browser="firefox", wait=5) as f:
-            self.__driver = f
-            for url in CaixaForum.URLS:
-                divs = self.__get_div_events(url)
-                for div in divs:
-                    ev = self.__div_to_event(div)
-                    if ev:
-                        events.add(ev)
+        for div in self.__get_id_tags(*CaixaForum.URLS):
+            ev = self.__div_to_event(div)
+            if ev:
+                events.add(ev)
 
         def _mk_key_cycle(e: Event):
             if not e.cycle:
@@ -376,4 +452,4 @@ class CaixaForum:
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/caixaforum.log", log_level=(logging.DEBUG))
-    (CaixaForum().events)
+    print(len(CaixaForum().events))
