@@ -821,7 +821,6 @@
     "ms820eecd8dfa9c910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
     "ms204873690ea8c910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
     "ms171c7aea64f8c910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
-    "ms14a35bf675499910VgnVCM100000891ecb1aRCRD": {"category": "WORKSHOP"},
     "ms2b3338e487aca910VgnVCM200000f921e388RCRD": {"category": "MUSIC"},
     "mcmc26933": {"category": "CINEMA", "imdb": "tt2005276"},
     "ms4fa14dd7f1f9c910VgnVCM100000891ecb1aRCRD": {"category": "THEATER"},
@@ -936,7 +935,7 @@
         "name": "Cesar Rendueles presenta: 'Redes vacías: Tecnología catastrófica y el fin de la democracia'",
         "more": "https://www.goodreads.com/book/show/244714786"
     },
-    "ms16d3dc6dddebc910VgnVCM100000891ecb1aRCRD": {"category": "LITERATURE"},
+    "ms16d3dc6dddebc910VgnVCM100000891ecb1aRCRD": {"category": "NARRATIVE"},
     "md7436": {"category": "CINEMA"},
     "mcmc27008": {"category": "NARRATIVE"},
     "am57102-1774636200-1774636200@ateneodemadrid.com": {"category": "POETRY"},
@@ -1153,6 +1152,7 @@
         "more": "https://levantafuego.com/producto/politicas-del-castigo-una-anatomia-del-auge-punitivo/"
     },
     "msf88a48b5276fc910VgnVCM100000891ecb1aRCRD": {
+        "category": "DANCE",
         "more": "https://21distritos.es/evento/4-escenas-4-estilos-2/"
     },
     "msebe9e665d77fc910VgnVCM100000891ecb1aRCRD": {
@@ -1212,7 +1212,7 @@
         "img": "https://www.sonorensemble.com/wp-content/uploads/2016/11/Sonor-Ensemble-Inicio-2017.jpg"
     },
     "md7530": {
-        "category": "CONFERENCE",
+        "category": "CINEMA",
         "name": "Flamenco en París"
     },
     "am46059": {
@@ -1234,5 +1234,185 @@
         "category": "CINEMA",
         "filmaffinity": 418539,
         "name": "El hombre elefante"
+    },
+    "cbaDFD601BD-3F4A-5E3A-8587-8DA966C7F31A": {
+        "category": "LITERATURE",
+        "name": "Manu Martín presenta: Contra el patrimonio",
+        "more": "https://www.goodreads.com/book/show/246300200"
+    },
+    "am57691-1776195000-1776195000@ateneodemadrid.com": {
+        "category": "LITERATURE",
+        "more": "https://www.goodreads.com/book/show/243003679"
+    },
+    "mxDB76DBBC-9FAA-54D0-AC52-6E1A7012BC0A": {"category": "NO_EVENT"},
+    "mxADE245A4-F21D-5E07-9C9E-0CEBF4943155": {"category": "NO_EVENT"},
+    "mxBD13A9DD-E1FD-5016-A335-41F7830DF188": {"category": "CONFERENCE"},
+    "mx65FE5F55-2554-5020-BA70-25063C333F8E": {
+        "category": "CINEMA",
+        "filmaffinity": 478002,
+        "name": "5 de chocolate y 1 de fresa"
+    },
+    "mx30A6CC86-7DCC-5B04-ACC7-0E7A1224A23D": {
+        "category": "CONFERENCE"
+    },
+    "mx8ECB0949-DABD-5A1E-89BE-59E6A488DB27": {
+        "category": "CINEMA",
+        "filmaffinity": 766006
+    },
+    "mx46E0BBBA-3270-5994-939C-8B052DAC4F3F": {
+        "category": "CINEMA",
+        "filmaffinity": 347632
+    },
+    "tl324750B4-82DA-5FDF-92A0-71EAF6778807": {"category": "NARRATIVE"},
+    "mse1d826743ca1d910VgnVCM100000891ecb1aRCRD": {"category": "NARRATIVE"},
+    "gt27247540": {
+        "category": "CINEMA",
+        "filmaffinity": 500838
+    },
+    "gt27247541": {
+        "category": "CINEMA",
+        "filmaffinity": 235758
+    },
+    "gt27247545": {
+        "category": "CINEMA",
+        "imdb": "tt37720830",
+        "img": "https://m.media-amazon.com/images/M/MV5BYjMwMmE2ZmUtZDA3NC00MjI5LThiZDAtODBkZjhjZjgxY2VhXkEyXkFqcGc@._V1_FMjpg_UX768_.jpg"
+    },
+    "seEQUIS2439": {
+        "category": "CONFERENCE",
+        "more": "https://www.cinecutre.com/2026/03/noticias/show-de-humor-vhz-especial-frankenstein/",
+        "name": "Cinecutre: Frankensteins chungos"
+    },
+    "ms155e668549a1d910VgnVCM200000f921e388RCRD": {
+        "name": "Fiesta de la lectura compartida",
+        "more": "https://casalector.fundaciongsr.org/meet-read-fiesta-de-la-lectura-compartida/",
+        "category": "PARTY"
+    },
+    "ms9134f8d693b1d910VgnVCM200000f921e388RCRD": {
+        "category": "MUSIC",
+        "more": "https://www.teatromonumental.es/eventos/bsmm-concierto-no5-ciclo-de-invierno/"
+    },
+    "sb10799": {
+        "category": "CINEMA",
+        "filmaffinity": 957271
+    },
+    "al54344": {
+        "category": "CINEMA",
+        "filmaffinity": 309861
+    },
+    "ms720ba5d519f1d910VgnVCM200000f921e388RCRD": {"category": "MUSIC"},
+    "msa4181e81a17ec910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
+    "md7561": {"cycle": "Festival Cúbit: Ciencia + Arte", "category": "CONFERENCE"},
+    "md7563": {"cycle": "Festival Cúbit: Ciencia + Arte", "category": "CONFERENCE"},
+    "md7495": {"cycle": "Festival Cúbit: Ciencia + Arte", "category": "CONFERENCE"},
+    "md7515": {"cycle": "Festival Cúbit: Ciencia + Arte", "category": "WORKSHOP"},
+    "md7529": {"cycle": "Festival Cúbit: Ciencia + Arte", "category": "THEATER"},
+    "ms14a35bf675499910VgnVCM100000891ecb1aRCRD": {
+        "category": "WORKSHOP",
+        "cycle": "Talleres sobre el sonido"
+    },
+    "ms75bad673f4756910VgnVCM2000001f4a900aRCRD": {
+        "category": "WORKSHOP",
+        "cycle": "Talleres sobre el sonido",
+        "name": "El ruido de mi calle"
+    },
+    "am57803-1776508200-1776508200@ateneodemadrid.com": {
+        "category": "CINEMA",
+        "filmaffinity": 999656,
+        "name": "El caftán azul"
+    },
+    "md7585": {"category": "CONFERENCE"},
+    "al54354": {
+        "category": "CINEMA",
+        "filmaffinity": 235917
+    },
+    "mcmc27146": {
+        "name": "La última cena",
+        "category": "CINEMA",
+        "filmaffinity": 731989
+    },
+    "mc42874-1775674800-1775682000@fal.cnt.es": {
+        "category": "LITERATURE",
+        "more": "https://www.goodreads.com/book/show/221061319"
+    },
+    "mcmc27145": {
+        "name": "Actos Humanos, de Han Kang",
+        "category": "NARRATIVE",
+        "more": "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2194462"
+    },
+    "am57842-1777118400-1777118400@ateneodemadrid.com": {
+        "category": "LITERATURE",
+        "more": "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2256820"
+    },
+    "gt27246328": {
+        "category": "CINEMA",
+        "filmaffinity": 607877
+    },
+    "gt27246381": {
+        "category": "CINEMA",
+        "filmaffinity": 500838
+    },
+    "gt27246382": {
+        "category": "CINEMA",
+        "filmaffinity": 235758
+    },
+    "gt27246383": {
+        "category": "CINEMA",
+        "filmaffinity": 502795
+    },
+    "gt27246385": {
+        "category": "CINEMA",
+        "filmaffinity": 968717
+    },
+    "gt27246384": {
+        "category": "CINEMA",
+        "imdb": "tt37720830"
+    },
+    "ce15603": {"price": 12, "category": "MUSIC"},
+    "msed1065dfd942d910VgnVCM200000f921e388RCRD": {"category": "SPAM"},
+    "am46073": {
+        "category": "LITERATURE",
+        "more": "https://www.goodreads.com/book/show/236863503",
+        "img": "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1750351170i/236863503.jpg"
+    },
+    "msa8d5e042bd42d910VgnVCM200000f921e388RCRD": {"category": "SPAM"},
+    "msbdc35252a8fba910VgnVCM200000f921e388RCRD": {
+        "category": "CINEMA",
+        "filmaffinity": 463106
+    },
+    "msd2f4832f37fba910VgnVCM200000f921e388RCRD": {
+        "category": "CINEMA",
+        "name": "Cortometrajes sin presupuesto",
+        "cycle": "Cortometrajes"
+    },
+    "msc04153071292d910VgnVCM200000f921e388RCRD": {
+        "category": "THEATER"
+    },
+    "msb3dd19b58092d910VgnVCM200000f921e388RCRD": {
+        "category": "CONFERENCE"
+    },
+    "mx71762C9A-1DD1-5DD7-A25F-A2165E879534": {
+        "category": "CINEMA",
+        "filmaffinity": 122104
+    },
+    "ms72c62a23ab499910VgnVCM100000891ecb1aRCRD": {
+        "category": "VISIT",
+        "img": "https://www.madrid.es/UnidadesDescentralizadas/Educacion_Ambiental/EspecialesInformativos/HabitatMadridActividadesAmbientales/ActividadesPAA/FicherosActividaesRutas/ActivRutaJardinesCampoDelMoroMadridAmbiental.jpg"
+    },
+    "mse05b0d2bcf92d910VgnVCM200000f921e388RCRD": {"category": "PARTY"},
+    "mx8429CB3E-8AAA-5C33-A6C5-95CD3EB346D3":{
+        "category": "CINEMA",
+        "filmaffinity": 985323
+    },
+    "mxED3E5373-CFA9-5EDD-8C5F-DAA41A0969F8": {
+        "category": "CINEMA",
+        "filmaffinity": 207758
+    },
+    "am57932-1775836800-1775923200@ateneodemadrid.com": {
+        "more": "https://raiepp.org/encuentro-abolicionista-2026"
+    },
+    "mxFB56698D-F690-5299-8216-7AA1FAB719DD": {
+        "category": "CINEMA",
+        "filmaffinity": 581171
     }
 }

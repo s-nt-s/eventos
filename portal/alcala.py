@@ -163,6 +163,12 @@ class Alcala:
             flags=re.I
         ):
             return Category.RELIGION
+        if re_or(
+            x.name,
+            ("taller", "para j[oó]venes"),
+            flags=re.I
+        ):
+            return Category.YOUTH
         if not x.event_types:
             logger.critical(f"event_types=None {x.permalink}")
             return Category.UNKNOWN
@@ -170,14 +176,13 @@ class Alcala:
         for br in content.select("br, p"):
             br.append("\n")
         txt_content = get_text(content)
-        for k, cat in {
-            r"T[IÍ]TERES.*P[UÚ]BLICO FAMILIAR": Category.CHILDISH,
-            r"TEATRO INFANTIL": Category.CHILDISH,
-            r"EXPERIENCIA GASTRON[OÓ]MICA": Category.PARTY,
-            r"VISITA TEATRALIZADA": Category.THEATER,
-            r"[dD]eclamaci[oó]n de poemas": Category.POETRY,
+        for cat, _or_ in {
+            Category.CHILDISH: (r"T[IÍ]TERES.*P[UÚ]BLICO FAMILIAR", r"TEATRO INFANTIL", r"[Ee]spect[aá]culo infantil"),
+            Category.PARTY: (r"EXPERIENCIA GASTRON[OÓ]MICA", ),
+            Category.THEATER: (r"VISITA TEATRALIZADA", ),
+            Category.POETRY: (r"[dD]eclamaci[oó]n de poemas", ),
         }.items():
-            if re_or(txt_content, k):
+            if re_or(txt_content, *_or_):
                 return cat
         tp = x.event_types[0].lower()
         if tp == "música y danza":

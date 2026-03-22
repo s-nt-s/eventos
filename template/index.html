@@ -46,6 +46,16 @@
           <option value="{{c | simplify }}" data-txt="{{(c)}}">{{(c)}} ({{num}})</option>
           {% endfor %}
         </optgroup>
+        <optgroup label="Precio">
+          {% for x, num in precios.items()|sort %}
+          <option value="e{{x}}" data-txt="{{(x)}} €">{{(x)}} € ({{num}})</option>
+          {% endfor %}
+        </optgroup>
+        <optgroup label="Hora">
+          {% for x, num in horas.items()|sort %}
+          <option value="h{{x | replace(':', '')}}" data-txt="{{(x)}}">{{(x)}} ({{num}})</option>
+          {% endfor %}
+        </optgroup>
         <optgroup label="URL">
           {% for c, num in domains.items()|sort %}
           <option value="{{c | dom_simplify }}" data-txt="{{(c)}}">{{(c)}} ({{num}})</option>

@@ -9,6 +9,7 @@ _QUOTES = (
     '“”',
     '«»'
 )
+_QT = "".join(_QUOTES)
 
 _SPECIAL_WORDS = (
     "María la Rica",
@@ -36,7 +37,8 @@ _SPECIAL_WORDS = (
     "Quijote",
     "Sara Torres",
     "Karelis Zambrano",
-    "Carmen Rojas"
+    "Carmen Rojas",
+    "Shakespeare",
 )
 
 _RG_SPECIAL_WORDS = re.compile(
@@ -62,9 +64,12 @@ def capitalize(name: str):
     return name
 
 
-def unquote(s: str):
+def normalize_quote(s: str):
+    if s is None:
+        return None
     bak = ''
-    while bak != s:
+    s = s.strip()
+    while len(s) and bak != s:
         bak = str(s)
         for q in _QUOTES:
             if s.count(q) == 1:
@@ -79,13 +84,17 @@ def unquote(s: str):
                     elif s[-1] in q:
                         s = s[:-1].strip()
         s = s.strip()
+        if "'" not in s:
+            s = re.sub(r'['+_QT+']', "'", s)
     return s
 
 
 @cache
 def _rm_prefix():
-    SEP = r"[:\-\.]"
+    SEP = r"[:\-\.\|]"
     PREFIX_1 = r"|".join([
+        r"Cine\s*Club\s*Goethe",
+        r"📢 VALLECAS",
         r"(?:Obra de |Representaci[óo]n de )?[tT]eatro(?: para adultos| Comedia Sat[ií]rica)?",
         r"Colecci[óo]n\.? Arte contempor[aá]neo",
         r"Celebra\d+",
@@ -115,6 +124,7 @@ def _rm_prefix():
         r"21 Distritos",
         r"Representaci[óo]n teatral",
         r"Taller",
+        r"Conversaciones WAIQ",
     ])
     PREFIX_2 = r"|".join({
         r"POM Condeduque [\d\-]+",
@@ -122,17 +132,19 @@ def _rm_prefix():
     PREFIX_3 = r"|".join({
         r".*CinePlaza:.*?> (?:Proyección|Cine)[^:]*:",
     })
-    re_1 =r"(?:(?:"+PREFIX_1+r")\s*"+SEP+r"+)"
-    re_2 =r"(?:(?:"+PREFIX_2+r")\s*"+SEP+r"*)"
-    re_3 =r"(?:"+PREFIX_3+r")"
+    re_1 = r"(?:(?:"+PREFIX_1+r")\s*"+SEP+r"+)"
+    re_2 = r"(?:(?:"+PREFIX_2+r")\s*"+SEP+r"*)"
+    re_3 = r"(?:"+PREFIX_3+r")"
     rm_prefix = re.compile("^(?:" + re_1 + r"|" + re_2 + r"|" + re_3 + r")\s*", flags=re.I)
     return rm_prefix
 
 
 @cache
 def _rm_sufix():
-    SEP = r"[\-\.]"
+    SEP = r"[\-\.\|]"
     SUFIX_1 = "|".join([
+        r"(?:Actividades )?(?:s[aá]bado|viernes) (?:tarde|mañana)",
+        r"Las tertulias de Eirene Editorial",
         r"Visita a la colecci[oó]n del Museo",
         r"CSO? La Cheli",
         r"Rebeli[oó]n o Extinci[oó]n",
@@ -164,8 +176,7 @@ def _rm_sufix():
 
 @cache
 def _rm_quote():
-    Q = "".join(_QUOTES)
-    NQ = r"[^"+Q+"]"
+    NQ = r"[^"+_QT+"]"
     PREFIX = "|".join([
         r"Concierto(?: de)?",
         r"Cineclub(?: con)?",
@@ -176,7 +187,7 @@ def _rm_quote():
         r"Taller(?: de)?",
     ])
     re_3 = r"(?:"+PREFIX+r")"
-    re_prefix = re.compile(r"^"+re_3+NQ+r"*(["+Q+r"])", flags=re.I)
+    re_prefix = re.compile(r"^"+re_3+NQ+r"*(["+_QT+r"])", flags=re.I)
     return re_prefix
 
 
@@ -204,8 +215,7 @@ def clean_name(name: str):
 
     while bak[-1] != name:
         bak.append(str(name))
-        if "'" not in name:
-            name = re.sub(r'["`´”“‘’]', "'", name)
+        name = normalize_quote(name)
         name = re.sub(r"\.\.\.\s*", "… ", name).strip()
         name = _rm_prefix().sub("", name)
         name = _rm_sufix().sub("", name)
@@ -213,10 +223,8 @@ def clean_name(name: str):
         name = _sub_1().sub(r"\1", name)
         if name:
             name = capitalize(name)
-            name = unquote(name)
         if len(name) < 2:
             name = bak[-1]
-    name = unquote(name)
     w1 = name[0]
     if w1.isalpha():
         name = w1.upper()+name[1:]

@@ -179,7 +179,7 @@ class MadConvoca:
             duration=e.duration or 60,
             img=e.ATTACH,
             price=self.__find_ics_price(e),
-            publish=e.str_publish,
+            #publish=e.str_publish,
             category=self.__find_ics_category(e),
             place=place,
             sessions=(
@@ -329,8 +329,9 @@ class MadConvoca:
             return False
 
         def has_tag_or_title(*args):
-            if has_tag(*args):
-                return True
+            for t in tags:
+                if re_or(t, *args, flags=re.I, to_log=e.id):
+                    return True
             if re_or(name, *args, flags=re.I, to_log=e.id):
                 return True
             return False
@@ -346,7 +347,13 @@ class MadConvoca:
             return Category.NO_EVENT
         if has_tag_or_title("infantil"):
             return Category.CHILDISH
-        if has_tag("asamblea") or has_tag_or_title('manifestacion', 'concentracion'):
+        if has_tag(
+            "asamblea"
+        ) or has_tag_or_title(
+            'manifestaci[oó]n',
+            'concentraci[oó]n',
+            'regularizaci[oó]n extraordinaria'
+        ):
             return Category.ACTIVISM
         if re_or(
             txt_desc,
@@ -372,9 +379,9 @@ class MadConvoca:
             return Category.CINEMA
         if has_tag("deporte") or has_tag_or_title("yoga", "pilates"):
             return Category.SPORT
-        if has_tag_or_title("taller", "formacion", "intercambio de idiomas"):
+        if has_tag_or_title("taller", "formaci[oó]n", "intercambio de idiomas"):
             return Category.WORKSHOP
-        if has_tag_or_title("presentacion de libro"):
+        if has_tag_or_title("presentaci[óo]n de libro"):
             return Category.LITERATURE
         if re_and(name, "presentaci[oó]n", "jugar o romper", flags=re.I):
             return Category.LITERATURE
@@ -382,7 +389,7 @@ class MadConvoca:
             return Category.WORKSHOP
         if re_or(name, "iniciaci[óo]n al",  flags=re.I, to_log=e.id) and has_tag("deporte", "gimnasia"):
             return Category.WORKSHOP
-        if has_tag_or_title("teatro", "micro abierto", "performance"):
+        if has_tag_or_title("teatro", "micro abierto", "performance", "mikro abierto"):
             return Category.THEATER
         if has_tag_or_title("club de lectura", "grupo de lectura", "clubdelectura", "grupodelectura", "bookelarre"):
             return Category.READING_CLUB
@@ -411,11 +418,11 @@ class MadConvoca:
             return Category.WORKSHOP
         if has_tag_or_title("concierto", "swing") or has_tag("musica", "música"):
             return Category.MUSIC
-        if has_tag_or_title("exposición", "exposicion", "miniexpo", "mini-expo"):
+        if has_tag_or_title("exposición", "exposici[óo]n", "miniexpo", "mini-expo"):
             return Category.EXPO
         if has_tag_or_title("mesa ciudadana", "movilizaciones por"):
             return Category.ACTIVISM
-        if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin'):
+        if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', 'Repair\s*Caf[eé]'):
             return Category.WORKSHOP
         if re_and(name, "Software", ("Free", "libre"), ("day", "día"), flags=re.I):
             return Category.PARTY
@@ -431,7 +438,7 @@ class MadConvoca:
             "Filosof[ií]a PEC",
             flags=re.I
         ):
-            return Category.READING_CLUBSPORT
+            return Category.READING_CLUB
         if re_or(
             name,
             "Pelis y Pili",
@@ -544,6 +551,8 @@ class MadConvoca:
             flags=re.I
         ):
             return Category.PARTY
+        if has_tag("ecoaldea") and has_tag("encuentro"):
+            return Category.NO_EVENT
         if isLibreria:
             return Category.LITERATURE
         logger.critical(str(CategoryUnknown(e.url, f"{e}")))

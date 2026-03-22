@@ -23,6 +23,14 @@ class Event(NamedTuple):
     img: tuple[str, ...] = tuple()
     description: Optional[str] = None
 
+    def get_urls(self):
+        urls: set[str] = set()
+        urls.add(self.url)
+        urls.update(self.more)
+        urls.update(self.img)
+        urls.discard(None)
+        return tuple(sorted(urls))
+
     @staticmethod
     def build(*args, **kwargs):
         obj = get_obj(*args, **kwargs)

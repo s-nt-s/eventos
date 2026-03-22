@@ -199,6 +199,7 @@ class FundacionMarch:
             "conferencia": Category.CONFERENCE,
             "entrevista": Category.CONFERENCE,
             "debate": Category.CONFERENCE,
+            "coloquio": Category.CONFERENCE,
         }.get(cat)
         if val:
             return val

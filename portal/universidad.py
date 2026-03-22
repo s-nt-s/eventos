@@ -281,7 +281,7 @@ class Universidad:
                 duration=e.duration or 60,
                 img=img,
                 price=price,
-                publish=e.str_publish,
+                #publish=e.str_publish,
                 category=category,
                 place=place,
                 sessions=(
@@ -366,7 +366,7 @@ class Universidad:
                 return Category.THEATER
             if re_or(c, "crossfit", flags=re.I):
                 return Category.SPORT
-            if re_or(c, "divulgaci[oó]n", "docencia", flags=re.I):
+            if re_or(c, "divulgaci[oó]n", "docencia", "congreso", flags=re.I):
                 return Category.CONFERENCE
             if re_or(c, "Producci[oó]n audiovisual", flags=re.I):
                 return Category.CINEMA
@@ -377,6 +377,7 @@ class Universidad:
             "conservatorio",
             "Encuentro con",
             "Jornada( Universitaria)? sobre",
+            "congreso",
             flags=re.I
         ):
             return Category.CONFERENCE
@@ -386,6 +387,12 @@ class Universidad:
             flags=re.I
         ):
             return Category.VISIT
+        if re_or(
+            description,
+            r"congreso",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(link, f"categories={categories} {e}")))
         return Category.UNKNOWN
 

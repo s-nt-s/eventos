@@ -7,7 +7,6 @@ import re
 from core.cache import TupleCache
 import json
 from typing import NamedTuple
-from core.filemanager import FM
 from collections import defaultdict
 from core.util import re_or, MONTH, re_and
 from datetime import date
@@ -104,28 +103,41 @@ class SalaBerlanga:
 
     def __get_cine_entrada(self, url: str, name: str):
         def _showGroups(u: str):
-            sg = get_query(u).get("showGroups")
-            return sg
+            sg = (get_query(u).get("showGroups") or "").strip()
+            if len(sg) == 0:
+                return None
+            return sg.lower()
 
         ok_name: set[Event] = set()
         ok_showGroups: set[Event] = set()
+        like_showGroups: set[Event] = set()
         showGroups = _showGroups(url)
         for e in self.__cine_entradas:
             if e.name == name:
                 ok_name.add(e)
             if e.url == url:
                 return e
-            if showGroups and showGroups == _showGroups(e.url):
-                ok_showGroups.add(e)
+            sg = _showGroups(e.url)
+            if showGroups and sg:
+                if showGroups == sg:
+                    ok_showGroups.add(e)
+                if (showGroups in sg) or (sg in showGroups):
+                    like_showGroups.add(e)
             for s in e.sessions:
                 if s.url == url:
                     return e
-                if showGroups and showGroups ==_showGroups(s.url):
-                    ok_showGroups.add(e)
+                sg = _showGroups(s.url)
+                if showGroups and sg:
+                    if showGroups == sg:
+                        ok_showGroups.add(e)
+                    if (showGroups in sg) or (sg in showGroups):
+                        like_showGroups.add(e)
         if len(ok_name) == 1:
             return ok_name.pop()
         if len(ok_showGroups) == 1:
             return ok_showGroups.pop()
+        if len(like_showGroups) == 1:
+            return like_showGroups.pop()
 
     def _to_event(self, item: Item):
         if get_text(item.tag.select_one("p.card-text-dispo")) == "Entradas agotadas":
@@ -182,50 +194,10 @@ class SalaBerlanga:
             )
         if isGratis:
             ev = ev.merge(price=0)
-        if ev.img is None:
-            ev = ev.merge(img=get_attr(item.tag.select_one("img"), "src"))
-        cat = get_text(item.tag.select_one("div.categoria-sala-berlanga")) or ''
-        m = re.match(r"^(Charla|Podcast): (.+)$", ev.name or '', flags=re.I)
-        if m:
-            ev = ev.merge(
-                category=Category.CONFERENCE,
-                name=m.group(2)
-            )
-        elif re_and(
-            ev.name,
-            "Charlas?",
-            "sesi[oó]n(es)? de firmas?",
-            flags=re.I
-        ):
-            ev = ev.merge(category=Category.CONFERENCE)
-        elif re_and(
-            ev.name,
-            "Presentación del libro",
-            flags=re.I
-        ):
-            ev = ev.merge(category=Category.LITERATURE)
-        elif re_or(cat, "cine", flags=re.I):
-            ev = ev.merge(category=Category.CINEMA)
-        elif re_or(cat, "M[uú]sica", flags=re.I):
-            ev = ev.merge(category=Category.MUSIC)
-        elif re_or(cat, "Artes? esc[eé]nicass?", flags=re.I):
-            if re.search(r"[\-_]Bailar[\-_]", ev.img or '', flags=re.I):
-                ev = ev.merge(
-                    category=Category.DANCE,
-                    cycle="Bailar en la Berlanga",
-                )
-            else:
-                ev = ev.merge(
-                    category=Category.THEATER,
-                    cycle="Teatro en la Berlanga",
-                )
-        if ev.cycle is None and re.search(r"[\-_]nuevos[\-_]territorios[\-_]", ev.img or '', flags=re.I):
-            ev = ev.merge(
-                cycle="Nuevos territorios",
-            )
-        content = buildSoup(item.inf['link'], item.inf['content']['rendered'])
+        ev = self.__complete(ev, item)
         ev = ev.fix_type()
         if isinstance(ev, Cinema):
+            content = buildSoup(item.inf['link'], item.inf['content']['rendered'])
             aka = self.__find_p_strong(content, "Título original")
             if aka:
                 ev = ev.merge(aka=(ev.name, aka))
@@ -235,6 +207,55 @@ class SalaBerlanga:
                     year=int(card_text.group(2))
                 )
         return ev
+
+    def __complete(self, ev: Event, item: Item):
+        if ev.img is None:
+            ev = ev.merge(img=get_attr(item.tag.select_one("img"), "src"))
+        category = self.__find_category(ev, item)
+        if category is not None:
+            ev = ev.merge(category=category)
+        if ev.category == Category.DANCE:
+            return ev.merge(
+                cycle="Bailar en la Berlanga",
+            )
+        if ev.category == Category.THEATER:
+            return ev.merge(
+                cycle="Teatro en la Berlanga",
+            )
+        if ev.cycle is None and ev.img:
+            if re.search(r"[\-_]nuevos[\-_]territorios[\-_]", ev.img, flags=re.I):
+                return ev.merge(
+                    cycle="Nuevos territorios",
+                )
+            if ev.img == "https://salaberlanga.com/wp-content/uploads/2026/03/0.-Cartel-Ciclo-C54-211x300.png":
+                return ev.merge(
+                    cycle="Cinco cuartos",
+                )
+        return ev
+
+    def __find_category(self, ev: Event, item: Item):
+        cat = get_text(item.tag.select_one("div.categoria-sala-berlanga")) or ''
+        if re_and(
+            ev.name,
+            "Charlas?",
+            "sesi[oó]n(es)? de firmas?",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+        if re_and(
+            ev.name,
+            "Presentación del libro",
+            flags=re.I
+        ):
+            return Category.LITERATURE
+        if re_or(cat, "cine", flags=re.I):
+            return Category.CINEMA
+        if re_or(cat, "M[uú]sica", flags=re.I):
+            return Category.MUSIC
+        if re_or(cat, "Artes? esc[eé]nicass?", flags=re.I):
+            if re.search(r"[\-_]Bailar[\-_]", ev.img or '', flags=re.I):
+                return Category.DANCE
+            return Category.THEATER
 
     def __find_p_strong(self, soup: Tag, txt: str):
         line = r"\s+".join(map(re.escape, txt.split()))

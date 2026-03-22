@@ -31,7 +31,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 import logging
-from typing import Union
+from typing import Union, Optional
 from core.util import get_domain
 
 logger = logging.getLogger(__name__)
@@ -89,7 +89,7 @@ def buildSoup(root: str, source: str, parser="lxml"):
     return soup
 
 
-def get_text(node: Tag, default: str = None):
+def get_text(node: Tag, default: Optional[str] = None):
     if node is None:
         return default
     txt = None
@@ -101,6 +101,8 @@ def get_text(node: Tag, default: str = None):
         txt = node.get_text()
     if txt is None:
         return default
+    if not isinstance(txt, str):
+        raise ValueError(txt)
     txt = re_sp.sub(" ", txt).strip()
     if len(txt) == 0:
         return default
@@ -257,51 +259,62 @@ class MyTag:
         self.__url = url
         self.__node = node
 
-    def select_one(self, slc: str, warning: bool = False):
+    def select_one(self, slc: str, if_none: str = "raise"):
         n = self.__node.select_one(slc)
         if n is None:
             ex = WebException(f"{slc} NOT FOUND in {self.__url}")
-            if warning:
+            if if_none == "raise":
+                raise ex
+            if if_none == "warn":
                 logger.warning(str(ex))
-                return None
-            raise ex
+            return None
         return n
 
-    def select_one_txt(self, slc: str, warning: bool = False):
-        n = self.select_one(slc, warning=warning)
-        if n is None and warning:
+    def select_one_txt(self, slc: str, if_none: str = "raise"):
+        n = self.select_one(slc, if_none=if_none)
+        if n is None and if_none != "raise":
             return None
         txt = get_text(n)
         if txt is None:
             ex = WebException(f"{slc} EMPTY in {self.__url}")
-            if warning:
+            if if_none == "raise":
+                raise ex
+            if if_none == "warn":
                 logger.warning(str(ex))
-                return None
-            raise ex
+            return None
         return txt
 
-    def select_one_attr(self, slc: str, attr: str, warning: bool = False):
-        n = self.select_one(slc, warning=warning)
-        if n is None and warning:
+    def select_one_attr(self, slc: str, attr: str, if_none: str = "raise"):
+        n = self.select_one(slc, if_none=if_none)
+        if n is None and if_none != "raise":
             return None
         if attr not in n.attrs:
             ex = WebException(f"{slc} has not {attr} in {self.__url}")
-            if warning:
+            if if_none == "raise":
+                raise ex
+            if if_none == "warn":
                 logger.warning(str(ex))
-                return None
-            raise ex
+            return None
         txt = n.attrs[attr]
         if txt is None:
             ex = WebException(f"{slc}[{attr}] EMPTY in {self.__url}")
-            if warning:
+            if if_none == "raise":
+                raise ex
+            if if_none == "warn":
                 logger.warning(str(ex))
-                return None
-            raise ex
+            return None
+        if not isinstance(txt, str):
+            raise ValueError(txt)
         return txt
 
-    def select_one_json(self, slc: str, warning: bool = False, none: tuple[str, ...] = ()) -> Union[dict, list, None]:
-        txt = self.select_one_txt(slc, warning=warning)
-        if txt is None and warning:
+    def select_one_json(
+        self,
+        slc: str,
+        none: tuple[str, ...] = (),
+        if_none: str = "raise"
+    ) -> Union[dict, list, None]:
+        txt = self.select_one_txt(slc, if_none=if_none)
+        if txt is None and if_none != "raise":
             return None
         if txt in none:
             return None

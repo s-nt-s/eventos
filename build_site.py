@@ -124,11 +124,16 @@ categorias: Dict[Category, int] = {}
 zones: Dict[str, int] = {}
 places: Dict[str, int] = {}
 domains: Dict[str, int] = {}
+precios: Dict[int, int] = {}
+horas: Dict[str, int] = {}
 
 for e in eventos:
+    price = int(round(e.price))
     categorias[e.category] = categorias.get(e.category, 0) + 1
     zones[e.place.zone or null_zone] = zones.get(e.place.zone or null_zone, 0) + 1
     places[e.place.name] = places.get(e.place.name, 0) + 1
+    precios[price] = precios.get(price, 0) + 1
+    CLSS[e.id].append(f"e{price}")
     for d in set(map(get_domain, e.iter_urls())):
         domains[d] = domains.get(d, 0) + 1
         CLSS[e.id].append(dom_simplify(d))
@@ -136,8 +141,12 @@ for e in eventos:
         sin_sesiones.add(e.id)
         continue
     for f in e.sessions:
-        f = f.date.split()[0]
+        f, h = f.date.split()
         dict_add(sesiones, f, e.id)
+        ch ='h'+h.replace(":", "")
+        if ch not in CLSS[e.id]:
+            horas[h] = horas.get(h, 0) + 1
+            CLSS[e.id].append(ch)
 
 zones = dict(sorted(zones.items(), key=lambda kv: (int(kv[0] == null_zone), kv)))
 
@@ -300,6 +309,9 @@ def set_icons(html: str, **kwargs):
             "madrid.ebiblio": "https://madrid.ebiblio.es/favicon/espa.ico",
             "lacasaencendida": "https://cdn.lacasaencendida.es/images/favicon/favicon.svg",
             "caixaforum": "https://sites.fundacionlacaixa.org/favicons/favicon.ico",
+            "casademexico": "https://www.casademexico.es/wp-content/uploads/2025/09/cropped-favicon-fcdme-32x32.png",
+            "intermediae": "https://www.intermediae.es/themes/custom/intermediae_theme/favicon.ico",
+            "medialab-matadero": "https://www.medialab-matadero.es/themes/custom/medialab_theme/favicon.ico"
         }.get(dom)
         if ico is None:
             continue
@@ -362,7 +374,9 @@ j.save(
     session_ics=session_ics,
     places=places,
     domains=domains,
+    precios=precios,
     zones=zones,
+    horas=horas,
     null_zone=null_zone,
     count=len(eventos),
     precio=round(max(e.price for e in eventos)),

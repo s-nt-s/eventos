@@ -249,7 +249,7 @@ def my_filter(iterable: Iterable[T], func: Callable[[T], bool]) -> Tuple[List[T]
     return ok, ko
 
 
-def get_main_value(arr: List[T], default: Optional[T] = None) -> Union[T, None]:
+def get_main_value(arr: List[T], default: Optional[T] = None, min_ocurrence: int = 0) -> Union[T, None]:
     if arr is None:
         return default
     arr = list(arr)
@@ -257,6 +257,8 @@ def get_main_value(arr: List[T], default: Optional[T] = None) -> Union[T, None]:
         return default
     contador = Counter(arr)
     max_rep = max(contador.values())
+    if max_rep < min_ocurrence:
+        return None
     for e in arr:
         if contador[e] == max_rep:
             return e
@@ -334,7 +336,7 @@ def find_euros(*prices: str | None) -> None | float | int:
     for prc in prices:
         if prc is None:
             continue
-        if re.match(r"^\s*(gratuito|gratis)\s*$", prc, flags=re.I):
+        if re.match(r"^\s*(gratuito|gratis)( (con )?previo registro)?\s*$", prc, flags=re.I):
             return 0
         if re.match(r"^gratis, ", prc, flags=re.I):
             return 0
@@ -489,7 +491,8 @@ KO_MORE = (
     'https://www.madrid.es/portales/munimadrid/es/Inicio/El-Ayuntamiento/Transformacion-Digital/Madrid-Movil/?vgnextchannel=1827d33f92eab810VgnVCM2000001f4a900aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-Internacional-de-la-Mujer-en-los-Centros-Culturales-de-Chamberi/?vgnextfmt=default&vgnextoid=ee8211c990735910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Edificio-Sociocultural-Marta-Escudero-Diaz-Tejeiro/?vgnextfmt=default&vgnextoid=d7e6b95f6495a910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
-    'imccwem.munimadrid.es'
+    'imccwem.munimadrid.es',
+    'youtube.com'
 )
 
 

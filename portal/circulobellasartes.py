@@ -187,6 +187,7 @@ def _find_category(url: str, title: str, soup: Tag):
     if re_or(
         desc,
         "Beethoven crepuscular",
+        "concierto",
         flags=re.I
     ):
         return Category.MUSIC
@@ -200,6 +201,7 @@ def _find_category(url: str, title: str, soup: Tag):
         desc,
         r"La presentaci[oó]n del libro",
         r"la pr[oó]xima publicaci[oó]n del libro",
+        r"El libro re[uú]ne textos",
         flags=re.I
     ):
         return Category.LITERATURE
@@ -209,6 +211,12 @@ def _find_category(url: str, title: str, soup: Tag):
         flags=re.I
     ):
         return Category.CONFERENCE
+    if re_or(
+        sub_title,
+        r"d[ií]alogos? sur",
+        flags=re.I
+    ):
+        return Category.LITERATURE
     logger.critical(str(CategoryUnknown(url, "")))
     return Category.UNKNOWN
 

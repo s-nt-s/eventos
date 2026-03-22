@@ -1,5 +1,6 @@
-from core.event import Event, Category, Cinema, Session
+from core.event import Event, Category, Cinema, Session, Zones
 from portal.casaencendida import CasaEncendida
+from portal.casamexico import CasaMexico
 from portal.dore import Dore
 from portal.madriddestino import MadridDestino
 from portal.salaberlanga import SalaBerlanga
@@ -18,7 +19,7 @@ from portal.alcala import Alcala
 from portal.goethe import Goethe
 from portal.ifrances import InstitutoFrances
 from datetime import datetime, date
-from core.util import round_to_even, get_domain, to_uuid, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
+from core.util import round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
 import logging
 from typing import Tuple
 from core.cache import TupleCache
@@ -34,8 +35,6 @@ from core.event import Place, Places
 from portal.fundacionmarch import FundacionMarch
 from concurrent.futures import ThreadPoolExecutor
 from portal.reinasofia import ReinaSofia
-from core.web import WEB, get_text
-from core.util.strng import clean_name
 
 
 logger = logging.getLogger(__name__)
@@ -49,7 +48,8 @@ def get_events(source):
             AteneoMadrid,
             Universidades,
             MadridEs,
-            Goethe
+            Goethe,
+            MadridDestino
         )
     ):
         return source.events
@@ -143,6 +143,9 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         r"Milano$",
         r"Hortaleza$",
         r"avenida de Betanzos",
+        r"Aranjuez,? Madrid",
+        # Vicálvaro
+        r"Vic[aá]lvaro",
         flags=re.I
     ):
         return False
@@ -151,6 +154,10 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
     if name:
         if re_or(
             name,
+            # Aranjuez
+            "Campus( de)? Aranjuez",
+            # Mostoles
+            "Campus( de)? M[oó]stoles",
             "COAJ",
             "Centro cultural Maestro Alonso",
             "centro juvenil",
@@ -194,6 +201,8 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
             'Colmenar Viejo',
             # Lucero
             'CCM Lucero',
+            # Laguna
+            ("Asociacion Vecinal", "Fraternidad de los Carmenes"),
             flags=re.I
         ):
             logger.debug(f"Lugar descartado por name={name}")
@@ -241,6 +250,19 @@ def isKoEvent(e: Event):
             Category.LITERATURE
         ):
             return True
+    if re_or(
+        e.name,
+        "Aprende Chotis",
+        "tributo a Carmen Sevilla",
+    ):
+        return True
+    if e.place.zone == Zones.ALCALA_DE_HENARES.value.name:
+        if e.category == Category.WORKSHOP and len(e.sessions)>1:
+            return True
+        if re_or(e.name, r"Repair\s*Caf[eé]", flags=re.I):
+            return True
+    if e.category == Category.CONFERENCE and e.place == Places.ATENEO_MADRID.value and re_or(e.name, "farmacia", flags=re.I):
+        return True
     return False
 
 
@@ -305,18 +327,26 @@ class EventCollector:
     @TupleCache("rec/events.json", builder=Event.build)
     def __get_events(self,):
         logger.info("Recuperar eventos")
-        md_events = self.__madrid_destino.events
-        md_places = tuple(sorted(set(e.place for e in md_events if e.place)))
+        store_events = run_parallel(
+            self.__madrid_destino,
+            TeatroMonumental,
+            CirculoBellasArtes,
+            ReinaSofia,
+        )
+        places_with_store = set(e.place for e in store_events if e.place)
+        places_with_store.update((
+            Places.TEATRO_MONUMENTAL.value,
+        ))
         max_price = max(self.__max_price.values())
         eventos = \
-            md_events + \
+            store_events + \
             run_parallel(
                 MadridEs(
                     isOkDate={
                         "villaverde": isOkDateVillaverde,
                         None: isOkDate
                     },
-                    places_with_store=md_places,
+                    places_with_store=tuple(sorted(places_with_store)),
                     max_price=max_price,
                     avoid_categories=self.__avoid_categories,
                     isOkPlace=isOkPlace,
@@ -345,9 +375,9 @@ class EventCollector:
                     isOkPlace=isOkPlace,
                     isOkDate=isOkDate,
                 ),
-                ReinaSofia,
                 Goethe(max_price=max_price),
                 InstitutoFrances,
+                AcademiaCine,
             ) + \
             run_parallel(
                 Alcala(
@@ -362,10 +392,8 @@ class EventCollector:
                 CasaEncendida,
                 SalaBerlanga,
                 SalaEquis,
-                AcademiaCine,
                 CaixaForum,
-                TeatroMonumental,
-                CirculoBellasArtes,
+                CasaMexico,
             )
         logger.info(f"{len(eventos)} recuperados")
         eventos = tuple(filter(self.__filter, eventos))
@@ -482,6 +510,11 @@ class EventCollector:
                     if self.__filter(e, to_log=False):
                         ok_events.add(e)
 
+        ok_events = self.__dedup_fusion(ok_events)
+
+        return tuple(e.fix_type().fix() for e in ok_events)
+
+    def __dedup_fusion(self, ok_events: set[Event]):
         def _mk_key_madrid_music(e: Event):
             if e.category != Category.MUSIC:
                 return None
@@ -519,7 +552,7 @@ class EventCollector:
                 return None
             urls: set[str] = set()
             for s in e.sessions:
-                if s.url:
+                if s.url and get_domain(s.url) != "madrid.es":
                     urls.add(s.url)
             if len(e.sessions) == 1 or len(urls) == 0:
                 return (e.cycle, e.category, e.place, round_to_even(e.price))
@@ -582,7 +615,8 @@ class EventCollector:
                 e = Event.fusion(*evs)
                 ok_events.add(e)
 
-        return tuple(e.fix_type().fix() for e in ok_events)
+        return ok_events
+
 
     def __complete_filmaffinity(self, events: Tuple[Event | Cinema, ...]):
         arr1 = list(events)

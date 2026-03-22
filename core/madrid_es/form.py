@@ -16,13 +16,11 @@ from core.madrid_es.tp import Place
 from html import unescape
 from icalendar import Calendar
 from core.ics import IcsEventWrapper
-from core.util import KO_IMG, KO_MORE, get_domain
+from core.util import get_domain
 
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
-
-KO_URL = KO_MORE + KO_IMG
 
 
 def get_vgnextoid(url: str | Tag):
@@ -169,10 +167,8 @@ def _get_urls(soup: Tag, slc: str):
         if val not in urls and isinstance(val, str):
             val = val.strip()
             prc = val.split("://", 1)[0].lower()
-            if prc in ("http", "https") and not val.startswith("https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-"):
-                dom = get_domain(val)
-                if val not in KO_URL and dom not in KO_URL:
-                    urls.append(val)
+            if prc in ("http", "https") and val not in urls:
+                urls.append(val)
     return tuple(urls)
 
 

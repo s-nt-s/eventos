@@ -7,7 +7,6 @@ import re
 from bs4 import Tag
 from datetime import datetime
 from core.util import plain_text, re_or, find_duplicates, get_main_value, round_to_even
-from bs4 import BeautifulSoup
 from functools import cached_property
 
 logger = logging.getLogger(__name__)
@@ -48,12 +47,10 @@ class CaixaForum:
 
     @HashCache("rec/caixaforum/{}_ld.json")
     def __get_ld_json(self, url: str) -> Dict:
-        try:
-            return self.get_soup(url).select_one_json(
-                'script[type="application/ld+json"]'
-            )
-        except WebException:
-            return None
+        return self.get_soup(url).select_one_json(
+            'script[type="application/ld+json"]',
+            if_none="silent"
+        )
 
     def get_soup(self, url: str):
         soup = self.__w.get(url)
@@ -258,7 +255,7 @@ class CaixaForum:
                 return int(m.group(1))
         price = (div.select_one_txt(
             "div.card-detail div.card-block-btn span, div.card-detail div.reserva-ficha",
-            warning=True
+            if_none="warn"
         ) or "").lower()
         if "gratuita" in price:
             return 0
@@ -303,11 +300,7 @@ class CaixaForum:
         for txt in event_soup.select_txt("div.activity-detail-block"):
             if re_or(plain_text(txt), "los niños y niñas tienen que ir siempre acompañados de un adulto"):
                 return Category.CHILDISH
-        try:
-            txt = div.select_one_txt("p.on-title, div.pre-title")
-        except WebException as e:
-            logger.critical(str(CategoryUnknown(div.url, str(e))))
-            return Category.UNKNOWN
+        txt = div.select_one_txt("p.on-title, div.pre-title", if_none="silent")
         cat = plain_text(txt.lower())
         if re_or(cat, "concierto"):
             return Category.MUSIC
@@ -325,34 +318,26 @@ class CaixaForum:
             return Category.VISIT
         if re_or(cat, "performance"):
             return Category.THEATER
-        try:
-            txt_tit = div.select_one_txt("#title-read, div.card-txt-item h2")
-        except WebException as e:
-            logger.critical(str(CategoryUnknown(div.url, str(e))))
-            return Category.UNKNOWN
+        txt_tit = div.select_one_txt("#title-read, div.card-txt-item h2", if_none="silent")
         tit = plain_text(txt_tit.lower())
         if re_or(tit, "magia"):
             return Category.MAGIC
         if re_or(tit, "muestra de moda"):
             return Category.EXPO
-        try:
-            txt_des = div.select_one_txt("div.primary-text p")
-        except WebException as e:
-            logger.critical(str(CategoryUnknown(div.url, str(e))))
-            return Category.UNKNOWN
+        txt_des = div.select_one_txt("div.primary-text p", if_none="silent")
         des = plain_text(txt_des.lower())
         if re_or(des, "encuentro coreografico", "danza tradicional"):
             return Category.DANCE
-        try:
-            href = div.select_one_attr("div.card-viewmore a", "href")
-        except WebException as e:
-            logger.critical(str(CategoryUnknown(div.url, str(e))))
-            return Category.UNKNOWN
+        if re_or(des, "cine", "cineforum", "cineclub"):
+            return Category.CINEMA
+        href = div.select_one_attr("div.card-viewmore a", "href", if_none="silent")
         plain_href = plain_text(href).lower()
         if re_or(plain_href, "circo"):
             return Category.CIRCUS
         if re_or(plain_href, "danza"):
             return Category.DANCE
+        if re_or(plain_href, "cine", "cineforum", "cineclub"):
+            return Category.CINEMA
         logger.critical(str(CategoryUnknown(div.url, f"{txt} {txt_tit} {txt_des} {href}")))
         return Category.UNKNOWN
 

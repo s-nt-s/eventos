@@ -89,11 +89,12 @@ class CasaEncendida:
         idevent = info[0]['identifier'].split("-")[-1]
         category = self.__find_category(soup, info)
         sessions = self.__find_sessions(soup.url, info)
-        more, cycle = self.__find_more_and_cycle(soup, category)
+        name = info[0]['name']
+        more, cycle = self.__find_more_and_cycle(name, soup, category)
         ev = Event(
             id="ce"+idevent,
             url=soup.url,
-            name=info[0]['name'],
+            name=name,
             category=category,
             img=self.__find_img(info),
             place=Places.CASA_ENCENDIDA.value,
@@ -161,8 +162,12 @@ class CasaEncendida:
 
     def __find_category(self, soup: MyTag, info: List[Dict]):
         for li in map(get_text, soup.node.select("ul.item-detail__list li")):
-            if li and "No está permitida la entrada a mayores si no van acompañados de un menor" in li:
+            if li is None:
+                continue
+            if "No está permitida la entrada a mayores si no van acompañados de un menor" in li:
                 return Category.CHILDISH
+            if "El workshop se impartirá en inglés" in li:
+                return Category.NO_EVENT
         name: str = info[0]['name'].lower()
         tags = set()
         for tag in soup.select_txt(", ".join(
@@ -203,6 +208,13 @@ class CasaEncendida:
             flags=re.I
         ):
             return Category.NO_EVENT
+        if re_or(
+            name,
+            "workshop",
+            "Laboratorio",
+            flags=re.I
+        ):
+            return Category.WORKSHOP
         if tags.intersection(("ecoclub de lectura", "club de lectura")):
             return Category.READING_CLUB
         if tags.intersection(("cine", "audiovisuales")):
@@ -214,6 +226,8 @@ class CasaEncendida:
         desc = soup.select_one_txt("div.item-detail__info__content")
         if re_or(desc, "canciones"):
             return Category.MUSIC
+        if re_or(desc, "workshop"):
+            return Category.WORKSHOP
         if re_or(name, r"films?"):
             return Category.CINEMA
         if re_or(
@@ -231,22 +245,23 @@ class CasaEncendida:
     def __get_group(self, soup: MyTag):
         a_cycle = soup.node.select_one("div.item-detail__hero__info__content a.group-link")
         cycle = get_text(a_cycle)
-        if cycle is None:
-            return None, None
-        href = a_cycle.get("href")
-        cycle = re.sub(r"(radio encendida) \d+$", r"\1", cycle, flags=re.I)
-        m = re.match(r"^(conversar)\s*,\s*(.+)\s*$", cycle, flags=re.I)
-        if m:
-            cycle = m.group(2)
-            cycle = cycle[0].upper() + cycle[1:]
-        return href, cycle
+        if cycle is not None:
+            href = a_cycle.get("href")
+            cycle = re.sub(r"(radio encendida) \d+$", r"\1", cycle, flags=re.I)
+            m = re.match(r"^(conversar)\s*,\s*(.+)\s*$", cycle, flags=re.I)
+            if m:
+                cycle = m.group(2)
+                cycle = cycle[0].upper() + cycle[1:]
+            return href, cycle
 
-    def __find_more_and_cycle(self, soup: MyTag, category: Category):
-        href, group = self.__get_group(soup)
-        if category in (Category.CONFERENCE, ):
-            return href, group
-        if category == Category.MUSIC and re_or(group, "radio encendida", flags=re.I):
-            return href, group
+    def __find_more_and_cycle(self, name: str, soup: MyTag, category: Category):
+        href_group = self.__get_group(soup)
+        if href_group:
+            href, group = href_group
+            if category in (Category.CONFERENCE, ):
+                return href, group
+            if category == Category.MUSIC and re_or(group, "radio encendida", flags=re.I):
+                return href, group
         return None, None
 
     def __find_duration(self, info: List[Dict]):

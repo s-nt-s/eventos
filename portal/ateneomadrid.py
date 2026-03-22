@@ -1,7 +1,8 @@
 from core.ics import IcsReader, IcsEventWrapper
 from core.event import Event, Place, Category, Session, CategoryUnknown, Places
 from functools import cached_property
-from core.util import plain_text, find_duplicates, re_or, re_and, get_domain, find_euros
+from core.util import plain_text, find_duplicates, re_or, re_and, find_euros
+from core.util.strng import normalize_quote
 import re
 import logging
 from typing import Callable
@@ -24,8 +25,9 @@ def html_to_text(html: str):
 
 
 def clean_name(name: str):
-    name = re.sub(r"\. Ciclo .*", "", name)
-    name = re.sub(r"^Ciclo (?:de conferencias )?['«](.*?)['»]$", r"\1", name)
+    name = re.sub(r"\s*\.\s*Ciclo .*", "", name)
+    name = re.sub(r"^Ciclo (?:de conferencias )?'(.*?)'$", r"\1", name)
+    name = re.sub(r"^Ciclo (?:de conferencias )?'(.*?)'\s*\.?\s*(..+)$", r"\2", name)
     return name
 
 
@@ -90,14 +92,15 @@ class AteneoMadrid:
         if place is None:
             return
         place = place.normalize()
+        name = normalize_quote(e.SUMMARY)
         event = Event(
             id=f"am{e.UID}",
             url=e.URL,
-            name=clean_name(e.SUMMARY),
+            name=clean_name(name),
             duration=e.duration or 60,
             img=e.ATTACH,
             price=self.__find_price(e),
-            publish=e.str_publish,
+            #publish=e.str_publish,
             category=self.__find_category(e),
             place=place,
             sessions=(
@@ -105,12 +108,15 @@ class AteneoMadrid:
                     date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
                 ),
             ),
-            cycle=self.__find_cycle(e)
+            cycle=self.__find_cycle(name, e)
         )
         return event
 
-    def __find_cycle(self, e: IcsEventWrapper):
-        m = re.search(r"\. (Ciclo '?[^\.']+)", e.SUMMARY)
+    def __find_cycle(self, name: str, e: IcsEventWrapper):
+        m = re.search(r"\. Ciclo '([^'']+)'", name)
+        if m:
+            return m.group(1).strip()
+        m = re.search(r"^Ciclo '([^'']+)'", name)
         if m:
             return m.group(1).strip()
 
@@ -161,8 +167,19 @@ class AteneoMadrid:
                 "92 Liberales",
                 "Roc[ií]o Albert",
                 "OIKOS",
+                "Grupo PPE",
+                "diputado PP",
+                "Foro Espa[ñn]a C[ií]vica",
             ):
                 return Category.INSTITUTIONAL_POLICY
+            if re_or(
+                e.DESCRIPTION,
+                "Jos[eé] Luis Cordeiro",
+                "Maristela Berm[uú]dez",
+                "Programaci[óo]n Neuroling[uü][ií]stica",
+                flags=re.I
+            ):
+                return Category.SPAM
             if re_or(
                 e.DESCRIPTION,
                 "Secci[óo]n de Mitos, Religiones y Humanidades",

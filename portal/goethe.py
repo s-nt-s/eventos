@@ -35,6 +35,7 @@ class InfoSoup(NamedTuple):
     img: Optional[str] = None
     duration: Optional[int] = None
     description: Optional[str] = None
+    status_code: Optional[int] = None
 
 
 async def rq_to_info(r: ClientResponse):
@@ -49,6 +50,7 @@ async def rq_to_info(r: ClientResponse):
             n.append("\n")
         desc = get_text(desc)
     return InfoSoup(
+        status_code=r.status,
         img=img,
         duration=duration,
         description=desc
@@ -208,7 +210,7 @@ class Goethe:
         for e in list(evs):
             evs.remove(e)
             i = url_info.get(e.url)
-            if i is None:
+            if i is None or i.status_code == 404:
                 logger.critical(f"KO url {e.url}")
                 continue
             e = e.merge(

@@ -7,7 +7,7 @@ from enum import IntEnum
 from functools import cached_property
 import re
 from datetime import date, datetime
-from core.web import get_text, WEB
+from core.web import WEB
 from core.filemanager import FM
 import logging
 from functools import cache
@@ -407,6 +407,12 @@ class Place:
             flags=re.I
         ):
             return Zones.MARQUES_DE_VADILLO.value.name
+        if re_or(
+            self.address,
+            r"Alcal[aá]( de)? Henares",
+            flags=re.I
+        ):
+            return "Alcalá de Henares"
         return None
 
     def _fix_latlon(self):
@@ -535,10 +541,20 @@ class Place:
         
         if re_or(
             name,
-            "La Marimala de Lavapi[eé]s",
+            "Marimala de Lavapi[eé]s",
             flags=re.I
         ):
             return Places.LA_MARIMALA.value
+        if re_or(
+            name,
+            "cornisa",
+            flags=re.I
+        ) and re_or(
+            address,
+            "Lepanto",
+            flags=re.I
+        ):
+            return Places.AV_CORNISA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -549,6 +565,13 @@ class Place:
 
 
 class Places(Enum):
+    CASA_MEXICO = Place(
+        name="Casa Mexico",
+        address="C. de Alberto Aguilera, 20, Chamberí, 28015 Madrid",
+        latlon="40.430223201367404,-3.709325557672713",
+        zone='Moncloa',
+        map="https://maps.app.goo.gl/pYMaJnYZFpK8rm8n8",
+    )
     ACADEMIA_CINE = Place(
         name="Academia de cine",
         address="C/ de Zurbano, 3, Chamberí, 28010 Madrid",
@@ -578,14 +601,14 @@ class Places(Enum):
         map="https://maps.app.goo.gl/kNnSrfU2sygXNXBp8"
     )
     CASA_AMERICA = Place(
-        name="La casa America",
+        name="Casa America",
         address="Plaza Cibeles, s/n, Salamanca, 28014 Madrid",
         latlon="40.419580635299525,-3.693332407512017",
         zone='Paseo del Pardo',
         map="https://maps.app.goo.gl/Zo6QR5VWzUbCSvZt5"
     )
     CASA_ENCENDIDA = Place(
-        name="La casa encendida",
+        name="Casa encendida",
         address="Rda. de Valencia, 2, Centro, 28012 Madrid",
         latlon="40.4062337055155,-3.6999346068731525",
         zone='Lavapiés',
@@ -728,7 +751,7 @@ class Places(Enum):
         map="https://maps.app.goo.gl/kJDkNzgwGF5hByqy5"
     )
     LA_ANONIMA = Place(
-        name="La Anónima",
+        name="Anónima",
         address="C. de Embajadores, 166, Arganzuela, 28045 Madrid",
         latlon="40.39618124632335,-3.696199766490811",
         zone="Legazpi",
@@ -811,7 +834,7 @@ class Places(Enum):
         map="https://maps.app.goo.gl/XtYSptXMNJ2RUdiR9"
     )
     SWING_LAB = Place(
-        name="La demo swing lab",
+        name="Demo swing lab",
         address="Calle de la Magdalena, 7, Centro, 28012 Madrid",
         latlon="40.412636935493836,-3.702379332778133",
         zone="Sol",
@@ -867,7 +890,7 @@ class Places(Enum):
         map="https://maps.app.goo.gl/YzQUkHfWsCffrmpr9"
     )
     LA_ALMUDENA = Place(
-        name="La Almudena",
+        name="Almudena",
         address="C. de Bailén, 10, Centro, 28013 Madrid",
         latlon="40.41586328949746,-3.714627123889976",
         zone='Sol',
@@ -895,7 +918,7 @@ class Places(Enum):
         map="https://maps.app.goo.gl/nsUhwMvC9aPR7N2P6"
     )
     MARIQUEEN = Place(
-        name="La Mari Queen",
+        name="Mari Queen",
         address="C. de Barbieri, 10, Centro, 28004 Madrid",
         latlon="40.4211317930352,-3.698135986509069",
         zone='Sol',
@@ -923,11 +946,18 @@ class Places(Enum):
         zone='Legazpi',
     )
     LA_MARIMALA = Place(
-        name="La Marimala",
+        name="Marimala",
         address="Calle Provisiones 18 esquina, C. del Mesón de Paredes, 76, 28012 Madrid",
         latlon="40.40740184292837,-3.702491186509069",
         map="https://maps.app.goo.gl/uXWbXAJhKAva2Vp46",
         zone='Lavapiés',
+    )
+    AV_CORNISA = Place(
+        name="AV Cornisa",
+        address="C. Cristo de Lepanto, 9, Usera, 28026 Madrid",
+        latlon="40.38093534685343,-3.7008894267081742",
+        map="https://maps.app.goo.gl/QiuU4DBcChCUL37Q9",
+        zone='Almendrales',
     )
 
 KO_IMG = (
@@ -1398,16 +1428,6 @@ class Event:
             #if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
             #    return "Teatro en la Berlanga"
             return m.group(1)
-        if self.category == Category.VISIT:
-            if self.more == "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Itinerarios-guiados-por-El-Retiro/?vgnextfmt=default&vgnextoid=e7b01130a93b1810VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD":
-                return "Itinerarios guiados por El Retiro"
-        if self.category == Category.CONFERENCE:
-            if self.more == "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Los-Clasicos-en-el-Museo-V-Ciclo-de-Conferencias-/?vgnextfmt=default&vgnextoid=3a7136c30d489910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD":
-                return "Los Clásicos en el Museo"
-            if self.more == "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Codigo-eterno-codigo-secreto-Las-lenguas-clasicas-y-sus-misterios-XXXIII-Ciclo-de-Conferencias-de-Otono-/?vgnextfmt=default&vgnextoid=abf8a70a5ac39910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD":
-                return "Las lenguas clásicas y sus misterios"
-            if self.more == "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-de-la-Sociedad-Espanola-de-Retorica/?vgnextfmt=default&vgnextoid=6b8c61df8f06b910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD":
-                return "Sociedad Española de Retórica"
         if self.category == Category.CINEMA and self.place.name == "Cineteca":
             if re.search(r"^(Esc[áa]ner|Mrgente|Sesi[oó]n) \d+$", name, flags=re.I) or re.search("Stop Motion exquisito|Alzo mi voz.*realidades animadas", name, flags=re.I):
                 return "Cortometrajes"
@@ -1416,16 +1436,6 @@ class Event:
                 return "Cortometrajes"
         if re.search(r"cat[áa]logo.*Madrid entre libros", self.name, flags=re.I):
             return "Madrid entre libros"
-        if self.category == Category.CONFERENCE and (
-            self.img in ("https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Arganzuela/Eventos/ficheros/Roma.png", )
-            or
-            re_or(self.name, "Tardes romanas", flags=re.I)
-        ):
-            return "Tardes romanas"
-        if self.category == Category.CONFERENCE and self.more in (
-            'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Memento-mori-Mujer-y-muerte-en-el-mundo-antiguo-Ciclo-de-conferencias/?vgnextfmt=default&vgnextoid=1d096787031bb910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
-        ):
-            return "Mujer y muerte en el mundo antiguo"
         if self.category == Category.VISIT and re_and(self.name, "ruta", "retiro", flags=re.I):
             return "Rutas por el Retiro"
         if self.category == Category.CONFERENCE and re_or(self.name, "Ciclo conferencias Maqueta León Gil de Palacio", flags=re.I):
@@ -1457,21 +1467,6 @@ class Event:
             "https://www.centrocentro.org/musica/feten-feten"
         )):
             return "Música sin etiquetas"
-        if urls.intersection({
-            "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Charlas-taller-de-cactus-y-suculentas/?vgnextfmt=default&vgnextoid=d452d3d3508b7810VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
-        }):
-            return "Charlas-taller de cactus y suculentas"
-        if urls.intersection({
-            'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-con-investigadores-del-CSIC/?vgnextfmt=default&vgnextoid=8f17641cea74c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
-        }):
-            return "Las conferencias del CSIC"
-        if re_and(
-            self.name,
-            "Escribo lo que soy",
-            "taller de escritura",
-            flags=re.I
-        ):
-            return "Escribo lo que soy: taller de escritura"
         return None
 
 

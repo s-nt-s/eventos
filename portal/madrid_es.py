@@ -3,7 +3,7 @@ from bs4 import Tag
 import re
 from typing import Set, Tuple, Optional, NamedTuple
 from core.event import Event, Cinema, Session, Place, Category, CategoryUnknown, FIX_EVENT
-from core.util import plain_text, re_or, re_and, get_domain, find_euros, KO_MORE
+from core.util import plain_text, re_or, re_and, get_domain, find_euros, KO_MORE, KO_IMG, find_duplicates, get_main_value
 from arrow import Arrow
 import logging
 from core.cache import TupleCache
@@ -27,6 +27,16 @@ TODAY = date.today()
 
 TZ_ZONE = 'Europe/Madrid'
 NOW = datetime.now(tz=pytz.timezone(TZ_ZONE))
+
+
+def _first_ok_url(urls: tuple[str, ...] | None, ko: tuple[str, ...]):
+    if not urls:
+        None
+    for u in urls:
+        if u and not u.startswith("https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-"):
+            d = get_domain(u)
+            if u not in ko and d not in ko:
+                return u
 
 
 async def rq_to_text(r: ClientResponse):
@@ -380,9 +390,34 @@ class MadridEs:
             if e is not None:
                 all_events.add(e)
 
+        def _mk_key_cycle(e: Event | Cinema):
+            if not e.cycle:
+                return None
+            return (e.cycle, e.category, e.place, e.price)
+
+        for evs in find_duplicates(
+            all_events,
+            _mk_key_cycle
+        ):
+            e = Event.fusion(
+                *evs,
+                name=evs[0].cycle,
+            )
+            st_more = set(x.more for x in evs if x.more)
+            st_url = set(x.url for x in evs if x.url)
+            if all(s.url for s in e.sessions):
+                e = e.merge(url=None, more=None)
+            if len(st_url) == 1 and e.url is None:
+                e = e.merge(url=st_url.pop())
+            if len(st_more) == 1 and e.url is None:
+                e = e.merge(url=st_more.pop())
+            if len(st_more) == 1 and e.more is None:
+                e = e.merge(more=st_more.pop())
+            all_events.add(e)
+
         rt = Event.fusionIfSimilar(
             all_events,
-            ('name', 'place')
+            ('place', 'name')
         )
         logger.info(f"Madrid Es: Buscando eventos = {len(rt)}")
         return rt
@@ -393,30 +428,65 @@ class MadridEs:
             logger.debug(f"Descartado por len(sessions)==0 {i.event.url}")
             return None
         category = self.__find_category(i)
+        place = to_place(i.event.place)
         e = Event(
             id=MadridEs.get_id(i.event.url),
             url=i.event.url,
             name=i.event.title,
             price=i.event.price,
             category=category,
-            place=to_place(i.event.place),
+            place=place,
             duration=duration,
             sessions=sessions,
-            img=i.event.img[0] if i.event.img else None,
-            more=i.event.more[0] if i.event.more else None,
-            cycle=self.__find_cycle(category, i),
+            cycle=self.__find_cycle(category, place, i),
+            more=_first_ok_url(i.event.more, KO_MORE),
+            img=_first_ok_url(i.event.img, KO_IMG),
         ).fix_type()
         if isinstance(e, Cinema):
             e = e.merge(year=self.__find_year(i))
         return e
 
-    def __find_cycle(self, cat: Category, i: ApiInfo):
+    def __find_cycle(self, cat: Category, place: Place, i: ApiInfo):
+        tardes_romanas = "Tardes romanas"
+        urls = set(i.event.get_urls())
         if cat == Category.CONFERENCE:
             if re_or(
                 i.event.description,
                 r"Conferencias? del CSIC",
             ):
                 return "Las conferencias del CSIC"
+            for c, m in (
+                ("Los Clásicos en el Museo", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Los-Clasicos-en-el-Museo-V-Ciclo-de-Conferencias-/?vgnextfmt=default&vgnextoid=3a7136c30d489910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+                ("Las lenguas clásicas y sus misterios", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Codigo-eterno-codigo-secreto-Las-lenguas-clasicas-y-sus-misterios-XXXIII-Ciclo-de-Conferencias-de-Otono-/?vgnextfmt=default&vgnextoid=abf8a70a5ac39910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+                ("Sociedad Española de Retórica", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-de-la-Sociedad-Espanola-de-Retorica/?vgnextfmt=default&vgnextoid=6b8c61df8f06b910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"), 
+                ("Mujer y muerte en el mundo antiguo", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Memento-mori-Mujer-y-muerte-en-el-mundo-antiguo-Ciclo-de-conferencias/?vgnextfmt=default&vgnextoid=1d096787031bb910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+                ("Charlas-taller de cactus y suculentas", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Charlas-taller-de-cactus-y-suculentas/?vgnextfmt=default&vgnextoid=d452d3d3508b7810VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+                ("Las conferencias del CSIC", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-con-investigadores-del-CSIC/?vgnextfmt=default&vgnextoid=8f17641cea74c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+                (tardes_romanas, "https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Arganzuela/Eventos/ficheros/Roma.png"),
+            ):
+                if m in urls:
+                    return c
+            if re_or(i.event.title, "Tardes romanas", flags=re.I):
+                return tardes_romanas
+        if re_or(
+            i.event.title,
+            r"^Las tertulias de Eirene Editorial",
+            flags=re.I
+        ):
+            return "Las tertulias de Eirene Editorial"
+        if cat == Category.VISIT and (
+            urls.intersection((
+                "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Itinerarios-guiados-por-El-Retiro/?vgnextfmt=default&vgnextoid=e7b01130a93b1810VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
+            ))
+        ):
+            return "Itinerarios guiados por El Retiro"
+        if re_and(
+            i.event.title,
+            "Escribo lo que soy",
+            "taller de escritura",
+            flags=re.I
+        ):
+            return "Escribo lo que soy: taller de escritura"
 
     def __find_year(self, i: ApiInfo) -> Optional[int]:
         yrs: set[int] = set()
@@ -479,6 +549,7 @@ class MadridEs:
             i.description,
             "una novela de aventuras",
             "la novela publicada",
+            "novela histórica",
             "presenta su primera novela",
             "Presentaci[oó]n de la novela editada",
             r"El retrato de Dorian Gray",
@@ -514,6 +585,7 @@ class MadridEs:
             r"Actividad(es)? infantil(es)?",
             (r"dia", r"internacional", r"familias?"),
             (r"taller", r"pequeños"),
+            r"Exploraci[oó]n Infantil",
             flags=re.I
         ):
             return Category.CHILDISH
@@ -533,6 +605,7 @@ class MadridEs:
             r"de 6 a 12 años",
             r"entre 8 y 17 años",
             (r"cuentacuentos", r"en familia"),
+            r"Para familias e infancias",
             flags=re.I
         ):
             return Category.CHILDISH
@@ -598,6 +671,7 @@ class MadridEs:
         if re_or(
             i.title,
             "Voluntarios? por Madrid",
+            r"Esquej[oó]dromo",
             flags=re.I
         ):
             return Category.NO_EVENT
@@ -674,6 +748,7 @@ class MadridEs:
             "taller de escritura",
             "Aprende Chotis",
             r"Iniciaci[oó]n al cultivo",
+            "Editatona",
             flags=re.I
         ):
             return Category.WORKSHOP
@@ -696,7 +771,8 @@ class MadridEs:
             r"Festival Centro al comp[áa]s",
             r"Cuarteto de Cuerda",
             r"tertulia musical",
-            "Folksongs",
+            r"Folksongs",
+            r"Madrid a Tempo",
             flags=re.I
         ):
             return Category.MUSIC
@@ -712,7 +788,8 @@ class MadridEs:
             i.title,
             r"^danzas?$",
             r"Baile sin cuartel",
-            "D[íi]a Internacional de la Danza",
+            r"D[íi]a (Internacional )?de la Danza",
+            r"Festival 4 estaciones",
             flags=re.I
         ):
             return Category.DANCE
@@ -730,6 +807,7 @@ class MadridEs:
         if re_or(
             i.title,
             r"Presentaci[óo]n del? libro",
+            r"Las tertulias de Eirene Editorial",
             flags=re.I
         ):
             return self.__find_book_category(i, Category.LITERATURE)
@@ -745,6 +823,7 @@ class MadridEs:
             "^En esta charla",
             "acoge la conferencia",
             "Te invitamos a una charla",
+            "Monogr[aá]fico de vermicompostaje",
             flags=re.I
         ):
             return Category.CONFERENCE
@@ -757,6 +836,7 @@ class MadridEs:
         if re_or(
             i.description,
             r"Este proyecto musical",
+            r"piano a cuatro manos",
             ("banda", "tributo"),
             flags=re.I
         ):
@@ -794,6 +874,14 @@ class MadridEs:
             flags=re.I
         ):
             return Category.SPORT
+
+        if re_and(
+            " ".join(i.more),
+            "Acusticos",
+            "Buenavista",
+            flags=re.I
+        ):
+            return Category.MUSIC
 
     def __find_category(self, i: ApiInfo):
         cat = self.__find_easy_category(i.event)
@@ -1265,6 +1353,7 @@ class MadridEs:
             return Category.MAGIC
         if re_or(
             i.event.description,
+            r"itinerario guiado",
             r"visitas? guiadas?",
             flags=re.I
         ):
@@ -1286,6 +1375,7 @@ class MadridEs:
         if re_or(
             i.event.description,
             r"Mercado al aire libre",
+            r"intercambio de esquejes",
             flags=re.I
         ):
             return Category.NO_EVENT

@@ -76,7 +76,7 @@ async def rq_to_label(r: ClientResponse):
         }.get(str(url))
         if val is not None:
             return val
-        logger.critical(f"skos:prefLabel not found in {url}")
+        logger.debug(f"skos:prefLabel not found in {url}")
         return None
     about = about.rsplit("/", 1)[-1]
     about = un_camel(about)

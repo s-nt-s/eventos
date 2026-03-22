@@ -10,7 +10,7 @@ from datetime import datetime
 import re
 import requests
 from pytz import timezone
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 from collections import defaultdict
 from core.fetcher import Getter
 from aiohttp import ClientResponse
@@ -53,6 +53,42 @@ async def rq_to_data(r: ClientResponse):
     if not isinstance(data, dict):
         raise ValueError(f'{r.url} is not a {{"data": dict}}')
     return data
+
+
+class Seat(NamedTuple):
+    id: int
+    free: int
+    zone: str
+
+
+async def rq_to_info_seats(r: ClientResponse):
+    js = await r.json()
+    if not isinstance(js, dict):
+        raise ValueError(f'{r.url} is not a dict')
+    data = js.get('data')
+    metadata = js.get('metadata')
+    if not isinstance(data, dict) and not isinstance(metadata, dict):
+        raise ValueError(f'{r.url} is not a {{"data": dict, "metadata": dict}}')
+    seats = data.get("seats")
+    roomZones = metadata.get("roomZones")
+    if not isinstance(seats, list) or not isinstance(roomZones, list):
+        raise ValueError(f'{r.url} is not a {{"data": {{seats: [...]}}, "metadata": {{roomZones: [...]}}}}')
+    dct_roomZones: dict[int, str] = {}
+    for r in roomZones:
+        dct_roomZones[int(r['id'])] = r['name']
+    info_seats: set[Seat] = set()
+    for s in seats:
+        st = Seat(
+            id=s['id'],
+            free=s['free'],
+            zone=dct_roomZones[int(s['roomZoneId'])]
+        )
+        info_seats.add(st)
+    count: dict[str, int] = dict()
+    for st in info_seats:
+        if st.free > 0:
+            count[st.zone] = count.get(st.zone, 0) + st.free
+    return count
 
 
 async def rq_to_info_soup(r: ClientResponse):
@@ -98,20 +134,27 @@ class Data(NamedTuple):
     state: dict
     info: dict[int, dict]
     soup: dict[int, tuple[SoupInfo, ...]]
+    seats: dict[str, dict[str, int]]
 
     @staticmethod
     def build(*args, **kwargs):
         obj = get_obj(*args, **kwargs)
         if obj is None:
             return None
-        info = {}
-        for k, v in obj.get('info', {}).items():
-            info[int(k)] = v
-        obj['info'] = info
-        soup = {}
-        for k, v in obj.get('soup', {}).items():
-            soup[int(k)] = tuple(map(lambda x: SoupInfo(**x), v))
-        obj['soup'] = soup
+        for kk, cst in {
+            'info': None,
+            'seats': None,
+            'soup': SoupInfo
+        }.items():
+            o = {}
+            for k, v in obj.get(kk, {}).items():
+                if cst:
+                    if isinstance(v, dict):
+                        v = cst(**v)
+                    elif isinstance(v, list):
+                        v = tuple(map(lambda x: cst(**x), v))
+                o[int(k)] = v
+            obj[kk] = o
         return Data(**obj)
 
 
@@ -139,10 +182,18 @@ HEADERS = {
 class MadridDestino:
     URL = "https://tienda.madrid-destino.com/es"
 
-    def __init__(self):
+    def __init__(
+            self,
+            expand_max_price: int = -1
+        ):
+        self.__expand_max_price = expand_max_price
         self.__full_session: set[str] = set()
-        self.__info_getter = Getter(
+        self.__data_getter = Getter(
             onread=rq_to_data,
+            headers=HEADERS
+        )
+        self.__info_session_getter = Getter(
+            onread=rq_to_info_seats,
             headers=HEADERS
         )
         self.__soup_getter = Getter(
@@ -185,7 +236,7 @@ class MadridDestino:
             if org:
                 soup_url[MadridDestino.URL+'/'+org['slug']+'/'+e['slug']] = e_id
 
-        info: dict[int, dict] = self.__info_getter.get_from_url_id(
+        info: dict[int, dict] = self.__data_getter.get_from_url_id(
             info_url
         )
 
@@ -193,10 +244,21 @@ class MadridDestino:
             soup_url
         )
 
+        sess_url: dict[str, int] = {}
+        for e in state['events']:
+            if e['highestPrice'] <= self.__expand_max_price:
+                for s_id in self.__get_session_from_soup(soup.get(e['id'])).values():
+                    sess_url[f"https://api-tienda.madrid-destino.com/public_api/sessions/{s_id}"] = s_id
+
+        seats: dict[int, dict[str, int]] = self.__info_session_getter.get_from_url_id(
+            sess_url
+        )
+
         return Data(
             state=state,
             info=info,
-            soup=soup
+            soup=soup,
+            seats=seats
         )
 
     @HashCache("rec/madriddestino/state/{}.json")
@@ -235,15 +297,11 @@ class MadridDestino:
         logger.info("Madrid Destino: Buscando eventos")
         events: Set[Event] = set()
         for e in self.data.state['events']:
-            #if len(e['eventCategories']) == 0:
-            #    continue
-            #if e['freeCapacity'] == 0:
-            #    continue
             org = self.__find("organizations", e['organization_id'])
             if org is None:
                 continue
             logger.debug("event.id="+str(e['id']))
-            info = self.data.info[e['id']]
+            info = self.data.info.get(e['id']) or {}
             soup = self.data.soup.get(e['id'])
             url = MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
             id = MadridDestino.mk_id(e['id'])
@@ -256,7 +314,7 @@ class MadridDestino:
                 img=e['featuredImage']['url'],
                 price=e['highestPrice'],
                 duration=durt if durt is not None else 60,
-                category=self.__find_category(id, e, info),
+                category=self.__find_category(url, id, e, info),
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(url, e, soup),
                 more=None if more in KO_MORE else more
@@ -265,6 +323,8 @@ class MadridDestino:
             events.add(ev)
         url_session: set[str] = set()
         for e in events:
+            if e.price > self.__expand_max_price:
+                continue
             for s in e.sessions:
                 url_session.add(s.url)
         url_to_map = self.__map_getter.get(*url_session)
@@ -324,7 +384,13 @@ class MadridDestino:
                 ev = ev.merge(cycle="Cortometrajes")
         if not ev.director:
             director: list[str] = []
-            for d in map(str.strip, re.findall(r"\b[Dd]irigida por( [A-Z][a-z]+(?: [A-Z][a-z]+))", info['description'])):
+            for d in map(
+                str.strip,
+                re.findall(
+                    r"\b[Dd]irigida por( [A-Z][a-z]+(?: [A-Z][a-z]+))",
+                    info.get('description'
+                ) or '')
+            ):
                 if d and d not in director:
                     director.append(d)
             ev = ev.merge(
@@ -368,16 +434,43 @@ class MadridDestino:
         for s in e['uAvailableDates']:
             dt = timestamp_to_date(s)
             _id_ = id_session.get(dt)
-            url = f"{source}/{_id_}" if _id_ else None
-            #if _id_:
-            #    self.get_info_session(_id_)
-            if url and e['freeCapacity'] == 0:
-                self.__full_session.add(url)
+            url = None
+            if _id_ is not None:
+                url = f"{source}/{_id_}" if _id_ else None
+                if e['freeCapacity'] == 0:
+                    logger.debug(f"FULL session freeCapacity={e['freeCapacity']} {url}")
+                    self.__full_session.add(url)
+                else:
+                    all_ok_seats = self.__get_all_ok_seats(_id_)
+                    if all_ok_seats is not None and len(all_ok_seats[1]) == 0:
+                        logger.debug(f"FULL session seats={all_ok_seats[0]} {url}")
+                        self.__full_session.add(url)
             sessions.add(Session(
                 date=dt,
                 url=url
             ))
         return tuple(sorted(sessions, key=lambda s: s.date))
+    
+    def __get_all_ok_seats(self, id_session: int):
+        if id_session not in self.data.seats:
+            return None
+        zones = set(
+            k for k, v in self.data.seats[id_session].items() if v > 0
+        )
+        ok_zones = zones.difference({
+            "PMR",
+            "Discapacidad",
+            "Acompañante PMR",
+        })
+        for z in list(ok_zones):
+            if re_or(
+                z,
+                "visibilidad reducida",
+                "visibilidad limitada",
+                flags=re.I
+            ): 
+                ok_zones.remove(z)
+        return tuple(sorted(zones)), tuple(sorted(ok_zones))
 
     def __get_session_from_soup(self, soup: tuple[SoupInfo, ...]):
         id_data: dict[str, int] = dict()
@@ -399,7 +492,7 @@ class MadridDestino:
                 return i
         logger.warning(str(FieldNotFound(f"{k}.id={id}", self.data.state[k])))
 
-    def __find_category(self, id: str, e: Dict, info: Dict):
+    def __find_category(self, url: str, id: str, e: Dict, info: Dict):
         cats: Set[str] = set()
         eventCategories = e.get('eventCategories') or []
         for c in self.data.state['categories']:
@@ -421,16 +514,28 @@ class MadridDestino:
                 return True
 
         is_cine = is_cat('cine')
+        psub = plain_text(e.get('subtitle'))
+        pt = plain_text(e['title'])
+
+        if re_or(
+            psub,
+            r"Bailas,? baby",
+            flags=re.I
+        ):
+            return Category.CHILDISH
 
         audience = plain_text(info.get('audience'))
         if not is_cine and re_or(
             audience,
-            "solo niñas",
-            "solo niños",
-            r"de [0-9][\-a\s]+([0-9]|1[0-2]) años",
+            r"solo niñ[oax@]s",
             "especialmente recomendada para la infancia",
             "peques menores de",
             "dirigido a peques",
+            r"de [0-9][\-a\s]+([0-9]|1[0-2]) años",
+            r"Desde \d+ años,? sin acompañante",
+            r"familiar\.? Desde \d+ años,? (con|sin) acompañante",
+            r"De \d+ meses a \d años",
+            r"A partir de \d+ meses",
             flags=re.I,
             to_log=id
         ):
@@ -451,7 +556,11 @@ class MadridDestino:
             to_log=id
         )
 
-        pt = plain_text(e['title'])
+        if re_or(
+            pt,
+            "[eE]nsayos gr[aá]ficos"
+        ):
+            return Category.READING_CLUB
         if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", to_log=id, flags=re.I):
             return Category.VIEW_POINT
         if re_or(pt, "taller infantil", "concierto matinal familiar", "canciones de cuna", to_log=id, flags=re.I):
@@ -507,18 +616,26 @@ class MadridDestino:
             return Category.NO_EVENT
         if re_or(pt, r"Charlas con altura", to_log=id, flags=re.I):
             return Category.CONFERENCE
-        psub = plain_text(e.get('subtitle'))
         if re_or(psub, r"^Taller de", to_log=id, flags=re.I) or re_or(audience, "Taller", to_log=id, flags=re.I):
             return Category.WORKSHOP
         if re_or(psub, "Baychimo Teatro", flags=re.I):
             return Category.THEATER
+        if re_or(psub, r"di[aá]logo con creadores foto-libros", flags=re.I):
+            return Category.CONFERENCE
         if re_or(pt, "belen del ayuntamiento", flags=re.I):
             return Category.EXPO
         desc = info.get('description') or ''
         for k, v in {
-            'ó': '&oacute;'
+            'ó': '&oacute;',
+            'é': '&eacute;'
         }.items():
             desc = desc.replace(v, k)
+        if re_or(
+            desc,
+            "para beb[eé]s y primera infancia",
+            flags=re.I
+        ):
+            return Category.CHILDISH
         if re_or(desc, "Un taller de creatividad", flags=re.I):
             return Category.WORKSHOP
         if re_or(desc, "Los Absurdos Teatro", "teatro de sombras", "Un taller de experimentaci[oó]n", "Un taller de reflexi[oó]n", ("[eE]n esta actividad exploraremos", "con diversos materiales"), flags=re.I):
@@ -533,12 +650,12 @@ class MadridDestino:
         if is_cat("audiovisual"):
             return Category.CINEMA
 
-        logger.critical(str(CategoryUnknown(MadridDestino.URL, f"{e['id']} {pt}: " + ", ".join(sorted(cats)))))
+        logger.critical(str(CategoryUnknown(url, f"{pt} - {psub} - {audience}: " + ", ".join(sorted(cats)))))
         return Category.UNKNOWN
 
 
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/madriddestino.log", log_level=logging.INFO)
-    evs = MadridDestino().events
+    evs = MadridDestino(expand_max_price=10).events
     #print(evs)
