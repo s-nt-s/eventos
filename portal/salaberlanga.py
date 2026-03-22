@@ -115,12 +115,12 @@ class SalaBerlanga:
                 ok_name.add(e)
             if e.url == url:
                 return e
-            if _showGroups(e.url) == showGroups:
+            if showGroups and showGroups == _showGroups(e.url):
                 ok_showGroups.add(e)
             for s in e.sessions:
                 if s.url == url:
                     return e
-                if _showGroups(s.url) == showGroups:
+                if showGroups and showGroups ==_showGroups(s.url):
                     ok_showGroups.add(e)
         if len(ok_name) == 1:
             return ok_name.pop()
