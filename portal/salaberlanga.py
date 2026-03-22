@@ -121,6 +121,10 @@ class SalaBerlanga:
         a = item.tag.select_one("p.card-text-comprar a")
         isGratis = get_text(a) == "Entrada gratuita"
         url_compra = get_attr(a, "href")
+        if url_compra in (
+            'https://cine.entradas.com/cine/madrid/sala-berlanga/sesiones?ref=770&showAllDates=true',
+        ):
+            url_compra = None
         card_text = re.match(
             r"^(.*?)\s+\|\s+(\d+)\s+\|\s+(\d+)[´']$",
             get_text(item.tag.select_one("p.card-text-time")) or ''
