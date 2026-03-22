@@ -34,6 +34,8 @@ from core.event import Place, Places
 from portal.fundacionmarch import FundacionMarch
 from concurrent.futures import ThreadPoolExecutor
 from portal.reinasofia import ReinaSofia
+from core.web import WEB, get_text
+from core.util.strng import clean_name
 
 
 logger = logging.getLogger(__name__)
@@ -496,13 +498,20 @@ class EventCollector:
         ):
             for e in evs:
                 ok_events.remove(e)
+
             more = evs[0].more
-            _id_ = MadridEs.get_id(more)
-            e = Event.fusion(*evs, firstEventUrl=False).merge(
-                name=None,
+            _id_ = None
+            name = None
+            if more and get_domain(more) == "madrid.es":
+                _id_ = MadridEs.get_id(more)
+                name = MadridEs.get_name(more)
+
+            e = Event.fusion(
+                *evs,
                 id=_id_,
                 url=more,
-            ).fix()
+                name=name
+            )
             ok_events.add(e)
 
         def _mk_key_cycle(e: Event | Cinema):
@@ -521,13 +530,10 @@ class EventCollector:
         ):
             for e in evs:
                 ok_events.remove(e)
-            cycle = evs[0].cycle
-            _id_ = to_uuid("".join(e.id for e in evs))
-            e = Event.fusion(*evs, firstEventUrl=True).merge(
-                name=cycle,
-                cycle=cycle,
-                id=_id_,
-            ).fix()
+            e = Event.fusion(
+                *evs,
+                name=evs[0].cycle,
+            )
             st_more = set(x.more for x in evs if x.more)
             st_url = set(x.url for x in evs if x.url)
             if all(s.url for s in e.sessions):
@@ -551,10 +557,7 @@ class EventCollector:
         ):
             for e in evs:
                 ok_events.remove(e)
-            _id_ = to_uuid("".join(e.id for e in evs))
-            e = Event.fusion(*evs).merge(
-                id=_id_,
-            ).fix()
+            e = Event.fusion(*evs)
             ok_events.add(e)
 
         for re_url in (
@@ -576,10 +579,7 @@ class EventCollector:
             ):
                 for e in evs:
                     ok_events.remove(e)
-                _id_ = to_uuid("".join(e.id for e in evs))
-                e = Event.fusion(*evs).merge(
-                    id=_id_,
-                ).fix()
+                e = Event.fusion(*evs)
                 ok_events.add(e)
 
         return tuple(e.fix_type().fix() for e in ok_events)
@@ -612,10 +612,10 @@ class EventCollector:
         return tuple(arr1)
 
     def __check_sessions(self, events: Tuple[Event | Cinema, ...]):
-        aux = map(self.__check_sessionse_of_event, events)
+        aux = map(self.__check_sessions_of_event, events)
         return tuple(filter(self.__filter, aux))
 
-    def __check_sessionse_of_event(self, e: Event | Cinema):
+    def __check_sessions_of_event(self, e: Event | Cinema):
         sessions = list(e.sessions)
         s_doms: set[str] = set(map(get_domain, (s.url for s in e.sessions)))
         ok_doms = tuple(sorted(s_doms.difference((

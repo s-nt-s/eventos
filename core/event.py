@@ -19,6 +19,7 @@ from core.zone import Zones
 from enum import Enum
 from core.util import my_filter
 from core.util.strng import clean_name
+from collections import defaultdict
 
 T = TypeVar("T")
 
@@ -1132,14 +1133,6 @@ class Event:
                 dom.append(d)
         return tuple(dom[1:])
 
-    def _fix_name(self):
-        if self.name is not None:
-            return self.name
-        if get_domain(self.url) == "madrid.es":
-            title = get_text(WEB.get_cached_soup(self.url).select_one("title"))
-            if title and " - " in title:
-                return clean_name(title.split(" - ")[0].strip())
-
     def _fix_img(self):
         ko = (None, '') + KO_IMG
         if self.img not in ko:
@@ -1180,17 +1173,6 @@ class Event:
         if obj["category"] == Category.CINEMA:
             return new_dataclass(Cinema, obj)
         return new_dataclass(Event, obj)
-
-    @cached_property
-    def title(self):
-        txt = str(self.name)
-        if txt == txt.upper():
-            txt = txt.title()
-        if txt[0]+txt[-1] == "«»":
-            _txt = txt[1:-1]
-            if "«" not in _txt and "»" not in _txt:
-                txt = _txt
-        return txt
 
     def _fix_more(self):
         if self.more:
@@ -1288,7 +1270,10 @@ class Event:
         return asdict(self)
 
     @staticmethod
-    def fusionIfSimilar(all_events: tuple["Event", ...], keys: tuple[str, ...],firstEventUrl: bool = False) -> tuple["Event", ...]:
+    def fusionIfSimilar(
+        all_events: tuple["Event", ...],
+        keys: tuple[str, ...]
+    ) -> tuple["Event", ...]:
         if len(all_events) == 0:
             return tuple()
 
@@ -1306,7 +1291,7 @@ class Event:
             })
             ok, ko_events = my_filter(ko_events, lambda x: x.isSimilar(k))
             if len(ok):
-                mrg_events.add(Event.fusion(*ok, firstEventUrl=True))
+                mrg_events.add(Event.fusion(*ok))
             else:
                 logger.warning(f"fusionIfSimilar: resutado inesperado {e} ~ {k}")
                 ko_events = [x for x in ko_events if x != e]
@@ -1314,96 +1299,72 @@ class Event:
         return tuple(sorted(mrg_events))
 
     @staticmethod
-    def fusion(*evs: "Event", firstEventUrl: bool = False):
+    def fusion(*evs: "Event", name: str = None, id: str = None, url: str = None, also_in: tuple[str, ...] = None):
         if len(evs) == 0:
             raise ValueError("len(events)==0")
         if len(evs) == 1:
             return evs[0]
-        url_title: dict[str, str] = dict()
-        for e in evs:
-            if e.title and e.url and e.url not in url_title:
-                url_title[e.url] = e.title
-            for s in e.sessions:
-                if s.title and s.url and s.url not in url_title:
-                    url_title[s.url] = s.title
         logger.debug("Fusión: " + " + ".join(map(lambda e: e.id, evs)))
         logger.debug("Fusión: " + " + ".join(map(str, evs)))
-        dates_with_url: Set[str] = set()
-        full_session: Set[str] = set()
-        for e in evs:
-            for s in e.sessions:
-                if s.url is not None:
-                    dates_with_url.add(s.date)
-                if s.full is True:
-                    full_session.add(s.date)
-        events = list(evs)
-        for i, e in enumerate(events):
-            sessions = tuple((s for s in e.sessions if s.url or s.date not in dates_with_url))
-            events[i] = e.merge(sessions=sessions)
+        f_info = _get_info_fusion(evs)
+        if len(set(f_info.names)) == 1:
+            name = f_info.names[0]
+        elif name is None:
+            name = get_main_value(f_info.names)
+        sessions: list[Session] = []
+        for d in f_info.dates:
+            f_d = f_info.sessions[d]
+            s_url = get_main_value(
+                [u for u in f_d.url_session if u != url]
+            ) or get_main_value(
+                [u for u in f_d.url_event if u != url]
+            )
+            title = f_info.url_title.get(s_url)
+            if title == name:
+                title = None
+            sessions.append(Session(
+                date=d,
+                url=s_url,
+                title=title,
+                full=f_d.full
+            ))
+        ss_url = set(s.url for s in sessions if s.url is not None)
+        if len(sessions) > 1 and len(ss_url) == 1:
+            s_url = ss_url.pop()
+            if url is None:
+                url = s_url
+            if s_url == url:
+                sessions = [s._replace(title=None, url=None) for s in sessions]
+        if url is None:
+            url = get_main_value(u for u in f_info.seen_in if u not in ss_url)
 
-        sessions: Set[Session] = set()
-        sessions_with_url: Set[Session] = set()
-        categories: List[Category] = []
-        durations: List[float] = []
-        imgs: List[str] = []
-        set_seen_in: Set[str] = set()
-        more_url: List[str] = list()
-        for e in events:
-            if e.category not in (None, Category.UNKNOWN):
-                categories.append(e.category)
-            more_url.append(e.more)
-            durations.append(e.duration)
-            imgs.append(e.img)
-            for s in e.sessions:
-                s = s._replace(title=None)
-                sessions.add(s)
-                if firstEventUrl:
-                    s = s._replace(url=e.url or s.url)
-                else:
-                    s = s._replace(url=s.url or e.url)
-                sessions_with_url.add(s)
-            set_seen_in.add(e.url)
-            for u in e.also_in:
-                set_seen_in.add(u)
-        for st in (categories, set_seen_in, imgs, durations, more_url):
-            if None in st:
-                st.remove(None)
-        seen_in = tuple(sorted(set_seen_in))
-        url = seen_in[0] if seen_in else None
-        also_in = seen_in[1:]
-        sessions_url = set(s.url for s in sessions_with_url if s.url is not None)
-        if len(sessions) > 1:
-            sessions = sessions_with_url
-            also_in = tuple((u for u in also_in if u not in sessions_url))
-            url = also_in[0] if also_in else None
-            also_in = also_in[1:]
-        e = events[0].merge(
+        category = get_main_value(f_info.categories, default=Category.UNKNOWN)
+        no_more = category in (Category.CINEMA, )
+        more = None if no_more else get_main_value(f_info.mores)
+        if also_in is None:
+            st_also_in = set(f_info.seen_in)
+            st_also_in.discard(url)
+            st_also_in.discard(more)
+            for s in sessions:
+                st_also_in.discard(s.url)
+            if more is None and len(st_also_in) == 1 and not no_more:
+                more = st_also_in.pop()
+            also_in = tuple(sorted(st_also_in))
+        if id is None:
+            id = to_uuid("".join(e.id for e in evs))
+        e = evs[0].merge(
+            id=id,
             url=url,
+            more=more,
+            name=name,
             also_in=also_in,
-            duration=get_main_value(durations),
-            img=get_main_value(imgs),
-            category=get_main_value(categories, default=Category.UNKNOWN),
-            sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
-            price=max(x.price for x in events)
+            duration=get_main_value(f_info.durations),
+            img=get_main_value(f_info.imgs),
+            category=category,
+            sessions=tuple(sessions),
+            price=max(f_info.prices),
         )
         e = e.fix()
-        if e.category != Category.CINEMA and e.more is None and len(e.also_in) == 1:
-            e = e.merge(
-                more=e.also_in[0],
-                also_in=tuple()
-            )
-        sessions = list(e.sessions)
-        for i, s in enumerate(sessions):
-            sessions[i] = s._replace(
-                title=url_title.get(s.url) or s.title,
-                full=True if s.date in full_session else None
-            )
-        e = e.merge(sessions=sessions)
-        if e.more is None:
-            not_in = set(e.iter_urls()).union(e.also_in)
-            more_url = [u for u in more_url if u not in not_in]
-            if more_url:
-                e = e.merge(more=more_url[0])
         logger.debug(f"=== {e}")
         return e
 
@@ -1644,3 +1605,100 @@ class Cinema(Event):
             img = get_img_src(soup.select_one("div.ipc-media img"))
             if img:
                 return img
+
+
+class FusionSession(NamedTuple):
+    url_event: tuple[str]
+    url_session: tuple[str]
+    full: bool
+
+
+class FusionInfo(NamedTuple):
+    urls: list[str]
+    names: list[str]
+    url_title: dict[str, str]
+    categories: list[Category]
+    durations: list[float]
+    imgs: list[str]
+    mores: list[str]
+    seen_in: list[str]
+    sessions: dict[str, FusionSession]
+    prices: list[float]
+    dates: tuple[str]
+
+
+def _get_info_fusion(evs: tuple[Event, ...]):
+    def _add(arr: list, v, avoid=(None, )):
+        if v not in avoid:
+            arr.append(v)
+    s_event_url: dict[str, list[str]] = defaultdict(list)
+    s_sessi_url: dict[str, list[str]] = defaultdict(list)
+    date_with_url: Set[str] = set()
+    date_full: Set[str] = set()
+    url_title: dict[str, str] = dict()
+    names: list[str] = []
+    categories: List[Category] = []
+    durations: List[float] = []
+    imgs: List[str] = []
+    urls: List[str] = []
+    mores: List[str] = []
+    seen_in: list[str] = []
+    s_dates: set[str] = set()
+    prices: list[float] = []
+    for e in evs:
+        _add(urls, e.url)
+        _add(names, e.name)
+        _add(categories, e.category, avoid=(None, Category.UNKNOWN))
+        _add(mores, e.more)
+        _add(durations, e.duration)
+        _add(imgs, e.img)
+        _add(prices, e.price)
+        _add(seen_in, e.url)
+        for u in e.also_in:
+            _add(seen_in, u)
+        if e.name and e.url and e.url not in url_title:
+            url_title[e.url] = e.name
+        for s in e.sessions:
+            if s.title and s.url and s.url not in url_title:
+                url_title[s.url] = s.title
+            if s.url is not None:
+                date_with_url.add(s.date)
+    for e in evs:
+        for s in e.sessions:
+            if s.url is None and s.date in date_with_url:
+                continue
+            s_dates.add(s.date)
+            if s.full is True:
+                date_full.add(s.date)
+            if e.url:
+                s_event_url[s.date].append(e.url)
+            if s.url:
+                s_sessi_url[s.date].append(s.url)
+
+    for e in evs:
+        if e.name:
+            for s in e.sessions:
+                if s.url and s.url not in url_title:
+                    url_title[s.url] = e.name
+
+    ts_dates = tuple(sorted(s_dates))
+    sessions: dict[str, FusionSession] = {}
+    for d in ts_dates:
+        sessions[d] = FusionSession(
+            url_event=tuple(s_event_url.get(d, [])),
+            url_session=tuple(s_sessi_url.get(d, [])),
+            full=d in date_full
+        )
+    return FusionInfo(
+        urls=urls,
+        names=names,
+        url_title=url_title,
+        categories=categories,
+        durations=durations,
+        imgs=imgs,
+        mores=mores,
+        seen_in=seen_in,
+        sessions=sessions,
+        prices=prices,
+        dates=ts_dates
+    )

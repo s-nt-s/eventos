@@ -48,9 +48,9 @@ class Dore(Web):
     def __clean_events(self, all_events: set[Event]):
         data: dict[str, set[Event]] = {}
         for e in all_events:
-            if e.title not in data:
-                data[e.title] = set()
-            data[e.title].add(e)
+            if e.name not in data:
+                data[e.name] = set()
+            data[e.name].add(e)
         vnts: set[Event] = set()
         for arr in map(sorted, data.values()):
             if len(arr) == 1:

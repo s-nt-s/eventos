@@ -74,9 +74,9 @@ class CasaAmerica(Web):
             all_events.remove(None)
         data: Dict[str, Set[Event]] = {}
         for e in all_events:
-            if e.title not in data:
-                data[e.title] = set()
-            data[e.title].add(e)
+            if e.name not in data:
+                data[e.name] = set()
+            data[e.name].add(e)
         vnts: Set[Event] = set()
         for arr in map(sorted, data.values()):
             if len(arr) == 1:

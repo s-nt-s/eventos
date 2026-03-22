@@ -159,8 +159,7 @@ class FundacionMarch:
 
         evs = Event.fusionIfSimilar(
             all_events,
-            ('name', 'place'),
-            firstEventUrl=True
+            ('name', 'place')
         )
         size = len(evs)
         logger.info(f"Fundación March: Buscando eventos = {size}")

@@ -17,6 +17,7 @@ from core.ics import IcsEventWrapper
 from core.madrid_es.form import get_vgnextoid
 from core.fetcher import Getter
 from aiohttp import ClientResponse
+from core.util.strng import clean_name
 
 
 logger = logging.getLogger(__name__)
@@ -1402,6 +1403,13 @@ class MadridEs:
         if vgnextoid is None:
             return None
         return "ms"+vgnextoid
+
+    @staticmethod
+    def get_name(lk: str):
+        title = get_text(WEB.get_cached_soup(lk).select_one("title"))
+        if title and " - " in title:
+            name = title.split(" - ")[0].strip()
+            return clean_name(name)
 
 
 if __name__ == "__main__":

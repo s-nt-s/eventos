@@ -83,8 +83,7 @@ class TeatroMonumental:
 
         evs = Event.fusionIfSimilar(
             all_events,
-            ('name', 'place'),
-            firstEventUrl=True
+            ('name', 'place')
         )
         logger.info(f"TeatroMonumental: Buscando eventos = {len(evs)}")
         return evs

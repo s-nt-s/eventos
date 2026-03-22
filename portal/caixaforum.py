@@ -6,7 +6,7 @@ from core.event import Event, Places, Session, Category, FieldNotFound, Category
 import re
 from bs4 import Tag
 from datetime import datetime
-from core.util import plain_text, re_or, find_duplicates, to_uuid, round_to_even
+from core.util import plain_text, re_or, find_duplicates, get_main_value, round_to_even
 from bs4 import BeautifulSoup
 from functools import cached_property
 
@@ -115,23 +115,13 @@ class CaixaForum:
         ):
             for e in evs:
                 events.remove(e)
-            cycle = evs[0].cycle
-            _id_ = to_uuid("".join(e.id for e in evs))
-            urls = set(i.url for i in evs)
-            max_s = max(len(i.sessions) for i in evs)
-            e = Event.fusion(*evs, firstEventUrl=(max_s == 1)).merge(
-                name=cycle,
-                cycle=cycle,
-                id=_id_,
-                url=urls.pop() if len(urls) == 1 else None
+            url = get_main_value(list(e.more for e in evs if e.more))
+            e = Event.fusion(
+                *evs,
+                name=evs[0].cycle,
+                url=url,
+                also_in=tuple() if url else None
             )
-            if cycle in ("Vermut y tertulia", "Encuentros con…"):
-                sessions: set[Session] = set()
-                for i in evs:
-                    for s in i.sessions:
-                        sessions.add(s._replace(title=i.name))
-                e = e.merge(sessions=tuple(sorted(sessions)))
-            e = e.fix()
             events.add(e)
         logger.info(f"Caixa Forum: Buscando eventos {len(events)}")
         return tuple(sorted(events))
@@ -184,6 +174,7 @@ class CaixaForum:
             return None
         category = self.__find_category(div, event_soup)
         name = get_text(h2)
+        more, cycle = self.__find_more_cycle(name, url, category)
         ev = Event(
             id=f"cf{div.id}",
             url=url,
@@ -198,31 +189,36 @@ class CaixaForum:
                 info
             ),
             sessions=sessions,
-            place=Places.CAIXA_FORUM.value
+            place=Places.CAIXA_FORUM.value,
+            more=more,
+            cycle=cycle
         )
-        ev = ev.merge(cycle=self.__find_cycle(name, ev))
         return ev
 
-    def __find_cycle(self, name: str, ev: Event):
-        if ev.category == Category.CINEMA:
-            return
+    def __find_more_cycle(self, name: str, url: str, category: Category):
+        if category == Category.CINEMA:
+            return None, None
         if re_or(
             name,
             r"Vermut y tertulia",
             flags=re.I
         ):
-            return "Vermut y tertulia"
+            return None, "Vermut y tertulia"
         if re_or(
             name,
             r"Encuentros con\s*(\.\.\.|…)",
             flags=re.I
         ):
-            return "Encuentros con…"
-        soup = self.get_soup(ev.url)
-        txt = get_text(soup.node.select_one("div.filters-form-container li:last-child"))
+            return None, "Encuentros con…"
+        soup = self.get_soup(url)
+        a = soup.node.select_one("div.filters-form-container li:last-child a")
+        if a is None:
+            return None, None
+        txt = get_text(a)
         cycle = re.match(r"^Ciclo: (.+)$", txt or "", flags=re.I)
-        if cycle:
-            return cycle.group(1)
+        if not cycle:
+            return None, None
+        return a.attrs["href"], cycle.group(1)
 
     def __find_img(self, div: MyTag):
         try:
