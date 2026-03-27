@@ -299,10 +299,13 @@ class EventCollector:
         categories: Tuple[Category, ...],
     ):
         self.__max_price = max_price
+        self.__max_max_price = max(self.__max_price.values())
         self.__max_sessions = max_sessions
         self.__categories = categories
         self.__publish = publish
-        self.__madrid_destino = MadridDestino()
+        self.__madrid_destino = MadridDestino(
+            expand_max_price=self.__max_max_price
+        )
         self.__avoid_categories = tuple(set({
             Category.CHILDISH,
             Category.SENIORS,
@@ -337,7 +340,6 @@ class EventCollector:
         places_with_store.update((
             Places.TEATRO_MONUMENTAL.value,
         ))
-        max_price = max(self.__max_price.values())
         eventos = \
             store_events + \
             run_parallel(
@@ -347,7 +349,7 @@ class EventCollector:
                         None: isOkDate
                     },
                     places_with_store=tuple(sorted(places_with_store)),
-                    max_price=max_price,
+                    max_price=self.__max_max_price,
                     avoid_categories=self.__avoid_categories,
                     isOkPlace=isOkPlace,
                     districts=(
@@ -375,7 +377,7 @@ class EventCollector:
                     isOkPlace=isOkPlace,
                     isOkDate=isOkDate,
                 ),
-                Goethe(max_price=max_price),
+                Goethe(max_price=self.__max_max_price),
                 InstitutoFrances,
                 AcademiaCine,
             ) + \
