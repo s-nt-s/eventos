@@ -49,6 +49,8 @@ class CustomEncoder(json.JSONEncoder):
 
 
 def dom_simplify(s: str):
+    if s is None:
+        return None
     s = re.sub(r"[\-_\.]+", "_", s).lower()
     s = unidecode(s)
     if s[0].isdecimal():

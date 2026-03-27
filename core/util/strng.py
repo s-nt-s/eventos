@@ -93,6 +93,7 @@ def normalize_quote(s: str):
 def _rm_prefix():
     SEP = r"[:\-\.\|]"
     PREFIX_1 = r"|".join([
+        r"Anarkademia",
         r"Cine\s*Club\s*Goethe",
         r"📢 VALLECAS",
         r"(?:Obra de |Representaci[óo]n de )?[tT]eatro(?: para adultos| Comedia Sat[ií]rica)?",

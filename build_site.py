@@ -135,15 +135,16 @@ for e in eventos:
     precios[price] = precios.get(price, 0) + 1
     CLSS[e.id].append(f"e{price}")
     for d in set(map(get_domain, e.iter_urls())):
-        domains[d] = domains.get(d, 0) + 1
-        CLSS[e.id].append(dom_simplify(d))
+        if d is not None:
+            domains[d] = domains.get(d, 0) + 1
+            CLSS[e.id].append(dom_simplify(d))
     if len(e.sessions) == 0:
         sin_sesiones.add(e.id)
         continue
     for f in e.sessions:
         f, h = f.date.split()
         dict_add(sesiones, f, e.id)
-        ch ='h'+h.replace(":", "")
+        ch = 'h'+h.replace(":", "")
         if ch not in CLSS[e.id]:
             horas[h] = horas.get(h, 0) + 1
             CLSS[e.id].append(ch)

@@ -303,9 +303,7 @@ class EventCollector:
         self.__max_sessions = max_sessions
         self.__categories = categories
         self.__publish = publish
-        self.__madrid_destino = MadridDestino(
-            expand_max_price=self.__max_max_price
-        )
+        self.__madrid_destino = MadridDestino()
         self.__avoid_categories = tuple(set({
             Category.CHILDISH,
             Category.SENIORS,
@@ -398,6 +396,8 @@ class EventCollector:
                 CasaMexico,
             )
         logger.info(f"{len(eventos)} recuperados")
+        eventos = tuple(filter(self.__filter, eventos))
+        eventos = self.__madrid_destino.fix_sessions(eventos)
         eventos = tuple(filter(self.__filter, eventos))
         logger.info(f"{len(eventos)} pasan 1º filtro")
 

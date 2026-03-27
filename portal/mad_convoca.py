@@ -375,20 +375,33 @@ class MadConvoca:
 
         if has_tag_or_title("kafeta"):
             return Category.PARTY
-        if has_tag_or_title("cine", "cineforum", "cinebollum", "documental"):
+        if has_tag_or_title(
+            "cine",
+            "cineforum",
+            "cinebollum",
+            "documental"
+        ):
             return Category.CINEMA
         if has_tag("deporte") or has_tag_or_title("yoga", "pilates"):
             return Category.SPORT
-        if has_tag_or_title("taller", "formaci[oó]n", "intercambio de idiomas"):
-            return Category.WORKSHOP
-        if has_tag_or_title("presentaci[óo]n de libro"):
-            return Category.LITERATURE
-        if re_and(name, "presentaci[oó]n", "jugar o romper", flags=re.I):
-            return Category.LITERATURE
-        if has_tag_or_title("intercambio de idiomas", "hacklab") or re_or(name, "taller", "^clases de", "^curso de", flags=re.I, to_log=e.id):
+        if has_tag_or_title(
+            "taller",
+            "formaci[oó]n",
+            "intercambio de idiomas",
+            "hacklab"
+        ) or re_or(
+            name,
+            "^clases de",
+            "^curso de",
+            ("no", "compres", "cose"),
+            flags=re.I,
+            to_log=e.id
+        ):
             return Category.WORKSHOP
         if re_or(name, "iniciaci[óo]n al",  flags=re.I, to_log=e.id) and has_tag("deporte", "gimnasia"):
             return Category.WORKSHOP
+        if has_tag_or_title("presentaci[óo]n de libro"):
+            return Category.LITERATURE
         if has_tag_or_title("teatro", "micro abierto", "performance", "mikro abierto"):
             return Category.THEATER
         if has_tag_or_title("club de lectura", "grupo de lectura", "clubdelectura", "grupodelectura", "bookelarre"):
@@ -399,8 +412,6 @@ class MadConvoca:
             return Category.PARTY
         if re_or(name, "bicicritica", to_log=e.id):
             return Category.SPORT
-        if re_and(name, "no", "compres", "cose",  flags=re.I, to_log=e.id):
-            return Category.WORKSHOP
         if re_or(
             name,
             "Charla-debate",
@@ -410,6 +421,7 @@ class MadConvoca:
             "^Charla:",
             "^Charla",
             "Charla Informativa",
+            "Anarkademia",
             flags=re.I,
             to_log=e.id
         ):

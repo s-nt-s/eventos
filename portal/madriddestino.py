@@ -134,7 +134,6 @@ class Data(NamedTuple):
     state: dict
     info: dict[int, dict]
     soup: dict[int, tuple[SoupInfo, ...]]
-    seats: dict[str, dict[str, int]]
 
     @staticmethod
     def build(*args, **kwargs):
@@ -143,7 +142,6 @@ class Data(NamedTuple):
             return None
         for kk, cst in {
             'info': None,
-            'seats': None,
             'soup': SoupInfo
         }.items():
             o = {}
@@ -182,11 +180,7 @@ HEADERS = {
 class MadridDestino:
     URL = "https://tienda.madrid-destino.com/es"
 
-    def __init__(
-            self,
-            expand_max_price: int = -1
-        ):
-        self.__expand_max_price = expand_max_price
+    def __init__(self):
         self.__full_session: set[str] = set()
         self.__data_getter = Getter(
             onread=rq_to_data,
@@ -244,22 +238,70 @@ class MadridDestino:
             soup_url
         )
 
-        sess_url: dict[str, int] = {}
-        for e in state['events']:
-            if e['highestPrice'] <= self.__expand_max_price:
-                for s_id in self.__get_session_from_soup(soup.get(e['id'])).values():
-                    sess_url[f"https://api-tienda.madrid-destino.com/public_api/sessions/{s_id}"] = s_id
-
-        seats: dict[int, dict[str, int]] = self.__info_session_getter.get_from_url_id(
-            sess_url
-        )
-
         return Data(
             state=state,
             info=info,
-            soup=soup,
-            seats=seats
+            soup=soup
         )
+
+    def fix_sessions(self, events: tuple[Event]):
+        ban_url: set[str] = set()
+
+        def _iter_session(evs: tuple[Event]):
+            for e in evs:
+                for s in e.sessions:
+                    if s.url in ban_url:
+                        continue
+                    if get_domain(s.url) == "tienda.madrid-destino.com":
+                        id_session = s.url.rsplit("/", 1)[-1]
+                        if id_session.isdecimal():
+                            _id_ = int(id_session)
+                            yield _id_, s
+
+        session_url: dict[str, int] = {}
+        for _id_, s in _iter_session(events):
+            state_event = self.__get_event_info_from_session(_id_) or {}
+            freeCapacity = state_event.get('freeCapacity')
+            if freeCapacity == 0:
+                ban_url.add(s.url)
+                logger.debug(f"FULL session freeCapacity={freeCapacity} {s.url}")
+                continue
+            session_url[f"https://api-tienda.madrid-destino.com/public_api/sessions/{_id_}"] = _id_
+
+        url_session: set[str] = set()
+        sess_seats: dict[int, dict[str, int]] = self.__info_session_getter.get_from_url_id(
+            session_url
+        )
+        for _id_, s in _iter_session(events):
+            all_ok_seats = self.__get_all_ok_seats(sess_seats, _id_)
+            if all_ok_seats is not None and len(all_ok_seats[1]) == 0:
+                logger.debug(f"FULL session seats={all_ok_seats[0]} {s.url}")
+                ban_url.add(s.url)
+                continue
+            url_session.add(s.url)
+
+        url_to_map: dict[str, str] = self.__map_getter.get(*url_session)
+        evs: set[Event] = set()
+        for e in events:
+            ss: list[Session] = []
+            for s in e.sessions:
+                if s.url in ban_url:
+                    continue
+                new_url = url_to_map.get(s.url)
+                if new_url:
+                    s = s._replace(url=new_url)
+                ss.append(s)
+            if tuple(ss) != e.sessions:
+                e = e.merge(sessions=tuple(ss))
+            evs.add(e)
+
+        return tuple(sorted(evs))
+
+    def __get_event_info_from_session(self, id_session: int):
+        for e in self.data.state['events']:
+            soup = self.data.soup.get(e['id'])
+            if id_session in self.__get_session_from_soup(soup).values():
+                return e
 
     @HashCache("rec/madriddestino/state/{}.json")
     def get_state_from_url(self, url: str) -> Dict:
@@ -321,26 +363,8 @@ class MadridDestino:
             )
             ev = self.__complete(ev, info)
             events.add(ev)
-        url_session: set[str] = set()
-        for e in events:
-            if e.price > self.__expand_max_price:
-                continue
-            for s in e.sessions:
-                url_session.add(s.url)
-        url_to_map = self.__map_getter.get(*url_session)
-        evs: list[Event] = []
-        for e in sorted(events):
-            sessions = list(e.sessions)
-            for i, s in enumerate(sessions):
-                mp = url_to_map.get(s.url)
-                if mp is not None:
-                    if s.url in self.__full_session:
-                        self.__full_session.add(mp)
-                    sessions[i] = s._replace(url=mp)
-            e = e.merge(sessions=tuple(sessions))
-            evs.append(e)
-        logger.info(f"Madrid Destino: Buscando eventos {len(evs)}")
-        return tuple(evs)
+        logger.info(f"Madrid Destino: Buscando eventos {len(events)}")
+        return tuple(sorted(events))
 
     def __complete(self, ev: Event, info: dict):
         ori_more = ev.more or ''
@@ -434,28 +458,18 @@ class MadridDestino:
         for s in e['uAvailableDates']:
             dt = timestamp_to_date(s)
             _id_ = id_session.get(dt)
-            url = None
-            if _id_ is not None:
-                url = f"{source}/{_id_}" if _id_ else None
-                if e['freeCapacity'] == 0:
-                    logger.debug(f"FULL session freeCapacity={e['freeCapacity']} {url}")
-                    self.__full_session.add(url)
-                else:
-                    all_ok_seats = self.__get_all_ok_seats(_id_)
-                    if all_ok_seats is not None and len(all_ok_seats[1]) == 0:
-                        logger.debug(f"FULL session seats={all_ok_seats[0]} {url}")
-                        self.__full_session.add(url)
+            url = f"{source}/{_id_}" if _id_ else None
             sessions.add(Session(
                 date=dt,
                 url=url
             ))
         return tuple(sorted(sessions, key=lambda s: s.date))
-    
-    def __get_all_ok_seats(self, id_session: int):
-        if id_session not in self.data.seats:
+
+    def __get_all_ok_seats(self, data_seats: dict[str, dict[str, int]], id_session: int):
+        if id_session not in data_seats:
             return None
         zones = set(
-            k for k, v in self.data.seats[id_session].items() if v > 0
+            k for k, v in data_seats[id_session].items() if v > 0
         )
         ok_zones = zones.difference({
             "PMR",
