@@ -734,6 +734,14 @@ class MadridEs:
             r"^cine$",
         ):
             return Category.CINEMA
+
+        if re_or(
+            i.description,
+            r"Encuentro Experiencias del Alma",
+            flags=re.I
+        ):
+            return Category.SPAM
+
         if re_or(
             i.description,
             r"Una proyecci[oó]n de la pel[ií]cula",
@@ -1476,6 +1484,7 @@ class MadridEs:
             r"\bcelebraci[óo]n[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h",
             r"\bhorario[:\s]+de (\d+(?::\d+)?) a (\d+(?::\d+)?) h",
             r"\bdar[áa]n? comienzo a las (\d+(?::\d+)?) h",
+            r"\bempezar[aá] a las? (\d+(?::\d+)?) h"
         ):
             m = re.search(r, desc, flags=re.I)
             if m is None:
