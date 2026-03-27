@@ -175,6 +175,10 @@ def event_to_ics_description(e: Event, s: Session):
         "entradas.aliro.academiadecine.com",
         "entradasfilmoteca.sacatuentrada.es",
         "espacio.fundaciontelefonica.com",
+        "teatromonumental.entradas.com",
+        "cine.entradas.com",
+        "entradas.museoreinasofia.es",
+        "entradasfilmoteca.sacatuentrada.es",
         "kinetike.com",
         "march.es",
         "tienda.madrid-destino.com",
@@ -183,6 +187,10 @@ def event_to_ics_description(e: Event, s: Session):
         re.compile(r"\blacasaencendida\.es/.*eventId=\d+", flags=re.I),
         "lacasaencendida.es",
         "teatromonumental.es",
+        "tickets.lamariqueen.com",
+        "reservaentradas.com",
+        re.compile(r"https?://madrid\.extranet-aec\.com/carts", flags=re.I),
+        "eventbrite.es"
     ), None)
     if url_shop is None and e.price > 0:
         url_shop = next(_iter_urls(
