@@ -181,7 +181,6 @@ class MadridDestino:
     URL = "https://tienda.madrid-destino.com/es"
 
     def __init__(self):
-        self.__full_session: set[str] = set()
         self.__data_getter = Getter(
             onread=rq_to_data,
             headers=HEADERS
@@ -203,10 +202,6 @@ class MadridDestino:
             max_concurrency=10,
             timeout=60,
         )
-
-    @property
-    def full_sessions(self):
-        return tuple(sorted(self.__full_session))
 
     @TupleCache("rec/madriddestino/data.json", builder=Data.build)
     def __get_data(self):

@@ -223,14 +223,22 @@ class SalaBerlanga:
                 cycle="Teatro en la Berlanga",
             )
         if ev.cycle is None and ev.img:
-            if re.search(r"[\-_]nuevos[\-_]territorios[\-_]", ev.img, flags=re.I):
-                return ev.merge(
-                    cycle="Nuevos territorios",
-                )
-            if ev.img == "https://salaberlanga.com/wp-content/uploads/2026/03/0.-Cartel-Ciclo-C54-211x300.png":
-                return ev.merge(
-                    cycle="Cinco cuartos",
-                )
+            cycle = {
+                "https://salaberlanga.com/wp-content/uploads/2026/03/Redes_Feed_NT-Bergia2-240x300.jpg": "Nuevos territorios",
+                "https://salaberlanga.com/wp-content/uploads/2026/03/0.-Cartel-Ciclo-C54-211x300.png": "Cinco cuartos"
+            }.get(ev.img)
+            if cycle is None and re.search(r"[\-_]nuevos[\-_]territorios[\-_]", ev.img, flags=re.I):
+                cycle = "Nuevos territorios"
+            if cycle:
+                return ev.merge(cycle=cycle)
+        if ev.category == Category.CINEMA and re_or(
+            ev.name,
+            ("LA MIRADA TAB[ÚU]", "EDICI[OÓ]N"),
+            flags=re.I
+        ):
+            return ev.merge(
+                cycle="La mirada tabú: Cortometrajes"
+            )
         return ev
 
     def __find_category(self, ev: Event, item: Item):

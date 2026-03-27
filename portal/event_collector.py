@@ -619,7 +619,6 @@ class EventCollector:
 
         return ok_events
 
-
     def __complete_filmaffinity(self, events: Tuple[Event | Cinema, ...]):
         arr1 = list(events)
         imdb: set[str] = set()
@@ -665,8 +664,6 @@ class EventCollector:
         sessions: list[Session] = []
         for s in e.sessions:
             if main_doms and get_domain(s.url) not in ok_doms:
-                continue
-            if s.url in self.__madrid_destino.full_sessions:
                 continue
             sessions.append(s)
         return e.merge(sessions=tuple(sessions))
