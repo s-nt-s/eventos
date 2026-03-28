@@ -78,12 +78,21 @@ class CasaEncendida:
         logger.info("Casa Encendida: Buscando eventos")
         events: Set[Event] = set()
         for url in self.get_links():
-            events.add(self.__url_to_event(url))
+            ev = self.__url_to_event(url)
+            if ev:
+                events.add(ev)
         logger.info(f"Casa Encendida: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
 
     def __url_to_event(self, url):
         soup = self.__get_soup(url)
+        for txt in soup.select_txt("div.tickets-btn.ico-tickets-full", if_none="silent"):
+            if re_or(
+                txt,
+                "se han agotado las entradas",
+                flags=re.I
+            ):
+                return None
         info = self.__get_ld_json(soup)
         self.__validate_info_event(info)
         idevent = info[0]['identifier'].split("-")[-1]

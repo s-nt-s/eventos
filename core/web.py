@@ -323,19 +323,27 @@ class MyTag:
         except json.JSONDecodeError as e:
             raise WebException(f"{slc} no json in {self.__url} {e} {txt}")
 
-    def select(self, slc: str):
+    def select(self, slc: str, if_none="raise"):
         nds = self.__node.select(slc)
         if len(nds) == 0:
-            raise WebException(f"{slc} NOT FOUND in {self.__url}")
+            ex = WebException(f"{slc} NOT FOUND in {self.__url}")
+            if if_none == "raise":
+                raise ex
+            if if_none == "warn":
+                logger.warning(str(ex))
         return nds
 
-    def select_txt(self, slc: str):
+    def select_txt(self, slc: str, if_none="raise"):
         arr: list[str] = []
-        for txt in map(get_text, self.select(slc)):
+        for txt in map(get_text, self.select(slc, if_none=if_none)):
             if txt:
                 arr.append(txt)
         if len(arr) == 0:
-            raise WebException(f"{slc} EMPTY in {self.__url}")
+            ex = WebException(f"{slc} EMPTY in {self.__url}")
+            if if_none == "raise":
+                raise WebException(f"{slc} EMPTY in {self.__url}")
+            if if_none == "warn":
+                logger.warning(str(ex))
         return tuple(arr)
 
     @property
