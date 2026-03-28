@@ -88,6 +88,10 @@ class AteneoMadrid:
             return
         if re.match(r"^\s*CANCELADO[\. ].*", e.SUMMARY):
             return
+        if e.DESCRIPTION in (
+            "El contenido esta protegido.",
+        ):
+            return None
         place = self.__find_place(e)
         if place is None:
             return
