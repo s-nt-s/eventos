@@ -4,7 +4,7 @@ import pytz
 from dataclasses import dataclass, asdict
 import re
 from core.filemanager import FM
-from typing import Union, Callable
+from typing import Union, Callable, Optional
 from core.util import to_uuid
 from icalendar import Calendar, vDDDTypes, Component, vText
 from icalendar.prop import vCategory
@@ -60,6 +60,7 @@ class SimpleIcsEvent:
     description: str
     location: str
     organizer: str
+    img: Optional[str] = None
 
     def __post_init__(self):
         for f, v in asdict(self).items():
@@ -95,6 +96,9 @@ class SimpleIcsEvent:
         lines = ["BEGIN:VEVENT", "STATUS:CONFIRMED"]
         for k, v in asdict(self).items():
             if v is None:
+                continue
+            if k == "img":
+                lines.append(f"IMAGE;VALUE=URI:{v}")
                 continue
             lines.append(f"{k.upper()}:{_fix_width(v, prefix=len(k)+1)}")
         lines.append("END:VEVENT")

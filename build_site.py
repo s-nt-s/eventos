@@ -239,10 +239,13 @@ def event_to_ics_description(e: Event, s: Session):
     return "\n\n".join(lines)
 
 
-def event_to_ics(now: datetime, e: Event, s: Session):
+def event_to_ics(now: datetime, e: Event, s: Session, img: MyImage):
     description = event_to_ics_description(e, s)
     dtstart = to_datetime(s.date)
     dtend = dtstart + timedelta(minutes=(e.duration or 120))
+    url_img = e.img
+    if img:
+        url_img = img.url
     return SimpleIcsEvent(
         uid=f"{e.id}_{s.id}",
         dtstamp=now,
@@ -253,27 +256,29 @@ def event_to_ics(now: datetime, e: Event, s: Session):
         location=e.place.address,
         organizer=e.place.name,
         dtstart=dtstart,
-        dtend=dtend
+        dtend=dtend,
+        #img=url_img
     )
 
+
+logger.info("Añadiendo imágenes")
+URL_IMG = MyImage.get_all(*(e.img for e in eventos if e.img))
+img_eventos = tuple(map(add_image, eventos))
 
 NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 STR_TODAY = NOW.strftime("%Y-%m-%d")
 logger.info("Añadiendo ics")
 session_ics: Dict[str, str] = dict()
 icsevents = []
-for e in eventos:
+for img, e in img_eventos:
     for s in e.sessions:
-        ics = event_to_ics(NOW, e, s)
+        ics = event_to_ics(NOW, e, s, img)
         uid = ics.uid.lower()
         session_ics[e.id+s.id] = uid
         ics.dumpme(f"out/cal/{uid}.ics")
         icsevents.append(ics)
 SimpleIcsEvent.dump("out/eventos.ics", *icsevents)
 
-logger.info("Añadiendo imágenes")
-URL_IMG = MyImage.get_all(*(e.img for e in eventos if e.img))
-img_eventos = tuple(map(add_image, eventos))
 
 logger.info("Creando web")
 
