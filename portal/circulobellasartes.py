@@ -1,6 +1,7 @@
 from core.web import Web, get_text, buildSoup, Tag
 from functools import cached_property
-from core.event import Event, Cinema, Places, Category, Session, CategoryUnknown
+from core.event import Event, Cinema, Category, Session, CategoryUnknown
+from core.place import Places
 from core.util import plain_text, to_uuid, find_euros, re_or
 import re
 from datetime import date, datetime

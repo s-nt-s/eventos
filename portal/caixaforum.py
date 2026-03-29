@@ -2,7 +2,8 @@ from core.web import get_text, WebException, MyTag, Web
 from core.cache import TupleCache, HashCache
 from typing import Set, Dict, Union, List, Tuple
 import logging
-from core.event import Event, Places, Session, Category, FieldNotFound, CategoryUnknown
+from core.event import Event, Session, Category, FieldNotFound, CategoryUnknown
+from core.place import Places
 import re
 from bs4 import Tag
 from datetime import datetime

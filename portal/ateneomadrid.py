@@ -1,5 +1,6 @@
 from core.ics import IcsReader, IcsEventWrapper
-from core.event import Event, Place, Category, Session, CategoryUnknown, Places
+from core.event import Event, Place, Category, Session, CategoryUnknown
+from core.place import Places
 from functools import cached_property
 from core.util import plain_text, find_duplicates, re_or, re_and, find_euros
 from core.util.strng import normalize_quote

@@ -1,7 +1,8 @@
 from core.web import Web, get_text
 from core.cache import TupleCache
 import logging
-from core.event import Event, Cinema, Places, Session, Category
+from core.event import Event, Cinema, Session, Category
+from core.place import Places
 import re
 from bs4 import Tag
 from core.util import to_uuid

@@ -3,7 +3,8 @@ from core.cache import Cache, TupleCache
 from urllib.parse import urlencode
 from core.util import parse_obj, find_euros, re_or
 import re
-from core.event import Event, Category, Places, CategoryUnknown, Session, Place
+from core.event import Event, Category, CategoryUnknown, Session, Place
+from core.place import Places
 from functools import cached_property
 import logging
 from datetime import datetime

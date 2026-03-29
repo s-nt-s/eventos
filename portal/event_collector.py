@@ -1,4 +1,5 @@
-from core.event import Event, Category, Cinema, Session, Zones
+from core.event import Event, Category, Cinema, Session
+from core.zone import Zones
 from portal.casaencendida import CasaEncendida
 from portal.casamexico import CasaMexico
 from portal.dore import Dore
@@ -31,7 +32,7 @@ from core.filmaffinity import FilmAffinityApi
 from core.dblite import DB
 from functools import cache
 from core.zone import Circles
-from core.event import Place, Places
+from core.place import Place, Places
 from portal.fundacionmarch import FundacionMarch
 from concurrent.futures import ThreadPoolExecutor
 from portal.reinasofia import ReinaSofia

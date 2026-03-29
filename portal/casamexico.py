@@ -1,7 +1,8 @@
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.web import buildSoup, get_text, Tag
-from core.event import Category, Event, CategoryUnknown, Session, Places, FIX_EVENT
+from core.event import Category, Event, CategoryUnknown, Session, FIX_EVENT
+from core.place import Places
 from core.util import get_obj, re_or, find_euros, to_uuid, get_main_value, get_domain
 from typing import NamedTuple, Optional
 from core.cache import TupleCache

@@ -4,7 +4,8 @@ from bs4 import Tag
 from typing import Set, Dict, List
 from core.cache import TupleCache
 import logging
-from core.event import Event, Session, Places, Category, FieldNotFound
+from core.event import Event, Session, Category, FieldNotFound
+from core.place import Places
 import re
 from core.util import plain_text
 from portal.kinetike import KineTike

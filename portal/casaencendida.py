@@ -1,9 +1,10 @@
 from core.web import get_text, MyTag, Web
-from typing import Set, Dict, List, Optional
+from typing import Set, Dict, List
 from functools import cache
 from core.cache import TupleCache
 import logging
-from core.event import Event, Session, Places, Category, CategoryUnknown
+from core.event import Event, Session, Category, CategoryUnknown
+from core.place import Places
 import re
 from datetime import datetime
 from core.util import re_or, KO_IMG

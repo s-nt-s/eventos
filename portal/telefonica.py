@@ -3,7 +3,8 @@ from core.cache import TupleCache, Cache
 from typing import Set, Dict, List
 from functools import cached_property
 import logging
-from core.event import Event, Places, Session, Category, CategoryUnknown, FieldUnknown
+from core.event import Event, Session, Category, CategoryUnknown, FieldUnknown
+from core.place import Places
 from datetime import datetime
 from core.util import plain_text, re_or, get_a_href, to_uuid
 import re

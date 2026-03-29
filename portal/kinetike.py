@@ -3,7 +3,8 @@ from bs4 import Tag
 from functools import cached_property
 from urllib.parse import urljoin
 import re
-from core.event import Event, Category, Places, Session, Place
+from core.event import Event, Category, Session, Place
+from core.place import Places
 from core.util import re_or, plain_text
 import logging
 

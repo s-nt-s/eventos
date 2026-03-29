@@ -1,6 +1,7 @@
 from core.ics import IcsReader, IcsEventWrapper
 from functools import cached_property
-from core.event import Event, Place, Session, Category, Places, CategoryUnknown
+from core.event import Event, Place, Session, Category, CategoryUnknown
+from core.place import Places
 from core.util import re_or, re_and, get_domain
 import requests
 import re

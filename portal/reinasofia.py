@@ -4,7 +4,8 @@ from urllib.parse import urljoin
 from core.util import parse_obj, get_obj, re_or, find_euros
 from typing import NamedTuple, Optional
 from types import MappingProxyType
-from core.event import Event, Places, Category, CategoryUnknown, Session
+from core.event import Event, Category, CategoryUnknown, Session
+from core.place import Places
 from functools import cache, cached_property
 from core.web import buildSoup, get_text
 import re

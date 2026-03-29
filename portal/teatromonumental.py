@@ -1,6 +1,7 @@
 from core.web import WEB, get_text, get_query, Tag
 from functools import cached_property
-from core.event import Event, Session, Category, Places
+from core.event import Event, Session, Category
+from core.place import Places
 from typing import NamedTuple
 from types import MappingProxyType
 from core.util import to_uuid
