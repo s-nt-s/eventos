@@ -789,6 +789,7 @@ class MadridEs:
             r"^teatros?$",
             r"^Microteatros?",
             "Audio-?drama",
+            r"Paloma Calle que se calle",
             flags=re.I
         ):
             return Category.THEATER
@@ -808,6 +809,7 @@ class MadridEs:
             r"^descubre el vivero",
             r"En este itinerario se",
             r"^Visitas? al",
+            r"Jardines del Campo del Moro",
             flags=re.I
         ):
             return Category.VISIT
@@ -1058,12 +1060,14 @@ class MadridEs:
         if re_or(
             i.event.title,
             "^concierto de",
+            r"M[uú]sica de Cine",
             flags=re.I
         ):
             return Category.MUSIC
         if re_or(
             i.event.title,
             ("espectaculo", "magia"),
+            ("magia", "ilusionismo"),
             r"la magia de",
             r"^Magia:",
             r"Magia o plomo",

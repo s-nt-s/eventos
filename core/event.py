@@ -24,13 +24,23 @@ logger = logging.getLogger(__name__)
 
 TODAY = date.today()
 NOW = TODAY.strftime("%Y-%m-%d")
-FIX_EVENT: Dict[str, Dict[str, Any]] = FM.load("fix/event.json")
-for k, v in list(FIX_EVENT.items()):
-    if isinstance(v, dict):
+
+def _get_fix_event():
+    fix_event: Dict[str, Dict[str, Any]] = FM.load("fix/event.json")
+    for k, v in list(fix_event.items()):
+        if not isinstance(v, dict):
+            continue
         for kk, vv in list(v.items()):
             if isinstance(vv, list):
                 v[kk] = tuple(vv)
-        FIX_EVENT[k] = v
+        if set(v.keys()).intersection({"filmaffinity", "imdb"}):
+            if "category" not in v:
+                v["category"] = "CINEMA"
+        fix_event[k] = v
+    return fix_event
+
+
+FIX_EVENT: Dict[str, Dict[str, Any]] = _get_fix_event()
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
