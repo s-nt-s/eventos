@@ -821,18 +821,25 @@
     "ms820eecd8dfa9c910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
     "ms204873690ea8c910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
     "ms171c7aea64f8c910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
-    "ms2b3338e487aca910VgnVCM200000f921e388RCRD": {"category": "MUSIC"},
+    "ms2b3338e487aca910VgnVCM200000f921e388RCRD": {
+        "category": "CINEMA",
+        "name": "Imposible decirte adiós",
+        "filmaffinity": 559722
+    },
     "mcmc26933": {"category": "CINEMA", "imdb": "tt2005276"},
     "ms4fa14dd7f1f9c910VgnVCM100000891ecb1aRCRD": {"category": "THEATER"},
     "ms91ee7f3291fba910VgnVCM100000891ecb1aRCRD": {"category": "DANCE"},
-    "msc13701a4bfe8c910VgnVCM100000891ecb1aRCRD": {"category": "DANCE"},
+    "msc13701a4bfe8c910VgnVCM100000891ecb1aRCRD": {
+        "category": "THEATER",
+        "name": "Lectura dramatizada"
+    },
     "ms5dcdabb225f8c910VgnVCM100000891ecb1aRCRD": {"category": "MUSIC"},
     "ms2beed7a0b4d4c910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
     "ms75e7607b65fba910VgnVCM200000f921e388RCRD": {"category": "THEATER"},
     "ms0ddb182ff657c910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
     "msb28e3ae411beb910VgnVCM200000f921e388RCRD": {"category": "MUSIC"},
     "msad336b27fdf9c910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
-    "ms566cd441c61ca910VgnVCM200000f921e388RCRD": {"category": "PARTY"},
+    "ms566cd441c61ca910VgnVCM200000f921e388RCRD": {"category": "MAGIC"},
     "msaccba7b422a8c910VgnVCM100000891ecb1aRCRD": {"category": "MUSIC"},
     "ms3ddfb5ccf5e9c910VgnVCM100000891ecb1aRCRD": {"category": "THEATER"},
     "ms4a95f91fbb5eb910VgnVCM200000f921e388RCRD": {"category": "THEATER"},
@@ -1399,7 +1406,10 @@
         "category": "VISIT",
         "img": "https://www.madrid.es/UnidadesDescentralizadas/Educacion_Ambiental/EspecialesInformativos/HabitatMadridActividadesAmbientales/ActividadesPAA/FicherosActividaesRutas/ActivRutaJardinesCampoDelMoroMadridAmbiental.jpg"
     },
-    "mse05b0d2bcf92d910VgnVCM200000f921e388RCRD": {"category": "PARTY"},
+    "mse05b0d2bcf92d910VgnVCM200000f921e388RCRD": {
+        "category": "PARTY",
+        "more": "https://ludoverdeaso.wixsite.com/ludoverde"
+    },
     "mx8429CB3E-8AAA-5C33-A6C5-95CD3EB346D3":{
         "category": "CINEMA",
         "filmaffinity": 985323

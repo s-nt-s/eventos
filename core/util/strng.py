@@ -39,6 +39,7 @@ _SPECIAL_WORDS = (
     "Karelis Zambrano",
     "Carmen Rojas",
     "Shakespeare",
+    "Finzi Pasca",
 )
 
 _RG_SPECIAL_WORDS = re.compile(
