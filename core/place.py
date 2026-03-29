@@ -306,6 +306,16 @@ class Place:
             flags=re.I
         ):
             return Places.AV_CORNISA.value
+        if re_or(
+            name,
+            "villana de vallekas",
+            flags=re.I
+        ) and re_or(
+            address,
+            "Sierra de alquife",
+            flags=re.I
+        ):
+            return Places.VILLANA_VALLEKAS.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -709,4 +719,11 @@ class Places(Enum):
         latlon="40.38093534685343,-3.7008894267081742",
         map="https://maps.app.goo.gl/QiuU4DBcChCUL37Q9",
         zone='Almendrales',
+    )
+    VILLANA_VALLEKAS = Place(
+        name="Villana Vallekas",
+        address="C. Sierra de Alquife, 12, Puente de Vallecas, 28053 Madrid",
+        latlon="40.388937365812666,-3.6667314056831035",
+        map="https://maps.app.goo.gl/S7obRpiZAGWKFc8S9",
+        zone='Vallecas',
     )
