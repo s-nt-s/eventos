@@ -74,6 +74,10 @@ def getMin(dt: date | datetime) -> int:
     if isinstance(dt, datetime):
         dt = dt.date()
     if dt in (
+        date(2026,  3, 31),
+    ):
+        return 15.5
+    if dt in (
         date(2026,  3, 19),
         date(2026,  4, 23),
         date(2026,  5, 21),

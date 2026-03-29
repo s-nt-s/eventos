@@ -13,11 +13,19 @@ from collections import defaultdict
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.cache import TupleCache
+from functools import cache
 
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
 
+@cache
+def get_content(x: EventOnEvent):
+    content = buildSoup(x.permalink, x.content or x.details or '')
+    for br in content.select("br, p"):
+        br.append("\n")
+    txt_content = get_text(content)
+    return txt_content
 
 def to_datetime(i: int):
     dt = datetime.fromtimestamp(i, tz=ZoneInfo("UTC"))
@@ -128,9 +136,19 @@ class Alcala:
             place=place,
             duration=duration,
             sessions=sessions,
-            img=x.image_url
+            img=x.image_url,
+            cycle=self.__find_cycle(x)
         )
         return e
+
+    def __find_cycle(self, x: EventOnEvent):
+        txt_content = get_content(x)
+        if re_or(
+            txt_content,
+            r"Tour del talento \d+",
+            flags=re.I
+        ):
+            return "Tour del talento"
 
     def __get_place(self, x: EventOnEvent):
         if x.location_name is None:
@@ -172,10 +190,7 @@ class Alcala:
         if not x.event_types:
             logger.critical(f"event_types=None {x.permalink}")
             return Category.UNKNOWN
-        content = buildSoup(x.permalink, x.content or x.details or '')
-        for br in content.select("br, p"):
-            br.append("\n")
-        txt_content = get_text(content)
+        txt_content = get_content(x)
         for cat, _or_ in {
             Category.CHILDISH: (r"T[IÍ]TERES.*P[UÚ]BLICO FAMILIAR", r"TEATRO INFANTIL", r"[Ee]spect[aá]culo infantil"),
             Category.PARTY: (r"EXPERIENCIA GASTRON[OÓ]MICA", ),
@@ -186,6 +201,12 @@ class Alcala:
                 return cat
         tp = x.event_types[0].lower()
         if tp == "música y danza":
+            if re_or(
+               txt_content,
+               r"Tour del talento \d+",
+               flags=re.I
+            ):
+                return Category.MUSIC
             if re_or(txt_content, "danza", flags=re.I):
                 return Category.DANCE
             return Category.MUSIC
@@ -212,19 +233,33 @@ class Alcala:
         sessions: set[Session] = set()
         dts = list(x.repeats)
         dts.insert(0, (x.start, x.end))
+        txt_content = get_content(x)
+        times = set(re.findall(r"(\d{2}:\d{2})", txt_content))
+        dates: set[datetime] = set()
+        max_dur = 2*60
         for s, e in dts:
             if None in (s, e) or s > e:
                 continue
             st = to_datetime(s)
             en = to_datetime(e)
-            durations.add((en-st).seconds // 60)
+            dr = (en-st).seconds // 60
+            if en.strftime("%H:%M") == "23:59" and dr > max_dur:
+                dr = max_dur
+            durations.add(dr)
+            dates.add(st)
+        if len(dates) == 0:
+            return 0, tuple()
+        if len(times) == 1 and len(dates) == 1:
+            h, m = map(int, times.pop().split(":"))
+            st = dates.pop().replace(hour=h, minute=m)
+            dates = {st, }
+        for st in sorted(dates):
             if not self.__isOkDate(st):
                 continue
             sessions.add(Session(
                 date=st.strftime("%Y-%m-%d %H:%M")
             ))
-        minutes = max(durations) if durations else 0
-        return minutes, tuple(sorted(sessions))
+        return max(durations), tuple(sorted(sessions))
 
 
 if __name__ == "__main__":

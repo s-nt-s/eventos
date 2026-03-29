@@ -787,6 +787,7 @@ class Cinema(Event):
         self._fix_field('cycle')
         self._fix_field('year')
         self._fix_name_director()
+        self._fix_name_year()
         self._fix_field('imdb', self.__find_imdb)
         self._fix_field('filmaffinity')
         super().fix(**kwargs)
@@ -811,11 +812,23 @@ class Cinema(Event):
         ):
             new_name = _mk_re(d).sub("", self.name).strip()
             if new_name and new_name != self.name:
+                new_name = clean_name(new_name)
                 logger.debug(f"[{self.id}].__fix_name_director: director={d} name={new_name} <- {self.name}")
                 object.__setattr__(self, "director", (d, ))
                 object.__setattr__(self, "name", new_name)
                 return
 
+    def _fix_name_year(self):
+        m = re.match(r"^(.*?)\s*\(\s*(\d+)\s*\)\s*$", self.name)
+        if m is None:
+            return
+        year = int(m.group(2))
+        if year > 1900 and year <= (TODAY.year + 1) and (self.year is None or self.year == year):
+            new_name = clean_name(m.group(1))
+            logger.debug(f"[{self.id}]._fix_name_year: year={year} name={new_name} <- {self.name}")
+            object.__setattr__(self, "year", year)
+            object.__setattr__(self, "name", new_name)
+        
     def _fix_year(self):
         if self.year is not None:
             return self.year

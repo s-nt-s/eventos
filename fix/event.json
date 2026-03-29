@@ -792,5 +792,11 @@
   "tm5DADB769-CA50-5B68-8D10-42478BE8C4AA": {
     "name": "Concierto extraordinario del día de la Mujer",
     "category": "MUSIC"
+  },
+  "ce15607": {
+    "name": "Instrucción de novicias",
+    "more": "https://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=2257541",
+    "category": "READING_CLUB",
+    "img": "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1768970844i/243710832.jpg"
   }
 }

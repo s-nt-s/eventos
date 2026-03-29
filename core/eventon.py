@@ -2,7 +2,6 @@ from requests import Session
 from core.cache import HashCache
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from core.filemanager import FM
 import re
 from typing import NamedTuple
 from core.util import get_obj, trim, parse_obj
