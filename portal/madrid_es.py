@@ -542,13 +542,18 @@ class MadridEs:
             r"presenta su poemario",
             r"presentan? este poemario de",
             r"poemas in[eé]ditos",
+            r"libros? de poes[ií]a",
             flags=re.I
         ):
             return Category.POETRY
         if re_or(
             i.description,
+            r"(La|Esta) novela presenta",
+            r"(La|Esta) nueva novela de",
+            r"(La|Esta) novela publicada",
+            r"(La|Esta) novela es la cr[oó]nica",
+            r"A partir de ese momento comienza una aventura",
             "una novela de aventuras",
-            "la novela publicada",
             "novela histórica",
             "presenta su primera novela",
             "Presentaci[oó]n de la novela editada",
@@ -684,6 +689,7 @@ class MadridEs:
             r"Presentaci[óo]n del poemario",
             r"^T[eé] y poes[ií]a",
             r"encuentro de poetas",
+            r"UNCAREMA",
             flags=re.I
         ):
             return Category.POETRY

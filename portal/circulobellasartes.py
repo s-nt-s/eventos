@@ -84,11 +84,17 @@ async def soup_to_cinema(url: str, soup: Tag):
             h3 = aux
     inf = table_to_dict(soup.select_one("table.cba_tabla_ficha"))
     img = soup.select_one('div.fl-col-small div.fl-photo[role="figure"] img.entered[data-src]')
+    year = inf.get("año")
+    if year is not None and year.isdigit():
+        year = int(year)
+    else:
+        year = None
     template = Cinema(
         id="cba"+to_uuid(url),
         url=url,
         name=get_text(h1),
         director=(inf.get("direccion") or get_text(h3),),
+        year=year,
         place=Places.CIRCULO_BELLAS_ARTES.value,
         category=Category.CINEMA,
         sessions=tuple(),
