@@ -809,6 +809,8 @@ class MadridEs:
             r"^descubre el vivero",
             r"En este itinerario se",
             r"^Visitas? al",
+            r"Ruta guiada",
+            r"^Visita taller encuadernaci[oó]n",
             r"Jardines del Campo del Moro",
             flags=re.I
         ):

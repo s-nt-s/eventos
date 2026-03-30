@@ -1,4 +1,5 @@
 import json
+from shutil import move
 
 
 def read(filename: str) -> dict[str, dict]:
@@ -36,4 +37,4 @@ with open(FILE+".json", "w", encoding="utf-8") as f:
     f.write(json.dumps(obj2, indent=2, ensure_ascii=False)[2:])
 
 read(FILE+".json")  # check that it is valid JSON
-print(FILE+".json")
+move(FILE+".json", FILE)

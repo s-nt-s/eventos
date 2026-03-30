@@ -92,8 +92,11 @@ def normalize_quote(s: str):
 
 @cache
 def _rm_prefix():
-    SEP = r"[:\-\.\|]"
+    SP = r":\-\.\|"
+    SEP = r"["+SP+r"]"
     PREFIX_1 = r"|".join([
+        r"Concierto de piano",
+        r"Tardes romanas\b[^"+SP+r"]*?",
         r"Anarkademia",
         r"Cine\s*Club\s*Goethe",
         r"📢 VALLECAS",
@@ -145,7 +148,7 @@ def _rm_prefix():
 def _rm_sufix():
     SEP = r"[\-\.\|]"
     SUFIX_1 = "|".join([
-        r"(?:Actividades )?(?:s[aá]bado|viernes) (?:tarde|mañana)",
+        r"(?:Actividades )?(?:viernes|s[aá]bado|domingo) (?:tarde|mañana)",
         r"Las tertulias de Eirene Editorial",
         r"Visita a la colecci[oó]n del Museo",
         r"CSO? La Cheli",

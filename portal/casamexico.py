@@ -456,6 +456,7 @@ class CasaMexico:
         if re_or(
             i.name,
             "^Curso",
+            r"Sesi[óo]n de dibujo",
         ):
             return Category.WORKSHOP
         if re_or(
