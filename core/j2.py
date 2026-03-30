@@ -59,7 +59,7 @@ def dom_simplify(s: str):
 
 
 def simplify(s: str):
-    re_rm = re.compile(r"[/\.\(\)\[\]]+")
+    re_rm = re.compile(r"[/\.\(\)\[\]'\"]+")
     s = re_rm.sub(" ", str(s)).strip().lower()
     s = re_sp.sub(" ", s).strip().lower()
     s = unidecode(s)
@@ -159,7 +159,7 @@ class Jnj2():
         self.pre = pre
         self.post = post
         self.lastArgs = None
-        self.minify = environ.get("MINIFY") == "1"
+        self.minify = False  # environ.get("MINIFY") == "1"
         self.favicon = favicon
 
     def get_svg_favicon(self):

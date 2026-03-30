@@ -58,13 +58,6 @@ default_headers = {
 }
 
 
-def get_query(url: str):
-    q = urlsplit(url)
-    q = parse_qsl(q.query)
-    q = dict(q)
-    return q
-
-
 def iterhref(soup: BeautifulSoup):
     """Recorre los atributos href o src de los tags"""
     n: Tag
@@ -89,9 +82,11 @@ def buildSoup(root: str, source: str, parser="lxml"):
     return soup
 
 
-def get_text(node: Tag, default: Optional[str] = None):
+def get_text(node: Tag | str, default: Optional[str] = None):
     if node is None:
         return default
+    if isinstance(node, str):
+        node = buildSoup(None, node)
     txt = None
     if node.name == "input":
         txt = node.attrs.get("value")
@@ -252,6 +247,12 @@ class Web:
         content = self.__cached_get(url, verify_ssl=verify_ssl)
         soup = buildSoup(url, content, parser=parser)
         return soup
+
+    def safe_get_cached_soup(self, *args, **kwargs):
+        try:
+            return self.get_cached_soup(*args, **kwargs)
+        except Exception:
+            return None
 
 
 class MyTag:

@@ -1,10 +1,10 @@
-from core.web import WEB, get_text, get_query, Tag
+from core.web import WEB, get_text, Tag
 from functools import cached_property
 from core.event import Event, Session, Category
 from core.place import Places
 from typing import NamedTuple
 from types import MappingProxyType
-from core.util import to_uuid
+from core.util import to_uuid, get_query, re_or
 import re
 import logging
 from core.cache import TupleCache
@@ -108,9 +108,18 @@ class TeatroMonumental:
             category=Category.MUSIC,
             duration=None,
             sessions=sessions,
-            place=Places.TEATRO_MONUMENTAL.value
+            place=Places.TEATRO_MONUMENTAL.value,
+            cycle=self.__find_cycle(name)
         )
         return ev
+
+    def __find_cycle(self, name: str):
+        if re_or(
+            name,
+            r"BSMM\b.*\bciclo\b.*\b(primavera|verano|otoño|invierno)",
+            flags=re.I
+        ):
+            return "Banda Sinfónica Municipal"
 
     def __get_price_and_sessions(self, url: str, soup: Tag):
         prices: set[int] = set()
@@ -121,9 +130,8 @@ class TeatroMonumental:
             raise ValueError(f"Número de sesiones distinto en {url}")
         for section, a in zip(sct, lnk):
             info: dict[str, str] = {}
-            for p in section.select("p"):
-                txt = get_text(p)
-                if p and ":" in txt:
+            for txt in map(get_text, section.select("p")):
+                if txt and ":" in txt:
                     key, value = map(str.strip, txt.split(":", 1))
                     if key and value:
                         info[key.lower()] = value

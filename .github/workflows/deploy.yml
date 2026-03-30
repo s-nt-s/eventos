@@ -2,7 +2,7 @@ name: deploy
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 6 * * 1-5'
+    - cron: '30 5 * * 1-5'
     - cron: '10 9 * * 6,0'
 permissions:
   contents: read
@@ -51,7 +51,7 @@ jobs:
         continue-on-error: false
         uses: nick-fields/retry@v2
         env:
-          SPAIN_PROXY: ${{ secrets.SPAIN_PROXY }}
+          PROXY_LIST: ${{ secrets.PROXY_LIST }}
         with:
           timeout_minutes: 50
           retry_wait_seconds: 60

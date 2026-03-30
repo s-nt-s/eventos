@@ -1,93 +1,37 @@
 from functools import cache
-from bs4 import BeautifulSoup
 from typing import Optional
 from os import environ
 import requests
-import re
 import logging
+from types import MappingProxyType
 
 
 logger = logging.getLogger(__name__)
 
 
-def soup_to_proxy(soup: BeautifulSoup):
-    proxies: list[str] = []
-    table = soup.select_one("#proxylister-table")
-    for tr in table.select("tr"):
-        tds = tr.select("td")
-        if len(tds) < 3:
-            continue
-        ip = tds[0].text.strip()
-        port = tds[1].text.strip()
-        prot = tds[2].text.strip().lower()
-        if prot != "http":
-            continue
-        if not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip) or not re.match(r"^\d{1,5}$", port):
-            continue
-        pr = f"{prot}://{ip}:{port}"
-        if pr not in proxies:
-            proxies.append(pr)
-    return tuple(proxies)
-
-
 class ProxyManager:
     def __init__(self):
         self.__timeout = 1
-        self.__spain_proxy = environ.get("SPAIN_PROXY")
-        self.__s = requests.Session()
+        self.__proxies = MappingProxyType(self.__get_proxies("PROXY_LIST"))
 
-    def __iter_proxies(self):
-        if self.__spain_proxy:
-            yield self.__spain_proxy
-            for u in (
-                'https://proxyelite.info/free/europe/spain/',
-                'https://proxyelite.info/free/europe/portugal/',
-                'https://proxyelite.info/free/europe/france/',
-                'https://proxyelite.info/free/europe/italy/',
-                'https://proxyelite.info/free/europe/Sweden/',
-                'https://proxyelite.info/free/europe/Finland/',
-                'https://proxyelite.info/free/europe/Ireland/',
-                'https://proxyelite.info/free/europe/Netherlands/',
-                'https://proxyelite.info/free/europe/United%20Kingdom/',
-                'https://proxyelite.info/free/europe/Ukraine/',
-                'https://proxyelite.info/free/europe/Serbia/',
-                'https://proxyelite.info/free/europe/Hungary/',
-                'https://proxyelite.info/free/europe/'
-            ):
-                r = self.__s.get(u)
-                soup = BeautifulSoup(
-                    r.content,
-                    "html.parser"
-                )
-                table = soup.select_one("#proxylister-table")
-                for tr in table.select("tr"):
-                    tds = tr.select("td")
-                    if len(tds) < 3:
-                        continue
-                    ip = tds[0].text.strip()
-                    port = tds[1].text.strip()
-                    prot = tds[2].text.strip().lower()
-                    if prot != "http":
-                        continue
-                    if not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip) or not re.match(r"^\d{1,5}$", port):
-                        continue
-                    pr = f"{prot}://{ip}:{port}"
-                    yield pr
-
-    def iter_proxies(self):
-        done: set[str] = set()
-        for p in self.__iter_proxies():
-            if p not in done:
-                done.add(p)
-                yield p
+    def __get_proxies(self, env_name: str):
+        prx: dict[str, str] = {}
+        val = environ.get(env_name)
+        if val is None:
+            return prx
+        words = val.split()
+        for i in range(int(len(words)/2)):
+            label = words[i]
+            prx[words[i+1]] = label
+            logger.info(f"proxy {len(prx)}: {label}")
+        return prx
 
     @cache
     def get_proxy(self):
-        for p in self.iter_proxies():
-            lb = re.sub("://.+@", "://", p)
+        for p, lb in self.__proxies.items():
             if self.__check_proxy(p):
                 logger.info(f"[OK] {lb}")
-                return p
+                return lb, p
             logger.info(f"[KO] {lb}")
 
     def __check_proxy(self, proxy: str) -> bool:
@@ -96,21 +40,19 @@ class ProxyManager:
         proxy_ip = self.__get_ip(proxy)
         if proxy_ip is None:
             return False
-        #if proxy == self.__spain_proxy:
-        #    return True
         real_ip = self.__get_ip()
         if real_ip is None:
             logger.warning("No se pudo obtener la IP real")
             return True
         if real_ip == proxy_ip:
-            lb = re.sub("://.+@", "://", proxy)
+            lb = self.__proxies[proxy]
             logger.debug(f"proxy={lb} no cambia IP")
             return False
         return True
 
     @cache
     def __check_status(self, proxy: str) -> bool:
-        lb = re.sub("://.+@", "://", proxy)
+        lb = self.__proxies[proxy]
         url = 'https://detectportal.firefox.com/success.txt'
         try:
             r = requests.get(
@@ -120,10 +62,9 @@ class ProxyManager:
             )
             if r.status_code == 200 and r.text.strip() == "success":
                 return True
-            #logger.debug(f"proxy={lb} url={url} -> {r.status_code} {r.text}")
+            logger.debug(f"proxy={lb} url={url} -> {r.status_code} {r.text}")
         except requests.RequestException as e:
-            #logger.debug(f"proxy={lb} url={url} -> {e}")
-            pass
+            logger.debug(f"proxy={lb} url={url} -> {e}")
         return False
 
     @cache
@@ -146,7 +87,7 @@ class ProxyManager:
 
         url = 'https://httpbin.org/ip'
         proxies = {"http": proxy, "https": proxy} if proxy else None
-        lb = re.sub("://.+@", "://", proxy) if proxy else None
+        lb = self.__proxies.get(proxy)
         try:
             r = requests.get(
                 url,

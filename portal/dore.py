@@ -7,6 +7,7 @@ import re
 from bs4 import Tag
 from core.util import to_uuid
 from datetime import date
+from core.md import MD
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,7 @@ class Dore(Web):
         return sum(duration)
 
     def __find_sessions(self, div: Tag):
-        txt = get_text(div.select_one("div.descripcion"))
+        txt = MD.convert(div.select_one("div.descripcion"))
         if txt is None:
             return tuple()
         sessions: set[Session] = set()

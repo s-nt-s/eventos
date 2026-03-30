@@ -216,6 +216,7 @@ class Session(NamedTuple):
     url: Optional[str] = None
     title: Optional[str] = None
     full: Optional[bool] = None
+    duration: Optional[int] = None
 
     def merge(self, **kwargs):
         return self._replace(**kwargs)
@@ -337,6 +338,8 @@ class Event:
             v = fix_event.get(f.name) or old_val
             if f.name == "sessions":
                 v = Session.parse_list(v)
+            if f.name == "place" and isinstance(v, dict):
+                v = Place(**v).normalize()
             if isinstance(v, list):
                 v = tuple(v)
             elif isinstance(v, str):
@@ -428,6 +431,8 @@ class Event:
             fix_val = Session.parse_list(fix_val)
         if name == "category" and isinstance(fix_val, str):
             fix_val = Category[fix_val]
+        if name == "place" and isinstance(fix_val, dict):
+            fix_val = Place(**fix_val).normalize()
         if fix_val == old_val:
             return False
         if name == "more" and fix_val == self.url:
@@ -512,6 +517,15 @@ class Event:
     def _fix_more(self):
         if self.more:
             return self.more
+        if self.category in (
+            Category.READING_CLUB,
+            Category.CONFERENCE,
+        ):
+            more = {
+                "el antiedipo": "https://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=267016"
+            }.get(plain_text(self.name).lower())
+            if more:
+                return more
         dom = get_domain(self.url)
         if self.category in {
             "madrid.es": (Category.CONFERENCE, Category.LITERATURE),
@@ -675,7 +689,13 @@ class Event:
 
         category = get_main_value(f_info.categories, default=Category.UNKNOWN)
         no_more = category in (Category.CINEMA, )
-        more = None if no_more else get_main_value(f_info.mores)
+        more = None
+        st_more = set(f_info.mores)
+        if len(st_more) == 1:
+            more = st_more.pop()
+            no_more = False
+        elif not no_more:
+            more = get_main_value(f_info.mores)
         if also_in is None:
             st_also_in = set(f_info.seen_in)
             st_also_in.discard(url)
@@ -1015,3 +1035,53 @@ def _get_info_fusion(evs: tuple[Event, ...]):
         prices=prices,
         dates=ts_dates
     )
+
+
+def find_book_category(name: str, description: str, default: Category):
+    txt = f"{name or ''}\n{description or ''}".strip()
+    if re_or(
+        txt,
+        r"novela gr[aá]fica",
+        r"comic",
+        r"tebeo",
+        flags=re.I
+    ):
+        return default
+    if re_or(
+        description,
+        r"En estos versos el autor",
+        r"Presentaci[oó]n del poemario",
+        r"recital de poes[íi]a",
+        r"presenta su poemario",
+        r"presentan? este poemario de",
+        r"poemas in[eé]ditos",
+        r"libros? de poes[ií]a",
+        flags=re.I
+    ):
+        return Category.POETRY
+    if re_or(
+        description,
+        r"(La|Esta) novela presenta",
+        r"(La|Esta) nueva novela de",
+        r"(La|Esta) novela publicada",
+        r"(La|Esta) novela es la cr[oó]nica",
+        r"A partir de ese momento comienza una aventura",
+        r"una novela (de aventuras|sobre|breve)",
+        r"novela hist[oó]rica",
+        r"presenta su primera novela",
+        r"Presentaci[oó]n de la novela editada",
+        r"El retrato de Dorian Gray",
+        r"libro de cuentos",
+        r"una de las novelas m[áa]s conocidas",
+        ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
+        ("a trav[eé]s de estas ficciones", "literatura"),
+        flags=re.I
+    ):
+        return Category.NARRATIVE
+    if re_or(
+        name,
+        "Presentaci[óo]n de la novela",
+        flags=re.I
+    ):
+        return Category.NARRATIVE
+    return default

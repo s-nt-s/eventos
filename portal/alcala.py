@@ -14,6 +14,7 @@ from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.cache import TupleCache
 from functools import cache
+from core.md import MD
 
 
 logger = logging.getLogger(__name__)
@@ -21,11 +22,11 @@ re_sp = re.compile(r"\s+")
 
 @cache
 def get_content(x: EventOnEvent):
-    content = buildSoup(x.permalink, x.content or x.details or '')
-    for br in content.select("br, p"):
-        br.append("\n")
-    txt_content = get_text(content)
-    return txt_content
+    html = x.content or x.details
+    if html is None:
+        return None
+    content = buildSoup(x.permalink, html)
+    return MD.convert(content)
 
 def to_datetime(i: int):
     dt = datetime.fromtimestamp(i, tz=ZoneInfo("UTC"))
@@ -192,7 +193,7 @@ class Alcala:
             return Category.UNKNOWN
         txt_content = get_content(x)
         for cat, _or_ in {
-            Category.CHILDISH: (r"T[IÍ]TERES.*P[UÚ]BLICO FAMILIAR", r"TEATRO INFANTIL", r"[Ee]spect[aá]culo infantil"),
+            Category.CHILDISH: (r"T[IÍ]TERES.*P[UÚ]BLICO FAMILIAR", r"TEATRO INFANTIL", r"[Ee]spect[aá]culo infantil", r"ESPECIALMENTE RECOMENDADA PARA LA INFANCIA"),
             Category.PARTY: (r"EXPERIENCIA GASTRON[OÓ]MICA", ),
             Category.THEATER: (r"VISITA TEATRALIZADA", ),
             Category.POETRY: (r"[dD]eclamaci[oó]n de poemas", ),
@@ -234,7 +235,7 @@ class Alcala:
         dts = list(x.repeats)
         dts.insert(0, (x.start, x.end))
         txt_content = get_content(x)
-        times = set(re.findall(r"(\d{2}:\d{2})", txt_content))
+        times = set(re.findall(r"(\d{2}:\d{2})", txt_content or ''))
         dates: set[datetime] = set()
         max_dur = 2*60
         for s, e in dts:

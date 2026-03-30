@@ -1,7 +1,6 @@
 from core.gancio import GancioPortal, Event as GancioEvent
 from core.ics import IcsReader, IcsEventWrapper
 from core.event import Event, Place, Category, Session, CategoryUnknown
-from core.place import Places
 from functools import cached_property
 from core.util import plain_text, find_duplicates, re_or, re_and, get_domain, find_euros
 import re
@@ -11,18 +10,11 @@ from datetime import datetime
 from core.web import get_text, buildSoup
 from functools import cache
 from core.cache import TupleCache
+from core.md import MD
 
 logger = logging.getLogger(__name__)
 
 re_sp = re.compile(r"\s+")
-
-
-@cache
-def html_to_text(html: str):
-    soup = buildSoup(None, html)
-    for x in soup.select("br, p"):
-        x.append("\n")
-    return get_text(soup)
 
 
 class MadConvoca:
@@ -145,7 +137,7 @@ class MadConvoca:
 
     def __fix_gancio(self, e: GancioEvent, ev: Event):
         if e.description and re_or(e.title, r"Cinef[óo]rum de la Rosa", flags=re.I):
-            text = html_to_text(e.description)
+            text = MD.convert(e.description)
             m = re.search(
                 r"([^\.\(\)]+?) \((\d{4})\),? dir.? ([^\.\(\)]+)",
                 text,
@@ -318,7 +310,7 @@ class MadConvoca:
 
     def __find_gancio_category(self, e: GancioEvent) -> Category:
         name = plain_text(e.title)
-        txt_desc = html_to_text(e.description) if e.description else None
+        txt_desc = MD.convert(e.description)
         tags: set[str] = set(map(plain_text, map(str.strip, e.tags)))
         isLibreria = re_or(e.place.name, "librer[íi]a", flags=re.I)
 
@@ -344,8 +336,8 @@ class MadConvoca:
         ):
             return Category.NARRATIVE
 
-        if has_tag_or_title("flinta"):
-            return Category.NO_EVENT
+        if has_tag_or_title("flinta", r"No[\-\s]*mixto"):
+            return Category.NON_GENERAL_PUBLIC
         if has_tag_or_title("infantil"):
             return Category.CHILDISH
         if has_tag(
@@ -365,6 +357,7 @@ class MadConvoca:
             return Category.CHILDISH
         if re_or(
             name,
+            r"Presentaci[óo]n.* Marcha Republicana",
             r"Desayuno en Magdalena",
             "Bienvenida Nuev[oax@e]s? Rebeldes?",
             ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
@@ -378,7 +371,7 @@ class MadConvoca:
             return Category.PARTY
         if has_tag_or_title(
             "cine",
-            "cineforum",
+            "cinef[óo]rum",
             "cinebollum",
             "documental"
         ):
@@ -409,10 +402,21 @@ class MadConvoca:
             return Category.READING_CLUB
         if has_tag("concierto") or re_or("^concierto", flags=re.I, to_log=e.id):
             return Category.MUSIC
-        if re_or(name, "fiesta", "Social Swing", "kabaret", "cañeo", flags=re.I, to_log=e.id):
+        if re_or(
+            name,
+            "fiesta",
+            "Social Swing",
+            "kabaret",
+            "cañeo",
+            "Paella Republicana",
+            flags=re.I,
+            to_log=e.id
+        ):
             return Category.PARTY
         if re_or(name, "bicicritica", to_log=e.id):
             return Category.SPORT
+        if has_tag_or_title("charlas?", "conversatorio"):
+            return Category.CONFERENCE
         if re_or(
             name,
             "Charla-debate",
@@ -468,6 +472,8 @@ class MadConvoca:
             ("jornada", "auditorio"),
             "A lo largo de la charla",
             "conservatorio",
+            ("Encuentros?", "conversaci[óo]n(es)?"),
+            r"en este coloquio",
             flags=re.I,
             to_log=e.id
         ):
@@ -489,11 +495,6 @@ class MadConvoca:
             "leer un texto",
             "razonar en com[uú]n",
             "club de lectura",
-            flags=re.I
-        ):
-            return Category.READING_CLUB
-        if re_or(
-            txt_desc,
             "leemos juntas",
             flags=re.I
         ):
@@ -539,6 +540,7 @@ class MadConvoca:
         if re_or(
             txt_desc,
             "proyectamos el documental",
+            "Duraci[oó]n del documental",
             flags=re.I,
             to_log=e.id
         ):
@@ -566,6 +568,14 @@ class MadConvoca:
             return Category.PARTY
         if has_tag("ecoaldea") and has_tag("encuentro"):
             return Category.NO_EVENT
+        if re_or(
+            txt_desc,
+            ("asamblea", r"c[óo]mo funcionamos", "participar"),
+            "MANIFESTACI[óO]N",
+            "CONCENTRACI[oÓ]N",
+            flags=re.I
+        ):
+            return Category.ACTIVISM
         if isLibreria:
             return Category.LITERATURE
         logger.critical(str(CategoryUnknown(e.url, f"{e}")))

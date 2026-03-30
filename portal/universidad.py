@@ -23,6 +23,7 @@ import urllib3
 import warnings
 import json
 from typing import NamedTuple, Optional
+from core.md import MD
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
@@ -98,7 +99,10 @@ def clean_place_name(name: str, domain: str) -> str:
         return "URJC Quintana"
     if re_and(name, "Carlos III", "Puerta (de )?Toledo", flags=re.I):
         return "UC3 Puerta Toledo"
-    if domain and "uc3m" in domain and re_and(name, "ronda", "toledo", "28005", flags=re.I):
+    if domain and "uc3m" in domain and (
+        re_and(name, ("ronda", "puerta"), "toledo", "28005", flags=re.I) or
+        re_and(name, "campus", ("ronda", "puerta"), "toledo", flags=re.I)
+    ):
         return "UC3 Puerta Toledo"
     if re_and(name, "ateneo (de )?Madrid", flags=re.I):
         return "Ateneo Madrid"
@@ -204,12 +208,7 @@ class Universidad:
     @cache
     def __get_description(self, url: str, name: str) -> str:
         html = self.__find_description(url, name)
-        if html is None:
-            return None
-        soup = buildSoup(url, html)
-        for t in soup.select("p, br, caption, li, td, th, h1, h2, h3, h4, h5, h6"):
-            t.insert_after("\n")
-        return get_text(soup)
+        return MD.convert(html)
 
     @cache
     def __get_more(self, url: str, name: str) -> str:
@@ -377,7 +376,7 @@ class Universidad:
             "charla historiogr[aá]fica",
             "conservatorio",
             "Encuentro con",
-            "Jornada( Universitaria)? sobre",
+            "Jornadas?( Universitaria)? (sobre|de)",
             "congreso",
             flags=re.I
         ):
@@ -391,6 +390,19 @@ class Universidad:
         if re_or(
             description,
             r"congreso",
+            r"Ponentes",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+        if re_or(
+            description,
+            r"(visita|Ruta) guiada",
+            flags=re.I
+        ):
+            return Category.VISIT
+        if re_or(
+            e.LOCATION,
+            "y online",
             flags=re.I
         ):
             return Category.CONFERENCE
@@ -458,14 +470,14 @@ if __name__ == "__main__":
     # https://eventos.ucm.es/kml.html
     # https://eventos.uam.es/kml.html
     # https://eventos.urjc.es/kml.html
-    evs = Universidad.get_events(
+    evs = Universidades(
         "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
-        #"https://eventos.ucm.es/ics/location/espana/lo-1.ics",
-        #"https://eventos.uam.es/ics/location/espana/lo-1.ics",
-        #"https://eventos.urjc.es/ics/location/espana/lo-1.ics",
-        #"https://eventos.uah.es/ics/location/espana/lo-1.ics",
-        verify_ssl=False
-    )
+        "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
+        "https://eventos.uam.es/ics/location/espana/lo-1.ics",
+        "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
+        "https://eventos.uah.es/ics/location/espana/lo-1.ics",
+        verify_ssl=False,
+    ).events
     for event in evs:
         continue
         print(event)

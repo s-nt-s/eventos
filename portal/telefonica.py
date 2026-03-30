@@ -3,7 +3,7 @@ from core.cache import TupleCache, Cache
 from typing import Set, Dict, List
 from functools import cached_property
 import logging
-from core.event import Event, Session, Category, CategoryUnknown, FieldUnknown
+from core.event import Event, Session, Category, CategoryUnknown, FieldUnknown, find_book_category
 from core.place import Places
 from datetime import datetime
 from core.util import plain_text, re_or, get_a_href, to_uuid
@@ -135,11 +135,17 @@ class Telefonica(Web):
         return ev
 
     def __get_session(self, data: Dict):
+        url = None
+        link = self.soup.select_one('a.reservabtn[id^="eventbrite-widget-modal-trigger-"]')
+        if link:
+            _id_ = link.attrs["id"].split("-")[-1]
+            if _id_ and _id_.isdecimal():
+                url = f"https://eventbrite.es/e/{_id_}"
         ini = datetime.fromisoformat(data['startDate'])
         fin = datetime.fromisoformat(data['endDate'])
         start = ini.strftime("%Y-%m-%d %H:%M")
         duration = int((fin - ini).total_seconds() / 60)
-        return duration, Session(date=start)
+        return duration, Session(date=start, url=url)
 
     def __find_place(self):
         dir = self.select_one_txt("span.direccion")
@@ -161,7 +167,7 @@ class Telefonica(Web):
             r"presenta su( [úu]ltima)? novela",
             r"publicaci[oó]n de su( [úu]ltima| nuevo)? ensayo",
         ):
-            return Category.LITERATURE
+            return find_book_category(name, plain_description, Category.LITERATURE)
         if re_or(name, "madresfera"):
             return Category.MATERNITY
         if re_or(name, "^encuentro con", flags=re.I):

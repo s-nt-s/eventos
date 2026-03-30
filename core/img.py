@@ -271,6 +271,10 @@ class MyImage:
             p = p.parent
         return p
 
+    @property
+    def source(self):
+        return self.origin.url
+
     @staticmethod
     def get_all(*urls: str):
         r: dict[str, MyImage] = {}

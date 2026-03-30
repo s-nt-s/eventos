@@ -1,4 +1,4 @@
-from core.web import Web, WebException, Driver, get_text, get_query, buildSoup
+from core.web import Web, WebException, Driver, get_text, buildSoup
 from urllib.parse import urljoin
 from bs4 import Tag, BeautifulSoup
 import re
@@ -16,7 +16,8 @@ from core.madrid_es.tp import Place
 from html import unescape
 from icalendar import Calendar
 from core.ics import IcsEventWrapper
-from core.util import get_domain
+from core.util import get_domain, clean_url, get_query
+from core.md import MD
 
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,7 @@ class Index(NamedTuple):
 
 
 class Page(NamedTuple):
-    description: Tag
+    description: str
     free: bool
     price: tuple[str, ...] = tuple()
     more: tuple[str, ...] = tuple()
@@ -167,14 +168,16 @@ def _get_urls(soup: Tag, slc: str):
         if val not in urls and isinstance(val, str):
             val = val.strip()
             prc = val.split("://", 1)[0].lower()
-            if prc in ("http", "https") and val not in urls:
+            if prc not in ("http", "https"):
+                continue
+            val = clean_url(val)
+            if val not in urls:
                 urls.append(val)
     return tuple(urls)
 
 
 async def rq_to_page(r: ClientResponse):
     soup = buildSoup(str(r.url), await r.read())
-    description = soup.select_one("div.tramites-content div.tiny-text")
     more = _get_urls(
         soup,
         "div.tramites-content a[href]",
@@ -191,7 +194,7 @@ async def rq_to_page(r: ClientResponse):
     free = soup.select_one("ul li p.gratuita") is not None
 
     return Page(
-        description=description,
+        description=MD.convert(soup.select_one("div.tramites-content div.tiny-text")),
         price=tuple(price),
         more=more,
         img=img,
@@ -497,6 +500,7 @@ class FormSearch:
         for i in ids:
             urls.add(f"https://www.madrid.es/ContentPublisher/jsp/cont/microformatos/obtenerVCal.jsp?vgnextoid={i}")
         return self.__getter_ics.get(*urls)
+
 
 if __name__ == "__main__":
     from core.log import config_log

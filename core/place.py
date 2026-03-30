@@ -105,23 +105,63 @@ class Place:
             return "https://www.google.com/maps?q=" + self.address
         return "https://www.google.com/maps/place/" + quote(self.address)
 
+    def _fix_name(self):
+        if self.name:
+            name = re.sub(r"^Biblioteca P[uú]blica( Municipal)?", "Biblioteca", self.name, flags=re.I)
+            return name
+
     def _fix_zone(self):
         if self.zone is not None:
             return self.zone
         name = plain_text(self.name) or ''
         addr = plain_text(self.address) or ''
-        if re_or(name, r"d?el retiro", ("biblioteca", "eugenio trias"), "casa de vacas"):
+        if re_or(
+            name,
+            r"d?el retiro",
+            ("biblioteca", "eugenio trias"),
+            "casa de vacas",
+            r"jardin(es)? del?\b.*\bretiro\b",
+            flags=re.I
+        ):
             return "El Retiro"
-        if re_or(name, r"jardin(es)? del?\b.*\bretiro\b", flags=re.I):
-            return "El Retiro"
-        if re_or(name, r"Parque\b.*\bEnrique Tierno Galv[aá]n", flags=re.I):
-            return "Legazpi"
-        if re_or(name, "matadero", "cineteca", "Casa del Reloj", "Nave Terneras", "La Lonja", flags=re.I):
-            return "Legazpi"
+        if re_or(
+            name,
+            r"Parque\b.*\bEnrique Tierno Galv[aá]n",
+            "matadero",
+            "cineteca",
+            "Casa del Reloj",
+            "Nave Terneras",
+            "La Lonja",
+            flags=re.I
+        ):
+            return Zones.LEGAZPI.value.name
+        if re_or(
+            name,
+            "Biblioteca.* Gerardo Diego",
+            flags=re.I
+        ):
+            return Zones.VALLECAS.value.name
         if re_and(addr, "conde duque", "28015"):
             return "Plaza España"
-        if re_or(name, "clara del rey"):
+        if re_or(
+            name,
+            "clara del rey",
+            "museo abc",
+            flags=re.I
+        ):
             return "Plaza España"
+        if re_or(
+            name,
+            "jardines del campo del moro",
+            flags=re.I
+        ):
+            return Zones.SOL.value.name
+        if re_or(
+            name,
+            "Centro cultural.*Dao[ií]z y Velarde",
+            flags=re.I
+        ):
+            return Zones.PACIFICO.value.name
         if self.latlon:
             lat, lon = map(float, self.latlon.split(","))
             for zn in (
@@ -163,7 +203,7 @@ class Place:
             r"Alcal[aá]( de)? Henares",
             flags=re.I
         ):
-            return "Alcalá de Henares"
+            return Zones.ALCALA_DE_HENARES.value.name
         return None
 
     def _fix_latlon(self):
@@ -184,6 +224,16 @@ class Place:
             flags=re.I
         ):
             return Places.CONDE_DUQUE.value
+        if re_or(
+            name,
+            r"Casa [aÁ]rabe",
+            flags=re.I
+        ) and re_or(
+            address,
+            "Alcal[aá]",
+            flags=re.I
+        ):
+            return Places.CASA_ARABE.value
         if re.match(r"^Sala Berlanga$", name, flags=re.I) and re.search(r"Andr[ée]s Mellado.*53", address, flags=re.I):
             return Places.SALA_BERLANGA.value
         if re.match(r"^Teatro Español$", name, flags=re.I):
@@ -316,6 +366,43 @@ class Place:
             flags=re.I
         ):
             return Places.VILLANA_VALLEKAS.value
+        if re_or(
+            name,
+            "PCE",
+            flags=re.I
+        ) and re_or(
+            address,
+            "mart[íi]n de vargas",
+            flags=re.I
+        ):
+            return Places.PCE_MADRID.value
+        if re_or(
+            name,
+            "sin tarima",
+            flags=re.I
+        ) and re_or(
+            address,
+            "magdalena",
+            flags=re.I
+        ):
+            return Places.SIN_TARIMA.value
+        if re_or(
+            name,
+            "teatro (del )?barrio",
+            flags=re.I
+        ) and re_or(
+            address,
+            "zurita",
+            flags=re.I
+        ):
+            return Places.TEATRO_BARRIO.value
+        if re_or(
+            name,
+            "Plaza Puerto Rubio",
+            flags=re.I
+        ):
+            return Places.PLAZA_PUERTO_RUBIO.value
+
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -726,4 +813,38 @@ class Places(Enum):
         latlon="40.388937365812666,-3.6667314056831035",
         map="https://maps.app.goo.gl/S7obRpiZAGWKFc8S9",
         zone='Vallecas',
+    )
+    PCE_MADRID = Place(
+        name="PCE Madrid",
+        address="C. de Martín de Vargas, 46, Arganzuela, 28005 Madrid",
+        latlon="40.401346703786785,-3.700752071237691",
+        map="https://maps.app.goo.gl/Gs1Y38Lmi5j5s6J3A",
+        zone='Legazpi',
+    )
+    SIN_TARIMA = Place(
+        name="Sin tarima",
+        address="Calle de la Magdalena, 32, Centro, 28012 Madrid",
+        latlon="40.41257169833034,-3.7003979865090706",
+        zone='Sol',
+    )
+    TEATRO_BARRIO = Place(
+        name="Teatro del Barrio",
+        address="C. de Zurita, 20, Centro, 28012 Madrid",
+        latlon="40.40978378427696,-3.6993138845307407",
+        zone='Lavapies',
+        map="https://maps.app.goo.gl/gtmoQWKw3KHAJCqB9"
+    )
+    PLAZA_PUERTO_RUBIO = Place(
+        name="Plaza Puerto Rubio",
+        address="Puente de Vallecas, 28053 Madrid",
+        latlon="40.39671543801934,-3.6676335614560585",
+        zone='Vallecas',
+        map="https://maps.app.goo.gl/rWEYZTauTccvm8Zu7"
+    )
+    CASA_ARABE = Place(
+        name="Casa Árabe",
+        address="C. Alcalá, 62, Salamanca, 28009 Madrid",
+        latlon="40.421664106756026,-3.681901515345426",
+        zone='Retiro',
+        map="https://maps.app.goo.gl/JVXHvG8tg5CeYWGN6"
     )

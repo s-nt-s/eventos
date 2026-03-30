@@ -19,6 +19,10 @@ import pytz
 from core.rss import EventosRss
 from collections import defaultdict
 from portal.event_collector import EventCollector
+from core.publish import PublishDB
+from core.web import WEB
+from typing import NamedTuple
+from core.dwn import DWN
 
 
 config_log("log/build_site.log")
@@ -29,6 +33,13 @@ OUT = "out/"
 WHITE = (255, 255, 255)
 STR_TODAY = date.today().strftime("%Y-%m-%d")
 
+
+PUBLISHDB = PublishDB(
+    name="publish.txt",
+    local=OUT,
+    remote=PAGE_URL
+)
+
 CLSS = defaultdict(list)
 CLSS_COUNT = defaultdict(int)
 
@@ -38,12 +49,7 @@ EC = EventCollector(
         Category.OTHERS: 10,
     },
     max_sessions=15,
-    publish={
-        k: v
-        for k, v in
-        FM.load(OUT+"publish.json").items()
-        if v is not None and v <= STR_TODAY
-    },
+    publish=PUBLISHDB,
     categories=(
         Category.CINEMA,
         Category.MUSIC,
@@ -59,6 +65,49 @@ EC = EventCollector(
         Category.READING_CLUB,
     )
 )
+
+
+class FakeImg(NamedTuple):
+    url: str
+    background: tuple[int, int, int]
+    orientation: str
+    source: str
+
+
+def get_current_img(*urls: str):
+    url_img: dict[str, FakeImg] = {}
+    soup = WEB.safe_get_cached_soup(PAGE_URL+"/")
+    if soup is None:
+        return url_img
+    for i in soup.select("div.img"):
+        background = tuple(map(
+            int,
+            re.findall(r"\d+", i.attrs.get("style", ""))
+        ))
+        if len(background) != 3:
+            continue
+        zoom = i.select_one("a.zoom")
+        img = i.select_one("img.cartel")
+        if None in (zoom, img):
+            continue
+        cls = set(img.attrs["class"]).intersection({
+            "portrait", "landscape"
+        })
+        if len(cls) != 1:
+            continue
+        i = FakeImg(
+            orientation=cls.pop(),
+            background=background,
+            url=img.attrs["src"],
+            source=zoom.attrs["href"],
+        )
+        if i.source in urls:
+            url_img[i.source] = i
+    ok = DWN.dwn(OUT+"img/", *(i.url for i in url_img.values()))
+    for k, i in list(url_img.items()):
+        if i.url not in ok:
+            del url_img[k]
+    return url_img
 
 
 def distance_to_white(*color) -> Tuple[int]:
@@ -95,6 +144,9 @@ def add_image(e: Event):
     local = f"img/{e.id}.jpg"
     file = OUT+local
     im = URL_IMG.get(e.img)
+    if isinstance(im, FakeImg):
+        logger.debug(f"Se reutiliza la imagen {im.url}")
+        return (im, e)
     if im is None:
         im = MyImage.get(e.img)
     if isfile(file):
@@ -242,7 +294,7 @@ def event_to_ics_description(e: Event, s: Session):
 def event_to_ics(now: datetime, e: Event, s: Session, img: MyImage):
     description = event_to_ics_description(e, s)
     dtstart = to_datetime(s.date)
-    dtend = dtstart + timedelta(minutes=(e.duration or 120))
+    dtend = dtstart + timedelta(minutes=(s.duration or e.duration or 120))
     url_img = e.img
     if img:
         url_img = img.url
@@ -262,7 +314,10 @@ def event_to_ics(now: datetime, e: Event, s: Session, img: MyImage):
 
 
 logger.info("Añadiendo imágenes")
-URL_IMG = MyImage.get_all(*(e.img for e in eventos if e.img))
+URL_IMG: dict[str, FakeImg|MyImage] = {}
+imgs = set(e.img for e in eventos if e.img)
+URL_IMG.update(get_current_img(*imgs))
+URL_IMG.update(MyImage.get_all(*(e.img for e in eventos if e.img and e.img not in URL_IMG)))
 img_eventos = tuple(map(add_image, eventos))
 
 NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
@@ -325,7 +380,10 @@ def set_icons(html: str, **kwargs):
             "caixaforum": "https://sites.fundacionlacaixa.org/favicons/favicon.ico",
             "casademexico": "https://www.casademexico.es/wp-content/uploads/2025/09/cropped-favicon-fcdme-32x32.png",
             "intermediae": "https://www.intermediae.es/themes/custom/intermediae_theme/favicon.ico",
-            "medialab-matadero": "https://www.medialab-matadero.es/themes/custom/medialab_theme/favicon.ico"
+            "medialab-matadero": "https://www.medialab-matadero.es/themes/custom/medialab_theme/favicon.ico",
+            "youtube": "https://www.youtube.com/s/desktop/1afc1cab/img/favicon.ico",
+            "eventbrite": "https://cdn.evbstatic.com/s3-build/perm_001/765d40/django/images/favicons/favicon-16x16.png",
+            "intermediae": "https://www.intermediae.es/themes/custom/intermediae_theme/favicon.ico",
         }.get(dom)
         if ico is None:
             continue
@@ -359,7 +417,7 @@ def get_novedad(x: int):
 
 
 id_novedad = get_novedad(1)
-if len(id_novedad) > 50:
+if len(id_novedad) > 40:
     id_novedad = get_novedad(0)
 
 
@@ -407,5 +465,5 @@ EventosRss(
 ).save("eventos.rss")
 
 FM.dump(OUT+"eventos.json", eventos, compact=True)
-FM.dump(OUT+"publish.json", EC.publish)
+PUBLISHDB.dump()
 logger.info("Fin")

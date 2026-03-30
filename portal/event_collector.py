@@ -16,11 +16,13 @@ from portal.mad_convoca import MadConvoca
 from portal.universidad import Universidades
 from portal.ateneomadrid import AteneoMadrid
 from portal.circulobellasartes import CirculoBellasArtes
+from portal.teatrobarrio import TeatroBarrio
 from portal.alcala import Alcala
 from portal.goethe import Goethe
 from portal.ifrances import InstitutoFrances
 from datetime import datetime, date
 from core.util import round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
+from core.publish import PublishDB
 import logging
 from typing import Tuple
 from core.cache import TupleCache
@@ -36,6 +38,7 @@ from core.place import Place, Places
 from portal.fundacionmarch import FundacionMarch
 from concurrent.futures import ThreadPoolExecutor
 from portal.reinasofia import ReinaSofia
+from core.eventbrite import Api as EventbriteApi
 
 
 logger = logging.getLogger(__name__)
@@ -50,7 +53,8 @@ def get_events(source):
             Universidades,
             MadridEs,
             Goethe,
-            MadridDestino
+            MadridDestino,
+            TeatroBarrio
         )
     ):
         return source.events
@@ -146,9 +150,11 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
     if re_or(
         address,
         r"Milano$",
+        r"Italy$",
         r"Hortaleza$",
         r"avenida de Betanzos",
         r"Aranjuez,? Madrid",
+        r"San Lorenzo (de El|del) Escorial",
         # Vicálvaro
         r"Vic[aá]lvaro",
         flags=re.I
@@ -159,6 +165,8 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
     if name:
         if re_or(
             name,
+            "Fuenlabrada",
+            "Museo L[aá]zaro Galdiano",
             # Aranjuez
             "Campus( de)? Aranjuez",
             # Mostoles
@@ -208,6 +216,8 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
             'CCM Lucero',
             # Laguna
             ("Asociacion Vecinal", "Fraternidad de los Carmenes"),
+            # Ciudad Lineal
+            "Parque (de )?Arriaga",
             flags=re.I
         ):
             logger.debug(f"Lugar descartado por name={name}")
@@ -259,6 +269,9 @@ def isKoEvent(e: Event):
         e.name,
         "Aprende Chotis",
         "tributo a Carmen Sevilla",
+        r"Lectura en español y en ingl[eé]s",
+        r"aniversario de (los )?(EE\.?UU|USA|estados unidos)",
+        flags=re.I
     ):
         return True
     if e.place.zone == Zones.ALCALA_DE_HENARES.value.name:
@@ -266,8 +279,22 @@ def isKoEvent(e: Event):
             return True
         if re_or(e.name, r"Repair\s*Caf[eé]", flags=re.I):
             return True
-    if e.category == Category.CONFERENCE and e.place == Places.ATENEO_MADRID.value and re_or(e.name, "farmacia", flags=re.I):
-        return True
+    if e.category == Category.CONFERENCE and e.place == Places.ATENEO_MADRID.value:
+        if re_or(
+            e.name,
+            r"farmacia",
+            r"perspectiva iberoamericana",
+            r"Contar Madrid",
+            r"psico-?an[aá]lisis",
+            r"Camino de Santiago",
+            r"Encuentro de Coros",
+            r"arte contempor[aá]neo",
+            r"homenaje",
+            r"aniversario",
+            "don quijote",
+            flags=re.I
+        ):
+            return True
     return False
 
 
@@ -300,7 +327,7 @@ class EventCollector:
         self,
         max_price: dict[Category, float],
         max_sessions: int,
-        publish: dict[str, str],
+        publish: PublishDB,
         categories: Tuple[Category, ...],
     ):
         self.__max_price = max_price
@@ -309,6 +336,7 @@ class EventCollector:
         self.__categories = categories
         self.__publish = publish
         self.__madrid_destino = MadridDestino()
+        self.__eventbrite = EventbriteApi()
         self.__avoid_categories = tuple(set({
             Category.CHILDISH,
             Category.SENIORS,
@@ -391,6 +419,9 @@ class EventCollector:
                 MadConvoca(
                     isOkDate=isOkDate,
                 ),
+                TeatroBarrio(
+                    max_price=self.__max_max_price
+                ),
                 CasaAmerica,
                 Telefonica,
                 Dore,
@@ -403,6 +434,7 @@ class EventCollector:
         logger.info(f"{len(eventos)} recuperados")
         eventos = tuple(filter(self.__filter, eventos))
         eventos = self.__madrid_destino.fix_sessions(eventos)
+        eventos = self.__eventbrite.fix_events(eventos)
         eventos = tuple(filter(self.__filter, eventos))
         logger.info(f"{len(eventos)} pasan 1º filtro")
 
@@ -410,11 +442,9 @@ class EventCollector:
         done: set[Event] = set()
         for e in eventos:
             e = e.fix_type()
-            e = e.fix(publish=self.__publish.get(e.id, e.publish))
             if e not in done:
                 done.add(e)
                 if self.__filter(e):
-                    self.__publish[e.id] = e.publish
                     arr.append(e)
         logger.info(f"{len(arr)} pasan 2º filtrados")
         return tuple(arr)
@@ -472,9 +502,7 @@ class EventCollector:
 
         events: list[Event | Cinema] = []
         for e in filter(self.__filter, aux):
-            events.append(e.merge(publish=self.__publish.get(e.id, e.publish)))
-            if e.id not in self.__publish and e.publish:
-                self.__publish[e.id] = e.publish
+            events.append(e.merge(publish=self.__publish.get(e)))
 
         events = sorted(
             events,
@@ -673,6 +701,3 @@ class EventCollector:
             sessions.append(s)
         return e.merge(sessions=tuple(sessions))
 
-    @property
-    def publish(self):
-        return self.__publish

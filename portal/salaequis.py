@@ -9,6 +9,7 @@ from core.place import Places
 import re
 from core.util import plain_text
 from portal.kinetike import KineTike
+from core.md import MD
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,7 @@ class SalaEquis(Web):
 
     def __find_duration(self):
         duration = set()
-        for txt in map(get_text, self.soup.select("div.shortDescription p")):
+        for txt in map(MD.convert, self.soup.select("div.shortDescription p")):
             duration = duration.union(map(int, re.findall(r"(\d+)\s*min\b", txt)))
         if len(duration) == 0:
             logger.critical(str(FieldNotFound("div.shortDescription p[\\d+ min]", self.url)))

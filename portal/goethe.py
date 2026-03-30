@@ -3,7 +3,7 @@ from core.cache import Cache, TupleCache
 from urllib.parse import urlencode
 from core.util import parse_obj, find_euros, re_or
 import re
-from core.event import Event, Category, CategoryUnknown, Session, Place
+from core.event import Event, Category, CategoryUnknown, Session, Place, find_book_category
 from core.place import Places
 from functools import cached_property
 import logging
@@ -13,6 +13,7 @@ from aiohttp import ClientResponse
 from core.web import buildSoup, get_text, Tag
 from typing import NamedTuple, Optional
 from unidecode import unidecode as ori_unidecode
+from core.md import MD
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
@@ -45,11 +46,7 @@ async def rq_to_info(r: ClientResponse):
     if img:
         img = img.attrs['src']
     duration = _find_duration(soup)
-    desc = soup.select_one("div.event-calendar-infotext-container")
-    if desc:
-        for n in desc.select("p, br"):
-            n.append("\n")
-        desc = get_text(desc)
+    desc = MD.convert(soup.select_one("div.event-calendar-infotext-container"))
     return InfoSoup(
         status_code=r.status,
         img=img,
@@ -230,41 +227,7 @@ class Goethe:
             Category.LITERATURE,
             Category.READING_CLUB
         ):
-            if re_or(
-                f"{e.name or ''} {i.description or ''}".strip(),
-                r"novela gr[aá]fica",
-                r"comic",
-                r"tebeo",
-                flags=re.I
-            ):
-                return e.category
-            if re_or(
-                i.description,
-                r"En estos versos el autor",
-                r"Presentaci[oó]n del poemario",
-                r"recital de poes[íi]a",
-                r"presenta su poemario",
-                r"presentan? este poemario de",
-                r"poemas in[eé]ditos",
-                flags=re.I
-            ):
-                return Category.POETRY
-            if re_or(
-                i.description,
-                "una novela de aventuras",
-                "la novela publicada",
-                "presenta su primera novela",
-                "Presentaci[oó]n de la novela editada",
-                "una de las novelas m[aá]s conocidas",
-                flags=re.I
-            ):
-                return Category.NARRATIVE
-            if re_or(
-                e.name,
-                "Presentaci[óo]n de la novela",
-                flags=re.I
-            ):
-                return Category.NARRATIVE
+            return find_book_category(e.name, i.description, e.category)
         #if e.category == Category.UNKNOWN:
         #    logger.critical(str(CategoryUnknown(e.url, None)))
         return e.category

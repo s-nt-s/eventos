@@ -10,6 +10,7 @@ from bs4 import Tag
 from datetime import datetime
 from core.util import plain_text, re_or, re_and, find_euros
 import json
+from core.md import MD
 
 
 logger = logging.getLogger(__name__)
@@ -152,7 +153,7 @@ class CasaAmerica(Web):
         if self.__is_block():
             return None
         js = self.__find_json()
-        content = "\n".join(filter(lambda x: x is not None, map(get_text, self.soup.select("div.contenido p")))).lower()
+        content = "\n".join(filter(lambda x: x is not None, map(MD.convert, self.soup.select("div.contenido p"))))
         category = self.__find_category(content)
         return Event(
             id="am"+js['path']['currentPath'].split("/")[-1],
@@ -218,15 +219,15 @@ class CasaAmerica(Web):
                     durations.add(d)
         if len(durations) > 0:
             return sum(durations)
-        if re.search(r"1 hora y 20 minutos", content):
+        if re.search(r"1 hora y 20 minutos", content, re.I):
             return 80
-        if re.search(r"lunes a viernes de 11.00 a 19.30. sábados de 11.00 a 15.00", content):
+        if re.search(r"lunes a viernes de 11.00 a 19.30. sábados de 11.00 a 15.00", content, re.I):
             return (60*8)+30
-        if re.search(r"19.00 a 21.00", content):
+        if re.search(r"19.00 a 21.00", content, re.I):
             return 2*60
-        if re.search(r"9.30 a 18.30", content):
+        if re.search(r"9.30 a 18.30", content, re.I):
             return 9*60
-        if re.search(r"de 11:00 a 19:00", content):
+        if re.search(r"de 11:00 a 19:00", content, re.I):
             return 8*60
         if category in (Category.CONFERENCE, ):
             return 60
@@ -234,7 +235,6 @@ class CasaAmerica(Web):
         return 0
 
     def __find_category(self, content: str):
-        plain_content = plain_text(content)
         cat = plain_text(self.select_one("h1.tematica span.field")).lower()
         tit = plain_text(self.select_one("h1.titulo span.field")).lower()
         aut = plain_text(self.soup.select_one("h2.autor"))
@@ -250,7 +250,7 @@ class CasaAmerica(Web):
             flags=re.I
         ):
             return Category.POETRY
-        if re_or(plain_content, "presentacion (del )?libro"):
+        if re_or(content, "presentaci[óo]n (del )?libro", flags=re.I):
             return Category.LITERATURE
         if cat == "cine":
             return Category.CINEMA
@@ -266,18 +266,18 @@ class CasaAmerica(Web):
             return Category.READING_CLUB
         if cat == "literatura" and content.count("Diálogo") > 2:
             return Category.CONFERENCE
-        if cat == "literatura" and re_or(plain_content, "lectura performatica", flags=re.I):
+        if cat == "literatura" and re_or(content, "lectura perform[aá]tica", flags=re.I):
             return Category.THEATER
-        if cat == "literatura" and re_or(plain_content, "presentaci[óo]n del libro", flags=re.I):
+        if cat == "literatura" and re_or(content, "presentaci[óo]n del libro", flags=re.I):
             return Category.LITERATURE
-        w1 = content.split()[0]
+        w1 = ((plain_text(content) or "").strip().lower().split()+[""])[0]
         if w1 == "concierto":
             return Category.MUSIC
         if re.search(r"\bLectura de poemas\b", content, re.I):
             return Category.POETRY
-        if re.search(r"proyección del documental", content):
+        if re.search(r"proyecci[oó]n del documental", content, re.I):
             return Category.CINEMA
-        if re.search(r"\b(conferencia|mesa redonda|debate|esta charla propone|seminario)\b", content) or w1 in ("presentación", "diálogo", "jornada"):
+        if re.search(r"\b(conferencia|mesa redonda|debate|esta charla propone|seminario)\b", content, re.I) or w1 in ("presentación", "diálogo", "jornada"):
             return Category.CONFERENCE
         if re.search("Desfile de moda", content, flags=re.I):
             return Category.EXPO
@@ -295,7 +295,7 @@ class CasaAmerica(Web):
             return Category.CONFERENCE
         if w1 == "conversatorio":
             return Category.CONFERENCE
-        if content and content.lower().count("periodista") > 3:
+        if content.lower().count("periodista") > 3:
             return Category.CONFERENCE
         if cat == "politica":
             return Category.CONFERENCE

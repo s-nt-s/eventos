@@ -29,6 +29,7 @@ def _clean_name(s: str):
     s = re_sp.sub(" ", s).strip()
     s = re.sub(r"^Preestreno\s*:\s*", "", s, flags=re.I)
     s = re.sub(r"\s*\-\s*\d+\s*h(\s*\d+m?)?$", "", s, flags=re.I)
+    s = re.sub(r"^CINE\s*//\s*Preestreno\s*:?\s*", "", s, flags=re.I)
     if len(s) == 0:
         return None
     return s

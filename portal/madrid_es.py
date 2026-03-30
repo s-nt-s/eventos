@@ -2,8 +2,8 @@ from core.web import WEB, buildSoup
 from bs4 import Tag
 import re
 from typing import Set, Tuple, Optional, NamedTuple
-from core.event import Event, Cinema, Session, Place, Category, CategoryUnknown, FIX_EVENT
-from core.util import plain_text, re_or, re_and, get_domain, find_euros, KO_MORE, KO_IMG, find_duplicates, get_main_value
+from core.event import Event, Cinema, Session, Place, Category, CategoryUnknown, FIX_EVENT, find_book_category
+from core.util import plain_text, re_or, re_and, get_domain, find_euros, KO_MORE, KO_IMG, find_duplicates
 from arrow import Arrow
 import logging
 from core.cache import TupleCache
@@ -18,6 +18,7 @@ from core.madrid_es.form import get_vgnextoid
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.util.strng import clean_name
+from core.md import MD
 
 
 logger = logging.getLogger(__name__)
@@ -46,10 +47,8 @@ async def rq_to_text(r: ClientResponse):
     if div is None:
         logger.warning(f"{slc} not found in {r.url}")
         return None
-    for n in div.select("br, p"):
-        n.append("\n")
-    txt = get_text(div)
-    if len(txt) == 0:
+    txt = MD.convert(div)
+    if txt is None:
         logger.warning(f"{slc} empty in {r.url}")
         return None
     return txt
@@ -77,11 +76,6 @@ def str_to_datetime(s: str):
     dt = datetime.strptime(s, "%Y-%m-%d %H:%M")
     dt = dt.replace(tzinfo=ZoneInfo(TZ_ZONE))
     return dt
-
-
-def safe_get_text(n: Tag):
-    if isinstance(n, Tag):
-        return get_text(n)
 
 
 def get_text(n: Tag):
@@ -260,7 +254,7 @@ class MadridEs:
             if page.free is True:
                 e = e._replace(price=0)
             if e.description is None:
-                e = e._replace(description=get_text(page.description))
+                e = e._replace(description=page.description)
             if e.price is None:
                 e = e._replace(price=find_euros(*page.price, e.description))
             ics_desc: set[str] = set()
@@ -280,20 +274,27 @@ class MadridEs:
             )
             events[vgnextoid] = e
 
-        for vgnextoid in ids:
-            e = events[vgnextoid]
-            if e.price is not None or not e.more:
-                continue
-            more_price: set[int | float] = set()
-            for more in e.more:
-                vid = get_vgnextoid(more)
-                if vid is not None and vid in events:
-                    more_e = events[vid]
-                    e = e._replace(img=tp_join(e.img, more_e.img))
-                    if more_e.price is not None:
-                        more_price.add(more_e.price)
-            if more_price:
-                e = e._replace(price=max(more_price))
+        def _iter_more():
+            for vgnextoid in ids:
+                mores: set[Event] = set()
+                e = events[vgnextoid]
+                for vid in map(get_vgnextoid, e.more):
+                    if vid is not None and vid in events:
+                        mores.add(events[vid])
+                if len(mores):
+                    yield vgnextoid, e, mores
+
+        for vgnextoid, e, mores in _iter_more():
+            price: float = None
+            imgs: tuple[str, ...] = tuple()
+            for more_e in mores:
+                imgs = imgs + more_e.img
+                if more_e.price is not None:
+                    price = max(price or -1, more_e.price)
+            e = e._replace(
+                price=price if e.price is None else e.price,
+                img=tp_join(imgs)
+            )
             events[vgnextoid] = e
 
         places_with_price: set[ApiPlace] = set()
@@ -444,6 +445,16 @@ class MadridEs:
         ).fix_type()
         if isinstance(e, Cinema):
             e = e.merge(year=self.__find_year(i))
+        if len(e.sessions) == 1 and e.sessions[0].url is None:
+            urls = set(m for m in i.event.more if m.startswith("https://eventbrite.es/e/"))
+            if len(urls) == 1:
+                _url_ = urls.pop()
+                e = e.merge(
+                    more=e.more if e.more != _url_ else None,
+                    sessions=(
+                        e.sessions[0]._replace(url=_url_),
+                    )
+                )
         return e
 
     def __find_cycle(self, cat: Category, place: Place, i: ApiInfo):
@@ -525,46 +536,6 @@ class MadridEs:
         duration = self.__get_duration(durations, i)
         return duration, tuple(sorted(sessions))
 
-    def __find_book_category(self, i: ApiEvent, default: Category):
-        if re_or(
-            f"{i.title or ''} {i.description or ''}".strip(),
-            r"novela gr[aá]fica",
-            r"comic",
-            r"tebeo",
-            flags=re.I
-        ):
-            return default
-        if re_or(
-            i.description,
-            r"En estos versos el autor",
-            r"Presentaci[oó]n del poemario",
-            r"recital de poes[íi]a",
-            r"presenta su poemario",
-            r"presentan? este poemario de",
-            r"poemas in[eé]ditos",
-            flags=re.I
-        ):
-            return Category.POETRY
-        if re_or(
-            i.description,
-            "una novela de aventuras",
-            "la novela publicada",
-            "novela histórica",
-            "presenta su primera novela",
-            "Presentaci[oó]n de la novela editada",
-            r"El retrato de Dorian Gray",
-            ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
-            flags=re.I
-        ):
-            return Category.NARRATIVE
-        if re_or(
-            i.title,
-            "Presentaci[óo]n de la novela",
-            flags=re.I
-        ):
-            return Category.NARRATIVE
-        return default
-
     def __find_easy_category(self, i: ApiEvent):
         cat = FIX_EVENT.get(MadridEs.get_id(i.url), {}).get('category')
         if isinstance(cat, str):
@@ -626,6 +597,7 @@ class MadridEs:
             i.title,
             r"Grupo de crianza",
             r"La Liga de la Leche",
+            r"Aula Digital.*Ada Lovelace",
             flags=re.I
         ):
             return Category.MATERNITY
@@ -672,6 +644,7 @@ class MadridEs:
             i.title,
             "Voluntarios? por Madrid",
             r"Esquej[oó]dromo",
+            r"Intercambio de libros",
             flags=re.I
         ):
             return Category.NO_EVENT
@@ -684,6 +657,7 @@ class MadridEs:
             r"Presentaci[óo]n del poemario",
             r"^T[eé] y poes[ií]a",
             r"encuentro de poetas",
+            r"UNCAREMA",
             flags=re.I
         ):
             return Category.POETRY
@@ -704,6 +678,7 @@ class MadridEs:
             i.title,
             r"Primeros pasos con Gmail",
             r"Quiero usar mi m[oó]vil",
+            r"Tertulia de toros",
             flags=re.I
         ):
             return Category.SPAM
@@ -812,6 +787,8 @@ class MadridEs:
             r"Ruta guiada",
             r"^Visita taller encuadernaci[oó]n",
             r"Jardines del Campo del Moro",
+            r"Parque Enrique Tierno Galv[aá]n",
+            r"^RUTA\s*/",
             flags=re.I
         ):
             return Category.VISIT
@@ -822,7 +799,7 @@ class MadridEs:
             r"Las tertulias de Eirene Editorial",
             flags=re.I
         ):
-            return self.__find_book_category(i, Category.LITERATURE)
+            return find_book_category(i.title, i.description, Category.LITERATURE)
 
         if re_or(
             i.description,
@@ -830,12 +807,13 @@ class MadridEs:
             r"Ciclo de conferencias",
             r"En esta charla vamos",
             r"^Conferencia del?",
-            "La charla tiene como objetivo",
-            "La conferencia explora(r[áa])?",
-            "^En esta charla",
-            "acoge la conferencia",
-            "Te invitamos a una charla",
-            "Monogr[aá]fico de vermicompostaje",
+            r"La charla tiene como objetivo",
+            r"La conferencia explora(r[áa])?",
+            r"^En esta charla",
+            r"acoge la conferencia",
+            r"Te invitamos a una charla",
+            r"Monogr[aá]fico de vermicompostaje",
+            r"proponemos la charla titulada",
             flags=re.I
         ):
             return Category.CONFERENCE
@@ -844,7 +822,7 @@ class MadridEs:
             r"Presentaci[óo]n del? libro",
             flags=re.I
         ):
-            return self.__find_book_category(i, Category.LITERATURE)
+            return find_book_category(i.title, i.description, Category.LITERATURE)
         if re_or(
             i.description,
             r"Este proyecto musical",
@@ -908,7 +886,7 @@ class MadridEs:
         if i.event.has_category(
             r'club(es)? de lectura',
         ):
-            return self.__find_book_category(i.event, Category.READING_CLUB)
+            return find_book_category(i.event.title, i.event.description, Category.READING_CLUB)
         if i.event.has_category(
             r'cursos?',
             r'taller(es)?',
@@ -950,7 +928,7 @@ class MadridEs:
             r'presentaci[óo]n(es)?',
             r'actos? literarios?',
         ):
-            return self.__find_book_category(i.event, Category.LITERATURE)
+            return find_book_category(i.event.title, i.event.description, Category.LITERATURE)
 
         if i.event.has_category(
             r'congresos?',
@@ -1124,7 +1102,7 @@ class MadridEs:
             "club(es)? de lectura",
             flags=re.I
         ):
-            return self.__find_book_category(i.event, Category.READING_CLUB)
+            return find_book_category(i.event.title, i.event.description, Category.READING_CLUB)
         if re_or(
             i.event.title,
             ("elaboracion", "artesanal"),
@@ -1333,7 +1311,7 @@ class MadridEs:
         if (i.event.description or '').count("poesía") > 2 or re_or(
             i.event.description,
             "presentación del poemario",
-            r"recital de poes[íi]a",
+            r"(recital|lectura) de (poes[íi]a|poemas)",
             "presenta su poemario",
             r"presentan? este poemario de",
             r"poemas in[eé]ditos",
@@ -1358,7 +1336,7 @@ class MadridEs:
             (r"autore(es)?", r"autoras?"),
             flags=re.I
         ):
-            return self.__find_book_category(i.event, Category.LITERATURE)
+            return find_book_category(i.event.title, i.event.description, Category.LITERATURE)
         if re_and(
             i.event.description,
             "ilusionista",

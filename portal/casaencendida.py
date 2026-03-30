@@ -8,6 +8,7 @@ from core.place import Places
 import re
 from datetime import datetime
 from core.util import re_or, KO_IMG
+from core.md import MD
 
 logger = logging.getLogger(__name__)
 
@@ -233,10 +234,10 @@ class CasaEncendida:
             return Category.MUSIC
         if "concierto" in name:
             return Category.MUSIC
-        desc = soup.select_one_txt("div.item-detail__info__content")
-        if re_or(desc, "canciones"):
+        desc = MD.convert(soup.select_one_txt("div.item-detail__info__content"))
+        if re_or(desc, "canciones", flags=re.I):
             return Category.MUSIC
-        if re_or(desc, "workshop"):
+        if re_or(desc, "workshop", flags=re.I):
             return Category.WORKSHOP
         if re_or(name, r"films?"):
             return Category.CINEMA

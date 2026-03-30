@@ -14,19 +14,9 @@ from core.fetcher import Getter
 from aiohttp import ClientResponse
 from bs4 import Tag
 from datetime import datetime
+from core.md import MD
 
 logger = logging.getLogger(__name__)
-
-
-@cache
-def html_to_text(soup: str | Tag):
-    if soup is None:
-        return None
-    if isinstance(soup, str):
-        soup = buildSoup(None, soup)
-    for x in soup.select("br, p"):
-        x.append("\n")
-    return get_text(soup)
 
 
 class InfoSoup(NamedTuple):
@@ -77,9 +67,8 @@ async def rq_to_info(r: ClientResponse):
     if f:
         info['disabled'] = True
     txt = []
-    for n in div.select("div[class*='ButtonWithHelpText']"):
-        s = html_to_text(n)
-        if s:
+    for s in map(MD.convert, div.select("div[class*='ButtonWithHelpText']")):
+        if s and s not in txt:
             txt.append(s)
     if txt:
         info['txt'] = "\n\n".join(txt)
@@ -247,7 +236,7 @@ class ReinaSofia:
             e = Event(
                 id=f"rs{_id_}",
                 url=url,
-                name=html_to_text(i['title']),
+                name=get_text(i['title']),
                 img=i['mainMedia']['image']['originalSrc'],
                 price=self.__find_price(i),
                 category=self.__find_category(i),
@@ -275,7 +264,7 @@ class ReinaSofia:
             flags=re.I
         ):
             return "Guernica africano"
-        return html_to_text(i.get('subtitle'))
+        return get_text(i.get('subtitle'))
 
     def __find_price(self, i: dict):
         _id_ = i['id']
@@ -344,8 +333,8 @@ class ReinaSofia:
             ):
                 return Category.NON_GENERAL_PUBLIC
 
-        title = html_to_text(i['title'])
-        subtitle = html_to_text(i.get('subtitle'))
+        title = get_text(i['title'])
+        subtitle = get_text(i.get('subtitle'))
         if re_or(
             subtitle,
             "para grupos de Educaci[oó]n Infantil",

@@ -1,7 +1,5 @@
 from core.apiesmadrid import EsMadridEvent, ApiEsMadrid
 from core.event import Category, Place
-from core.zone import Circles
-from functools import cache
 import logging
 from typing import Callable
 

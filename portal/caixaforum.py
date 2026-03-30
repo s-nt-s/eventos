@@ -9,6 +9,7 @@ from bs4 import Tag
 from datetime import datetime
 from core.util import plain_text, re_or, find_duplicates, get_main_value, round_to_even
 from functools import cached_property
+from core.md import MD
 
 logger = logging.getLogger(__name__)
 NOW = datetime.now()
@@ -325,11 +326,10 @@ class CaixaForum:
             return Category.MAGIC
         if re_or(tit, "muestra de moda"):
             return Category.EXPO
-        txt_des = div.select_one_txt("div.primary-text p", if_none="silent")
-        des = plain_text(txt_des.lower())
-        if re_or(des, "encuentro coreografico", "danza tradicional"):
+        txt_des = MD.convert(div.select_one_txt("div.primary-text p", if_none="silent"))
+        if re_or(txt_des, "encuentro coreografico", "danza tradicional", flags=re.I):
             return Category.DANCE
-        if re_or(des, "cine", "cineforum", "cineclub"):
+        if re_or(txt_des, "cine", "cine-?f[óo]rum", "cine-?club", flags=re.I):
             return Category.CINEMA
         href = div.select_one_attr("div.card-viewmore a", "href", if_none="silent")
         plain_href = plain_text(href).lower()

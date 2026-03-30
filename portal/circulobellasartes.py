@@ -1,6 +1,6 @@
 from core.web import Web, get_text, buildSoup, Tag
 from functools import cached_property
-from core.event import Event, Cinema, Category, Session, CategoryUnknown
+from core.event import Event, Cinema, Category, Session, CategoryUnknown, find_book_category
 from core.place import Places
 from core.util import plain_text, to_uuid, find_euros, re_or
 import re
@@ -8,6 +8,7 @@ from datetime import date, datetime
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.cache import TupleCache
+from core.md import MD
 import logging
 
 logger = logging.getLogger(__name__)
@@ -84,11 +85,17 @@ async def soup_to_cinema(url: str, soup: Tag):
             h3 = aux
     inf = table_to_dict(soup.select_one("table.cba_tabla_ficha"))
     img = soup.select_one('div.fl-col-small div.fl-photo[role="figure"] img.entered[data-src]')
+    year = inf.get("año")
+    if year is not None and year.isdigit():
+        year = int(year)
+    else:
+        year = None
     template = Cinema(
         id="cba"+to_uuid(url),
         url=url,
         name=get_text(h1),
         director=(inf.get("direccion") or get_text(h3),),
+        year=year,
         place=Places.CIRCULO_BELLAS_ARTES.value,
         category=Category.CINEMA,
         sessions=tuple(),
@@ -167,24 +174,38 @@ async def soup_to_event(url: str, soup: Tag):
 
 def _find_category(url: str, title: str, soup: Tag):
     sub_title = get_text(soup.select_one("#fl-main-content div[data-post-id] h3"))
+    full_title = f"{title or ''} {sub_title or ''}".strip()
+    desc = MD.convert(soup.select_one(
+        'div:has(+ footer) div.fl-col:not(.fl-col-small) div.fl-module-rich-text[data-node]'
+    ))
+    isPresentacion = re_or(full_title, "presentaci[oó]n")
     if re_or(
-        sub_title,
+        full_title,
         r"Presentaci[óo]n del libro",
         r"Presentaci[oó]n de la revista",
         flags=re.I
     ):
-        return Category.LITERATURE
+        return find_book_category(full_title, desc, Category.LITERATURE)
     if re_or(
-        title,
-        r"Conferencias de",
+        full_title,
+        r"Mesa Redonda",
         flags=re.I
     ):
         return Category.CONFERENCE
-    n_desc = soup.select_one('div:has(+ footer) div.fl-col:not(.fl-col-small) div.fl-module-rich-text[data-node]')
-    if n_desc:
-        for n in n_desc.select("br, p"):
-            n.append("\n")
-    desc = get_text(n_desc)
+    if re_or(
+        full_title,
+        r"Conferencias?",
+        flags=re.I
+    ):
+        return Category.CONFERENCE
+    if isPresentacion and re_or(
+        desc,
+        "ensayo",
+        "novela",
+        "libro",
+        flags=re.I
+    ):
+        return find_book_category(full_title, desc, Category.LITERATURE)
     if re_or(
         desc,
         "Beethoven crepuscular",
@@ -200,24 +221,31 @@ def _find_category(url: str, title: str, soup: Tag):
         return Category.CINEMA
     if re_or(
         desc,
-        r"La presentaci[oó]n del libro",
-        r"la pr[oó]xima publicaci[oó]n del libro",
+        r"La (pr[oó]xima )?(presentaci[oó]n|publicaci[óo]n) del libro",
         r"El libro re[uú]ne textos",
         flags=re.I
     ):
-        return Category.LITERATURE
+        return find_book_category(full_title, desc, Category.LITERATURE)
     if re_or(
         desc,
         r"panel de conversaci[óo]n",
+        r"En esta conferencia",
         flags=re.I
     ):
         return Category.CONFERENCE
     if re_or(
-        sub_title,
-        r"d[ií]alogos? sur",
+        desc,
+        r"versi[oó]n mon[oó]logo que",
+        r"conferencia dramatizada",
         flags=re.I
     ):
-        return Category.LITERATURE
+        return Category.THEATER
+    if re_or(
+        desc,
+        r"lectura( nocturna)? de poemas",
+        flags=re.I
+    ):
+        return Category.POETRY
     logger.critical(str(CategoryUnknown(url, "")))
     return Category.UNKNOWN
 

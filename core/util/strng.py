@@ -1,6 +1,10 @@
 import re
 from functools import cache
 
+_TRIM = r"[\s✨🔥🌊🎞️📢]+"
+RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
+RE_DEDUP = re.compile(r"(!+|¡+|¿+|\?+)")
+
 _QUOTES = (
     '""',
     "''",
@@ -40,6 +44,7 @@ _SPECIAL_WORDS = (
     "Carmen Rojas",
     "Shakespeare",
     "Finzi Pasca",
+    "O'Donnell",
 )
 
 _RG_SPECIAL_WORDS = re.compile(
@@ -50,6 +55,9 @@ _RE_SPECIAL_WORDS = {x.lower(): x for x in _SPECIAL_WORDS}
 
 
 def capitalize(name: str):
+    if name is None or len(name) == 0:
+        return name
+
     if name == name.upper():
         name = name.capitalize()
 
@@ -57,17 +65,19 @@ def capitalize(name: str):
         lambda m: _RE_SPECIAL_WORDS[m.group(0).lower()],
         name
     )
-
-    w1 = name[0]
-    if w1.isalpha():
-        name = w1.upper()+name[1:]
+    i = 0
+    while i < len(name) and name[i] in ("¡¿'"):
+        i = i + 1
+    if i < len(name) and name[i].isalpha():
+        name = name[:i] + name[i].upper() + name[i+1:]
 
     return name
 
 
 def normalize_quote(s: str):
-    if s is None:
-        return None
+    if s is None or len(s) == 0:
+        return s
+
     bak = ''
     s = s.strip()
     while len(s) and bak != s:
@@ -92,15 +102,19 @@ def normalize_quote(s: str):
 
 @cache
 def _rm_prefix():
-    SP = r":\-\.\|"
+    SP = r":\-\.\|;"
     SEP = r"["+SP+r"]"
+    TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Cinef[oó]rum rebelde",
+        r"Documental",
+        r"Mesa redonda",
         r"Concierto de piano",
-        r"Tardes romanas\b[^"+SP+r"]*?",
+        r"Tardes romanas"+TAIL_NO_SEP,
+        r"Club de lectura"+TAIL_NO_SEP,
         r"Anarkademia",
         r"Cine\s*Club\s*Goethe",
-        r"📢 VALLECAS",
-        r"(?:Obra de |Representaci[óo]n de )?[tT]eatro(?: para adultos| Comedia Sat[ií]rica)?",
+        r"(?:Ob?ra de |Representaci[óo]n de )?[tT]eatro(?: para adultos| Comedia Sat[ií]rica)?",
         r"Colecci[óo]n\.? Arte contempor[aá]neo",
         r"Celebra\d+",
         r"Cap[ií]tulo XXX",
@@ -120,8 +134,7 @@ def _rm_prefix():
         r"Presentación del libro",
         r"Cinef[oó]rum(?:(?: de)? (?:Isabel S[aá]nchez|Esqueria))?",
         r"Madrid, plató de cine",
-        r"Conferencia",
-        r"Conferencia y audiovisual",
+        r"Conferencia(?: y audiovisual)?",
         r"Proyecci[oó]n(?: del documental| de la pel[ií]cula)?",
         r"Exposici[oó]n",
         r"Danza",
@@ -168,6 +181,8 @@ def _rm_sufix():
         r"Lectura dramatizada",
         r"Biblioteca Ana Mar[ií]a Matute",
         r"III Edici[oó]n",
+        r"\d+ de abril",
+        r"\d+ª Muestra de Cine Lésbico"
     ])
     SUFIX_2 = "|".join([
         r"en el Espacio de Igualdad Lourdes Hernández",
@@ -204,6 +219,8 @@ def _sub_1():
         r"(Piano City) (?:Madrid *'?\d+|Madrid|'?\d+)"
         r"(Asociación de Jubilados) (?:del )?Ayuntamiento(?: de Madrid)?",
         r"^[a-zA-ZáéÁÉ]+ con Historia[\.\s]+([vV]isitas guiadas tem[aá]ticas a la colecci[oó]n)[\.\s]+[a-zA-Z]+",
+        r"(¿|¡|«|“|‘|`|\(|\[)\s+",
+        r"\s+(\?|\!|»|”|’|´|\)|\]|\.|,|;|:)",
     ])
     re_1 = re.compile(R, flags=re.I)
     return re_1
@@ -220,14 +237,15 @@ def clean_name(name: str):
 
     while bak[-1] != name:
         bak.append(str(name))
+        name = RE_DEDUP.sub(lambda m: m.group(0)[0], name)
+        name = RE_TRIM.sub("", name)
         name = normalize_quote(name)
         name = re.sub(r"\.\.\.\s*", "… ", name).strip()
         name = _rm_prefix().sub("", name)
         name = _rm_sufix().sub("", name)
         name = _rm_quote().sub(r"\1", name)
         name = _sub_1().sub(r"\1", name)
-        if name:
-            name = capitalize(name)
+        name = capitalize(name)
         if len(name) < 2:
             name = bak[-1]
     w1 = name[0]

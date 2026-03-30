@@ -68,18 +68,18 @@
       <div class="img" {%if img.background%} style="--back: rgb{{img.background}}" {%endif%}>
         {% if img %}
         <div><img src="{{img.url}}" alt="{{e.titulo}}" class="cartel {{img.orientation}}" loading="lazy" /></div>
-        <a class="zoom" href="{{img.origin.url}}" title="Ver cartel original">🔍</a>
+        <a class="zoom" href="{{img.source | escape}}" title="Ver cartel original">🔍</a>
         {%else %}
         <div class="noimg"></div>
         {% endif %}
-        <span class="categoria">{% if e.more %}<a class="more" href="{{e.more}}">🔗</a> {% endif %}{{(e.category|string).capitalize()}}</span>
-        <a class="lugar" href="{{e.place.url}}"{%if e.place.address%} title="{%if e.place.zone%}[{{e.place.zone}}] {%endif%}{{e.place.address}}"{%endif%}>{{e.place.name}}</a>
+        <span class="categoria">{% if e.more %}<a class="more" href="{{e.more | escape}}">🔗</a> {% endif %}{{(e.category|string).capitalize()}}</span>
+        <a class="lugar" href="{{e.place.url | escape}}"{%if e.place.address%} title="{%if e.place.zone%}[{{e.place.zone}}] {%endif%}{{e.place.address}}"{%endif%}>{{e.place.name}}</a>
       </div>
       <div class="info">
         <p class="titulo">
           <span class="precio" title="{{e.price | twoDec}}€">{{e.price | round | int}}€</span>
           {% if e.url %}
-          <a href="{{e.url}}">{{e.name}}</a>{% for u in e.also_in %} <small>[<a href="{{u}}">+{{loop.index}}</a>]</small>{% endfor %}
+          <a href="{{e.url | escape}}">{{e.name}}</a>{% for u in e.also_in %} <small>[<a href="{{u | escape}}">+{{loop.index}}</a>]</small>{% endfor %}
           {% else %}
           {{e.name}}
           {% endif %}
@@ -91,7 +91,7 @@
         <li data-start="{{sesiones[0].date}}" data-end="{{sesiones[-1].date}}">
           <pre>{{dia.strip()}}</pre>:{% for s in sesiones %}
           {% if s.url %}
-          <a href="{{s.url}}" {%if s.title %}title="{{s.title}}"{%endif%}>{{s.hour}}</a>
+          <a href="{{s.url | escape}}" {%if s.title %}title="{{s.title}}"{%endif%}>{{s.hour}}</a>
           {% else %}
           {{s.hour}}
           {% endif %}

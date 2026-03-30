@@ -8,6 +8,7 @@ from core.place import Places
 import re
 from datetime import datetime
 from core.util import plain_text, re_or
+from core.md import MD
 
 
 logger = logging.getLogger(__name__)
@@ -119,8 +120,8 @@ class AcademiaCine(Web):
             return Category.CONFERENCE
         if re_or(tit, "jornada sobre"):
             return Category.CONFERENCE
-        desc = plain_text(get_text(self.select_one("div.session-desc")))
-        if re_or(desc, "sesion informativa"):
+        desc = MD.convert(self.select_one("div.session-desc"))
+        if re_or(desc, r"sesi[óo]n informativa"):
             return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(self.url, txt)))
         return Category.UNKNOWN

@@ -1,4 +1,4 @@
-from core.web import Driver, get_text, buildSoup, get_query
+from core.web import Driver, get_text, buildSoup
 from functools import cached_property
 from core.event import Cinema, Event, Category, Session
 from core.place import Places
@@ -9,7 +9,7 @@ from core.cache import TupleCache
 import json
 from typing import NamedTuple
 from collections import defaultdict
-from core.util import re_or, MONTH, re_and
+from core.util import re_or, MONTH, re_and, get_query
 from datetime import date
 import logging
 
@@ -226,7 +226,7 @@ class SalaBerlanga:
         if ev.cycle is None and ev.img:
             cycle = {
                 "https://salaberlanga.com/wp-content/uploads/2026/03/Redes_Feed_NT-Bergia2-240x300.jpg": "Nuevos territorios",
-                "https://salaberlanga.com/wp-content/uploads/2026/03/0.-Cartel-Ciclo-C54-211x300.png": "Cinco cuartos"
+                "https://salaberlanga.com/wp-content/uploads/2026/03/0.-Cartel-Ciclo-C54-211x300.png": "Cinco cuartos",
             }.get(ev.img)
             if cycle is None and re.search(r"[\-_]nuevos[\-_]territorios[\-_]", ev.img, flags=re.I):
                 cycle = "Nuevos territorios"

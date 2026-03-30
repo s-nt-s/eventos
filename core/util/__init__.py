@@ -9,7 +9,7 @@ from math import radians, sin, cos, sqrt, atan2
 from collections import Counter, defaultdict
 from os import environ
 from url_normalize import url_normalize
-from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse, ParseResult
+from urllib.parse import urlparse, parse_qsl, urlsplit, urlencode, urlunparse, ParseResult
 from functools import cache
 import requests
 from datetime import date
@@ -163,9 +163,9 @@ def plain_text(s: Union[str, Tag], is_html=False):
 @cache
 def _mk_re(s: str, flags: int = 0):
     reg = str(s)
-    if reg[0] not in ("^", " "):
+    if reg[0] not in " ^":
         reg = r"\b" + reg
-    if reg[-1] not in ("$", " ", ":"):
+    if reg[-1] not in " $,/:":
         reg = reg + r"\b"
     return re.compile(reg, flags=flags)
 
@@ -317,6 +317,18 @@ def find_duplicates(
     return tuple(data)
 
 
+def clean_url(url: str) -> str:
+    if url is None:
+        return None
+    m = re.match(
+        r"^https?://(?:www\.)?eventbrite\.[a-z]+/e/.*?(\d+)(?:$|[\?#].*)",
+        url
+    )
+    if m:
+        return "https://eventbrite.es/e/"+m.group(1)
+    return url
+
+
 def normalize_url(url: str, *tail: str) -> str:
     norm_url = url_normalize(url)
     parsed = urlparse(norm_url)
@@ -435,6 +447,7 @@ def un_camel(x: str):
 
 
 KO_IMG = (
+    'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Conferencias/ficheros/260426_ValorLibro_260x260.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/MadridPlat%C3%B3Cine_260.png',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Infantiles_Juveniles/Cine/ficheros/2504_CineForumPerezGaldos_260x260.jpg',
@@ -467,6 +480,7 @@ KO_IMG = (
 
 KO_MORE = (
     'https://www.semanacienciamadrid.org/',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Semana-Santa-en-Arganzuela/?vgnextfmt=default&vgnextoid=7857ab0986d3d910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Dotacional-Integrado-Arganzuela-Angel-del-Rio/?vgnextfmt=default&vgnextoid=0758c4a248991910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Sociocultural-Oporto/?vgnextfmt=default&vgnextoid=e990f36edd371910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Cultural-Casa-del-Reloj/?vgnextfmt=default&vgnextoid=b8ce2420dc891910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
@@ -491,10 +505,22 @@ KO_MORE = (
     'https://www.madrid.es/portales/munimadrid/es/Inicio/El-Ayuntamiento/Transformacion-Digital/Madrid-Movil/?vgnextchannel=1827d33f92eab810VgnVCM2000001f4a900aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-Internacional-de-la-Mujer-en-los-Centros-Culturales-de-Chamberi/?vgnextfmt=default&vgnextoid=ee8211c990735910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Edificio-Sociocultural-Marta-Escudero-Diaz-Tejeiro/?vgnextfmt=default&vgnextoid=d7e6b95f6495a910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Semana-Santa-en-Retiro/?vgnextfmt=default&vgnextoid=1fe176133599c910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.condeduquemadrid.es/actividades/espacio-pom',
     'imccwem.munimadrid.es',
     'youtube.com'
 )
 
+
+def get_query(url: str, strip: bool = False):
+    q = urlsplit(url)
+    q = parse_qsl(q.query)
+    q = dict(q)
+    if strip:
+        for k, v in list(q.items()):
+            if v in (None, ""):
+                del q[k]
+    return q
 
 
 def parse_obj(

@@ -10,10 +10,11 @@ from datetime import datetime
 import re
 import requests
 from pytz import timezone
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 from collections import defaultdict
 from core.fetcher import Getter
 from aiohttp import ClientResponse
+from core.md import MD
 
 logger = logging.getLogger(__name__)
 S = requests.Session()
@@ -389,17 +390,22 @@ class MadridDestino:
             for d in map(str.strip, re.split(r", ", dir_txt)):
                 if not d or d in director:
                     continue
-                if d in ('Varios/as directores/as', 'Varios/as autores/as', 'Varias autoras'):
+                if re_or(
+                    d,
+                    'Vari[oa].*director[eaox@]s?', 
+                    'Vari[oa].*autor[eaox@]s?', 
+                    flags=re.I
+                ):
                     isVarios = True
                     continue
                 director.append(d)
-            desc = get_text(soup.select_one('div.wrap-desc'))
+            desc = MD.convert(soup.select_one('div.wrap-desc'))
             year = get_text(soup.select_one("div.field--name-field-ano-filmacion"))
             ev = ev.merge(
                 director=tuple(director),
                 year=int(year) if year and year.isdecimal() else None
             )
-            if not director and isVarios and len(re.findall(r"\d+'", desc)) > 2:
+            if not director and isVarios and len(re.findall(r"\d+'", desc or '')) > 1:
                 ev = ev.merge(cycle="Cortometrajes")
         if not ev.director:
             director: list[str] = []
@@ -570,6 +576,12 @@ class MadridDestino:
             "[eE]nsayos gr[aá]ficos"
         ):
             return Category.READING_CLUB
+        if re_or(
+            e['title'],
+            "^RUTA\s*/",
+            flags=re.I
+        ):
+            return Category.VISIT
         if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", to_log=id, flags=re.I):
             return Category.VIEW_POINT
         if re_or(pt, "taller infantil", "concierto matinal familiar", "canciones de cuna", to_log=id, flags=re.I):
@@ -591,7 +603,7 @@ class MadridDestino:
             return Category.PUPPETRY
         if is_cat("circo"):
             return Category.CIRCUS
-        if is_cat("taller", "curso"):
+        if is_cat("taller", "curso", "formacion"):
             return Category.WORKSHOP
         if is_cine:
             return Category.CINEMA

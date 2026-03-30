@@ -1,15 +1,16 @@
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.web import buildSoup, get_text, Tag
-from core.event import Category, Event, CategoryUnknown, Session, FIX_EVENT
+from core.event import Category, Event, CategoryUnknown, Session, FIX_EVENT, find_book_category
 from core.place import Places
-from core.util import get_obj, re_or, find_euros, to_uuid, get_main_value, get_domain
+from core.util import get_obj, re_or, find_euros, to_uuid, get_main_value, get_domain, clean_url
 from typing import NamedTuple, Optional
 from core.cache import TupleCache
 from collections import defaultdict
 import re
 from datetime import datetime
 import logging
+from core.md import MD
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ MAX_YEAR = datetime.now().year + 1
 
 _SEP = r"\-\.\|"
 _TRIM = (
+    r"Presentaci[oó]n del? libro",
     r"Ciclo de cine",
     r"Primavera \d+",
     r"Visitas Xtraordinarias",
@@ -132,6 +134,7 @@ class Item(NamedTuple):
     url: str
     name: str
     img: str
+    description: str
     tags: tuple[str, ...]
     dates: tuple[Dt, ...] = tuple()
     price: Optional[float] = None
@@ -164,8 +167,14 @@ async def rq_to_items(r: ClientResponse):
         name = get_text(div.select_one(".info-nombre"))
         img = div.select_one("img.imagen").attrs["src"]
         tags: list[str] = []
-        for t in map(str.strip, re.split(r"\s*,\s*", get_text(div.select_one(".info-tipo-actividad")).lower())):
-            if t is not None and t not in tags:
+        for t in map(
+            str.strip,
+            re.split(
+                r"\s*,\s*",
+                (get_text(div.select_one(".info-tipo-actividad")) or '').lower()
+            )
+        ):
+            if t and t not in tags:
                 tags.append(t)
         info_date = get_text(div.select_one(".info-fecha"))
         if info_date is None:
@@ -183,11 +192,12 @@ async def rq_to_items(r: ClientResponse):
             url=url,
             name=name,
             img=img,
+            description=get_text(div.select_one("div.info-descripcion")),
             tags=tuple(tags),
             dates=(Dt(
                 start=a.strftime("%Y-%m-%d %H:%M"),
                 duration=int((z-a).total_seconds()//60),
-                url=rsv,
+                url=clean_url(rsv),
                 full=re_or(
                     get_text(btn),
                     "Entradas agotadas",
@@ -204,6 +214,7 @@ class Page(NamedTuple):
     year: Optional[int] = None
     public: Optional[str] = None
     place: Optional[str] = None
+    description: Optional[str] = None
     evenbrite: tuple[str, ...] = tuple()
     links: tuple[str, ...] = tuple()
 
@@ -228,6 +239,9 @@ def _find_div_img(n: Tag, src: str) -> Tag | None:
 
 
 async def rq_to_page(r: ClientResponse):
+    if r.status == 404:
+        return None
+    r.raise_for_status()
     root = str(r.url)
     soup = buildSoup(root, await r.text())
     div = soup.select_one("div.e-con-inner")
@@ -246,11 +260,13 @@ async def rq_to_page(r: ClientResponse):
         "https://www.casademexico.es/wp-content/uploads/2023/12/localizacion.svg"
     ))
 
+    description = None
     links: list[str] = []
     evenbrite: list[str] = []
     if price is None:
         logger.warning(f"NOT FOUND price {r.url}")
     if div:
+        description = MD.convert(div.select_one("div.elementor-element.elementor-widget.elementor-widget-text-editor"))
         for li in map(get_text, div.select("div.elementor-widget-container ul li")):
             if not isinstance(li, str):
                 continue
@@ -274,6 +290,7 @@ async def rq_to_page(r: ClientResponse):
         director=director,
         public=public,
         place=place,
+        description=description,
         evenbrite=tuple(evenbrite),
         links=tuple(links)
     )
@@ -287,7 +304,8 @@ class CasaMexico:
             onread=rq_to_items
         )
         self.__get_pages = Getter(
-            onread=rq_to_page
+            onread=rq_to_page,
+            raise_for_status=False
         )
 
     @TupleCache(r"rec/casamexico/items.json", builder=Item.build)
@@ -324,8 +342,12 @@ class CasaMexico:
                     url=get_main_value((x.url for x in dts)),
                     full=any(x.full is True for x in dts)
                 ))
+            description = "\n\n".join(sorted(set(
+                x.description for x in itms if x.description
+            )))
             i = Item(
                 url=u,
+                description=description,
                 name=sorted((x.name for x in itms), key=lambda x: (len(x), x))[0],
                 img=get_main_value((x.img for x in itms), default=None),
                 tags=tuple(tags),
@@ -339,8 +361,12 @@ class CasaMexico:
                     if len(dts) == 1 and dts[0].url is None:
                         lst_dates.remove(dts[0])
                         lst_dates.append(dts[0]._replace(url=p.evenbrite[0]))
+                desc = p.description
+                if desc is None or len(desc) < len(i.description or ''):
+                    desc = i.description
                 i = i._replace(
                     dates=tuple(sorted(lst_dates)),
+                    description=desc,
                     price=p.price,
                     director=p.director,
                     year=p.year,
@@ -361,7 +387,7 @@ class CasaMexico:
             if len(sessions) == 0:
                 logger.debug(f"Descartado por no tener sesiones {i.url}")
                 continue
-            cycle, name = self.__get_name_cycle(i)
+            cycle, name = self.__get_cycle_name(i)
             e = Event(
                 id=CasaMexico.get_id(i.url),
                 name=name,
@@ -399,11 +425,13 @@ class CasaMexico:
             events.add(e)
         return tuple(sorted(events))
 
-    def __get_name_cycle(self, i: Item):
+    def __get_cycle_name(self, i: Item):
         name = _clean_name(i.name)
-        spl = re.split(r"\s+\|\s+", name)
+        spl = tuple(x for x in re.split(r"\s+\|\s+", name) if x)
         if len(spl) == 2:
             return tuple(spl)
+        if len(spl) == 3 and re_or(spl[1], "encuentro de escritores hispanoamericanos", flags=re.I):
+            return "Encuentro de escritores hispanoamericanos", re.sub(r"Mesa \d+\s+", "", spl[2], flags=re.I)
         return None, name
 
     def __get_duration_and_sessions(self, i: Item):
@@ -438,6 +466,12 @@ class CasaMexico:
         cat = FIX_EVENT.get(CasaMexico.get_id(i.url), {}).get('category')
         if isinstance(cat, str):
             return Category[cat]
+        if re_or(
+            i.name,
+            "Presentaci[oó]n del? libro",
+            flags=re.I
+        ):
+            return find_book_category(i.name, i.description, Category.LITERATURE)
         for t, c in {
             "familia": Category.CHILDISH,
             "cine": Category.CINEMA,
@@ -449,8 +483,11 @@ class CasaMexico:
                 return c
         if re_or(
             i.name,
+            r"Coloquio",
             r"^Conferencia",
             r"^Conversaciones Transatl[aá]nticas",
+            r"encuentro de escritores",
+            flags=re.I
         ):
             return Category.CONFERENCE
         if re_or(
@@ -468,7 +505,7 @@ class CasaMexico:
             i.name,
             "^Club de lectura",
         ):
-            return Category.READING_CLUB
+            return find_book_category(i.name, i.description, Category.READING_CLUB)
 
         logger.critical(str(CategoryUnknown(i.url, i.tags)))
         return Category.UNKNOWN
