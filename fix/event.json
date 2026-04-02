@@ -803,5 +803,11 @@
   "mcmc27183": {"category": "CINEMA", "more": "https://www.ignifugas.org/proyecto-documental"},
   "mcmc27182": {"category": "NO_EVENT"},
   "mcmc27184": {"category": "READING_CLUB", "name": "Villanos de todas las naciones", "more": "https://traficantes.net/libros/villanos-de-todas-las-naciones"},
-  "ms5cf94f097a24d910VgnVCM100000891ecb1aRCRD": {"category": "NARRATIVE"}
+  "ms5cf94f097a24d910VgnVCM100000891ecb1aRCRD": {"category": "NARRATIVE"},
+  "sb10942": {"img": "https://pics.filmaffinity.com/sense_filtres-571712946-large.jpg"},
+  "sb10953": {
+    "img": "https://m.media-amazon.com/images/M/MV5BNDM3OWM1NmUtMGQyMy00MzAyLTg4NWQtZGVjMzViMjczNjA5XkEyXkFqcGc@._V1_.jpg",
+    "imdb": "tt39210294",
+    "name": "Black Burns Fast"
+  }
 }

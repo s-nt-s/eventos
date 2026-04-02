@@ -1,6 +1,6 @@
 from core.web import Driver, get_text, buildSoup, get_query
 from functools import cached_property
-from core.event import Cinema, Event, Category, Session
+from core.event import Cinema, Event, Category, Session, FIX_EVENT
 from core.place import Places
 from portal.cineentradas import CineEntradas
 from bs4 import Tag
@@ -210,6 +210,10 @@ class SalaBerlanga:
         return ev
 
     def __complete(self, ev: Event, item: Item):
+        cine_lesbico = "Muestra de Cine Lésbico"
+        fix_img = FIX_EVENT.get(ev.id).get("img")
+        if fix_img:
+            ev = ev.merge(img=fix_img)
         if ev.img is None:
             ev = ev.merge(img=get_attr(item.tag.select_one("img"), "src"))
         category = self.__find_category(ev, item)
@@ -226,10 +230,13 @@ class SalaBerlanga:
         if ev.cycle is None and ev.img:
             cycle = {
                 "https://salaberlanga.com/wp-content/uploads/2026/03/Redes_Feed_NT-Bergia2-240x300.jpg": "Nuevos territorios",
-                "https://salaberlanga.com/wp-content/uploads/2026/03/0.-Cartel-Ciclo-C54-211x300.png": "Cinco cuartos"
+                "https://salaberlanga.com/wp-content/uploads/2026/03/0.-Cartel-Ciclo-C54-211x300.png": "Cinco cuartos",
+                "https://salaberlanga.com/wp-content/uploads/2026/04/mcl-212x300.jpg": cine_lesbico,
             }.get(ev.img)
             if cycle is None and re.search(r"[\-_]nuevos[\-_]territorios[\-_]", ev.img, flags=re.I):
                 cycle = "Nuevos territorios"
+            if cycle is None and re.search(r"[\-_]cine[\-_]lesbico[\-_]", ev.img, flags=re.I):
+                cycle = cine_lesbico
             if cycle:
                 return ev.merge(cycle=cycle)
         if ev.category == Category.CINEMA and re_or(

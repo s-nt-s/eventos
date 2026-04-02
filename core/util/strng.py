@@ -180,6 +180,7 @@ def _rm_sufix():
         r"Biblioteca Ana Mar[ií]a Matute",
         r"III Edici[oó]n",
         r"\d+ de abril",
+        r"\d+ª Muestra de Cine Lésbico"
     ])
     SUFIX_2 = "|".join([
         r"en el Espacio de Igualdad Lourdes Hernández",
