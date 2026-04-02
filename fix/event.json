@@ -816,5 +816,25 @@
   "tm5DADB769-CA50-5B68-8D10-42478BE8C4AA": {
     "name": "Concierto extraordinario del día de la Mujer",
     "category": "MUSIC"
+  },
+  "sb10914": {
+    "cycle": "Muestra de Cine Lésbico",
+    "more": "https://salaberlanga.com/ciclo/15a-muestra-de-cine-lesbico/",
+    "name": "Cortos Amateur"
+  },
+  "sb10933": {
+    "cycle": "Muestra de Cine Lésbico",
+    "more": "https://salaberlanga.com/ciclo/15a-muestra-de-cine-lesbico/",
+    "name": "Cortometrajes"
+  },
+  "sb10932": {
+    "cycle": "Muestra de Cine Lésbico",
+    "more": "https://salaberlanga.com/ciclo/15a-muestra-de-cine-lesbico/",
+    "name": "Película sorpresa"
+  },
+  "sb10923": {
+    "name": "Dos personas intercambiando saliva + Come See Me in the Good Light",
+    "filmaffinity": 813690,
+    "img": "https://pics.filmaffinity.com/come_see_me_in_the_good_light-739843096-large.jpg"
   }
 }
