@@ -211,7 +211,7 @@ class SalaBerlanga:
 
     def __complete(self, ev: Event, item: Item):
         cine_lesbico = "Muestra de Cine Lésbico"
-        fix_img = FIX_EVENT.get(ev.id).get("img")
+        fix_img = FIX_EVENT.get(ev.id, {}).get("img")
         if fix_img:
             ev = ev.merge(img=fix_img)
         if ev.img is None:

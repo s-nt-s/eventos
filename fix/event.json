@@ -159,6 +159,8 @@
   "mcmc27082": {"filmaffinity": 812085},
   "mcmc27121": {"filmaffinity": 346638},
   "mcmc27174": {"category": "ACTIVISM"},
+  "mcmc27181": {"category": "NO_EVENT"},
+  "mcmc27182": {"category": "NO_EVENT"},
   "md6225": {"img": "https://www.teatrocircoprice.es/sites/default/files/styles/activity_gallery/public/2026-01/HOP_736x530.jpg.webp"},
   "md6494": {"category": "CONFERENCE"},
   "md6519": {"filmaffinity": 330646},
@@ -235,6 +237,7 @@
   "md7585": {"category": "CONFERENCE"},
   "ms081c11d0ed2ec910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
   "ms449360b36cc49910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
+  "ms5cf94f097a24d910VgnVCM100000891ecb1aRCRD": {"category": "NARRATIVE"},
   "ms74d01a9183c6c910VgnVCM200000f921e388RCRD": {"category": "LITERATURE"},
   "msa8d5e042bd42d910VgnVCM200000f921e388RCRD": {"category": "SPAM"},
   "msd3b43ae95cf1d910VgnVCM200000f921e388RCRD": {"category": "SPAM"},
@@ -279,6 +282,7 @@
   "sb10781": {"filmaffinity": 186964},
   "sb10799": {"filmaffinity": 957271},
   "sb10850": {"filmaffinity": 160114},
+  "sb10942": {"img": "https://pics.filmaffinity.com/sense_filtres-571712946-large.jpg"},
   "sb9789": {"filmaffinity": 945637},
   "sb9861": {"cycle": "Cortometrajes"},
   "sb9892": {"filmaffinity": 385993},
@@ -579,6 +583,15 @@
     "name": "La última cena",
     "filmaffinity": 731989
   },
+  "mcmc27183": {
+    "category": "CINEMA",
+    "more": "https://www.ignifugas.org/proyecto-documental"
+  },
+  "mcmc27184": {
+    "category": "READING_CLUB",
+    "name": "Villanos de todas las naciones",
+    "more": "https://traficantes.net/libros/villanos-de-todas-las-naciones"
+  },
   "md6560": {
     "url": "https://www.condeduquemadrid.es/actividades/tatoo-tarot-dos-viejos-nuevos-fenomenos-culturales",
     "category": "CONFERENCE"
@@ -749,6 +762,11 @@
     "filmaffinity": 418539,
     "name": "El hombre elefante"
   },
+  "sb10953": {
+    "img": "https://m.media-amazon.com/images/M/MV5BNDM3OWM1NmUtMGQyMy00MzAyLTg4NWQtZGVjMzViMjczNjA5XkEyXkFqcGc@._V1_.jpg",
+    "imdb": "tt39210294",
+    "name": "Black Burns Fast"
+  },
   "sb9875": {
     "name": "Salt & Pepper",
     "img": "https://salaberlanga.com/wp-content/uploads/2025/07/salt-pepper-cine-sordo-724x1024.jpg"
@@ -798,16 +816,5 @@
   "tm5DADB769-CA50-5B68-8D10-42478BE8C4AA": {
     "name": "Concierto extraordinario del día de la Mujer",
     "category": "MUSIC"
-  },
-  "mcmc27181": {"category": "NO_EVENT"},
-  "mcmc27183": {"category": "CINEMA", "more": "https://www.ignifugas.org/proyecto-documental"},
-  "mcmc27182": {"category": "NO_EVENT"},
-  "mcmc27184": {"category": "READING_CLUB", "name": "Villanos de todas las naciones", "more": "https://traficantes.net/libros/villanos-de-todas-las-naciones"},
-  "ms5cf94f097a24d910VgnVCM100000891ecb1aRCRD": {"category": "NARRATIVE"},
-  "sb10942": {"img": "https://pics.filmaffinity.com/sense_filtres-571712946-large.jpg"},
-  "sb10953": {
-    "img": "https://m.media-amazon.com/images/M/MV5BNDM3OWM1NmUtMGQyMy00MzAyLTg4NWQtZGVjMzViMjczNjA5XkEyXkFqcGc@._V1_.jpg",
-    "imdb": "tt39210294",
-    "name": "Black Burns Fast"
   }
 }
