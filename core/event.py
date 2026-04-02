@@ -512,6 +512,15 @@ class Event:
     def _fix_more(self):
         if self.more:
             return self.more
+        if self.category in (
+            Category.READING_CLUB,
+            Category.CONFERENCE,
+        ):
+            more = {
+                "el antiedipo": "https://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=267016"
+            }.get(plain_text(self.name).lower())
+            if more:
+                return more
         dom = get_domain(self.url)
         if self.category in {
             "madrid.es": (Category.CONFERENCE, Category.LITERATURE),

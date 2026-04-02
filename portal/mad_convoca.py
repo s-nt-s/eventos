@@ -1,7 +1,6 @@
 from core.gancio import GancioPortal, Event as GancioEvent
 from core.ics import IcsReader, IcsEventWrapper
 from core.event import Event, Place, Category, Session, CategoryUnknown
-from core.place import Places
 from functools import cached_property
 from core.util import plain_text, find_duplicates, re_or, re_and, get_domain, find_euros
 import re
@@ -489,11 +488,6 @@ class MadConvoca:
             "leer un texto",
             "razonar en com[uú]n",
             "club de lectura",
-            flags=re.I
-        ):
-            return Category.READING_CLUB
-        if re_or(
-            txt_desc,
             "leemos juntas",
             flags=re.I
         ):
@@ -539,6 +533,7 @@ class MadConvoca:
         if re_or(
             txt_desc,
             "proyectamos el documental",
+            "Duraci[oó]n del documental",
             flags=re.I,
             to_log=e.id
         ):
