@@ -325,7 +325,8 @@ def set_icons(html: str, **kwargs):
             "caixaforum": "https://sites.fundacionlacaixa.org/favicons/favicon.ico",
             "casademexico": "https://www.casademexico.es/wp-content/uploads/2025/09/cropped-favicon-fcdme-32x32.png",
             "intermediae": "https://www.intermediae.es/themes/custom/intermediae_theme/favicon.ico",
-            "medialab-matadero": "https://www.medialab-matadero.es/themes/custom/medialab_theme/favicon.ico"
+            "medialab-matadero": "https://www.medialab-matadero.es/themes/custom/medialab_theme/favicon.ico",
+            "youtube": "https://www.youtube.com/s/desktop/1afc1cab/img/favicon.ico",
         }.get(dom)
         if ico is None:
             continue
