@@ -215,6 +215,7 @@ def _find_category(url: str, title: str, soup: Tag):
     if re_or(
         desc,
         r"panel de conversaci[óo]n",
+        r"En esta conferencia",
         flags=re.I
     ):
         return Category.CONFERENCE
