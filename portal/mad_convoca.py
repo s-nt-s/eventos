@@ -343,8 +343,8 @@ class MadConvoca:
         ):
             return Category.NARRATIVE
 
-        if has_tag_or_title("flinta"):
-            return Category.NO_EVENT
+        if has_tag_or_title("flinta", r"No[\-\s]*mixto"):
+            return Category.NON_GENERAL_PUBLIC
         if has_tag_or_title("infantil"):
             return Category.CHILDISH
         if has_tag(
@@ -377,7 +377,7 @@ class MadConvoca:
             return Category.PARTY
         if has_tag_or_title(
             "cine",
-            "cineforum",
+            "cinef[óo]rum",
             "cinebollum",
             "documental"
         ):
@@ -412,6 +412,8 @@ class MadConvoca:
             return Category.PARTY
         if re_or(name, "bicicritica", to_log=e.id):
             return Category.SPORT
+        if has_tag_or_title("charlas?", "conversatorio"):
+            return Category.CONFERENCE
         if re_or(
             name,
             "Charla-debate",
@@ -467,6 +469,7 @@ class MadConvoca:
             ("jornada", "auditorio"),
             "A lo largo de la charla",
             "conservatorio",
+            ("Encuentros?", "conversaci[óo]n(es)?"),
             flags=re.I,
             to_log=e.id
         ):
