@@ -450,9 +450,9 @@ class MadridEs:
                 _url_ = urls.pop()
                 e = e.merge(
                     more=e.more if e.more != _url_ else None,
-                    sessions=tuple(
+                    sessions=(
                         e.sessions[0]._replace(url=_url_),
-                        )
+                    )
                 )
         return e
 
