@@ -167,7 +167,11 @@ def _get_urls(soup: Tag, slc: str):
         if val not in urls and isinstance(val, str):
             val = val.strip()
             prc = val.split("://", 1)[0].lower()
-            if prc in ("http", "https") and val not in urls:
+            if prc not in ("http", "https"):
+                continue
+            if get_domain(val) == "eventbrite.es":
+                val = re.sub(r"\?aff=oddtdtcreator$", "", val)
+            if val not in urls:
                 urls.append(val)
     return tuple(urls)
 

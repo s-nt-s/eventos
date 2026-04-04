@@ -492,6 +492,7 @@ KO_MORE = (
     'https://www.madrid.es/portales/munimadrid/es/Inicio/El-Ayuntamiento/Transformacion-Digital/Madrid-Movil/?vgnextchannel=1827d33f92eab810VgnVCM2000001f4a900aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-Internacional-de-la-Mujer-en-los-Centros-Culturales-de-Chamberi/?vgnextfmt=default&vgnextoid=ee8211c990735910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Edificio-Sociocultural-Marta-Escudero-Diaz-Tejeiro/?vgnextfmt=default&vgnextoid=d7e6b95f6495a910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Semana-Santa-en-Retiro/?vgnextfmt=default&vgnextoid=1fe176133599c910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'imccwem.munimadrid.es',
     'youtube.com'
 )

@@ -444,6 +444,14 @@ class MadridEs:
         ).fix_type()
         if isinstance(e, Cinema):
             e = e.merge(year=self.__find_year(i))
+        if len(e.sessions) == 1 and e.sessions[0].url is None:
+            urls = set(m for m in i.event.more if m.startswith("https://www.eventbrite.es/e/"))
+            if len(urls) == 1:
+                _url_ = urls.pop()
+                e = e.merge(
+                    more=e.more if e.more != _url_ else None,
+                    sessions=tuple(e.sessions[0]._replace(url=_url_),)
+                )
         return e
 
     def __find_cycle(self, cat: Category, place: Place, i: ApiInfo):
@@ -631,6 +639,7 @@ class MadridEs:
             i.title,
             r"Grupo de crianza",
             r"La Liga de la Leche",
+            r"Aula Digital.*Ada Lovelace",
             flags=re.I
         ):
             return Category.MATERNITY

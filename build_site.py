@@ -327,6 +327,7 @@ def set_icons(html: str, **kwargs):
             "intermediae": "https://www.intermediae.es/themes/custom/intermediae_theme/favicon.ico",
             "medialab-matadero": "https://www.medialab-matadero.es/themes/custom/medialab_theme/favicon.ico",
             "youtube": "https://www.youtube.com/s/desktop/1afc1cab/img/favicon.ico",
+            "eventbrite": "https://cdn.evbstatic.com/s3-build/perm_001/765d40/django/images/favicons/favicon-16x16.png",
         }.get(dom)
         if ico is None:
             continue
