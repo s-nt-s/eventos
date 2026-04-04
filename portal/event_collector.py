@@ -209,6 +209,8 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
             'CCM Lucero',
             # Laguna
             ("Asociacion Vecinal", "Fraternidad de los Carmenes"),
+            # Ciudad Lineal
+            "Parque (de )?Arriaga",
             flags=re.I
         ):
             logger.debug(f"Lugar descartado por name={name}")
