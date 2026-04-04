@@ -131,9 +131,8 @@ class AteneoMadrid:
             return prc
         if re_or(
             e.DESCRIPTION,
-            "venta de entradas",
-            "Venta entradas",
-            "Socios c[oó]digo descuento",
+            "venta (de )?entradas",
+            r"Socios c[oó]digo descuento",
             flags=re.I
         ):
             return 999
