@@ -240,11 +240,13 @@
   "md7552": {"filmaffinity": 454628},
   "md7585": {"category": "CONFERENCE"},
   "ms081c11d0ed2ec910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
+  "ms372d2d72cb24d910VgnVCM100000891ecb1aRCRD": {"filmaffinity": 411856},
   "ms449360b36cc49910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
   "ms5cf94f097a24d910VgnVCM100000891ecb1aRCRD": {"category": "NARRATIVE"},
   "ms74d01a9183c6c910VgnVCM200000f921e388RCRD": {"category": "LITERATURE"},
   "msa8d5e042bd42d910VgnVCM200000f921e388RCRD": {"category": "SPAM"},
   "msd3b43ae95cf1d910VgnVCM200000f921e388RCRD": {"category": "SPAM"},
+  "msebe9e665d77fc910VgnVCM100000891ecb1aRCRD": {"category": "MUSIC"},
   "msed1065dfd942d910VgnVCM200000f921e388RCRD": {"category": "SPAM"},
   "mx30A6CC86-7DCC-5B04-ACC7-0E7A1224A23D": {"category": "CONFERENCE"},
   "mx46E0BBBA-3270-5994-939C-8B052DAC4F3F": {"filmaffinity": 347632},
@@ -596,6 +598,11 @@
     "name": "Villanos de todas las naciones",
     "more": "https://traficantes.net/libros/villanos-de-todas-las-naciones"
   },
+  "mcmc27200": {
+    "category": "CINEMA",
+    "more": "https://www.youtube.com/watch?v=tCArqRIR7YQ",
+    "name": "Jiyan: historia de una guerrillera + Maryam Fathi"
+  },
   "mcmc27203": {
     "name": "Sueños rosados",
     "filmaffinity": 725746
@@ -725,6 +732,10 @@
     "cycle": "Talleres sobre el sonido",
     "name": "El ruido de mi calle"
   },
+  "msdbcd59905ca3d910VgnVCM200000f921e388RCRD": {
+    "filmaffinity": 126406,
+    "name": "Una cabeza en la pared + Presentación premios Fugaz"
+  },
   "mse05b0d2bcf92d910VgnVCM200000f921e388RCRD": {
     "category": "PARTY",
     "more": "https://ludoverdeaso.wixsite.com/ludoverde"
@@ -737,6 +748,12 @@
   "mx65FE5F55-2554-5020-BA70-25063C333F8E": {
     "filmaffinity": 478002,
     "name": "5 de chocolate y 1 de fresa"
+  },
+  "rs38384": {
+    "category": "CINEMA",
+    "name": "Salir del aula. Un día sin profes",
+    "img": "https://recursos.museoreinasofia.es/styles/large_landscape/public/Actividades/familias-desviadas.png.webp",
+    "more": "https://hamacaonline.net/titles/salir-del-aula-un-dia-sin-profes/"
   },
   "sb10030": {
     "filmaffinity": 111461,
@@ -845,15 +862,7 @@
     "name": "Concierto extraordinario del día de la Mujer",
     "category": "MUSIC"
   },
-  "mcmc27200": {
-    "category": "CINEMA",
-    "more": "https://www.youtube.com/watch?v=tCArqRIR7YQ",
-    "name": "Jiyan: historia de una guerrillera + Maryam Fathi"
-  },
-  "rs38384": {
-    "category": "CINEMA",
-    "name": "Salir del aula. Un día sin profes",
-    "img": "https://recursos.museoreinasofia.es/styles/large_landscape/public/Actividades/familias-desviadas.png.webp",
-    "more": "https://hamacaonline.net/titles/salir-del-aula-un-dia-sin-profes/"
+  "md7558": {
+    "filmaffinity": 206795
   }
 }

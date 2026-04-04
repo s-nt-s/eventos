@@ -133,6 +133,7 @@ class AteneoMadrid:
             e.DESCRIPTION,
             "venta de entradas",
             "Venta entradas",
+            "Socios c[oó]digo descuento",
             flags=re.I
         ):
             return 999
@@ -252,7 +253,7 @@ class AteneoMadrid:
 
         if _has_cat(r"Proyecci[óo]n", "cinef[óo]rum"):
             return Category.CINEMA
-        if _has_cat(r"Presentaci[óo]n del disco", "concierto"):
+        if _has_cat(r"Presentaci[óo]n del disco", "conciertos?"):
             return Category.MUSIC
         if _has_cat(r"mon[oó]logo", r"Lecturas? dramatizadas?", "teatro"):
             return Category.THEATER
