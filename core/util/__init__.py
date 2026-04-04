@@ -317,6 +317,18 @@ def find_duplicates(
     return tuple(data)
 
 
+def clean_url(url: str) -> str:
+    if url is None:
+        return None
+    m = re.match(
+        r"^https?://(?:www\.)?eventbrite\.[a-z]+/e/.*?(\d+)(?:$|[\?#].*)",
+        url
+    )
+    if m:
+        return "https://eventbrite.es/e/"+m.group(1)
+    return url
+
+
 def normalize_url(url: str, *tail: str) -> str:
     norm_url = url_normalize(url)
     parsed = urlparse(norm_url)

@@ -3,7 +3,7 @@ from aiohttp import ClientResponse
 from core.web import buildSoup, get_text, Tag
 from core.event import Category, Event, CategoryUnknown, Session, FIX_EVENT
 from core.place import Places
-from core.util import get_obj, re_or, find_euros, to_uuid, get_main_value, get_domain
+from core.util import get_obj, re_or, find_euros, to_uuid, get_main_value, get_domain, clean_url
 from typing import NamedTuple, Optional
 from core.cache import TupleCache
 from collections import defaultdict
@@ -187,7 +187,7 @@ async def rq_to_items(r: ClientResponse):
             dates=(Dt(
                 start=a.strftime("%Y-%m-%d %H:%M"),
                 duration=int((z-a).total_seconds()//60),
-                url=rsv,
+                url=clean_url(rsv),
                 full=re_or(
                     get_text(btn),
                     "Entradas agotadas",

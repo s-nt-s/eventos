@@ -445,12 +445,14 @@ class MadridEs:
         if isinstance(e, Cinema):
             e = e.merge(year=self.__find_year(i))
         if len(e.sessions) == 1 and e.sessions[0].url is None:
-            urls = set(m for m in i.event.more if m.startswith("https://www.eventbrite.es/e/"))
+            urls = set(m for m in i.event.more if m.startswith("https://eventbrite.es/e/"))
             if len(urls) == 1:
                 _url_ = urls.pop()
                 e = e.merge(
                     more=e.more if e.more != _url_ else None,
-                    sessions=tuple(e.sessions[0]._replace(url=_url_),)
+                    sessions=tuple(
+                        e.sessions[0]._replace(url=_url_),
+                        )
                 )
         return e
 

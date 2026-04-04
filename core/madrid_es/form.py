@@ -16,7 +16,7 @@ from core.madrid_es.tp import Place
 from html import unescape
 from icalendar import Calendar
 from core.ics import IcsEventWrapper
-from core.util import get_domain
+from core.util import get_domain, clean_url
 
 
 logger = logging.getLogger(__name__)
@@ -169,8 +169,7 @@ def _get_urls(soup: Tag, slc: str):
             prc = val.split("://", 1)[0].lower()
             if prc not in ("http", "https"):
                 continue
-            if get_domain(val) == "eventbrite.es":
-                val = re.sub(r"\?aff=oddtdtcreator$", "", val)
+            val = clean_url(val)
             if val not in urls:
                 urls.append(val)
     return tuple(urls)
