@@ -165,6 +165,7 @@
   "mcmc27174": {"category": "ACTIVISM"},
   "mcmc27181": {"category": "NO_EVENT"},
   "mcmc27182": {"category": "NO_EVENT"},
+  "mcmc27216": {"more": "https://nedediciones.com/tienda/huellas-y-senales/paralisis-por-agitacion/"},
   "md6225": {"img": "https://www.teatrocircoprice.es/sites/default/files/styles/activity_gallery/public/2026-01/HOP_736x530.jpg.webp"},
   "md6494": {"category": "CONFERENCE"},
   "md6519": {"filmaffinity": 330646},
@@ -515,6 +516,14 @@
     "category": "LITERATURE",
     "more": "https://www.goodreads.com/book/show/221061319"
   },
+  "mc42922-1778284800-1778371199@fal.cnt.es": {
+    "duration": 660,
+    "sessions": [
+      {
+        "date": "2026-05-09 09:30"
+      }
+    ]
+  },
   "mcmc26842": {
     "name": "Manual para romper un cuerpo",
     "more": "https://www.goodreads.com/book/show/230997755"
@@ -862,8 +871,5 @@
   "tm5DADB769-CA50-5B68-8D10-42478BE8C4AA": {
     "name": "Concierto extraordinario del día de la Mujer",
     "category": "MUSIC"
-  },
-  "mcmc27216": {
-    "more": "https://nedediciones.com/tienda/huellas-y-senales/paralisis-por-agitacion/"
   }
 }
