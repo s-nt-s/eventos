@@ -470,6 +470,7 @@ class MadConvoca:
             "A lo largo de la charla",
             "conservatorio",
             ("Encuentros?", "conversaci[óo]n(es)?"),
+            r"en este coloquio",
             flags=re.I,
             to_log=e.id
         ):
@@ -563,6 +564,12 @@ class MadConvoca:
         ):
             return Category.PARTY
         if has_tag("ecoaldea") and has_tag("encuentro"):
+            return Category.NO_EVENT
+        if re_or(
+            txt_desc,
+            ("asamblea", r"c[óo]mo funcionamos", "participar"),
+            flags=re.I
+        ):
             return Category.NO_EVENT
         if isLibreria:
             return Category.LITERATURE
