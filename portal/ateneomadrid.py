@@ -133,6 +133,7 @@ class AteneoMadrid:
             e.DESCRIPTION,
             "venta (de )?entradas",
             r"Socios c[oó]digo descuento",
+            r"C[oó]digo descuento socios",
             flags=re.I
         ):
             return 999
