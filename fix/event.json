@@ -238,6 +238,7 @@
   "md7541": {"more": "https://es.wikipedia.org/wiki/Claudine_Eizykman"},
   "md7551": {"filmaffinity": 953210},
   "md7552": {"filmaffinity": 454628},
+  "md7558": {"filmaffinity": 206795},
   "md7585": {"category": "CONFERENCE"},
   "ms081c11d0ed2ec910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
   "ms372d2d72cb24d910VgnVCM100000891ecb1aRCRD": {"filmaffinity": 411856},
@@ -862,7 +863,7 @@
     "name": "Concierto extraordinario del día de la Mujer",
     "category": "MUSIC"
   },
-  "md7558": {
-    "filmaffinity": 206795
+  "mcmc27216": {
+    "more": "https://nedediciones.com/tienda/huellas-y-senales/paralisis-por-agitacion/"
   }
 }
