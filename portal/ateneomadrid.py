@@ -132,8 +132,8 @@ class AteneoMadrid:
         if re_or(
             e.DESCRIPTION,
             "venta (de )?entradas",
-            r"Socios c[oó]digo descuento",
-            r"C[oó]digo descuento socios",
+            r"Socios c[oó]digo (de )?descuento",
+            r"C[oó]digo (de )?descuento (para )?socios",
             flags=re.I
         ):
             return 999
