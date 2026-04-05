@@ -20,7 +20,7 @@ from portal.alcala import Alcala
 from portal.goethe import Goethe
 from portal.ifrances import InstitutoFrances
 from datetime import datetime, date
-from core.util import round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
+from core.util import clean_url, round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
 import logging
 from typing import Tuple
 from core.cache import TupleCache
@@ -36,6 +36,7 @@ from core.place import Place, Places
 from portal.fundacionmarch import FundacionMarch
 from concurrent.futures import ThreadPoolExecutor
 from portal.reinasofia import ReinaSofia
+from core.eventbrite import Api as EventbriteApi
 
 
 logger = logging.getLogger(__name__)
@@ -312,6 +313,7 @@ class EventCollector:
         self.__categories = categories
         self.__publish = publish
         self.__madrid_destino = MadridDestino()
+        self.__eventbrite = EventbriteApi()
         self.__avoid_categories = tuple(set({
             Category.CHILDISH,
             Category.SENIORS,
@@ -406,6 +408,7 @@ class EventCollector:
         logger.info(f"{len(eventos)} recuperados")
         eventos = tuple(filter(self.__filter, eventos))
         eventos = self.__madrid_destino.fix_sessions(eventos)
+        eventos = self.__eventbrite.fix_sessions(eventos)
         eventos = tuple(filter(self.__filter, eventos))
         logger.info(f"{len(eventos)} pasan 1º filtro")
 
