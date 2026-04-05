@@ -408,7 +408,7 @@ class EventCollector:
         logger.info(f"{len(eventos)} recuperados")
         eventos = tuple(filter(self.__filter, eventos))
         eventos = self.__madrid_destino.fix_sessions(eventos)
-        eventos = self.__eventbrite.fix_sessions(eventos)
+        eventos = self.__eventbrite.fix_events(eventos)
         eventos = tuple(filter(self.__filter, eventos))
         logger.info(f"{len(eventos)} pasan 1º filtro")
 

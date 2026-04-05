@@ -1,11 +1,11 @@
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.web import buildSoup, get_domain, get_text
-from core.util import clean_url, parse_obj
+from core.util import clean_url, parse_obj, get_main_value
 from typing import NamedTuple
 import json
 from core.cache import HashCache
-from core.event import Event, Session
+from core.event import Event
 import logging
 
 logger = logging.getLogger(__name__)
@@ -110,34 +110,48 @@ class Api:
                 price = max(p, price or 0)
         return price
 
-    def fix_sessions(self, events: tuple[Event]):
+    @staticmethod
+    def get_id(url: str):
+        url = clean_url(url)
+        if get_domain(url) == "eventbrite.es":
+            return int(url.rsplit("/")[-1])
 
-        def _iter_session(evs: tuple[Event]):
-            for e in evs:
-                for s in e.sessions:
-                    url = clean_url(s.url)
-                    if get_domain(url) == "eventbrite.es":
-                        _id_ = int(url.rsplit("/")[-1])
-                        yield _id_, s
+    def fix_events(self, events: tuple[Event]):
+        ids: set[int] = set()
 
-        ids = set(x[0] for x in _iter_session(events))
-        full = set(i.id for i in self.get(*ids) if i.full is True)
-        if len(full) == 0:
+        for e in events:
+            for _id_ in map(Api.get_id, e.iter_urls()):
+                if _id_ is not None:
+                    ids.add(_id_)
+
+        info = {i.id: i for i in self.get(*ids)}
+        if len(info) == 0:
             return events
-
-        ban_session: set[str] = set()
-        for _id_, s in _iter_session(events):
-            if s.url and _id_ in full:
-                logger.debug(f"FULL session sold out {s.url}")
-                ban_session.add(s.url)
 
         evs: set[Event] = set()
         for e in events:
+            price = 0
+            imgs: list[str] = []
+            full: set[int] = set()
+            for _id_ in map(Api.get_id, e.iter_urls()):
+                i = info.get(_id_)
+                if i is None:
+                    continue
+                if i.price:
+                    price = max(price, i.price)
+                if i.img:
+                    imgs.append(i.img)
+                if i.full:
+                    full.add(i.id)
+
             tp_ss = tuple(
-                s for s in e.sessions if s.url not in ban_session
+                s for s in e.sessions if Api.get_id(s.url) not in full
             )
-            if tp_ss != e.sessions:
-                e = e.merge(sessions=tp_ss)
+            e = e.merge(
+                price=max(price, e.price),
+                img=e.img or get_main_value(imgs),
+                sessions=tp_ss
+            )
             evs.add(e)
 
         return tuple(sorted(evs))
