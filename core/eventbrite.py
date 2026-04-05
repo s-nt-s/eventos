@@ -61,6 +61,7 @@ class Api:
     def __init__(self):
         self.__get_info = Getter(
             onread=rq_to_dict,
+            raise_for_status=False,
         )
 
     def _get(self, *urls: str):
