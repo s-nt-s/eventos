@@ -1,7 +1,7 @@
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.web import buildSoup, get_domain, get_text
-from core.util import clean_url
+from core.util import clean_url, parse_obj
 from typing import NamedTuple
 import json
 from core.cache import HashCache
@@ -14,11 +14,23 @@ logger = logging.getLogger(__name__)
 class Info(NamedTuple):
     id: int
     url: str
-    image: str
+    img: str
     name: str
     description: str
     price: float | None
     full: bool
+
+
+def _re_parse(obj):
+    if not isinstance(obj, dict):
+        return obj
+    for k in ("lowPrice", "highPrice"):
+        v = obj.get(k)
+        if isinstance(v, str):
+            f = float(v)
+            i = int(f)
+            obj[k] = i if f == i else f
+    return obj
 
 
 async def rq_to_dict(r: ClientResponse):
@@ -35,8 +47,14 @@ async def rq_to_dict(r: ClientResponse):
         tp = js.get("@type")
         if not isinstance(tp, str):
             continue
-        if "event" in tp.lower():
-            return js
+        if "event" not in tp.lower():
+            continue
+        js = parse_obj(
+            js,
+            compact=True,
+            re_parse=_re_parse
+        )
+        return js
 
 
 class Api:
@@ -70,7 +88,7 @@ class Api:
                 url=o['url'],
                 name=o["name"],
                 description=o["description"],
-                img=o['image'],
+                img=o.get('image'),
                 full=(len(offers) == 0),
                 price=self.__find_price(offers),
             ))
@@ -86,8 +104,9 @@ class Api:
     def __find_price(self, offers: tuple[dict, ...]):
         price = None
         for o in offers:
-            p = float(o.get("highPrice") or "0")
-            price = max(p, price or 0)
+            p = o.get("highPrice")
+            if isinstance(p, (int, float)):
+                price = max(p, price or 0)
         return price
 
     def fix_sessions(self, events: tuple[Event]):
