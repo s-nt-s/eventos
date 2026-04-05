@@ -9,7 +9,9 @@ from core.filemanager import FM
 logger = logging.getLogger(__name__)
 
 
-def myhash(s: str) -> str:
+def myhash(s: str | int | float) -> str:
+    if isinstance(s, (int, float)):
+        s = str(s)
     return hashlib.sha256(s.encode('utf-8')).hexdigest()
 
 
