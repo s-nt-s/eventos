@@ -63,28 +63,26 @@ class Api:
             onread=rq_to_dict,
             raise_for_status=False,
         )
-
-    def _get(self, *urls: str):
-        _urls: set[str] = set()
-        for url in urls:
-            url = clean_url(url)
-            if get_domain(url) == "eventbrite.es":
-                _urls.add(url)
-        return self.__get_info.get(*_urls)
+        self.__cache: dict[int, Info] = dict()
 
     @HashCache(r"rec/eventbrite/{}.json")
-    def __get(self, *ids: str):
+    def __get(self, *ids: int):
         urls = tuple(f"https://eventbrite.es/e/{id_}" for id_ in ids)
-        return self._get(*urls)
+        return self.__get_info.get(*urls)
 
-    def get(self, *ids: str):
+    def get(self, *ids: int):
         info: set[Info] = set()
-        for url, o in self.__get(*ids).items():
+        ok_ids: set[int] = set(ids)
+        for i in tuple(ok_ids):
+            nf = self.__cache.get(i)
+            if nf:
+                info.add(nf)
+                ok_ids.remove(i)
+        for url, o in self.__get(*ok_ids).items():
             if o is None:
                 continue
             offers = self.__find_offers(o)
-
-            info.add(Info(
+            i = Info(
                 id=int(url.rsplit("/")[-1]),
                 url=o['url'],
                 name=o["name"],
@@ -92,7 +90,9 @@ class Api:
                 img=o.get('image'),
                 full=(len(offers) == 0),
                 price=self.__find_price(offers),
-            ))
+            )
+            self.__cache[i.id] = i
+            info.add(i)
         return tuple(sorted(info))
 
     def __find_offers(self, obj: dict):
@@ -129,7 +129,7 @@ class Api:
         for _id_, s in _iter_session(events):
             if _id_ in full:
                 logger.debug(f"FULL session sold out {s.url}")
-            ban_session.add(s.url)
+                ban_session.add(s.url)
 
         evs: set[Event] = set()
         for e in events:
@@ -147,4 +147,4 @@ class Api:
 if __name__ == "__main__":
     import sys
     api = Api()
-    print(api.get(*sys.argv[1:]))
+    print(api.get(*map(int, sys.argv[1:])))
