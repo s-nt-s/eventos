@@ -121,24 +121,23 @@ class Api:
                         yield _id_, s
 
         ids = set(x[0] for x in _iter_session(events))
-        full = set(i.id for i in self.get(*ids) if i.full)
+        full = set(i.id for i in self.get(*ids) if i.full is True)
         if len(full) == 0:
             return events
 
         ban_session: set[str] = set()
         for _id_, s in _iter_session(events):
-            if _id_ in full:
+            if s.url and _id_ in full:
                 logger.debug(f"FULL session sold out {s.url}")
                 ban_session.add(s.url)
 
         evs: set[Event] = set()
         for e in events:
-            ss: list[Session] = []
-            for s in e.sessions:
-                if s.url not in ban_session:
-                    ss.append(s)
-            if tuple(ss) != e.sessions:
-                e = e.merge(sessions=tuple(ss))
+            tp_ss = tuple(
+                s for s in e.sessions if s.url not in ban_session
+            )
+            if tp_ss != e.sessions:
+                e = e.merge(sessions=tp_ss)
             evs.add(e)
 
         return tuple(sorted(evs))
