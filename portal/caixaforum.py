@@ -16,8 +16,8 @@ NOW = datetime.now()
 
 
 class MyIdTag(MyTag):
-    def __init__(self, id: int, url: str, node: Tag):
-        super().__init__(url, node)
+    def __init__(self, id: int, url: str, node: Tag, status_conde: int):
+        super().__init__(url, node, status_conde)
         self.id = id
 
 
@@ -111,7 +111,8 @@ class CaixaForum:
 
     def __get_div_events(self, url: str) -> Tuple[MyIdTag, ...]:
         events: List[MyIdTag] = []
-        soup = self.get_soup(url).node
+        soup_tag = self.get_soup(url)
+        soup = soup_tag.node
         warn = get_text(soup.select_one("div.portlet-body div.title-warrings h2"))
         if warn is not None:
             logger.warning(warn+" "+url)
@@ -127,7 +128,7 @@ class CaixaForum:
             if eid is None:
                 logger.warning(f"ID not found in {url}")
                 continue
-            events.append(MyIdTag(id=eid, url=url, node=div))
+            events.append(MyIdTag(id=eid, url=url, node=div, status_conde=soup_tag.status_code))
         logger.debug(f"{len(events)} {slc}")
         return tuple(events)
 
