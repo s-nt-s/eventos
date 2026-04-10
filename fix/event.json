@@ -764,5 +764,8 @@
       {"date": "2026-04-25 12:00", "duration": 570},
       {"date": "2026-04-26 12:00", "duration": 420}
     ]
+  },
+  "20260416170000Z-152080@eventos.ucm.es": {
+    "category": "NO_EVENT"
   }
 }

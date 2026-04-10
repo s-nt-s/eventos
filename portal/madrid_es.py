@@ -732,6 +732,7 @@ class MadridEs:
             "Aprende Chotis",
             r"Iniciaci[oó]n al cultivo",
             "Editatona",
+            r"Armon[ií]a Coral Participativa",
             flags=re.I
         ):
             return Category.WORKSHOP

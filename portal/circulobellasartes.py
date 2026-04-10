@@ -178,7 +178,7 @@ def _find_category(url: str, title: str, soup: Tag):
     desc = MD.convert(soup.select_one(
         'div:has(+ footer) div.fl-col:not(.fl-col-small) div.fl-module-rich-text[data-node]'
     ))
-    isPresentacion = re_or(full_title, "presentaci[oó]n")
+    isPresentacion = re_or(full_title, "presentaci[oó]n", flags=re.I)
     if re_or(
         full_title,
         r"Presentaci[óo]n del libro",

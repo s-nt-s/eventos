@@ -1061,9 +1061,8 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.POETRY
     if re_or(
         description,
-        r"(La|Esta) novela presenta",
+        r"(La|Esta) novela (relata|presenta|publicada)",
         r"(La|Esta) nueva novela de",
-        r"(La|Esta) novela publicada",
         r"(La|Esta) novela es la cr[oó]nica",
         r"A partir de ese momento comienza una aventura",
         r"una novela (de aventuras|sobre|breve)",

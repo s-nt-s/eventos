@@ -279,8 +279,11 @@ class CasaEncendida:
             href, group = href_group
             if category in (Category.CONFERENCE, ):
                 return href, group
-            if category == Category.MUSIC and re_or(group, "radio encendida", flags=re.I):
-                return href, group
+            if category == Category.MUSIC:
+                if re_or(group, "radio encendida", flags=re.I):
+                    return href, group
+                if re_or(group, "reguet[oó]n", flags=re.I):
+                    return href, group
         return None, None
 
     def __find_duration(self, info: List[Dict]):

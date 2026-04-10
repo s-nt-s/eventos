@@ -317,6 +317,7 @@ class Universidad:
             r"Actividad formativa de Doctorado",
             r"pr[aá]cticas y empleo",
             r"Encuentro AlumniUAH",
+            r"Abogac[íi]a de los negocios",
             flags=re.I
         ):
             return Category.NO_EVENT
