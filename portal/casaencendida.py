@@ -1,5 +1,5 @@
 from core.web import get_text, MyTag, Web
-from typing import Set, Dict, List
+from typing import Set, Dict, List, Optional
 from functools import cache
 from core.cache import TupleCache
 import logging
@@ -39,11 +39,17 @@ class CasaEncendida:
 
     def __get_soup(self, url: str):
         soup = self.__w.get(url)
-        return MyTag(self.__w.url, soup)
+        status_code = self.__w.response.status_code
+        tag = MyTag(self.__w.url, soup, status_code)
+        if status_code == 500:
+            logger.warning(f"status_code={status_code} {url}")
+        return tag
 
-    def __get_ld_json(self, soup: MyTag) -> Dict:
+    def __get_ld_json(self, soup: MyTag) -> Optional[Dict]:
         css_script = 'script[type="application/ld+json"]'
-        js = soup.select_one_json(css_script)
+        js = soup.select_one_json(css_script, if_none={
+            500: "silent"
+        }.get(soup.status_code, "raise"))
         return js
 
     @cache
@@ -96,6 +102,8 @@ class CasaEncendida:
             ):
                 return None
         info = self.__get_ld_json(soup)
+        if info is None:
+            return None
         self.__validate_info_event(info)
         idevent = info[0]['identifier'].split("-")[-1]
         category = self.__find_category(soup, info)

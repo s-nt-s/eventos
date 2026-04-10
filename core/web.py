@@ -256,9 +256,14 @@ class Web:
 
 
 class MyTag:
-    def __init__(self, url: str, node: Tag):
+    def __init__(self, url: str, node: Tag, status_code: int):
         self.__url = url
         self.__node = node
+        self.__status_code = status_code
+
+    @property
+    def status_code(self):
+        return self.__status_code
 
     def select_one(self, slc: str, if_none: str = "raise"):
         n = self.__node.select_one(slc)

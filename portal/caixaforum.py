@@ -56,7 +56,7 @@ class CaixaForum:
 
     def get_soup(self, url: str):
         soup = self.__w.get(url)
-        return MyTag(url, soup)
+        return MyTag(url, soup, self.__w.response.status_code)
 
     @HashCache("rec/caixaforum/{}_js.json")
     def get_json(self, url: str) -> Union[Dict, List]:
