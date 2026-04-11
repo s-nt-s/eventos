@@ -8,9 +8,10 @@ from core.place import Places
 from datetime import datetime
 from core.util import plain_text, re_or, get_a_href, to_uuid
 import re
+import pytz
 
 logger = logging.getLogger(__name__)
-NOW = datetime.now()
+NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
 class Telefonica(Web):

@@ -17,13 +17,16 @@ from core.util import my_filter
 from core.util.strng import clean_name
 from collections import defaultdict
 from core.place import Place
+import pytz
 
 T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 
-TODAY = date.today()
-NOW = TODAY.strftime("%Y-%m-%d")
+DT_NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
+TODAY = DT_NOW.today()
+NOW = DT_NOW.strftime("%Y-%m-%d")
+
 
 def _get_fix_event():
     fix_event: Dict[str, Dict[str, Any]] = FM.load("fix/event.json")

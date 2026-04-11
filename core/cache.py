@@ -28,7 +28,7 @@ class Cache:
         self._kwargs = kwargs
         self.skip = skip
 
-    def parse_file_name(self, *args, slf=None, **kwargs):
+    def parse_file_name(self, *args, **kwargs):
         if args or kwargs:
             return self.file.format(*args, **kwargs)
         return self.file
@@ -136,7 +136,7 @@ class StaticTupleCache(StaticCache):
 
 
 class HashCache(Cache):
-    def parse_file_name(self, *args, slf=None, **kwargs):
+    def parse_file_name(self, *args, **kwargs):
         args = tuple(myhash(a) for a in args)
         kwargs = {k: myhash(v) for k, v in kwargs.items()}
         if args or kwargs:
@@ -145,7 +145,7 @@ class HashCache(Cache):
 
 
 class HashTupleCache(TupleCache):
-    def parse_file_name(self, *args, slf=None, **kwargs):
+    def parse_file_name(self, *args, **kwargs):
         args = tuple(myhash(a) for a in args)
         kwargs = {k: myhash(v) for k, v in kwargs.items()}
         if args or kwargs:

@@ -4,14 +4,16 @@ import re
 from os import environ
 from core.event import Event
 from datetime import datetime
-from core.util import clean_url, normalize_url, get_domain, get_query
+from core.util import clean_url, normalize_url, get_domain
 import logging
+import pytz
 
 
 logger = logging.getLogger(__name__)
 _S = Session()
 
-NOW = datetime.now().strftime("%Y-%m-%d")
+DT_NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
+NOW = DT_NOW.strftime("%Y-%m-%d")
 
 
 def url_to_key(url: str):

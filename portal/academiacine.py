@@ -9,10 +9,11 @@ import re
 from datetime import datetime
 from core.util import plain_text, re_or
 from core.md import MD
+import pytz
 
 
 logger = logging.getLogger(__name__)
-NOW = datetime.now()
+NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
 class AcademiaCine(Web):

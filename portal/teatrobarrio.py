@@ -11,12 +11,13 @@ from core.event import Event, Session, Category, CategoryUnknown
 from core.place import Places
 from urllib.parse import urlencode
 from core.md import MD
+import pytz
 
 
 logger = logging.getLogger(__name__)
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
-NOW = datetime.now()
+NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 RE_WAIT = re.compile(r"Está en la cola virtual.*eres es el (\d+)º en la cola.*llegará el turno en ([\d:]+ (?:minutos?|horas?))")
 
 

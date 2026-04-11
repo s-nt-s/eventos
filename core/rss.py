@@ -6,6 +6,7 @@ import re
 import os
 from typing import List
 import logging
+import pytz
 
 from core.event import Event
 
@@ -15,7 +16,8 @@ re_last_modified = re.compile(
     r'^\s*<lastBuildDate>[^>]+</lastBuildDate>\s*$',
     flags=re.MULTILINE
 )
-NOW = datetime.now()
+
+NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
 class EventosRss:

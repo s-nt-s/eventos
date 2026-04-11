@@ -10,9 +10,10 @@ from datetime import datetime
 from core.util import plain_text, re_or, find_duplicates, get_main_value, round_to_even
 from functools import cached_property
 from core.md import MD
+import pytz
 
 logger = logging.getLogger(__name__)
-NOW = datetime.now()
+NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
 class MyIdTag(MyTag):
