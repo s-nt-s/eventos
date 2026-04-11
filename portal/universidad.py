@@ -72,6 +72,19 @@ class Info(NamedTuple):
         if val:
             return tuple(val)
 
+    def get_menu(self):
+        mn = self.sym.get("menu")
+        if isinstance(mn, dict):
+            mn = list(mn.values())
+        if not isinstance(mn, list):
+            return tuple()
+        menu: list[str] = []
+        for m in mn:
+            lb = re_sp.sub(" ", (m.get('label') or '')).strip().lower()
+            if lb and lb not in menu:
+                menu.append(lb)
+        return tuple(menu)
+
     @staticmethod
     def build(*args, **kwargs):
         obj = get_obj(*args, **kwargs)
@@ -318,6 +331,11 @@ class Universidad:
             r"pr[aá]cticas y empleo",
             r"Encuentro AlumniUAH",
             r"Abogac[íi]a de los negocios",
+            r"Universidad Emprendedora",
+            r"International Symposium",
+            r"Presentaci[óo]n del nuevo Dec[aá]logo",
+            r"Elecciones Junta",
+            r"Bridge the Digital Divide",
             flags=re.I
         ):
             return Category.NO_EVENT
@@ -334,6 +352,8 @@ class Universidad:
             e.SUMMARY,
             "Presentaci[óo]n de la asociaci[óo]n",
             "coloquio",
+            "Simposio",
+            "seminario",
             flags=re.I
         ):
             return Category.CONFERENCE
@@ -346,31 +366,40 @@ class Universidad:
             return Category.WORKSHOP
         if re_or(
             description,
-            r"Encuentro con",
-            r"Varios(/as)? ponentes",
-            r"coloquio posterior",
-            r"seminario",
-            flags=re.I
-        ):
-            return Category.CONFERENCE
-        if re_or(
-            description,
             "obra esc[eé]nica",
             "conferencia teatralizada",
             flags=re.I
         ):
             return Category.THEATER
+        if re_or(
+            description,
+            r"Encuentro con",
+            r"ponentes",
+            r"coloquio posterior",
+            r"seminario",
+            r"conferencias?",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
         info = self.__get_info(link)
         categories = (info.get_categories() if info else None) or tuple()
+        menu = (info.get_menu() if info else None) or tuple()
         for c in categories:
+            if re_or(c, "Investigaci[oó]n doctoral", flags=re.I):
+                return Category.NO_EVENT
             if re_or(c, "teatro", flags=re.I):
                 return Category.THEATER
             if re_or(c, "crossfit", flags=re.I):
                 return Category.SPORT
-            if re_or(c, "divulgaci[oó]n", "docencia", "congreso", flags=re.I):
+            if re_or(c, "divulgaci[oó]n", "docencia", "congreso", "conferencia", flags=re.I):
                 return Category.CONFERENCE
             if re_or(c, "Producci[oó]n audiovisual", flags=re.I):
                 return Category.CINEMA
+            if re_or(c, "Club de lectura", flags=re.I):
+                return Category.READING_CLUB
+        for m in menu:
+            if re_or(m, "ponentes?", flags=re.I):
+                return Category.CONFERENCE
 
         if re_or(
             e.SUMMARY,
@@ -379,6 +408,7 @@ class Universidad:
             "Encuentro con",
             "Jornadas?( Universitaria)? (sobre|de)",
             "congreso",
+            r"Conferencia",
             flags=re.I
         ):
             return Category.CONFERENCE
@@ -402,12 +432,20 @@ class Universidad:
         ):
             return Category.VISIT
         if re_or(
+            description,
+            ("marketing", "empresarial"),
+            r"Seminar ONSITE",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+        if re_or(
             e.LOCATION,
             "y online",
             flags=re.I
         ):
             return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(link, f"categories={categories} {e}")))
+        print(menu)
         return Category.UNKNOWN
 
     def __find_url(self, e: IcsEventWrapper):

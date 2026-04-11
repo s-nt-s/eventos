@@ -709,7 +709,11 @@ class Event:
                 more = st_also_in.pop()
             also_in = tuple(sorted(st_also_in))
         if id is None:
-            id = to_uuid("".join(e.id for e in evs))
+            ids = set(e.id for e in evs)
+            if len(ids) == 1:
+                id = ids.pop()
+            else:
+                id = to_uuid("".join(sorted(ids)))
         e = evs[0].merge(
             id=id,
             url=url,

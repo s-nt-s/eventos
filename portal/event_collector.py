@@ -38,7 +38,7 @@ from core.place import Place, Places
 from portal.fundacionmarch import FundacionMarch
 from concurrent.futures import ThreadPoolExecutor
 from portal.reinasofia import ReinaSofia
-from core.eventbrite import Api as EventbriteApi
+from portal.ucm import Ucm
 
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ def get_events(source):
             MadridEs,
             Goethe,
             MadridDestino,
-            TeatroBarrio
+            TeatroBarrio,
         )
     ):
         return source.events
@@ -336,7 +336,6 @@ class EventCollector:
         self.__categories = categories
         self.__publish = publish
         self.__madrid_destino = MadridDestino()
-        self.__eventbrite = EventbriteApi()
         self.__avoid_categories = tuple(set({
             Category.CHILDISH,
             Category.SENIORS,
@@ -398,9 +397,9 @@ class EventCollector:
                     isOkDate=isOkDate,
                 ),
                 FundacionMarch,
+                Ucm,
                 Universidades(
                     "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
-                    "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
                     "https://eventos.uam.es/ics/location/espana/lo-1.ics",
                     "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
                     "https://eventos.uah.es/ics/location/espana/lo-1.ics",

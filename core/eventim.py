@@ -109,7 +109,7 @@ def get_data(url: str, js: dict):
     return dt
 
 
-class Eventim:
+class EventimApi:
     def __init__(self, id: str):
         self.__id = id
         self.__s = Session()
@@ -158,13 +158,6 @@ class Eventim:
     def get_info(self):
         items: dict[str, Item] = {}
         for e in self.__get_info():
-            st_dates = set(e.get("eventDates", []))
-            if len(st_dates) == 0:
-                st_dates.add(e['start'])
-            dates = tuple(d for d in st_dates if d >= NOW)
-            if len(dates) == 0:
-                continue
-
             price = 0
             if 'minPrice' in e:
                 price = e['minPrice']['value']
@@ -173,8 +166,9 @@ class Eventim:
             _id_ = e['id']
             eventType = e['eventType']
             i = Item(
-                url=f"https://www.eventim-light.com/es/a/{self.__id}/{eventType[0]}/{_id_}/",
                 id=_id_,
+                start=e['start'],
+                end=e['end'],
                 title=trim(e['title']),
                 category=trim(e['category']),
                 header=trim(e.get('header')),
@@ -183,7 +177,6 @@ class Eventim:
                 soldout=e['soldout'],
                 eventType=eventType,
                 description=description,
-                dates=dates,
                 price=price,
                 place=Place(
                     name=trim(e['venue']['name']),
@@ -203,7 +196,6 @@ class Place(NamedTuple):
 
 
 class Item(NamedTuple):
-    url: str
     id: str
     seriesId: str | None
     affiliateId: str
@@ -217,11 +209,21 @@ class Item(NamedTuple):
     description: str
     price: int
     place: Place
-    dates: tuple[str, ...]
+    start: str
+    end: str
+
+    def get_url(self):
+        url = f"https://www.eventim-light.com/es/a/{self.affiliateId}/e/{self.id}"
+        return url
+
+    def get_serie_url(self):
+        if self.seriesId:
+            url = f"https://www.eventim-light.com/es/a/{self.affiliateId}/s/{self.seriesId}"
+            return url
 
 
 if __name__ == "__main__":
-    e = Eventim(
+    e = EventimApi(
         "67349f8ab667c57a7581e251",
     )
     e.get_info()
