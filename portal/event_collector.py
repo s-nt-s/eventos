@@ -39,6 +39,7 @@ from portal.fundacionmarch import FundacionMarch
 from concurrent.futures import ThreadPoolExecutor
 from portal.reinasofia import ReinaSofia
 from portal.ucm import Ucm
+from core.eventbrite import Api as EventBriteApi
 
 
 logger = logging.getLogger(__name__)
@@ -330,6 +331,7 @@ class EventCollector:
         publish: PublishDB,
         categories: Tuple[Category, ...],
     ):
+        self.____eventbrite = EventBriteApi()
         self.__max_price = max_price
         self.__max_max_price = max(self.__max_price.values())
         self.__max_sessions = max_sessions
