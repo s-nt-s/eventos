@@ -445,7 +445,6 @@ class Universidad:
         ):
             return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(link, f"categories={categories} {e}")))
-        print(menu)
         return Category.UNKNOWN
 
     def __find_url(self, e: IcsEventWrapper):
