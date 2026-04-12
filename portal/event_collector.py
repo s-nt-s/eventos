@@ -166,6 +166,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
     if name:
         if re_or(
             name,
+            "San Lorenzo de Escorial",
             "Fuenlabrada",
             "Museo L[aá]zaro Galdiano",
             # Aranjuez
@@ -331,7 +332,7 @@ class EventCollector:
         publish: PublishDB,
         categories: Tuple[Category, ...],
     ):
-        self.____eventbrite = EventBriteApi()
+        self.__eventbrite = EventBriteApi()
         self.__max_price = max_price
         self.__max_max_price = max(self.__max_price.values())
         self.__max_sessions = max_sessions

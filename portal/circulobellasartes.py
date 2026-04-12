@@ -173,12 +173,20 @@ async def soup_to_event(url: str, soup: Tag):
 
 
 def _find_category(url: str, title: str, soup: Tag):
+    cat = get_text(soup.select_one("span.cba_single_cat"))
     sub_title = get_text(soup.select_one("#fl-main-content div[data-post-id] h3"))
     full_title = f"{title or ''} {sub_title or ''}".strip()
     desc = MD.convert(soup.select_one(
         'div:has(+ footer) div.fl-col:not(.fl-col-small) div.fl-module-rich-text[data-node]'
     ))
     isPresentacion = re_or(full_title, "presentaci[oó]n", flags=re.I)
+    if re_or(
+        cat,
+        "cursos",
+        "talleres",
+        flags=re.I
+    ):
+        return Category.WORKSHOP
     if re_or(
         full_title,
         r"Presentaci[óo]n del libro",
@@ -189,11 +197,6 @@ def _find_category(url: str, title: str, soup: Tag):
     if re_or(
         full_title,
         r"Mesa Redonda",
-        flags=re.I
-    ):
-        return Category.CONFERENCE
-    if re_or(
-        full_title,
         r"Conferencias?",
         flags=re.I
     ):
@@ -230,6 +233,7 @@ def _find_category(url: str, title: str, soup: Tag):
         desc,
         r"panel de conversaci[óo]n",
         r"En esta conferencia",
+        "el podcast de",
         flags=re.I
     ):
         return Category.CONFERENCE
