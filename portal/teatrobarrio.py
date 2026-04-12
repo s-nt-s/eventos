@@ -152,6 +152,7 @@ class TeatroBarrio:
         max_price: float = None
     ):
         self.__w = Web()
+        self.__w.s.headers.update({'Accept-Encoding': 'gzip, deflate'})
         self.__max_price = max_price
         self.__get_page = Getter(
             onread=rq_to_page
@@ -202,12 +203,17 @@ class TeatroBarrio:
                 )
             else:
                 search_sesions.add(shop)
+            name = get_text(a)
             img = div.select_one("span.pb_event_icon img")
+            url = str(shop)
+            inf = div.select_one("a.pb_more_info[href]")
+            if inf:
+                url = inf.attrs["href"]
             i = Item(
-                name=get_text(a),
+                name=name,
                 img=img.attrs["src"] if img else None,
                 shop=shop,
-                url=div.select_one("a.pb_more_info").attrs["href"],
+                url=url,
                 category=get_text(div.select_one("span.pb_category_name")).lower(),
                 price=price,
                 summary=MD.convert(div.select_one("p.pb_event_summary")),
@@ -270,21 +276,6 @@ class TeatroBarrio:
         dt = datetime(int(m.group(3)), MONTHS.index(m.group(2))+1, int(m.group(1)), int(m.group(4)), int(m.group(5)))
         return dt.strftime("%Y-%m-%d %H:%M")
 
-    def __get_items_from_agenda(self):
-        items: set[Item] = set()
-        soup = self.__w.get(TeatroBarrio.AGENDA)
-        for div in soup.select("div.asy-grid > div[id]"):
-            h2 = div.select_one("h2")
-            shop = div.select_one("a:has(.btn-buytickets)")
-            i = Item(
-                id=int(div.attrs["id"].split("-")[-1]),
-                name=get_text(h2),
-                url=h2.find_parent("a").attrs["href"],
-                shop=shop.attrs["href"]
-            )
-            items.add(i)
-        return items
-
     @property
     @TupleCache("rec/teatrobarrio.json", builder=Event.build)
     def events(self):
@@ -322,6 +313,11 @@ class TeatroBarrio:
         ):
             return Category.DANCE
         if re_or(
+            i.category,
+            "performance"
+        ):
+            return Category.THEATER
+        if re_or(
             i.name,
             "AMEIS"
         ):
@@ -341,7 +337,6 @@ class TeatroBarrio:
 
         logger.critical(str(CategoryUnknown(i.url, f"{i.name} {i.category} {i.summary}")))
         return Category.UNKNOWN
-        
 
 
 if __name__ == "__main__":
