@@ -202,9 +202,10 @@ class TeatroBarrio:
                 )
             else:
                 search_sesions.add(shop)
+            img = div.select_one("span.pb_event_icon img")
             i = Item(
                 name=get_text(a),
-                img=div.select_one("span.pb_event_icon img").attrs["src"],
+                img=img.attrs["src"] if img else None,
                 shop=shop,
                 url=div.select_one("a.pb_more_info").attrs["href"],
                 category=get_text(div.select_one("span.pb_category_name")).lower(),
