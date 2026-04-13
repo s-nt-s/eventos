@@ -42,12 +42,26 @@ class Eventim:
         s = datetime.strptime(i.start, "%Y-%m-%d %H:%M")
         e = datetime.strptime(i.end, "%Y-%m-%d %H:%M")
         duration = int((e-s).total_seconds() // 60)
+        if duration == 0:
+            duration = self.__find_duration(i) or duration
         ss = Session(
             date=i.start,
             url=i.get_url() if i.seriesId else None,
             full=i.soldout
         )
         return duration, (ss, )
+    
+    def __find_duration(self, i: Item):
+        ds: set[int] = set()
+        for d in map(int, re.findall(r"\d+\s*-\s*(\d+)\s*minutos", i.description or '')):
+            ds.add(d)
+        if len(ds):
+            return sum(ds)
+        ds: set[int] = set()
+        for d in map(int, re.findall(r"(\d+)\s*minutos", i.description or '')):
+            ds.add(d)
+        if ds:
+            return sum(ds)
 
     def __find_category(self, i: Item):
         if re_or(

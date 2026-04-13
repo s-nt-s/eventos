@@ -281,7 +281,7 @@ def isKoEvent(e: Event):
             return True
         if re_or(e.name, r"Repair\s*Caf[eé]", flags=re.I):
             return True
-    if e.category == Category.CONFERENCE and e.place == Places.ATENEO_MADRID.value:
+    if e.place == Places.ATENEO_MADRID.value and e.category == Category.CONFERENCE:
         if re_or(
             e.name,
             r"farmacia",
@@ -294,6 +294,21 @@ def isKoEvent(e: Event):
             r"homenaje",
             r"aniversario",
             "don quijote",
+            flags=re.I
+        ):
+            return True
+    if e.place.zone == Zones.VILLAVERDE_BAJO.value.name:
+        if e.category == Category.WORKSHOP and re_or(
+            e.name,
+            r"canto",
+            r"duelo",
+            flags=re.I
+        ):
+            return True
+        if e.category in (Category.WORKSHOP, Category.MUSIC, Category.DANCE) and re_or(
+            e.name,
+            r"Cumbia",
+            r"Sevillanas",
             flags=re.I
         ):
             return True
@@ -637,6 +652,8 @@ class EventCollector:
             re.compile(r"^https://tienda\.madrid-destino\.com/es/\S+$"),
             re.compile(r"^https://www\.teatrocircoprice\.es/programacion/\S+$"),
             re.compile(r"^https://www\.centrocentro\.org/\S+$"),
+            re.compile(r"^https://ateneodemadrid\.com/evento/\S+$"),
+            re.compile(r"^https://www\.eventim-light\.com/es/a/[a-z0-9]+/e/[a-z0-9]+$"),
         ):
             def _mk_url(e: Event | Cinema):
                 for u in e.iter_urls():

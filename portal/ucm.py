@@ -2,8 +2,9 @@ from portal.universidad import Universidad
 from portal.eventim import Eventim
 from core.event import Event, Place
 from core.cache import TupleCache
-from core.util import re_or, get_domain
+from core.util import re_or, get_domain, tp_join
 from core.zone import Zones
+from collections import defaultdict
 import re
 
 
@@ -53,7 +54,7 @@ def parse_place(p: Place):
         flags=re.I
     ):
         return Place(
-            name="UCM Deportivo (Sur)",
+            name="UCM Deportivo sur",
             address=p.address,
             latlon="40.438861452263204,-3.7310277461082375",
             map="https://maps.app.goo.gl/c7b7pQQb1nH1sQ968",
@@ -86,12 +87,29 @@ class Ucm:
     @TupleCache("rec/ucm.json", builder=Event.build)
     def events(self):
         events: set[Event] = set()
-        events.update(self.__uni.events)
+        more_events: dict[str, set[Event]] = defaultdict(set)
+        for e in self.__uni.events:
+            e = e.merge(id=f"ucm{e.id}")
+            if e.more is None:
+                events.add(e)
+            else:
+                more = e.more or e._fix_more()
+                more_events[more].add(e)
         for e in self.__tim.events:
+            e = e.merge(id=f"ucm{e.id}")
             pl = parse_place(e.place)
-            if pl:
-                e = e.merge(place=pl)
+            also_in: set[str] = set()
+            for u in e.iter_urls():
+                for x in more_events.pop(u, set()):
+                    if x.url:
+                        also_in.add(x.url)
+            e = e.merge(
+                place=pl.normalize() if pl else e.place,
+                also_in=tp_join(e.also_in, sorted(also_in))
+            )
             events.add(e)
+        for evs in more_events.values():
+            events.update(evs)
 
         for e in list(events):
             events.remove(e)
@@ -107,7 +125,7 @@ class Ucm:
                 e = e.merge(sessions=ss)
             if e.sessions:
                 events.add(e)
-        return tuple(sorted(e.merge(id=f"ucm{e.id}") for e in events))
+        return tuple(sorted(events))
 
 
 if __name__ == "__main__":

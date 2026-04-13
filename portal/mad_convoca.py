@@ -336,6 +336,13 @@ class MadConvoca:
         ):
             return Category.NARRATIVE
 
+        if re_or(
+            e.place.name,
+            "online y en las calles",
+            flags=re.I
+        ):
+            return Category.ACTIVISM
+
         if has_tag_or_title("flinta", r"No[\-\s]*mixto"):
             return Category.NON_GENERAL_PUBLIC
         if has_tag_or_title("infantil"):
@@ -360,8 +367,10 @@ class MadConvoca:
             r"Presentaci[óo]n.* Marcha Republicana",
             r"Desayuno en Magdalena",
             "Bienvenida Nuev[oax@e]s? Rebeldes?",
+            r"recogida (de )?material",
             ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
             ("Grupo", "masculinidades",),
+            ("Convocatoria", "Vivotecnia"),
             flags=re.I,
             to_log=e.id
         ):
@@ -474,6 +483,7 @@ class MadConvoca:
             "conservatorio",
             ("Encuentros?", "conversaci[óo]n(es)?"),
             r"en este coloquio",
+            r"Habr[aá] charla",
             flags=re.I,
             to_log=e.id
         ):
@@ -563,6 +573,7 @@ class MadConvoca:
         if re_or(
             name,
             "Comida bailable",
+            r"gymkhana",
             flags=re.I
         ):
             return Category.PARTY

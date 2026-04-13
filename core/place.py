@@ -269,7 +269,16 @@ class Place:
             return Places.LIBRERIA_SANTANDER.value
         if re.search(r"mary read", name, flags=re.I) and re.search(r"Marqu[eé]s (de )?Toca", address, flags=re.I):
             return Places.LIBRERIA_MARY_READ.value
-        if re_and(self.name, "ateneo", "madrid", flags=re.I) and re_and(self.address, "prado", flags=re.I):
+        if re_or(
+            self.name,
+            ("ateneo", "madrid"),
+            ("biblioteca", "ateneo"),
+            flags=re.I
+        ) and re_and(
+            self.address,
+            "prado",
+            flags=re.I
+        ):
             return Places.ATENEO_MADRID.value
         if re_and(self.name, "ateneo", "maliciosa", flags=re.I) and re_and(self.address, "peñuelas", flags=re.I):
             return Places.ATENEO_MALICIOSA.value
@@ -402,7 +411,16 @@ class Place:
             flags=re.I
         ):
             return Places.PLAZA_PUERTO_RUBIO.value
-
+        if re_or(
+            name,
+            "Museo de Am[eé]rica",
+            flags=re.I
+        ) and re_or(
+            address,
+            "reyes cat[óo]licos",
+            flags=re.I
+        ):
+            return Places.MUSEO_AMERICA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -831,7 +849,7 @@ class Places(Enum):
         name="Teatro del Barrio",
         address="C. de Zurita, 20, Centro, 28012 Madrid",
         latlon="40.40978378427696,-3.6993138845307407",
-        zone='Lavapies',
+        zone='Lavapiés',
         map="https://maps.app.goo.gl/gtmoQWKw3KHAJCqB9"
     )
     PLAZA_PUERTO_RUBIO = Place(
@@ -847,4 +865,11 @@ class Places(Enum):
         latlon="40.421664106756026,-3.681901515345426",
         zone='Retiro',
         map="https://maps.app.goo.gl/JVXHvG8tg5CeYWGN6"
+    )
+    MUSEO_AMERICA = Place(
+        name="Museo de América",
+        address="Av. de los Reyes Católicos, 6, Moncloa - Aravaca, 28040 Madrid",
+        latlon="40.438245416724506,-3.7221641522565263",
+        zone='Moncloa',
+        map="https://maps.app.goo.gl/2DSchB1L2tgMVQE97"
     )

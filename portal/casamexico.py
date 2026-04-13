@@ -388,6 +388,8 @@ class CasaMexico:
                 logger.debug(f"Descartado por no tener sesiones {i.url}")
                 continue
             cycle, name = self.__get_cycle_name(i)
+            if category == Category.CINEMA and not re_or(cycle, "series mexicanas", flags=re.I):
+                cycle = None
             e = Event(
                 id=CasaMexico.get_id(i.url),
                 name=name,
@@ -398,7 +400,7 @@ class CasaMexico:
                 duration=duration,
                 sessions=sessions,
                 place=Places.CASA_MEXICO.value,
-                cycle=cycle if category != Category.CINEMA else None
+                cycle=cycle
             )
             if e.category == Category.CINEMA and (i.director or i.year):
                 e = e.fix_type().merge(
@@ -487,6 +489,7 @@ class CasaMexico:
             r"^Conferencia",
             r"^Conversaciones Transatl[aá]nticas",
             r"encuentro de escritores",
+            r"Mesa redonda",
             flags=re.I
         ):
             return Category.CONFERENCE

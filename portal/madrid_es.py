@@ -4,6 +4,7 @@ import re
 from typing import Set, Tuple, Optional, NamedTuple
 from core.event import Event, Cinema, Session, Place, Category, CategoryUnknown, FIX_EVENT, find_book_category
 from core.util import plain_text, re_or, re_and, get_domain, find_euros, KO_MORE, KO_IMG, find_duplicates
+from core.util import tp_join
 from arrow import Arrow
 import logging
 from core.cache import TupleCache
@@ -164,14 +165,6 @@ def str_to_arrow_hour(h: str):
 class ApiInfo(NamedTuple):
     event: ApiEvent
     ics: tuple[IcsEventWrapper, ...] = tuple()
-
-
-def tp_join(a: tuple | None, b: tuple | None):
-    arr = []
-    for x in (a or tuple()) + (b or tuple()):
-        if x is not None and x not in arr:
-            arr.append(x)
-    return arr
 
 
 class MadridEs:
@@ -474,6 +467,7 @@ class MadridEs:
                 ("Charlas-taller de cactus y suculentas", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Charlas-taller-de-cactus-y-suculentas/?vgnextfmt=default&vgnextoid=d452d3d3508b7810VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
                 ("Las conferencias del CSIC", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-con-investigadores-del-CSIC/?vgnextfmt=default&vgnextoid=8f17641cea74c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
                 (tardes_romanas, "https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Arganzuela/Eventos/ficheros/Roma.png"),
+                ('El siglo de oro', 'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/III-Semana-de-El-Siglo-de-Oro-/?vgnextfmt=default&vgnextoid=7019de3ddda8d910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD'),
             ):
                 if m in urls:
                     return c
@@ -645,6 +639,7 @@ class MadridEs:
             "Voluntarios? por Madrid",
             r"Esquej[oó]dromo",
             r"Intercambio de libros",
+            r"Encuentro de nuevas promociones fhcn",
             flags=re.I
         ):
             return Category.NO_EVENT

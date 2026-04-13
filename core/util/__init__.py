@@ -301,6 +301,18 @@ def get_env(*args: str, default: str = None) -> str | None:
     return default
 
 
+def tp_join(a: tuple | None, b: tuple | None):
+    arr = []
+    if isinstance(a, list):
+        a = tuple(a)
+    if isinstance(b, list):
+        b = tuple(a)
+    for x in (a or tuple()) + (b or tuple()):
+        if x is not None and x not in arr:
+            arr.append(x)
+    return tuple(arr)
+
+
 def find_duplicates(
     evs: Iterable[ValObject],
     mk_key: Callable[[ValObject], Optional[KeyTuple]],
@@ -326,6 +338,12 @@ def clean_url(url: str) -> str:
     )
     if m:
         return "https://eventbrite.es/e/"+m.group(1)
+    m = re.match(
+        r"^https?://(?:www\.)?eventos\.(uc3m|ucm|uam|urjc|uah)\.es/.*?/(\d+)(?:$|[\?#/].*)",
+        url
+    )
+    if m:
+        return "https://eventos."+m.group(1)+".es/"+m.group(2)
     return url
 
 

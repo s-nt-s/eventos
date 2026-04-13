@@ -24,7 +24,20 @@ async def rq_to_events(r: ClientResponse):
         raise ValueError(str(r.url))
     if not all(isinstance(i, dict) for i in ev):
         raise ValueError(str(r.url))
+    desc = js['data'].get("description")
+    if desc:
+        for e in ev:
+            if not e.get("description"):
+                e['description'] = desc
     return ev
+
+
+async def rq_to_data(r: ClientResponse):
+    js = await r.json()
+    dt = js['data']
+    if not isinstance(dt, dict):
+        raise ValueError(str(r.url))
+    return dt
 
 
 def trim(s: str):
@@ -116,6 +129,9 @@ class EventimApi:
         self.__getter_events = Getter(
             onread=rq_to_events
         )
+        self.__getter_data = Getter(
+            onread=rq_to_data
+        )
 
     @property
     def id(self):
@@ -124,18 +140,21 @@ class EventimApi:
     @HashCache("rec/eventim/{}.json")
     def __get_data(self, url: str) -> list[dict]:
         series: set[str] = set()
+        no_des: set[str] = set()
         data: list[dict] = []
         r = self.__s.get(url)
         js = r.json()
         for e in get_data(url, js):
             _id_ = e['id']
+            a_id = e['affiliate']['id']
             tp = e['type']
             if tp not in ("event", "series"):
                 raise ValueError(e)
             if tp == "event":
+                if e.get("description") is None:
+                    no_des.add(f"https://www.eventim-light.com/es/a/{a_id}/e/{_id_}/index.pageContext.json")
                 data.append(e)
                 continue
-            a_id = e['affiliate']['id']
             url = f"https://www.eventim-light.com/es/a/{a_id}/s/{_id_}/index.pageContext.json"
             series.add(url)
         for evs in self.__getter_events.get(*series).values():
@@ -144,6 +163,14 @@ class EventimApi:
                 if tp not in ("event", None):
                     raise ValueError(tp)
                 data.append(e)
+        id_desc: dict[str, str] = dict()
+        for dt in self.__getter_data.get(*no_des).values():
+            id_desc[dt['id']] = dt.get("description")
+        for e in data:
+            desc = id_desc.get(e['id'])
+            if desc:
+                e['description'] = desc
+
         data = parse_obj(
             data,
             compact=True,
@@ -161,7 +188,6 @@ class EventimApi:
             price = 0
             if 'minPrice' in e:
                 price = e['minPrice']['value']
-
             description = MD.convert(e.get("description")) or MD.convert(e.get("teaser"))
             _id_ = e['id']
             eventType = e['eventType']

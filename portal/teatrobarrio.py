@@ -334,6 +334,12 @@ class TeatroBarrio:
             flags=re.I
         ):
             return Category.READING_CLUB
+        if re_or(
+            i.name,
+            r"presentaci[óo]n.*Marcha Republicana",
+            flags=re.I
+        ):
+            return Category.ACTIVISM
 
         logger.critical(str(CategoryUnknown(i.url, f"{i.name} {i.category} {i.summary}")))
         return Category.UNKNOWN

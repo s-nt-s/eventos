@@ -337,6 +337,12 @@ class Goethe:
             return Category.CINEMA
         if re_or(
             et,
+            "concierto",
+            flags=re.I
+        ):
+            return Category.MUSIC
+        if re_or(
+            et,
             "teatro",
             "esc[eé]nicas?",
             flags=re.I

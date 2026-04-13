@@ -2,7 +2,7 @@ from core.ics import IcsReader, IcsEventWrapper
 from functools import cached_property
 from core.event import Event, Place, Session, Category, CategoryUnknown
 from core.place import Places
-from core.util import re_or, re_and, get_domain
+from core.util import re_or, re_and, get_domain, clean_url
 import requests
 import re
 from bs4 import BeautifulSoup
@@ -73,6 +73,8 @@ class Info(NamedTuple):
             return tuple(val)
 
     def get_menu(self):
+        if self.sym is None:
+            return tuple()
         mn = self.sym.get("menu")
         if isinstance(mn, dict):
             mn = list(mn.values())
@@ -289,7 +291,7 @@ class Universidad:
             price = self.__find_price(link, e)
             event = Event(
                 id=e.UID,
-                url=link,
+                url=clean_url(link),
                 name=e.SUMMARY,
                 duration=e.duration or 60,
                 img=img,
@@ -336,6 +338,9 @@ class Universidad:
             r"Presentaci[óo]n del nuevo Dec[aá]logo",
             r"Elecciones Junta",
             r"Bridge the Digital Divide",
+            r"gesti[oó]n de riesgos.*nbq",
+            r"Encuentro.* nuevas? promoci[óo]n(es)?",
+            r"MINDSET EJECUTIVO",
             flags=re.I
         ):
             return Category.NO_EVENT
@@ -354,9 +359,16 @@ class Universidad:
             "coloquio",
             "Simposio",
             "seminario",
+            "mesa redonda",
             flags=re.I
         ):
             return Category.CONFERENCE
+        if re_or(
+            e.SUMMARY,
+            "Presentaci[óo]n del libro",
+            flags=re.I
+        ):
+            return Category.LITERATURE
         if re_or(
             e.SUMMARY,
             "^taller",

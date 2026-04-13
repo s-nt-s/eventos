@@ -132,6 +132,7 @@ class AteneoMadrid:
         if re_or(
             e.DESCRIPTION,
             "venta (de )?entradas",
+            "las entradas se pueden (adquirir|comprar)",
             r"Socios c[oó]digo (de )?descuento",
             r"C[oó]digo (de )?descuento (para )?socios",
             flags=re.I
@@ -176,6 +177,8 @@ class AteneoMadrid:
                 "Grupo PPE",
                 "diputado PP",
                 "Foro Espa[ñn]a C[ií]vica",
+                "Cultura Militar",
+                "Mar[ií]a Mart[ií]n D[ií]ez de Balde[oó]n",
             ):
                 return Category.INSTITUTIONAL_POLICY
             if re_or(

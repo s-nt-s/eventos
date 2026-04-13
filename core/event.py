@@ -136,6 +136,7 @@ class Category(IntEnum):
     RELIGION = 46
     PHOTO = 47
     PICTURE = 48
+    FULL = 49
 
     def __str__(self):
         if self == Category.UNKNOWN:
@@ -304,8 +305,8 @@ class Event:
     duration: int
     publish: str = NOW
     img: Optional[str] = None
-    also_in: Tuple[str] = tuple()
-    sessions: Tuple[Session] = tuple()
+    also_in: Tuple[str, ...] = tuple()
+    sessions: Tuple[Session, ...] = tuple()
     cycle: Optional[str] = None
     more: Optional[str] = None
 

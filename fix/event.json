@@ -6,6 +6,7 @@
   "20260305180000Z-149602@eventos.urjc.es": {"category": "CONFERENCE"},
   "20260306153000Z-148783@eventos.urjc.es": {"category": "VISIT"},
   "20260325150000Z-150995@eventos.uc3m.es": {"category": "WORKSHOP"},
+  "20260415170000Z-152073@eventos.uc3m.es": {"category": "CONFERENCE"},
   "D7E33971-D06D-5FCB-85CF-CF79C6334E1E": {"cycle": "Luz Madrid"},
   "ac667": {"filmaffinity": 611674},
   "ac668": {"filmaffinity": 739265},
@@ -30,7 +31,6 @@
   "al45783": {"filmaffinity": 375780},
   "al53788": {"filmaffinity": 544481},
   "al53869": {"filmaffinity": 187905},
-  "al54132": {"category": "NO_EVENT"},
   "al54147": {"category": "RELIGION"},
   "al54215": {"category": "RELIGION"},
   "al54222": {"category": "POETRY"},
@@ -71,6 +71,8 @@
   "am57643-1775674800-1775674800@ateneodemadrid.com": {"filmaffinity": 815018},
   "am57889-1776454200-1776454200@ateneodemadrid.com": {"more": "https://www.goodreads.com/book/show/243148473"},
   "am57932-1775836800-1775923200@ateneodemadrid.com": {"more": "https://raiepp.org/encuentro-abolicionista-2026"},
+  "am57995-1776277800-1776277800@ateneodemadrid.com": {"category": "NARRATIVE"},
+  "am58097-1777575600-1777575600@ateneodemadrid.com": {"name": "Ganadores del concurso de música de cámara"},
   "ce15333": {"price": 3},
   "ce15346": {"cycle": "Cortometrajes"},
   "ce15361": {"filmaffinity": 747811},
@@ -115,7 +117,6 @@
   "mc26637": {"more": "https://www.goodreads.com/book/show/214329174"},
   "mc26684": {"category": "PARTY"},
   "mc26685": {"category": "ACTIVISM"},
-  "mc26687": {"category": "NO_EVENT"},
   "mc26693": {"category": "ACTIVISM"},
   "mc26695": {"category": "CONFERENCE"},
   "mc26703": {"imdb": "tt37504320"},
@@ -131,7 +132,6 @@
   "mc41895-1767985200-1767992400@fal.cnt.es": {"more": "https://www.goodreads.com/book/show/25042005"},
   "mc41994-1768417200-1768424400@fal.cnt.es": {"more": "https://www.goodreads.com/book/show/32950260"},
   "mc42577-1774378800-1774386000@fal.cnt.es": {"more": "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2246566"},
-  "mc42659-1773428400-1773435600@fal.cnt.es": {"category": "NO_EVENT"},
   "mcmc26870": {"name": "El derecho a tener derechos"},
   "mcmc26928": {"category": "CONFERENCE"},
   "mcmc26929": {"category": "EXPO"},
@@ -158,10 +158,9 @@
   "mcmc27082": {"filmaffinity": 812085},
   "mcmc27121": {"filmaffinity": 346638},
   "mcmc27174": {"category": "ACTIVISM"},
-  "mcmc27181": {"category": "NO_EVENT"},
-  "mcmc27182": {"category": "NO_EVENT"},
   "mcmc27216": {"more": "https://nedediciones.com/tienda/huellas-y-senales/paralisis-por-agitacion/"},
   "mcmc27230": {"category": "ACTIVISM"},
+  "mcmc27275": {"category": "PARTY"},
   "md6225": {"img": "https://www.teatrocircoprice.es/sites/default/files/styles/activity_gallery/public/2026-01/HOP_736x530.jpg.webp"},
   "md6494": {"category": "CONFERENCE"},
   "md6519": {"filmaffinity": 330646},
@@ -244,6 +243,7 @@
   "ms5b93371c9b76d910VgnVCM200000f921e388RCRD": {"filmaffinity": 513636},
   "ms5cf94f097a24d910VgnVCM100000891ecb1aRCRD": {"category": "NARRATIVE"},
   "ms74d01a9183c6c910VgnVCM200000f921e388RCRD": {"category": "LITERATURE"},
+  "ms9e3a6d5e90b8d910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
   "msa8d5e042bd42d910VgnVCM200000f921e388RCRD": {"category": "SPAM"},
   "msd3b43ae95cf1d910VgnVCM200000f921e388RCRD": {"category": "SPAM"},
   "msebe9e665d77fc910VgnVCM100000891ecb1aRCRD": {"category": "MUSIC"},
@@ -253,9 +253,7 @@
   "mx71762C9A-1DD1-5DD7-A25F-A2165E879534": {"filmaffinity": 122104},
   "mx8429CB3E-8AAA-5C33-A6C5-95CD3EB346D3": {"filmaffinity": 985323},
   "mx8ECB0949-DABD-5A1E-89BE-59E6A488DB27": {"filmaffinity": 766006},
-  "mxADE245A4-F21D-5E07-9C9E-0CEBF4943155": {"category": "NO_EVENT"},
   "mxBD13A9DD-E1FD-5016-A335-41F7830DF188": {"category": "CONFERENCE"},
-  "mxDB76DBBC-9FAA-54D0-AC52-6E1A7012BC0A": {"category": "NO_EVENT"},
   "mxED3E5373-CFA9-5EDD-8C5F-DAA41A0969F8": {"filmaffinity": 207758},
   "mxFB56698D-F690-5299-8216-7AA1FAB719DD": {"filmaffinity": 581171},
   "rs39235": {"filmaffinity": 136625},
@@ -603,6 +601,28 @@
     "name": "Sal a la ferida: Impacto ecosocial de ICL en Catalunya y Palestina",
     "more": "https://blogs.sindominio.net/salalaferidadocu/el-documental/"
   },
+  "mcmc27250": {
+    "more": "https://bienalanarquista.madrid/tercera-bienal-anarquista-de-madrid-2026#programa",
+    "category": "CONFERENCE",
+    "sessions": [
+      {
+        "date": "2026-04-24 18:00",
+        "duration": 210
+      },
+      {
+        "date": "2026-04-25 12:00",
+        "duration": 570
+      },
+      {
+        "date": "2026-04-26 12:00",
+        "duration": 420
+      }
+    ]
+  },
+  "mcmc27269": {
+    "category": "CONFERENCE",
+    "more": "https://www.nonormal.org/ponentes"
+  },
   "md7308": {
     "category": "CONFERENCE",
     "img": "https://21distritos.es/wp-content/uploads/2026/01/web-photo-2025-07-11-21-12-33.jpg"
@@ -755,17 +775,25 @@
     "category": "CONFERENCE",
     "name": "Renta básica universal e incondicional"
   },
-  "20260415170000Z-152073@eventos.uc3m.es": {"category": "CONFERENCE"},
-  "mcmc27250": {
-    "more": "https://bienalanarquista.madrid/tercera-bienal-anarquista-de-madrid-2026#programa",
-    "category": "CONFERENCE",
-    "sessions": [
-      {"date": "2026-04-24 18:00", "duration": 210},
-      {"date": "2026-04-25 12:00", "duration": 570},
-      {"date": "2026-04-26 12:00", "duration": 420}
-    ]
+  "md6839": {
+    "category": "READING_CLUB",
+    "name": "Fun Home, de Alison Bechdel",
+    "more": "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1870889",
+    "img": "https://m.media-amazon.com/images/I/91gqhMgr8PL._SL1500_.jpg"
   },
-  "20260416170000Z-152080@eventos.ucm.es": {
-    "category": "NO_EVENT"
-  }
+  "ucm20260416170000Z-152080@eventos.ucm.es": {"more": "https://www.eventim-light.com/es/a/67349f8ab667c57a7581e251/e/69c12b47a4983b3837573f96"},
+  "gt27261103": {"filmaffinity": 117833},
+  "ms29f82ffddee2d910VgnVCM200000f921e388RCRD": {"category":  "FULL"},
+  "ms59fab4a9cfd3d910VgnVCM100000891ecb1aRCRD": {"category":  "FULL"},
+  "msb28fb4a9cfd3d910VgnVCM100000891ecb1aRCRD": {"category":  "FULL"},
+  "ms32c0b4a9cfd3d910VgnVCM100000891ecb1aRCRD": {"category":  "FULL"},
+  "ms26e6206b1ed3d910VgnVCM100000891ecb1aRCRD": {"category":  "FULL"},
+  "ms2897206b1ed3d910VgnVCM100000891ecb1aRCRD": {"category":  "FULL"},
+  "msb458b4a9cfd3d910VgnVCM100000891ecb1aRCRD": {"category":  "FULL"},
+  "mxDB76DBBC-9FAA-54D0-AC52-6E1A7012BC0A": {"category":  "NO_EVENT"},
+  "mxADE245A4-F21D-5E07-9C9E-0CEBF4943155": {"category":  "NO_EVENT"},
+  "ce15621": {"filmaffinity": 961563},
+  "ce15622": {"imdb": "tt15388574"},
+  "ce15623": {"more": "https://en.wikipedia.org/wiki/Charlie_Shackleton"},
+  "ce15624": {"filmaffinity": 505284}
 }

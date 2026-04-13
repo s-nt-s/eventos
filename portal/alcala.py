@@ -20,6 +20,7 @@ from core.md import MD
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
 
+
 @cache
 def get_content(x: EventOnEvent):
     html = x.content or x.details
@@ -28,9 +29,17 @@ def get_content(x: EventOnEvent):
     content = buildSoup(x.permalink, html)
     return MD.convert(content)
 
-def to_datetime(i: int):
-    dt = datetime.fromtimestamp(i, tz=ZoneInfo("UTC"))
-    return dt.astimezone(ZoneInfo("Europe/Madrid"))
+
+def to_datetime(i: int | str):
+    if i is None:
+        return None
+    if isinstance(i, str):
+        dt = datetime.strptime(i, "%Y-%m-%d %H:%M")
+        return dt.replace(tzinfo=ZoneInfo("Europe/Madrid"))
+    if isinstance(i, int):
+        dt = datetime.fromtimestamp(i, tz=ZoneInfo("UTC"))
+        return dt.astimezone(ZoneInfo("Europe/Madrid"))
+    raise ValueError(i)
 
 
 def _clean_name_place(name: str):
@@ -81,7 +90,7 @@ class Alcala:
     @cached_property
     @TupleCache("rec/alcala.json", builder=Event.build)
     def events(self):
-        id_store: dict[str, list[str]] = defaultdict(list)
+        id_store: dict[str, set[str]] = defaultdict(set)
         logger.info("Alcala: Buscando eventos")
         events: dict[str, Event] = {}
         for x in self.__eventon.get_eventon():
@@ -89,33 +98,37 @@ class Alcala:
             if e is not None:
                 for c in x.customfields:
                     if c.startswith("https://www.giglon.com/evento/"):
-                        id_store[e.id].append(c)
+                        id_store[e.id].add(c)
                 events[e.id] = e
         sessions = self.__find_session_in_store(id_store)
-        for id, ses in sessions.items():
-            if len(ses):
-                events[id] = events[id].merge(sessions=tuple(sorted(ses)))
         for id, ev in list(events.items()):
-            if len(ev.sessions) == 0:
+            ss: set[Session] = set()
+            for s in sessions.get(e.id, ev.sessions):
+                if self.__isOkDate(to_datetime(s.date)):
+                    ss.add(s)
+            if len(ss) == 0:
                 logger.critical(f"sessions=None {ev.url}")
                 del events[id]
+                continue
+            events[id] = ev.merge(
+                sessions=tuple(sorted(ss))
+            )
         evs = tuple(events.values())
         logger.info(f"Alcala: Buscando eventos = {len(evs)}")
         return evs
 
-    def __find_session_in_store(self, id_store: dict[str, list[str]]):
+    def __find_session_in_store(self, id_store: dict[str, set[str]]):
         store_url: set[str] = set()
         sessions: dict[str, set[str]] = defaultdict(set)
         for id, urls in id_store.items():
             store_url.update(urls)
-        store_dates = self.__get_store.get(*store_url)
+        store_dates: dict[str, tuple[datetime, ...]] = self.__get_store.get(*store_url)
         for id, urls in id_store.items():
             for u in urls:
-                for d in store_dates.get(u, []):
-                    if self.__isOkDate(d):
-                        sessions[id].add(Session(
-                            date=d.strftime("%Y-%m-%d %H:%M")
-                        ))
+                for d in store_dates.get(u, tuple()):
+                    sessions[id].add(Session(
+                        date=d.strftime("%Y-%m-%d %H:%M")
+                    ))
         return sessions
 
     def __eventon_to_event(self, x: EventOnEvent):
@@ -193,39 +206,45 @@ class Alcala:
             return Category.UNKNOWN
         txt_content = get_content(x)
         for cat, _or_ in {
-            Category.CHILDISH: (r"T[IÍ]TERES.*P[UÚ]BLICO FAMILIAR", r"TEATRO INFANTIL", r"[Ee]spect[aá]culo infantil", r"ESPECIALMENTE RECOMENDADA PARA LA INFANCIA"),
+            Category.CHILDISH: (
+                r"T[IÍ]TERES.*P[UÚ]BLICO FAMILIAR",
+                r"TEATRO (INFANTIL|FAMILIAR)",
+                r"[Ee]spect[aá]culo infantil",
+                r"ESPECIALMENTE RECOMENDADA PARA LA INFANCIA"
+            ),
             Category.PARTY: (r"EXPERIENCIA GASTRON[OÓ]MICA", ),
-            Category.THEATER: (r"VISITA TEATRALIZADA", ),
+            Category.THEATER: (r"VISITA TEATRALIZADA", "TEATRO",),
             Category.POETRY: (r"[dD]eclamaci[oó]n de poemas", ),
+            Category.PUPPETRY: (r"T[IÍ]TERES", ),
         }.items():
             if re_or(txt_content, *_or_):
                 return cat
-        tp = x.event_types[0].lower()
-        if tp == "música y danza":
-            if re_or(
-               txt_content,
-               r"Tour del talento \d+",
-               flags=re.I
-            ):
+        for tp in map(str.lower, x.event_types):
+            if tp == "música y danza":
+                if re_or(
+                    txt_content,
+                    r"Tour del talento \d+",
+                    flags=re.I
+                ):
+                    return Category.MUSIC
+                if re_or(txt_content, "danza", flags=re.I):
+                    return Category.DANCE
                 return Category.MUSIC
-            if re_or(txt_content, "danza", flags=re.I):
-                return Category.DANCE
-            return Category.MUSIC
-        cat = {
-            "cine": Category.CINEMA,
-            "exposiciones": Category.EXPO,
-            "teatro": Category.THEATER,
-            "talleres": Category.WORKSHOP,
-            "literatura y conferencias": Category.CONFERENCE,
-            "programación familiar": Category.CHILDISH,
-        }.get(tp)
-        if cat == Category.THEATER:
-            if re_and(txt_content, r"CLOW", r"P[UÚ]BLICO FAMILIAR"):
-                return Category.CHILDISH
-            if re_or(txt_content, r"T[ÍI]TERES"):
-                return Category.PUPPETRY
-        if cat is not None:
-            return cat
+            cat = {
+                "cine": Category.CINEMA,
+                "exposiciones": Category.EXPO,
+                "teatro": Category.THEATER,
+                "talleres": Category.WORKSHOP,
+                "literatura y conferencias": Category.CONFERENCE,
+                "programación familiar": Category.CHILDISH,
+            }.get(tp)
+            if cat == Category.THEATER:
+                if re_and(txt_content, r"CLOW", r"P[UÚ]BLICO FAMILIAR"):
+                    return Category.CHILDISH
+                if re_or(txt_content, r"T[ÍI]TERES"):
+                    return Category.PUPPETRY
+            if cat is not None:
+                return cat
         logger.critical(str(CategoryUnknown(x.permalink, ', '.join(x.event_types))))
         return Category.UNKNOWN
 
@@ -255,8 +274,6 @@ class Alcala:
             st = dates.pop().replace(hour=h, minute=m)
             dates = {st, }
         for st in sorted(dates):
-            if not self.__isOkDate(st):
-                continue
             sessions.add(Session(
                 date=st.strftime("%Y-%m-%d %H:%M")
             ))
