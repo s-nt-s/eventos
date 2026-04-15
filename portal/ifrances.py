@@ -3,7 +3,8 @@ from functools import cached_property
 from core.cache import Cache, TupleCache
 from urllib.parse import urlencode, urljoin
 from core.util import parse_obj, re_or
-from core.event import Event, Category, CategoryUnknown, Session, Place
+from core.event import Event, Category, CategoryUnknown, Session, Place, Cinema
+from core.md import MD
 import re
 from datetime import datetime
 import logging
@@ -11,6 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 re_sp = re.compile(r"\s+")
+MAX_YEAR = datetime.now().year + 1
 
 
 def _max(i: dict, *keys):
@@ -189,9 +191,41 @@ class InstitutoFrances:
                 sessions=sessions,
                 cycle=None
             )
+            e = self.__complete(e, i) or e
             evs.add(e)
         logger.info(f"Instituto francés: Buscando eventos = {len(evs)}")
         return tuple(sorted(evs))
+
+    def __complete(self, e: Event, i: dict):
+        desc = MD.convert(i.get("product_description"))
+        if not desc:
+            return None
+        e = e.fix_type()
+        if not isinstance(e, Cinema):
+            return None
+
+        def _gField(rg: str):
+            m = re.search(rg+r"\s*:\s*([^\n]+)", desc)
+            if m:
+                v = m.group(1).strip()
+                if v:
+                    return v
+        d = tuple(
+            x for x in 
+            map(str.strip, re.split(r"\s*,\s*", _gField(r"DIRECCI[OÓ]N") or ''))
+            if x
+        )
+        t = _gField(r"T[ÍI]TULO ORIGINAL")
+        y: set[int] = set()
+        for x in map(int, re.findall(r"(\d+)\s*/", desc)):
+            if x > 1900 and x <= MAX_YEAR:
+                y.add(x)
+        e = e.merge(
+            director=d,
+            aka=(t, ) if t else tuple(),
+            year=y.pop() if len(y) == 1 else None,
+        )
+        return e
     
     def __find_duration_sessions(self, i: dict):
         duration = _max(

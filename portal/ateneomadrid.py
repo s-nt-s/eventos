@@ -151,19 +151,25 @@ class AteneoMadrid:
                 return Category.POETRY
             if re_or(
                 e.DESCRIPTION,
-                "Secci[oó]n de Literatura",
+                "Secci[oó]n(es)? de Literatura",
                 "Lectura de fragmentos de la obra por",
                 flags=re.I
             ):
                 return Category.NARRATIVE
             if re_or(
                 e.DESCRIPTION,
-                "Secci[oó]n de Fotograf[ií]a",
+                "Secci[oó]n(es)? de Fotograf[ií]a",
                 flags=re.I
             ):
                 return Category.PHOTO
 
         if cat in (Category.CONFERENCE, Category.LITERATURE):
+            if re_or(
+                e.SUMMARY,
+                "Letras gallegas",
+                flags=re.I
+            ):
+                return Category.NARRATIVE
             if re_or(
                 e.DESCRIPTION,
                 "Andrés Trapiello",
@@ -191,13 +197,13 @@ class AteneoMadrid:
                 return Category.SPAM
             if re_or(
                 e.DESCRIPTION,
-                "Secci[óo]n de Mitos, Religiones y Humanidades",
+                "Mitos, Religiones y Humanidades",
                 flags=re.I
             ):
                 return Category.RELIGION
             if re_or(
                 e.DESCRIPTION,
-                "Agrupaci[óo]n Estudios pict[oó]ricos y sociales Francisco de Goya",
+                "Estudios pict[oó]ricos y sociales Francisco de Goya",
                 flags=re.I
             ):
                 return Category.PICTURE

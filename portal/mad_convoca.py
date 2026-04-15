@@ -418,6 +418,9 @@ class MadConvoca:
             "kabaret",
             "cañeo",
             "Paella Republicana",
+            "Comida bailable",
+            "gymkhana",
+            ("Software", ("Free", "libre"), ("day", "día")),
             flags=re.I,
             to_log=e.id
         ):
@@ -450,8 +453,6 @@ class MadConvoca:
             return Category.ACTIVISM
         if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', 'Repair\s*Caf[eé]'):
             return Category.WORKSHOP
-        if re_and(name, "Software", ("Free", "libre"), ("day", "día"), flags=re.I):
-            return Category.PARTY
         if re_or(
             name,
             "Ruta",
@@ -492,9 +493,13 @@ class MadConvoca:
             return Category.MUSIC
         if re_or(txt_desc, "hacer arte cutre"):
             return Category.WORKSHOP
-        if re_and(txt_desc, "performance", "micr[óo]fono abierto", "DJ Set(lists?)?", to_log=e.id, flags=re.I):
-            return Category.PARTY
-        if re_and(txt_desc, "Karaoke", r"DJ Set(s|lists?)?", to_log=e.id, flags=re.I):
+        if re_or(
+            txt_desc,
+            ("performance", "micr[óo]fono abierto", "DJ Set(lists?)?"),
+            ("Karaoke", r"DJ Set(s|lists?)?"),
+            to_log=e.id,
+            flags=re.I
+        ):
             return Category.PARTY
         if re_or(txt_desc, "comedia perform[aá]tica", flags=re.I, to_log=e.id):
             return Category.THEATER
@@ -566,17 +571,11 @@ class MadConvoca:
         if re_or(
             txt_desc,
             "Tu nube seca mi río",
+            ("jornadas?", "charlas?"),
             flags=re.I,
             to_log=e.id
         ):
             return Category.CONFERENCE
-        if re_or(
-            name,
-            "Comida bailable",
-            r"gymkhana",
-            flags=re.I
-        ):
-            return Category.PARTY
         if has_tag("ecoaldea") and has_tag("encuentro"):
             return Category.NO_EVENT
         if re_or(

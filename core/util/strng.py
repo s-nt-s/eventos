@@ -144,6 +144,7 @@ def _rm_prefix():
         r"Representaci[óo]n teatral",
         r"Taller",
         r"Conversaciones WAIQ",
+        r"TALLER DE FORMACI[OÓ]N LIBERTARIA, ANARKADEMIA, \d+.? EDICI[OÓ]N",
     ])
     PREFIX_2 = r"|".join({
         r"POM Condeduque [\d\-]+",
@@ -206,6 +207,7 @@ def _rm_quote():
         r"Proyecci[óo]n y coloquio",
         r"Estreno del largometraje documental",
         r"Taller(?: de)?",
+        r"Conferencias?",
     ])
     re_3 = r"(?:"+PREFIX+r")"
     re_prefix = re.compile(r"^"+re_3+NQ+r"*(["+_QT+r"])", flags=re.I)

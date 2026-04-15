@@ -103,7 +103,7 @@ class Alcala:
         sessions = self.__find_session_in_store(id_store)
         for id, ev in list(events.items()):
             ss: set[Session] = set()
-            for s in sessions.get(e.id, ev.sessions):
+            for s in sessions.get(ev.id, ev.sessions):
                 if self.__isOkDate(to_datetime(s.date)):
                     ss.add(s)
             if len(ss) == 0:

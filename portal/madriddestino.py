@@ -551,6 +551,7 @@ class MadridDestino:
             r"familiar\.? Desde \d+ años,? (con|sin) acompañante",
             r"De \d+ meses a \d años",
             r"A partir de \d+ meses",
+            r"familiar desde \d años",
             flags=re.I,
             to_log=id
         ):

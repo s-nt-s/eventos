@@ -117,14 +117,13 @@ class Api:
             return None
         if b.free is True:
             return 0
-        for txt in (
+        prc = find_euros(
             b.price,
             b.description,
             *txt
-        ):
-            prc = find_euros(txt)
-            if prc is not None:
-                return prc
+        )
+        if prc is not None:
+            return prc
         if re_or(
             b.price,
             r"Matr[ií]cula gratuitas?",
@@ -136,6 +135,7 @@ class Api:
             None,
             "Entradas disponibles próximamente en entradas.com y en la taquilla del recinto",
             "Consultar descuentos especiales",
+            "Información sobre inscripciones en breve",
         ):
             logger.critical(f"Campo price inexperado: {b.price}")
 

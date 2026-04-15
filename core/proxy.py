@@ -20,7 +20,7 @@ class ProxyManager:
         if val is None:
             return prx
         words = val.split()
-        for i in range(int(len(words)/2)):
+        for i in range(0, int(len(words)/2)+1, 2):
             label = words[i]
             prx[words[i+1]] = label
             logger.info(f"proxy {len(prx)}: {label}")

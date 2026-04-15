@@ -114,7 +114,7 @@ class GancioPortal:
                 links.append(m)
 
         media_list: list[str] = []
-        for m in e.get_list_or_none('media'):
+        for m in e.get_list_or_empty('media'):
             media = m.get("url")
             if media:
                 media_list.append(f'{self.__root}/media/{media}')

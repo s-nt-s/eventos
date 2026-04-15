@@ -24,6 +24,7 @@ MAX_YEAR = datetime.now().year + 1
 
 _SEP = r"\-\.\|"
 _TRIM = (
+    r"(lunes|martes|Mi[eé]rcoles|jueves|viernes|s[áa]bado|domingo) de cine[\s\|]+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|diciembre)",
     r"Presentaci[oó]n del? libro",
     r"Ciclo de cine",
     r"Primavera \d+",
@@ -174,7 +175,7 @@ async def rq_to_items(r: ClientResponse):
                 (get_text(div.select_one(".info-tipo-actividad")) or '').lower()
             )
         ):
-            if t and t not in tags:
+            if t and t not in tags and t not in ("privado", ):
                 tags.append(t)
         info_date = get_text(div.select_one(".info-fecha"))
         if info_date is None:
@@ -317,6 +318,7 @@ class CasaMexico:
             f"{CasaMexico.URL_LIST}&tipo=academicas",
             f"{CasaMexico.URL_LIST}&tipo=cine",
             f"{CasaMexico.URL_LIST}&tipo=exposiciones",
+            f"{CasaMexico.URL_LIST}&tipo=privado",
         )
         url_item: dict[str, set[Item]] = defaultdict(set)
         for its in data.values():
@@ -483,6 +485,21 @@ class CasaMexico:
         }.items():
             if t in i.tags:
                 return c
+        if re_or(
+            i.name,
+            r"cine familiar",
+            r"Espect[aá]culo familiar",
+            flags=re.I
+        ):
+            return Category.CHILDISH
+        if re_or(
+            i.name,
+            r"Proyecci[oó]n\b.*\bMeriidiano",
+            r"MEXES",
+            flags=re.I
+        ):
+            return Category.CINEMA
+
         if re_or(
             i.name,
             r"Coloquio",

@@ -83,6 +83,37 @@ async def rq_to_label(r: ClientResponse):
     return about
 
 
+def url_to_label(url: str):
+    name = url.rstrip("/").rsplit("/", 1)[-1]
+    if len(name) == 0:
+        return None
+    lb = {
+        "Fuencarral-ElPardo": "Fuencarral El Pardo",
+        "1ciudad21distritos": "21 distritos",
+        "Moncloa-Aravaca": "Moncloa Aravaca",
+        "SanBlas-Canillejas": "San Blas Canillejas",
+        "CapacitacionDigital": "Capacitación Digital",
+        "CineFiccion": "Cine Ficción",
+        "ComemoracionesHomenajes": "Conmemoraciones Homenajes",
+        "ConcursosCertamenes": "Concursos Certámenes",
+        "CuentacuentosTiteresMarionetas": "Cuentacuentos Títeres Marionetas",
+        "FolcloreEtnica": "Folclore Étnica",
+        "LatinaEspanola": "Latina Española",
+        "Musica": "Música",
+        "Natacion": "Natación",
+        "ProgramacionDestacadaAgendaCultura": "Programación Destacada Agenda Cultura",
+        "Vicalvaro": "Vicálvaro",
+        "EnLinea": "En Línea",
+        "Chamartin": "Chamartín",
+        "Chamberi": "Chamberí",
+        "Clasica": "Clásica",
+        #"EnLinea": "Online",
+    }.get(name)
+    if lb:
+        return lb
+    return un_camel(name)
+
+
 def str_line(s: str | None):
     if s is None:
         return ''
@@ -361,6 +392,22 @@ class DatosMadridEs:
         )
         return dts
 
+    def __get_data_label(self, *urls: str):
+        st_urls = set(urls)
+        data_label: dict[str, str] = {}
+        for u in st_urls:
+            lb = url_to_label(u)
+            if lb:
+                data_label[u] = lb
+        st_urls = st_urls.difference(data_label.keys())
+        for k, v in Getter(
+            onread=rq_to_label,
+            raise_for_status=False,
+        ).get(*st_urls).items():
+            if isinstance(v, str):
+                data_label[k] = v
+        return data_label
+
     @TupleCache("rec/apimadrides/items.json", builder=Item.build)
     def get_events(self):
         dataset = self.__get_events()
@@ -385,10 +432,7 @@ class DatosMadridEs:
             if e.place and e.place.district:
                 url_label.add(e.place.district)
 
-        data_label: dict[str, str] = Getter(
-            onread=rq_to_label,
-            raise_for_status=False,
-        ).get(*url_label)
+        data_label = self.__get_data_label(*url_label)
 
         evs: set[Item] = set()
         for e in events:

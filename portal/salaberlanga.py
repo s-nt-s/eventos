@@ -180,7 +180,7 @@ class SalaBerlanga:
                 sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url)))
             )
         else:
-            if url_compra and len(tup_html_sessions) == 1 and tup_html_sessions[0].url is None:
+            if url_compra not in (None, item.url) and len(tup_html_sessions) == 1 and tup_html_sessions[0].url is None:
                 tup_html_sessions = (tup_html_sessions[0]._replace(url=url_compra), )
             ev = Event(
                 id=_id_,
@@ -223,13 +223,18 @@ class SalaBerlanga:
             return ev.merge(
                 cycle="Teatro en la Berlanga",
             )
-        if ev.cycle is None and ev.img:
+        if ev.cycle is None:
+            if re_or(ev.name, "sgae en corto", "Cortometrajes?", flags=re.I) or re.search(r"sgae-en-corto", ev.url or ''):
+                return ev.merge(
+                    cycle="Cortometrajes",
+                )
+            nuevos_territorios = "Nuevos territorios"
             cycle = {
-                "https://salaberlanga.com/wp-content/uploads/2026/03/Redes_Feed_NT-Bergia2-240x300.jpg": "Nuevos territorios",
+                "https://salaberlanga.com/wp-content/uploads/2026/03/Redes_Feed_NT-Bergia2-240x300.jpg": nuevos_territorios,
                 "https://salaberlanga.com/wp-content/uploads/2026/03/0.-Cartel-Ciclo-C54-211x300.png": "Cinco cuartos",
             }.get(ev.img)
-            if cycle is None and re.search(r"[\-_]nuevos[\-_]territorios[\-_]", ev.img, flags=re.I):
-                cycle = "Nuevos territorios"
+            if cycle is None and re.search(r"[\-_]nuevos[\-_]territorios[\-_]", ev.img or '', flags=re.I):
+                cycle = nuevos_territorios
             if cycle:
                 return ev.merge(cycle=cycle)
         if ev.category == Category.CINEMA and re_or(

@@ -1,7 +1,7 @@
 from requests import Session as ReqSession
 from core.cache import Cache, TupleCache
 from urllib.parse import urlencode
-from core.util import parse_obj, find_euros, re_or
+from core.util import parse_obj, find_euros, re_or, clean_url
 import re
 from core.event import Event, Category, CategoryUnknown, Session, Place, find_book_category
 from core.place import Places
@@ -190,7 +190,7 @@ class Goethe:
             sessions, duration = self.__find_session_duration(url, i)
             e = Event(
                 id=f"gt{_id_}",
-                url=url,
+                url=clean_url(url),
                 name=_clean_name(name),
                 img=None,
                 price=self.__find_price(url, i),
@@ -246,7 +246,7 @@ class Goethe:
             rl = None
         s = Session(
             date=a.strftime("%Y-%m-%d %H:%M"),
-            url=rl
+            url=clean_url(rl)
         )
         return (s, ), duration
 
@@ -345,6 +345,7 @@ class Goethe:
             et,
             "teatro",
             "esc[eé]nicas?",
+            "Lectura teatral",
             flags=re.I
         ):
             return Category.THEATER

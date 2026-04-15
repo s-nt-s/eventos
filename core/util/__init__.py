@@ -362,7 +362,7 @@ def normalize_url(url: str, *tail: str) -> str:
     return new_unparse
 
 
-def find_euros(*prices: str | None) -> None | float | int:
+def find_euros(*prices: Union[str, None]) -> None | float | int:
     for prc in prices:
         if prc is None:
             continue
@@ -455,6 +455,7 @@ def un_camel(x: str):
         return x
     if x in (
         "LGTBI",
+        "JOBO",
     ):
         return x
     return re.sub(

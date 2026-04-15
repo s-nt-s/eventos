@@ -11,6 +11,17 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 
+def find_cp(s: str):
+    if s is None:
+        return None
+    cp: set[int] = set()
+    for c in map(int, re.findall(r"\b(28\d+)", s)):
+        if c <= 28999:
+            cp.add(c)
+    if len(cp) == 1:
+        return cp.pop()
+
+
 def safe_lt(a: str | None, b: str | None):
     if (a, b) == (None, None):
         return None
@@ -200,10 +211,24 @@ class Place:
             return Zones.MARQUES_DE_VADILLO.value.name
         if re_or(
             self.address,
+            r"plaza jes[uí]s.*28014",
+            flags=re.I
+        ):
+            return "Paseo del Prado"
+        if re_or(
+            self.address,
             r"Alcal[aá]( de)? Henares",
             flags=re.I
         ):
             return Zones.ALCALA_DE_HENARES.value.name
+        cp = find_cp(self.address) or find_cp(self.name)
+        zone = {
+            #
+        }.get(cp)
+        if zone is not None:
+            return zone
+        if cp:
+            logger.debug(f"NOT FOUND cp={cp}")
         return None
 
     def _fix_latlon(self):
@@ -421,6 +446,17 @@ class Place:
             flags=re.I
         ):
             return Places.MUSEO_AMERICA.value
+        if re_or(
+            name,
+            "espacio afro",
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "c[aá]ceres",
+            flags=re.I
+        )):
+            return Places.ESPACIO_AFRO.value
+
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -872,4 +908,11 @@ class Places(Enum):
         latlon="40.438245416724506,-3.7221641522565263",
         zone='Moncloa',
         map="https://maps.app.goo.gl/2DSchB1L2tgMVQE97"
+    )
+    ESPACIO_AFRO = Place(
+        name="Espacio Afro",
+        address="C. de Cáceres, 49, Arganzuela, 28045 Madrid",
+        latlon="40.39908347733006,-3.700088539854162",
+        zone='Legazpi',
+        map="https://maps.app.goo.gl/AgPDHHxp8KXPSY6eA"
     )

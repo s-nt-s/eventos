@@ -209,12 +209,13 @@ class TeatroBarrio:
             inf = div.select_one("a.pb_more_info[href]")
             if inf:
                 url = inf.attrs["href"]
+            category = get_text(div.select_one("span.pb_category_name"))
             i = Item(
                 name=name,
                 img=img.attrs["src"] if img else None,
                 shop=shop,
                 url=url,
-                category=get_text(div.select_one("span.pb_category_name")).lower(),
+                category=category.lower() if category else None,
                 price=price,
                 summary=MD.convert(div.select_one("p.pb_event_summary")),
                 sessions=ss
@@ -308,12 +309,25 @@ class TeatroBarrio:
         ):
             return Category.CHILDISH
         if re_or(
+            i.name,
+            "solo soci[oaex@]s"
+        ):
+            return Category.NON_GENERAL_PUBLIC
+        if re_or(
+            i.name,
+            "Swing en el Teatro del Barrio",
+            "baile social",
+            flags=re.I
+        ):
+            return Category.PARTY
+        if re_or(
             i.category,
             "baile"
         ):
             return Category.DANCE
         if re_or(
             i.category,
+            "ensayo general",
             "performance"
         ):
             return Category.THEATER
