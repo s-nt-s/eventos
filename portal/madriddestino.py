@@ -376,7 +376,8 @@ class MadridDestino:
             'mataderomadrid.org',
             'intermediae.es',
             'medialab-matadero.es',
-            'centrocentro.org'
+            'centrocentro.org',
+            'serreria-belga.es',
         ):
             ev = ev.merge(url=ev.more, more=None)
         ev = ev.fix_type()
@@ -552,6 +553,7 @@ class MadridDestino:
             r"De \d+ meses a \d años",
             r"A partir de \d+ meses",
             r"familiar desde \d años",
+            r"^Niños y niñas",
             flags=re.I,
             to_log=id
         ):

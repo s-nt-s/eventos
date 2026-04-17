@@ -368,8 +368,7 @@ def set_icons(html: str, **kwargs):
             "forms.office": "https://cdn.forms.office.net/images/favicon.ico",
             "goodreads": "https://www.goodreads.com/favicon.ico",
             "teatroespanol": "https://www.teatroespanol.es/themes/custom/teatroespanol_v2/favicon.ico",
-            "es.wikipedia": "https://es.wikipedia.org/static/favicon/wikipedia.ico",
-            "en.wikipedia": "https://en.wikipedia.org/static/favicon/wikipedia.ico",
+            "wikipedia": "https://es.wikipedia.org/static/favicon/wikipedia.ico",
             "mataderomadrid": "https://www.mataderomadrid.org/themes/custom/new_matadero/favicon.ico",
             "centrocentro": "https://www.centrocentro.org/sites/default/files/favicon_1.ico",
             "casalector.fundaciongsr": "https://casalector.fundaciongsr.org/wp-content/uploads/2017/09/apple-touch-icon-72x72.png",
@@ -385,6 +384,7 @@ def set_icons(html: str, **kwargs):
             "youtube": "https://www.youtube.com/s/desktop/1afc1cab/img/favicon.ico",
             "eventbrite": "https://cdn.evbstatic.com/s3-build/perm_001/765d40/django/images/favicons/favicon-16x16.png",
             "intermediae": "https://www.intermediae.es/themes/custom/intermediae_theme/favicon.ico",
+            "serreria-belga": "https://www.serreria-belga.es/themes/custom/serreria_belga/favicon.ico",
         }.get(dom)
         if ico is None:
             continue

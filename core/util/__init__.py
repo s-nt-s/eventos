@@ -57,11 +57,11 @@ def get_domain(url: str):
     if url is None or len(url) == 0:
         return None
     parsed_url: ParseResult = urlparse(url)
-    domain: str = parsed_url.netloc.lower()
-    if domain.startswith("www."):
-        domain = domain[4:]
-    domain = re.sub(r":\d+$", "", domain)
+    domain = parsed_url.netloc
     domain = domain.lower()
+    domain = re.sub(r"^(w+\d*)\.", "", domain)
+    domain = re.sub(r"^(es|en)\.", "", domain)
+    domain = re.sub(r":\d+$", "", domain)
     return domain
 
 
