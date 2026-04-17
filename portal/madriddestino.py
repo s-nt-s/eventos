@@ -553,7 +553,7 @@ class MadridDestino:
             r"De \d+ meses a \d años",
             r"A partir de \d+ meses",
             r"familiar desde \d años",
-            r"^Niños y niñas",
+            r"^Niñ[oa]s y niñ[oa]s",
             flags=re.I,
             to_log=id
         ):

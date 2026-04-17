@@ -456,7 +456,23 @@ class Place:
             flags=re.I
         )):
             return Places.ESPACIO_AFRO.value
+        if re_or(
+            name,
+            "ateneo villaverde villaverde",
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "alberto palacios",
+            flags=re.I
+        )):
+            return Places.ATENEO_VILLAVERDE.value
 
+        if re_or(
+            f"{name} {address}",
+            ("vallekas", "Piketa"),
+            flags=re.I,
+        ):
+            return Places.CS_PILEKA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -624,6 +640,12 @@ class Places(Enum):
         latlon="40.39584448961841,-3.7177346134909293",
         zone="Marques de Vadillo",
         map="https://maps.app.goo.gl/UVDe5M5jwip47W9h6"
+    )
+    CS_PILEKA = Place(
+        name="CS Pileka",
+        address="Calle Alfredo Castro Camba, 24, 28053 Madrid",
+        latlon="40.38646500445769,-3.6696186711636445",
+        map="https://maps.app.goo.gl/VAqokrQHBeiKiwbo8"
     )
     CSO_DISKORDIA = Place(
         name="CSO Diskordia",
@@ -915,4 +937,10 @@ class Places(Enum):
         latlon="40.39908347733006,-3.700088539854162",
         zone='Legazpi',
         map="https://maps.app.goo.gl/AgPDHHxp8KXPSY6eA"
+    )
+    ATENEO_VILLAVERDE = Place(
+        name="Ateneo Villaverde",
+        address="P.º de Alberto Palacios, 2, Villaverde, 28021 Madrid",
+        latlon="40.346850085863956,-3.7092837326225037",
+        zone='Villaverde Alto'
     )

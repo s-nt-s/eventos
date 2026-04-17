@@ -138,6 +138,7 @@ class MadConvoca:
     def __fix_gancio(self, e: GancioEvent, ev: Event):
         if e.description and re_or(e.title, r"Cinef[óo]rum de la Rosa", flags=re.I):
             text = MD.convert(e.description)
+            text = re.sub(r"\s*Cinef[óo]rum de la Rosa\s*", "\n", text, flags=re.I).strip()
             m = re.search(
                 r"([^\.\(\)]+?) \((\d{4})\),? dir.? ([^\.\(\)]+)",
                 text,
@@ -367,6 +368,7 @@ class MadConvoca:
             r"Presentaci[óo]n.* Marcha Republicana",
             r"Desayuno en Magdalena",
             "Bienvenida Nuev[oax@e]s? Rebeldes?",
+            r"Mesa informativa.* alquiler",
             r"recogida (de )?material",
             ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
             ("Grupo", "masculinidades",),
