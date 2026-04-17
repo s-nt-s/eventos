@@ -92,6 +92,9 @@ async def rq_to_seats(r: ClientResponse):
 
 
 async def rq_to_page(r: ClientResponse):
+    if r.status == 404:
+        return None
+    r.raise_for_status()
     root = str(r.url)
     soup = buildSoup(root, await r.text())
     duration = None
@@ -155,7 +158,8 @@ class TeatroBarrio:
         self.__w.s.headers.update({'Accept-Encoding': 'gzip, deflate'})
         self.__max_price = max_price
         self.__get_page = Getter(
-            onread=rq_to_page
+            onread=rq_to_page,
+            raise_for_status=False,
         )
         self.__get_shop_sessions = Getter(
             onread=rq_to_shop_sessions
