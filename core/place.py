@@ -458,7 +458,7 @@ class Place:
             return Places.ESPACIO_AFRO.value
         if re_or(
             name,
-            "ateneo villaverde villaverde",
+            "ateneo libertario villaverde",
             flags=re.I
         ) and (not address or re_or(
             address,

@@ -809,5 +809,10 @@
   "ucm20260422153000Z-152780@eventos.ucm.es": {"category": "NARRATIVE"},
   "am46097": {"category": "NARRATIVE"},
   "mcmc27299": {"category": "CONFERENCE"},
-  "tbC22D04A9-F199-59F5-B603-543F0552F804": {"category": "CHILDISH"}
+  "tbC22D04A9-F199-59F5-B603-543F0552F804": {"category": "CHILDISH"},
+  "tbEC6F66FC-A883-592A-8727-F1A083DD9B15": {"category": "CHILDISH"},
+  "mcmc27306": {
+    "filmaffinity": 556362,
+    "name": "Latcho Drom"
+  }
 }
