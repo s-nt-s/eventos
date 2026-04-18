@@ -814,5 +814,11 @@
   "mcmc27306": {
     "filmaffinity": 556362,
     "name": "Latcho Drom"
+  },
+  "sb11004": {
+    "cycle": "Ramblas"
+  },
+  "sb11006": {
+    "cycle": "Ramblas"
   }
 }
