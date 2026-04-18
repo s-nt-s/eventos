@@ -89,7 +89,7 @@
       <ol class="sesiones">
         {% for dia, sesiones in e.dates %}
         <li data-start="{{sesiones[0].date}}" data-end="{{sesiones[-1].date}}">
-          <pre>{{dia.strip()}}</pre>:{% for s in sesiones %}
+          <pre title="{{sesiones[0].date[:10]}}">{{dia.strip()}}</pre>:{% for s in sesiones %}
           {% if s.url %}
           <a href="{{s.url | escape}}" {%if s.title %}title="{{s.title}}"{%endif%}>{{s.hour}}</a>
           {% else %}
