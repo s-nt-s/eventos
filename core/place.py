@@ -317,7 +317,7 @@ class Place:
             return Places.MAKESPACE.value
         if re_or(self.name, "ASOCIACI[Óo]N GALEGA CORREDOR DO HENARES", flags=re.I) and re_and(self.address, "28806", flags=re.I):
             return Places.ALCALA_HENARES_GALEGA.value
-        if re.search(r"CS[ROA]* [lL]a [rR]osa", name) and re.search(r"bastero", self.address, flags=re.I):
+        if re.search(r"[lL]a [rR]osa", name) and re.search(r"bastero", self.address, flags=re.I):
             return Places.CSO_ROSA.value
         if re_and(self.address, r"CNT", "embajadores", flags=re.I):
             return Places.CNT_EMBAJADORES.value
