@@ -468,7 +468,6 @@ class MadridEs:
                 ("Las conferencias del CSIC", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-con-investigadores-del-CSIC/?vgnextfmt=default&vgnextoid=8f17641cea74c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
                 (tardes_romanas, "https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Arganzuela/Eventos/ficheros/Roma.png"),
                 ('El siglo de oro', 'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/III-Semana-de-El-Siglo-de-Oro-/?vgnextfmt=default&vgnextoid=7019de3ddda8d910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD'),
-                ('Concierto del alumnado del Conservatorio de Amaniel', 'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasEspecializadas/BibliotecaMusical/Actividades/ficheros/amaniel260x260.jpg'),
             ):
                 if m in urls:
                     return c
@@ -486,6 +485,12 @@ class MadridEs:
             ))
         ):
             return "Itinerarios guiados por El Retiro"
+        if cat == Category.MUSIC and (
+            urls.intersection((
+                "https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasEspecializadas/BibliotecaMusical/Actividades/ficheros/amaniel260x260.jpg",
+            ))
+        ):
+            return "Concierto del alumnado del Conservatorio de Amaniel"
         if re_and(
             i.event.title,
             "Escribo lo que soy",
