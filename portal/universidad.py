@@ -5,7 +5,7 @@ from core.place import Places
 from core.util import re_or, re_and, get_domain, clean_url
 import requests
 import re
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from collections import defaultdict
 from types import MappingProxyType
 from functools import cache
@@ -35,14 +35,81 @@ NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
 class Info(NamedTuple):
+    url: str
     ldj: dict
     sym: dict
     pog: dict
     description: Optional[str] = None
 
+    def get_shop(self):
+        ok: set[str] = set()
+        aux: set[str] = set()
+        ko: set[str] = set()
+        for shop in map(str.strip, self.__iter_shop()):
+            if re.match(r"https?://eventos\..+?/event_detail/\d+/tickets\.html", shop):
+                continue
+            if not re.search(r"^https?://", shop):
+                ko.add(shop)
+                continue
+            if get_domain(shop) in (
+                "eventim-light.com",
+                "cultura.uc3m.es",
+                "tienda.madrid-destino.com",
+                "rockthesport.com",
+            ):
+                ok.add(shop)
+                continue
+            aux.add(shop)
+        if len(ok) == 0:
+            ok = aux
+        else:
+            ko.update(aux)
+        for k in sorted(ko):
+            logger.warning(f"SHOP unknown {k}")
+        if len(ok) == 0:
+            return None
+        if len(ok) == 1:
+            return ok.pop()
+        for k in sorted(ok):
+            logger.warning(f"SHOP ambiguous {k}")
+
+    def __iter_shop(self):
+        def _fix(s: str):
+            if s is None:
+                return None
+            s = s.strip()
+            if s in ("", "#"):
+                return None
+            for k, v in {
+                "httpstiendamadrid-destinocomesdaoiz-y-velarde": "https://tienda.madrid-destino.com/es/daoiz-y-velarde/",
+                "httpsculturauc3meseventos": "https://cultura.uc3m.es/eventos/",
+            }.items():
+                if s.startswith(k):
+                    return v + s[len(k):]
+            return s
+
+        arr: list[str] = []
+        if self.sym is not None:
+            arr.append(self.sym.get("short_url"))
+            b = buildSoup(self.url, self.sym.get("enrolment_button"))
+            if b:
+                for a in b.select("a[href]"):
+                    arr.append(a.attrs["href"])
+        for shop in map(_fix, arr):
+            if shop:
+                yield shop
+            
+    
     def get_img(self):
         if self.pog:
-            return self.pog.get('image')
+            img = self.pog.get('image')
+            if img:
+                return img
+        if self.description:
+            descNone = buildSoup(self.url, self.description)
+            img = descNone.select_one("img[src]")
+            if img:
+                return img.attrs["src"]
 
     def get_price(self):
         if self.ldj:
@@ -134,6 +201,48 @@ def clean_place_name(name: str, domain: str) -> str:
     return name
 
 
+def _get_ldj(soup: Tag):
+    slc = "script[type='application/ld+json']"
+    txt = get_text(soup.select_one(slc))
+    if txt is None:
+        return None
+    ldj = json.loads(txt)
+    if ldj is None:
+        return None
+    if not isinstance(ldj, dict):
+        raise ValueError(f"{slc} = {txt}")
+    return ldj
+
+
+def _get_sym(soup: Tag):
+    for script in map(get_text, soup.select("script")):
+        m = re.match(
+            re.escape("var SYM = $.extend(SYM || {}, {data:") + r"(.+)}\);.*",
+            script or ""
+        )
+        if m:
+            txt = m.group(1)
+            sym = json.loads(txt)
+            if sym is None:
+                continue
+            if not isinstance(sym, dict):
+                raise ValueError(f"SYM = {txt}")
+            return sym
+
+
+def _get_pog(soup: Tag):
+    pog = {}
+    for k in ('image', ):
+        og_node = soup.select_one(f"meta[property='og:{k}']")
+        if og_node:
+            v = og_node.get("content")
+            if v:
+                v = re_sp.sub(r" ", v).strip()
+                if len(v):
+                    pog[k] = v
+    return pog
+
+
 class Universidad:
     def __init__(
         self,
@@ -141,8 +250,10 @@ class Universidad:
         verify_ssl=True,
         isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
         isOkDate: Callable[[datetime], bool] = None,
+        max_price: Optional[float] = None
     ):
         self.__verify_ssl = verify_ssl
+        self.__max_price = max_price
         self.__ics_url = ics
         self.__isOkPlace = isOkPlace or (lambda *_: True)
         self.__ics = IcsReader(
@@ -175,30 +286,17 @@ class Universidad:
 
     @HashTupleCache("rec/universidad/{}.json", builder=Info.build)
     def __get_info(self, url: str):
-        ldj, sym = None, None
         soup = self.__get(url)
-        txt = get_text(soup.select_one("script[type='application/ld+json']"))
-        if txt:
-            ldj = json.loads(txt)
-        for script in map(get_text, soup.select("script")):
-            m = re.match(
-                re.escape("var SYM = $.extend(SYM || {}, {data:") + r"(.+)}\);.*",
-                script or ""
-            )
-            if m:
-                sym = json.loads(m.group(1))
-        pog = {}
-        for k in ('image', ):
-            og_node = soup.select_one(f"meta[property='og:{k}']")
-            if og_node:
-                v = og_node.get("content")
-                if v:
-                    v = re_sp.sub(r" ", v).strip()
-                    if len(v):
-                        pog[k] = v
-        desc = soup.select_one(".ag_description")
-        description = str(desc) if desc else None
+        ldj = _get_ldj(soup)
+        sym = _get_sym(soup)
+        pog = _get_pog(soup)
+        description = (sym or {}).get("description")
+        if description is None:
+            descNone = soup.select_one(".ag_description, #description-container")
+            if descNone:
+                description = str(descNone)
         return Info(
+            url=url,
             ldj=ldj,
             sym=sym,
             pog=pog,
@@ -286,9 +384,12 @@ class Universidad:
             if link is None:
                 logger.warning(f"Evento sin URL {e}")
                 continue
+            price = self.__find_price(link, e)
+            if None not in (self.__max_price, price) and price > self.__max_price:
+                continue
             category = self.__find_category(link, e)
             img = self.__find_img(link, e)
-            price = self.__find_price(link, e)
+            info = self.__get_info(link)
             event = Event(
                 id=e.UID,
                 url=clean_url(link),
@@ -302,6 +403,7 @@ class Universidad:
                 sessions=(
                     Session(
                         date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
+                        url=info.get_shop() if info else None,
                     ),
                 ),
                 more=self.__get_more(link, e.SUMMARY)
@@ -311,6 +413,13 @@ class Universidad:
         return evs
 
     def __find_place(self, e: IcsEventWrapper, url: str):
+        description = self.__get_description(url, e.SUMMARY)
+        if re_or(
+            description,
+            r"Centro Cultural Dao[íi]z y Velarde",
+            flags=re.I
+        ):
+            return Places.CC_DAOIZ_VALVERDE.value
         if not e.LOCATION:
             return None
         if re_and(e.LOCATION, "ateneo (de )?Madrid", flags=re.I):
@@ -320,15 +429,17 @@ class Universidad:
             loc_latlon = self.__get_locations()
             latlon = loc_latlon.get(e.LOCATION)
         dom = get_domain(url)
-        return Place(
+        p = Place(
             name=clean_place_name(e.LOCATION, dom),
             address=e.LOCATION,
             latlon=latlon
         )
+        return p
 
     def __find_category(self, link: str, e: IcsEventWrapper) -> Category:
         if re_or(
             e.SUMMARY,
+            r"M[aá]ster de",
             r"Actividad formativa de Doctorado",
             r"pr[aá]cticas y empleo",
             r"Encuentro AlumniUAH",
@@ -341,10 +452,27 @@ class Universidad:
             r"gesti[oó]n de riesgos.*nbq",
             r"Encuentro.* nuevas? promoci[óo]n(es)?",
             r"MINDSET EJECUTIVO",
+            r"D[ií]a del Estudiante",
+            r"PhDay",
+            ("Carrera", "Psicolog[ií]a por la Salud"),
             flags=re.I
         ):
             return Category.NO_EVENT
         description = self.__get_description(link, e.SUMMARY)
+        if re_or(
+            description,
+            r"M[aá]ster de",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+        info = self.__get_info(link)
+        enrolment_button = MD.convert(info.sym.get("enrolment_button") if info and info.sym else None)
+        if re_or(
+            enrolment_button,
+            r"La inscripci[oó]n ha finalizado",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
         if re_or(
             description,
             r"Actividad para alumnos[^\.]*? (ESO|Primaria)",
@@ -360,6 +488,7 @@ class Universidad:
             "Simposio",
             "seminario",
             "mesa redonda",
+            "^Conferencia",
             flags=re.I
         ):
             return Category.CONFERENCE
@@ -380,6 +509,7 @@ class Universidad:
             description,
             "obra esc[eé]nica",
             "conferencia teatralizada",
+            "Grupo de Teatro",
             flags=re.I
         ):
             return Category.THEATER
@@ -393,7 +523,6 @@ class Universidad:
             flags=re.I
         ):
             return Category.CONFERENCE
-        info = self.__get_info(link)
         categories = (info.get_categories() if info else None) or tuple()
         menu = (info.get_menu() if info else None) or tuple()
         for c in categories:
@@ -492,11 +621,13 @@ class Universidades:
         verify_ssl=True,
         isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
         isOkDate: Callable[[datetime], bool] = None,
+        max_price: Optional[float] = None
     ):
         self.__urls = urls
         self.__verify_ssl = verify_ssl
         self.__isOkPlace = isOkPlace
         self.__isOkDate = isOkDate
+        self.__max_price = max_price
 
     @property
     @TupleCache("rec/universidad.json", builder=Event.build)
@@ -508,7 +639,8 @@ class Universidades:
                 url,
                 verify_ssl=self.__verify_ssl,
                 isOkPlace=self.__isOkPlace,
-                isOkDate=self.__isOkDate
+                isOkDate=self.__isOkDate,
+                max_price=self.__max_price
             ).events)
         evs = tuple(sorted(events))
         logger.info(f"Buscando eventos en universidades = {len(evs)}")
@@ -526,6 +658,7 @@ if __name__ == "__main__":
         "https://eventos.uam.es/ics/location/espana/lo-1.ics",
         "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
         "https://eventos.uah.es/ics/location/espana/lo-1.ics",
+        max_price=10,
         verify_ssl=False,
     ).events
     for event in evs:

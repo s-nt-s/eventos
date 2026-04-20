@@ -178,10 +178,15 @@ class InstitutoFrances:
             name = _clean_name(i['product_name'])
             if re.search(r"\ben franc[eé]s$", name, flags=re.I):
                 continue
+            url = i['event_url']
+            place = self.__find_location(i)
+            if place is None:
+                logger.warning(f"NOT FOUND place {url}")
+                continue
             duration, sessions = self.__find_duration_sessions(i)
             e = Event(
                 id=f"if{i['IDPRODUCT']}",
-                url=i['event_url'],
+                url=url,
                 name=name,
                 img=i.get('image_url'),
                 price=self.__find_price(i),
@@ -226,7 +231,7 @@ class InstitutoFrances:
             year=y.pop() if len(y) == 1 else None,
         )
         return e
-    
+
     def __find_duration_sessions(self, i: dict):
         duration = _max(
             i,
@@ -239,7 +244,6 @@ class InstitutoFrances:
             logger.warning(f"NOT FOUND duration {i['event_url']}")
             duration = 0
         return duration, (Session(date=st.strftime("%Y-%m-%d %H:%M")), )
-
 
     def __find_location(self, i: dict):
         lc = i.get("event_location")
@@ -259,8 +263,11 @@ class InstitutoFrances:
                 ll = m.group()
         else:
             lu = None
+        name = ln or lc or li or la
+        if name is None:
+            return None
         return Place(
-            name=ln or lc or li or la,
+            name=name,
             address=la,
             latlon=ll,
             map=lu
@@ -293,6 +300,20 @@ class InstitutoFrances:
                 flags=re.I
             ):
                 return Category.MUSIC
+            if re_or(
+                n,
+                "conferencia",
+                "mesa redonda",
+                "Tertulia",
+                flags=re.I
+            ):
+                return Category.CONFERENCE
+            if re_or(
+                n,
+                "Fotorrelato \d+",
+                flags=re.I
+            ):
+                return Category.CONTEST
         logger.warning(str(CategoryUnknown(i['event_url'], name)))
         return Category.UNKNOWN
 

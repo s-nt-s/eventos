@@ -73,6 +73,21 @@ def parse_place(p: Place):
             map="https://maps.app.goo.gl/2P7np7abqA1hTbBj8",
             zone=Zones.COMPLUTENSE.value.name
         )
+    if re_or(
+        f"{p.name or ''} {p.address or ''}".strip(),
+        "Facultad de Filolog[ií]a y Filosof[ií]a",
+        "Facultad de Filosof[ií]a y Filolog[ií]a",
+        "Facultad de Filolog[í]a",
+        "Facultad de Filosof[ií]a",
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Filología y Filosofía",
+            address=p.address,
+            latlon='40.44896524689359,-3.730427327696498',
+            map="https://maps.app.goo.gl/6KXtAxzdQmRH2rXK8",
+            zone=Zones.COMPLUTENSE.value.name
+        )
 
 
 class Ucm:
@@ -90,10 +105,14 @@ class Ucm:
         more_events: dict[str, set[Event]] = defaultdict(set)
         for e in self.__uni.events:
             e = e.merge(id=f"ucm{e.id}")
-            if e.more is None:
+            more_urls: set[str] = set()
+            more_urls.add(e.more or e._fix_more())
+            if len(e.sessions) == 1:
+                more_urls.add(e.sessions[0].url)
+            more_urls.discard(None)
+            if len(more_urls)==0:
                 events.add(e)
-            else:
-                more = e.more or e._fix_more()
+            for more in more_urls:
                 more_events[more].add(e)
         for e in self.__tim.events:
             e = e.merge(id=f"ucm{e.id}")

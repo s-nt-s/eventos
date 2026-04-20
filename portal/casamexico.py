@@ -79,6 +79,14 @@ def _clean_name(name: str):
         return None
     if not isinstance(name, str):
         raise ValueError(f"name must be a str, but is a {type(name)}: {name}")
+
+    if re_or(
+        name,
+        "encuentro de escritores hispanoamericanos",
+        flags=re.I
+    ):
+        return "Escritores hispanoamericanos"
+
     bak = ['']
 
     while bak[-1] != name:
@@ -489,6 +497,7 @@ class CasaMexico:
             i.name,
             r"cine familiar",
             r"Espect[aá]culo familiar",
+            r"Domingos? en Casa con Sapos y Princesas",
             flags=re.I
         ):
             return Category.CHILDISH
@@ -502,8 +511,10 @@ class CasaMexico:
 
         if re_or(
             i.name,
+            r"Clase magistral",
             r"Coloquio",
             r"^Conferencia",
+            r"^Conversatorio",
             r"^Conversaciones Transatl[aá]nticas",
             r"encuentro de escritores",
             r"Mesa redonda",

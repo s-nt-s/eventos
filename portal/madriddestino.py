@@ -5,7 +5,7 @@ from functools import cached_property, cache
 import logging
 from core.cache import TupleCache, HashCache
 import json
-from core.event import Event, Cinema, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown
+from core.event import Event, Cinema, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown, find_book_category
 from datetime import datetime
 import re
 import requests
@@ -406,7 +406,9 @@ class MadridDestino:
                 director=tuple(director),
                 year=int(year) if year and year.isdecimal() else None
             )
-            if not director and isVarios and len(re.findall(r"\d+'", desc or '')) > 1:
+            if not director and isVarios and len(
+                [i for i in map(int, re.findall(r"(\d+)['’]", desc or '')) if i < 30]
+            ) > 1:
                 ev = ev.merge(cycle="Cortometrajes")
         if not ev.director:
             director: list[str] = []
@@ -532,6 +534,12 @@ class MadridDestino:
         is_cine = is_cat('cine')
         psub = plain_text(e.get('subtitle'))
         pt = plain_text(e['title'])
+        desc = info.get('description') or ''
+        for k, v in {
+            'ó': '&oacute;',
+            'é': '&eacute;'
+        }.items():
+            desc = desc.replace(v, k)
 
         if re_or(
             psub,
@@ -585,6 +593,13 @@ class MadridDestino:
             flags=re.I
         ):
             return Category.VISIT
+        if re_or(
+            e['title'],
+            r"Presentaci[oó]n del libro",
+            flags=re.I
+        ):
+            return find_book_category(e['title'], desc, Category.LITERATURE)
+        
         if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", to_log=id, flags=re.I):
             return Category.VIEW_POINT
         if re_or(pt, "taller infantil", "concierto matinal familiar", "canciones de cuna", to_log=id, flags=re.I):
@@ -648,12 +663,6 @@ class MadridDestino:
             return Category.CONFERENCE
         if re_or(pt, "belen del ayuntamiento", flags=re.I):
             return Category.EXPO
-        desc = info.get('description') or ''
-        for k, v in {
-            'ó': '&oacute;',
-            'é': '&eacute;'
-        }.items():
-            desc = desc.replace(v, k)
         if re_or(
             desc,
             "para beb[eé]s y primera infancia",

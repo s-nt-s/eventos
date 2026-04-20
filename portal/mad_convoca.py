@@ -353,7 +353,8 @@ class MadConvoca:
         ) or has_tag_or_title(
             'manifestaci[oó]n',
             'concentraci[oó]n',
-            'regularizaci[oó]n extraordinaria'
+            'regularizaci[oó]n extraordinaria',
+            'asamblea de vivienda',
         ):
             return Category.ACTIVISM
         if re_or(
@@ -370,9 +371,11 @@ class MadConvoca:
             "Bienvenida Nuev[oax@e]s? Rebeldes?",
             r"Mesa informativa.* alquiler",
             r"recogida (de )?material",
+            r"Cena vegana las Regañas",
             ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
             ("Grupo", "masculinidades",),
             ("Convocatoria", "Vivotecnia"),
+            r"Marcha Republicana",
             flags=re.I,
             to_log=e.id
         ):
@@ -478,6 +481,7 @@ class MadConvoca:
         if re_or(
             txt_desc,
             "Charla cr[ií]tica",
+            "charla sobre",
             "vendr[aá]n a conversar sobre",
             "conferencia",
             "conversaremos con",
@@ -513,6 +517,7 @@ class MadConvoca:
             "razonar en com[uú]n",
             "club de lectura",
             "leemos juntas",
+            r"Lectura y discusi[oó]n p[uú]blica",
             flags=re.I
         ):
             return Category.READING_CLUB
@@ -590,6 +595,10 @@ class MadConvoca:
             return Category.ACTIVISM
         if isLibreria:
             return Category.LITERATURE
+        if has_tag_or_title(
+            "encuentros?"
+        ):
+            return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(e.url, f"{e}")))
         return Category.UNKNOWN
 

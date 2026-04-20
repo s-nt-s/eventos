@@ -243,7 +243,12 @@ class CasaAmerica(Web):
             return Category.CHILDISH
         if re_or(aut, "Ciclo Am[eé]rica Vota", flags=re.I):
             return Category.INSTITUTIONAL_POLICY
-        if re_or(tit, r"Rumbo a las urnas", flags=re.I):
+        if re_or(
+            tit,
+            r"Rumbo a las urnas",
+            r"Presidenciales de",
+            flags=re.I
+        ):
             return Category.INSTITUTIONAL_POLICY
         if re_and(
             content,
@@ -251,6 +256,15 @@ class CasaAmerica(Web):
             flags=re.I
         ):
             return Category.POETRY
+        if re_or(
+            tit,
+            r"Bar[oó]metro Empresarial",
+            r"Gala (del|de los) Premios?",
+            r"D[ií]a Mundial de la Lengua Portuguesa",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+
         if re_or(content, "presentaci[óo]n (del )?libro", flags=re.I):
             return Category.LITERATURE
         if cat == "cine":

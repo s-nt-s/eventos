@@ -426,7 +426,7 @@ class MadridEs:
         e = Event(
             id=MadridEs.get_id(i.event.url),
             url=i.event.url,
-            name=i.event.title,
+            name=self.__find_name(i),
             price=i.event.price,
             category=category,
             place=place,
@@ -449,6 +449,17 @@ class MadridEs:
                     )
                 )
         return e
+
+    def __find_name(self, i: ApiInfo):
+        desc = re_sp.sub(" ", i.event.description or '').strip()
+        m = re.search(
+            r"Premio del P[uú]blico Lux \d+,? `(.+?)´",
+            desc,
+            re.IGNORECASE
+        )
+        if m:
+            return m.group(1)
+        return i.event.title
 
     def __find_cycle(self, cat: Category, place: Place, i: ApiInfo):
         tardes_romanas = "Tardes romanas"
@@ -501,7 +512,7 @@ class MadridEs:
 
     def __find_year(self, i: ApiInfo) -> Optional[int]:
         yrs: set[int] = set()
-        for y in map(int, re.findall(r"(?:estrenada en|Año:?)\s*((?:19|20)\d+))", i.event.description or "")):
+        for y in map(int, re.findall(r"(?:estrenada en|Año:?)\s*((?:19|20)\d+)", i.event.description or "")):
             if y >= 1900 and y <= (TODAY.year+1):
                 yrs.add(y)
         if len(yrs) == 1:
@@ -557,6 +568,8 @@ class MadridEs:
             (r"dia", r"internacional", r"familias?"),
             (r"taller", r"pequeños"),
             r"Exploraci[oó]n Infantil",
+            r"cuento infantil",
+            r"Concierto matinal familiar",
             flags=re.I
         ):
             return Category.CHILDISH
@@ -573,10 +586,12 @@ class MadridEs:
             r"Recomendado para niñ[aox@e]s",
             r"familias con menores",
             r"familias con niñ[aox@e]s",
-            r"de 6 a 12 años",
-            r"entre 8 y 17 años",
+            r"De \d a (\d|1\d) años",
+            r"entre \d y (\d|1\d) años",
             (r"cuentacuentos", r"en familia"),
             r"Para familias e infancias",
+            r"cuento infantil",
+            r"compartir en familia",
             flags=re.I
         ):
             return Category.CHILDISH
@@ -702,6 +717,12 @@ class MadridEs:
             flags=re.I
         ):
             return Category.PUPPETRY
+        if re_or(
+            i.title,
+            "T[ií]teres al aire libre",
+            flags=re.I
+        ):
+            return Category.PUPPETRY
 
         if i.has_category(
             "documental",
@@ -758,6 +779,8 @@ class MadridEs:
             r"tertulia musical",
             r"Folksongs",
             r"Madrid a Tempo",
+            r"Madrid en canciones",
+            r"M[uú]sica de cine",
             flags=re.I
         ):
             return Category.MUSIC
@@ -799,6 +822,7 @@ class MadridEs:
             i.title,
             r"Presentaci[óo]n del? libro",
             r"Las tertulias de Eirene Editorial",
+            r"novela hist[oó]rica",
             flags=re.I
         ):
             return find_book_category(i.title, i.description, Category.LITERATURE)
@@ -971,6 +995,7 @@ class MadridEs:
             "belen viviente",
             r"Representaci[óo]n(es)? teatral(es)?",
             r"Mon[oó]logos? de humor",
+            r"desfile de moda castiza",
             flags=re.I
         ):
             return Category.THEATER
@@ -1261,6 +1286,7 @@ class MadridEs:
             "teatro",
             "radionovela",
             "espect[áa]culo (circense y )?teatral",
+            r"Lectura dramatizada",
             flags=re.I
         ):
             return Category.THEATER

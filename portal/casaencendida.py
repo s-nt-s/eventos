@@ -3,7 +3,7 @@ from typing import Set, Dict, List, Optional
 from functools import cache
 from core.cache import TupleCache
 import logging
-from core.event import Event, Session, Category, CategoryUnknown
+from core.event import Event, Session, Category, CategoryUnknown, find_book_category
 from core.place import Places
 import re
 from datetime import datetime
@@ -183,9 +183,18 @@ class CasaEncendida:
         for li in map(get_text, soup.node.select("ul.item-detail__list li")):
             if li is None:
                 continue
-            if "No está permitida la entrada a mayores si no van acompañados de un menor" in li:
+            if re_or(
+                li,
+                r"No est[aá] permitida la entrada a mayores si no van acompañados de un menor",
+                r"asociaciones de familias/AMPAs",
+                flags=re.I
+            ):
                 return Category.CHILDISH
-            if "El workshop se impartirá en inglés" in li:
+            if re_or(
+                li,
+                "El workshop se impartir[aá] en ingl[eé]s",
+                flags=re.I
+            ):
                 return Category.NO_EVENT
         name: str = info[0]['name'].lower()
         tags = set()
@@ -234,15 +243,15 @@ class CasaEncendida:
             flags=re.I
         ):
             return Category.WORKSHOP
+        desc = MD.convert(soup.select_one_txt("div.item-detail__info__content"))
         if tags.intersection(("ecoclub de lectura", "club de lectura")):
-            return Category.READING_CLUB
+            return find_book_category(name, desc, Category.READING_CLUB)
         if tags.intersection(("cine", "audiovisuales")):
             return Category.CINEMA
         if tags.intersection(("conciertos", "música")):
             return Category.MUSIC
         if "concierto" in name:
             return Category.MUSIC
-        desc = MD.convert(soup.select_one_txt("div.item-detail__info__content"))
         if re_or(desc, "canciones", flags=re.I):
             return Category.MUSIC
         if re_or(desc, "workshop", flags=re.I):

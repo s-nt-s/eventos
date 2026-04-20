@@ -1,7 +1,7 @@
 import re
 from functools import cache
 
-_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️⚠]+"
+_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷⚠]+"
 RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
 RE_DEDUP = re.compile(r"(!+|¡+|¿+|\?+)")
 
@@ -107,8 +107,11 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Sesi[óo]n de clausura",
+        r"DEMM\d+\.? Conciertos (lunes|martes|mi[ée]rcoles|jueves|viernes|s[aá]bado|domingo) \d+ de \w+",
         r"Cinef[oó]rum con"+TAIL_NO_SEP,
         r"Cinef[oó]rum rebelde",
+        r"PSICOLOG[IÍ]A EN EL ATENEO",
         r"Documental",
         r"Mesa redonda",
         r"Concierto de piano",
@@ -239,6 +242,7 @@ def clean_name(name: str):
         return "Visita dialogada Matadero"
     bak = ['']
 
+    name = re.sub(r"&quot;", '"', name)
     while bak[-1] != name:
         bak.append(str(name))
         name = RE_DEDUP.sub(lambda m: m.group(0)[0], name)

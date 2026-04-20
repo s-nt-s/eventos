@@ -40,9 +40,11 @@ def safe_select(table: Tag, slc: str):
             arr.append(n)
     return tuple(arr)
 
+
 class MyMarkdownConverter(MarkdownConverter):
-    def __init__(self):
-        super().__init__(
+    def __init__(self, **kwargs):
+        kwargs = {
+            **dict(
             heading_style=ATX,
             bullets='*+-',
             strong_em_symbol=ASTERISK,
@@ -53,7 +55,10 @@ class MyMarkdownConverter(MarkdownConverter):
             escape_misc=False,
             wrap=False,
             strip_document=STRIP
-        )
+            ),
+            **kwargs
+        }
+        super().__init__(**kwargs)
 
     @property
     def __keep_inline_images_in(self) -> list[str]:
@@ -108,7 +113,7 @@ class MyMarkdownConverter(MarkdownConverter):
             if lwhref in (lwtxt, f"http://{lwtxt}", f"https://{lwtxt}"):
                 return href
         return super().convert_a(el, text, parent_tags)
-    
+
     def convert_table(self, el: Tag, text: str, parent_tags: list[str]):
         if el.find_all(attrs={'colspan': True}) or el.find_all(attrs={'rowspan': True}):
             self.compact_table(el)
@@ -133,7 +138,6 @@ class MyMarkdownConverter(MarkdownConverter):
             self.__extract_empty_row(table)
             self.__extract_empty_col(table)
             self.__fix_thead(table)
-
 
     def replace_fake_table(self, soup: Tag):
         bak = ''
@@ -188,7 +192,7 @@ class MyMarkdownConverter(MarkdownConverter):
         tds = first_tr.select(":scope > td")
         if len(ths) == 0 or len(tds) > 0:
             return
-        thead =  BeautifulSoup("<thead></thead>", 'html.parser').find()
+        thead = BeautifulSoup("<thead></thead>", 'html.parser').find()
         first_tr.extract()
         thead.append(first_tr)
         table.insert(0, thead)
@@ -200,14 +204,14 @@ class MyMarkdownConverter(MarkdownConverter):
 
     def __extract_not_significant(self, tag: Tag):
         for n in tag.select("img, colgroup, col"):
-            if n.name!="img" or is_decorative_img(n):
+            if n.name != "img" or is_decorative_img(n):
                 n.extract()
         for n in tag.select("thead, tbody"):
             if len(n.select(":scope *"))==0:
                 n.extract()
         for n in [tag]+tag.select(":scope *"):
             n.attrs = {
-                k:v for k,v in n.attrs.items() 
+                k: v for k, v in n.attrs.items() 
                 if
                     (k in ('href', 'src', 'title', 'alt') and isinstance(v, str) and len(v.strip())>0) or
                     (k in ('rowspan', 'colspan') and safe_positive_int(v)>1)
@@ -222,7 +226,7 @@ class MyMarkdownConverter(MarkdownConverter):
             for td in tr.select(":scope > td, :scope > th"):
                 rowspan = max(rowspan, safe_positive_int(td.attrs.get("rowspan"), 1))
             return rowspan
-    
+
         rowspan = 0
         for tr in safe_select(table, "tr"):
             if rowspan == 0 and len(re_sp.sub("", tr.get_text())) == 0 and not tr.select_one("img"):
@@ -249,7 +253,7 @@ class MyMarkdownConverter(MarkdownConverter):
 
     def to_soup(self, md: str) -> BeautifulSoup:
         return BeautifulSoup('<div>'+md_to_html(md, extensions=["tables"])+'</div>', 'html.parser')
-    
+
     def fix_h(self, md: str):
         soup = self.to_soup(md)
         hs: list[list[Tag]] = []
@@ -261,6 +265,36 @@ class MyMarkdownConverter(MarkdownConverter):
             for h in _h_: 
                 h.name = f"h{i}"
         return self.convert(soup)
-                
-    
-MD = MyMarkdownConverter()
+
+
+class MyPlainMarkdownConverter(MyMarkdownConverter):
+    def __init__(self):
+        super().__init__(
+            heading_style=ATX,
+            bullets='*+-',
+            sub_symbol='<sub>',
+            sup_symbol='<sup>',
+            escape_asterisks=False,
+            escape_underscores=False,
+            escape_misc=False,
+            wrap=False,
+            strip_document=STRIP
+        )
+
+    def convert_strong(self, el: Tag, text: str, parent_tags: list[str]):
+        return text
+
+    def convert_b(self, el: Tag, text: str, parent_tags: list[str]):
+        return text
+
+    def convert_em(self, el: Tag, text: str, parent_tags: list[str]):
+        return text
+
+    def convert_i(self, el: Tag, text: str, parent_tags: list[str]):
+        return text
+
+    def convert_u(self, el: Tag, text: str, parent_tags: list[str]):
+        return text
+
+
+MD = MyPlainMarkdownConverter()

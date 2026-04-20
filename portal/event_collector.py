@@ -156,6 +156,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         r"avenida de Betanzos",
         r"Aranjuez,? Madrid",
         r"San Lorenzo (de El|del) Escorial",
+        r"Legan[eé]s",
         # Vicálvaro
         r"Vic[aá]lvaro",
         flags=re.I
@@ -424,6 +425,7 @@ class EventCollector:
                     verify_ssl=False,
                     isOkPlace=isOkPlace,
                     isOkDate=isOkDate,
+                    max_price=self.__max_max_price
                 ),
                 Goethe(max_price=self.__max_max_price),
                 InstitutoFrances,

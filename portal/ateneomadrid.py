@@ -1,5 +1,5 @@
 from core.ics import IcsReader, IcsEventWrapper
-from core.event import Event, Place, Category, Session, CategoryUnknown
+from core.event import Event, Place, Category, Session, CategoryUnknown, find_book_category
 from core.place import Places
 from functools import cached_property
 from core.util import plain_text, find_duplicates, re_or, re_and, find_euros
@@ -171,7 +171,7 @@ class AteneoMadrid:
             ):
                 return Category.NARRATIVE
             if re_or(
-                e.DESCRIPTION,
+                f"{e.SUMMARY or ''} {e.DESCRIPTION or ''}".strip(),
                 "Andrés Trapiello",
                 "Pablo Díaz Espí",
                 "Agrupación Sabatini",
@@ -185,6 +185,10 @@ class AteneoMadrid:
                 "Foro Espa[ñn]a C[ií]vica",
                 "Cultura Militar",
                 "Mar[ií]a Mart[ií]n D[ií]ez de Balde[oó]n",
+                "Ana Pastor",
+                "Fernando J[aá]uregui",
+                "Radio Intereconom[ií]a",
+                "Jos[eé] Ortiz[\s\-]+Echagüe",
             ):
                 return Category.INSTITUTIONAL_POLICY
             if re_or(
@@ -207,6 +211,7 @@ class AteneoMadrid:
                 flags=re.I
             ):
                 return Category.PICTURE
+            return find_book_category(e.SUMMARY, e.DESCRIPTION, cat)
         if cat is not None:
             return cat
         if e.CATEGORIES:
@@ -232,6 +237,8 @@ class AteneoMadrid:
         if re_or(
             e.SUMMARY,
             r"Acto anual de gratitud a l[oa]s soci[ao]s",
+            r"Distinciones Dama de la l[aá]mpara",
+            r"Presentaci[oó]n del retrato",
             flags=re.I,
             to_log=e.UID
         ):
@@ -296,6 +303,7 @@ class AteneoMadrid:
         if re_or(
             e.SUMMARY,
             "concierto",
+            "recital de piano",
             flags=re.I
         ):
             return Category.MUSIC

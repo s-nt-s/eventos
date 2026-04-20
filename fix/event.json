@@ -7,6 +7,9 @@
   "20260306153000Z-148783@eventos.urjc.es": {"category": "VISIT"},
   "20260325150000Z-150995@eventos.uc3m.es": {"category": "WORKSHOP"},
   "20260415170000Z-152073@eventos.uc3m.es": {"category": "CONFERENCE"},
+  "20260429160000Z-152879@eventos.uc3m.es": {"category": "CONFERENCE"},
+  "20260429160000Z-152978@eventos.uc3m.es": {"category": "CONFERENCE"},
+  "B2A0F5EF-EAE0-55BB-9EC3-DFB64B91BC49": {"cycle": "Ramblas"},
   "D7E33971-D06D-5FCB-85CF-CF79C6334E1E": {"cycle": "Luz Madrid"},
   "ac667": {"filmaffinity": 611674},
   "ac668": {"filmaffinity": 739265},
@@ -15,7 +18,6 @@
   "ac682": {"filmaffinity": 957271},
   "ac684": {"filmaffinity": 493738},
   "ac685": {"filmaffinity": 548527},
-  "ac690": {"filmaffinity": 397329},
   "ac701": {"filmaffinity": 846712},
   "ac707": {"filmaffinity": 699169},
   "ac720": {"filmaffinity": 665782},
@@ -25,7 +27,6 @@
   "ac843": {"filmaffinity": 580372},
   "ac854": {"filmaffinity": 999902},
   "ac858": {"filmaffinity": 738677},
-  "ac859": {"filmaffinity": 154374},
   "ac860": {"filmaffinity": 404576},
   "ac861": {"filmaffinity": 849402},
   "ac868": {"filmaffinity": 493008},
@@ -36,7 +37,6 @@
   "al54147": {"category": "RELIGION"},
   "al54215": {"category": "RELIGION"},
   "al54222": {"category": "POETRY"},
-  "al54344": {"filmaffinity": 309861},
   "al54354": {"filmaffinity": 235917},
   "al54716": {"more": "https://krunchfestival.com/programacion/"},
   "am45667": {"category": "SPAM"},
@@ -72,10 +72,16 @@
   "am57321-1774377000-1774377000@ateneodemadrid.com": {"filmaffinity": 875865},
   "am57421-1774549800-1774549800@ateneodemadrid.com": {"img": "https://ateneodemadrid.com/wp-content/uploads/2026/03/26.03.2026-Juridicas.jpg"},
   "am57643-1775674800-1775674800@ateneodemadrid.com": {"filmaffinity": 815018},
+  "am57798-1777404600-1777404600@ateneodemadrid.com": {"more": "https://www.atopos.es/index.php/2-revista/484-e-atopos-10-dialogos-en-torno-al-suicidio-en-el-sureste-de-madrid"},
   "am57889-1776454200-1776454200@ateneodemadrid.com": {"more": "https://www.goodreads.com/book/show/243148473"},
   "am57932-1775836800-1775923200@ateneodemadrid.com": {"more": "https://raiepp.org/encuentro-abolicionista-2026"},
   "am57995-1776277800-1776277800@ateneodemadrid.com": {"category": "NARRATIVE"},
   "am58097-1777575600-1777575600@ateneodemadrid.com": {"name": "Ganadores del concurso de música de cámara"},
+  "am58790-1780083000-1780083000@ateneodemadrid.com": {"category": "SPAM"},
+  "am58796-1779476400-1779476400@ateneodemadrid.com": {"category": "NARRATIVE"},
+  "am58833-1778009400-1778009400@ateneodemadrid.com": {"category": "NARRATIVE"},
+  "am58859-1778094000-1778094000@ateneodemadrid.com": {"category": "NARRATIVE"},
+  "am58967-1779532200-1779532200@ateneodemadrid.com": {"filmaffinity": 741318},
   "ce15333": {"price": 3},
   "ce15346": {"cycle": "Cortometrajes"},
   "ce15361": {"filmaffinity": 747811},
@@ -89,13 +95,13 @@
   "ce15397": {"filmaffinity": 894138},
   "ce15456": {"filmaffinity": 706877},
   "ce15462": {"category": "WORKSHOP"},
-  "ce15475": {"filmaffinity": 132739},
   "ce15487": {"img": "https://cdn.lacasaencendida.es/storage/40733/responsive-images/julia%3Fn-ge%3Fnissonpng___detail_783_424.jpg"},
   "ce15566": {"price": 13},
   "ce15621": {"filmaffinity": 961563},
   "ce15622": {"imdb": "tt15388574"},
   "ce15623": {"more": "https://en.wikipedia.org/wiki/Charlie_Shackleton"},
   "ce15624": {"filmaffinity": 505284},
+  "ce15636": {"category": "MUSIC"},
   "cf1092641": {"filmaffinity": 779034},
   "cf1521916": {"filmaffinity": 888904},
   "cf173691418": {"category": "CONFERENCE"},
@@ -110,15 +116,10 @@
   "fmFC3BAB30-5408-54AA-9BE1-55B639C99603": {"filmaffinity": 496959},
   "gt27246328": {"filmaffinity": 607877},
   "gt27246381": {"filmaffinity": 500838},
-  "gt27246382": {"filmaffinity": 235758},
-  "gt27246383": {"filmaffinity": 502795},
   "gt27246384": {"imdb": "tt37720830"},
-  "gt27246385": {"filmaffinity": 968717},
   "gt27247540": {"filmaffinity": 500838},
-  "gt27247541": {"filmaffinity": 235758},
   "gt27261103": {"filmaffinity": 117833},
   "if2498": {"filmaffinity": 738677},
-  "if2521": {"filmaffinity": 435198},
   "mc26569": {"category": "ACTIVISM"},
   "mc26583": {"filmaffinity": 152338},
   "mc26598": {"category": "CONFERENCE"},
@@ -141,7 +142,6 @@
   "mc41895-1767985200-1767992400@fal.cnt.es": {"more": "https://www.goodreads.com/book/show/25042005"},
   "mc41994-1768417200-1768424400@fal.cnt.es": {"more": "https://www.goodreads.com/book/show/32950260"},
   "mc42577-1774378800-1774386000@fal.cnt.es": {"more": "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2246566"},
-  "mcmc26870": {"name": "El derecho a tener derechos"},
   "mcmc26928": {"category": "CONFERENCE"},
   "mcmc26929": {"category": "EXPO"},
   "mcmc26933": {"imdb": "tt2005276"},
@@ -175,6 +175,7 @@
   "mcmc27312": {"filmaffinity": 618876},
   "mcmc27313": {"category": "NON_GENERAL_PUBLIC"},
   "mcmc27314": {"category": "MUSIC"},
+  "mcmc27358": {"filmaffinity": 441744},
   "md6225": {"img": "https://www.teatrocircoprice.es/sites/default/files/styles/activity_gallery/public/2026-01/HOP_736x530.jpg.webp"},
   "md6494": {"category": "CONFERENCE"},
   "md6519": {"filmaffinity": 330646},
@@ -249,20 +250,23 @@
   "md7551": {"filmaffinity": 953210},
   "md7552": {"filmaffinity": 454628},
   "md7553": {"imdb": "tt32251569"},
-  "md7558": {"filmaffinity": 206795},
   "md7585": {"category": "CONFERENCE"},
+  "md7654": {"cycle": "Cortometrajes"},
+  "md7670": {"category": "CHILDISH"},
+  "md7688": {"category": "CONFERENCE"},
   "ms081c11d0ed2ec910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
   "ms26e6206b1ed3d910VgnVCM100000891ecb1aRCRD": {"category": "FULL"},
   "ms2897206b1ed3d910VgnVCM100000891ecb1aRCRD": {"category": "FULL"},
   "ms29f82ffddee2d910VgnVCM200000f921e388RCRD": {"category": "FULL"},
   "ms32c0b4a9cfd3d910VgnVCM100000891ecb1aRCRD": {"category": "FULL"},
-  "ms372d2d72cb24d910VgnVCM100000891ecb1aRCRD": {"filmaffinity": 411856},
   "ms449360b36cc49910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
+  "ms523e2fc86f3bd910VgnVCM200000f921e388RCRD": {"category": "THEATER"},
   "ms59fab4a9cfd3d910VgnVCM100000891ecb1aRCRD": {"category": "FULL"},
-  "ms5b93371c9b76d910VgnVCM200000f921e388RCRD": {"filmaffinity": 513636},
   "ms5cf94f097a24d910VgnVCM100000891ecb1aRCRD": {"category": "NARRATIVE"},
   "ms74d01a9183c6c910VgnVCM200000f921e388RCRD": {"category": "LITERATURE"},
+  "ms7f1e2fc86f3bd910VgnVCM200000f921e388RCRD": {"category": "THEATER"},
   "ms9123adf343a9d910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"},
+  "ms94f8ebdf8244d910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
   "ms9e3a6d5e90b8d910VgnVCM100000891ecb1aRCRD": {"category": "CONFERENCE"},
   "msa8d5e042bd42d910VgnVCM200000f921e388RCRD": {"category": "SPAM"},
   "msb28fb4a9cfd3d910VgnVCM100000891ecb1aRCRD": {"category": "FULL"},
@@ -272,18 +276,16 @@
   "msed1065dfd942d910VgnVCM200000f921e388RCRD": {"category": "SPAM"},
   "mx30A6CC86-7DCC-5B04-ACC7-0E7A1224A23D": {"category": "CONFERENCE"},
   "mx46E0BBBA-3270-5994-939C-8B052DAC4F3F": {"filmaffinity": 347632},
+  "mx6988FAE9-71A5-569B-890C-22DFF969DDD7": {"category": "SPAM"},
   "mx71762C9A-1DD1-5DD7-A25F-A2165E879534": {"filmaffinity": 122104},
-  "mx8429CB3E-8AAA-5C33-A6C5-95CD3EB346D3": {"filmaffinity": 985323},
   "mx8ECB0949-DABD-5A1E-89BE-59E6A488DB27": {"filmaffinity": 766006},
   "mxADE245A4-F21D-5E07-9C9E-0CEBF4943155": {"category": "NO_EVENT"},
   "mxBD13A9DD-E1FD-5016-A335-41F7830DF188": {"category": "CONFERENCE"},
   "mxDB76DBBC-9FAA-54D0-AC52-6E1A7012BC0A": {"category": "NO_EVENT"},
   "mxDF125737-1EA5-5E01-95C2-FA1927BB8CB9": {"category": "CONFERENCE"},
-  "mxED3E5373-CFA9-5EDD-8C5F-DAA41A0969F8": {"filmaffinity": 207758},
   "mxFB56698D-F690-5299-8216-7AA1FAB719DD": {"filmaffinity": 581171},
   "rs39235": {"filmaffinity": 136625},
   "rs39238": {"imdb": "tt9353770"},
-  "sb10007": {"filmaffinity": 132739},
   "sb10022": {"filmaffinity": 513809},
   "sb10026": {"filmaffinity": 584300},
   "sb10053": {"filmaffinity": 162277},
@@ -312,8 +314,6 @@
   "sb10799": {"filmaffinity": 957271},
   "sb10850": {"filmaffinity": 160114},
   "sb10942": {"img": "https://pics.filmaffinity.com/sense_filtres-571712946-large.jpg"},
-  "sb11004": {"cycle": "Ramblas"},
-  "sb11006": {"cycle": "Ramblas"},
   "sb9789": {"filmaffinity": 945637},
   "sb9861": {"cycle": "Cortometrajes"},
   "sb9892": {"filmaffinity": 385993},
@@ -321,24 +321,21 @@
   "sb9990": {"filmaffinity": 963150},
   "sb9994": {"filmaffinity": 660412},
   "sb9998": {"filmaffinity": 934423},
+  "tb376A2793-973E-5DFE-89E9-72D34E6BBC77": {"filmaffinity": 958136},
+  "tb70149554-3ED8-56E6-98A0-265A6EF3BC74": {"filmaffinity": 661530},
   "tbC22D04A9-F199-59F5-B603-543F0552F804": {"category": "CHILDISH"},
   "tbEC6F66FC-A883-592A-8727-F1A083DD9B15": {"category": "CHILDISH"},
   "tl263AE03A-6042-5C39-AD88-7309552B9361": {"category": "NARRATIVE"},
   "tl324750B4-82DA-5FDF-92A0-71EAF6778807": {"category": "NARRATIVE"},
   "tl512FB24C-F5E2-50AC-8022-11F5DCE0F9B5": {"category": "SPAM"},
   "tl88CAD5EE-E1CF-5DA4-928D-7F9286903F37": {"category": "CONFERENCE"},
+  "tlFE2BA4B6-D7D4-5A56-80B9-C1F09E041810": {"category": "NARRATIVE"},
   "ucm20260416170000Z-152080@eventos.ucm.es": {"more": "https://www.eventim-light.com/es/a/67349f8ab667c57a7581e251/e/69c12b47a4983b3837573f96"},
   "ucm20260422153000Z-152780@eventos.ucm.es": {"category": "NARRATIVE"},
   "ucm20260423170000Z-152086@eventos.ucm.es": {"more": "https://www.eventim-light.com/es/a/67349f8ab667c57a7581e251/e/69c13417a8a8ef795abb32ac"},
   "20260228080000Z-147358@eventos.uc3m.es": {
     "img": "https://eventos.uc3m.es/_files/_event/_147358/_header_img/_219734.jpe",
     "more": "https://docs.google.com/forms/d/e/1FAIpQLSef9RbTaPU-0WO1C5TAC3CPffmDoGLZdo9lDjtK9EI_nKRHSA/viewform"
-  },
-  "20260306170000Z-149124@eventos.uc3m.es": {
-    "category": "LITERATURE",
-    "more": "https://www.goodreads.com/book/show/242017278",
-    "img": "https://eventos.uc3m.es/_files/_event/_149124/_header_img/_223150.png",
-    "name": "Sara Torres presenta: El pensamiento erótico"
   },
   "20260311150000Z-150336@eventos.uc3m.es": {
     "category": "CONFERENCE",
@@ -348,31 +345,9 @@
     "category": "CONFERENCE",
     "img": "https://eventos.uc3m.es/_files/_event/_150030/_header_img/_224463.png"
   },
-  "20260318180000Z-150518@eventos.uc3m.es": {
-    "category": "THEATER",
-    "name": "1936. Los protagonistas de la guerra"
-  },
-  "20260319183000Z-150730@eventos.ucm.es": {
-    "category": "LITERATURE",
-    "name": "Mar Roda Sánchez presenta: Los nombres borrados. Olvido y silencio en la poética de María Enciso y de Carmen Conde",
-    "more": "https://www.goodreads.com/book/show/238737975"
-  },
   "20260320180000Z-150933@eventos.ucm.es": {
     "more": "https://eventos.ucm.es/150933/programme/festival-cultural-universitario-extasis.html#content",
     "category": "PARTY"
-  },
-  "20260324180000Z-151032@eventos.urjc.es": {
-    "category": "CONFERENCE",
-    "name": "Positron: otro IDE para R"
-  },
-  "20260325190000Z-150992@eventos.uc3m.es": {
-    "category": "CINEMA",
-    "name": "No Passport for Spain (1969) + La Resistencia en España (1973)"
-  },
-  "20260326183000Z-150993@eventos.uc3m.es": {
-    "name": "Una fuente para el sediento",
-    "filmaffinity": 226731,
-    "img": "https://pics.filmaffinity.com/krynytsya_dlya_sprahlykh_a_spring_for_the_thirsty-613705548-large.jpg"
   },
   "20260424160000Z-151950@eventos.uc3m.es": {
     "category": "VISIT",
@@ -386,11 +361,6 @@
   "al53812": {
     "category": "THEATER",
     "more": "https://visitalcala.es/cuentame-experience-experiencia-cuentame-alcala-visita-teatralizada-guateque-20-marzo-2026"
-  },
-  "al54319": {
-    "category": "LITERATURE",
-    "name": "Amanda González Jiménez presenta: Blas de Lezo. Monumento a un héroe",
-    "more": "https://www.goodreads.com/book/show/244501821"
   },
   "am45877": {
     "more": "https://www.casamerica.es/musica/centenario-del-nacimiento-de-celia-cruz",
@@ -409,75 +379,21 @@
     "more": "https://www.goodreads.com/book/show/236863503",
     "img": "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1750351170i/236863503.jpg"
   },
-  "am55681-1771669800-1771669800@ateneodemadrid.com": {
-    "filmaffinity": 917148,
-    "name": "El abrazo de la serpiente"
-  },
   "am56915-1773511200-1773511200@ateneodemadrid.com": {
     "category": "LITERATURE",
     "more": "https://www.goodreads.com/book/show/245720561"
-  },
-  "am56919-1774089000-1774089000@ateneodemadrid.com": {
-    "name": "La caza",
-    "filmaffinity": 858945
   },
   "am57005-1773772200-1773772200@ateneodemadrid.com": {
     "category": "CINEMA",
     "more": "https://selectedfilms.com/el-sueao-de-alejandria/"
   },
-  "am57079-1773689400-1773689400@ateneodemadrid.com": {
-    "category": "LITERATURE",
-    "name": "Cesar Rendueles presenta: 'Redes vacías: Tecnología catastrófica y el fin de la democracia'",
-    "more": "https://www.goodreads.com/book/show/244714786"
-  },
-  "am57262-1773860400-1773860400@ateneodemadrid.com": {
-    "filmaffinity": 493008,
-    "name": "El desencanto"
-  },
-  "am57280-1773946800-1773946800@ateneodemadrid.com": {
-    "filmaffinity": 898988,
-    "name": "Aves de corral"
-  },
   "am57691-1776195000-1776195000@ateneodemadrid.com": {
     "category": "LITERATURE",
     "more": "https://www.goodreads.com/book/show/243003679"
   },
-  "am57803-1776508200-1776508200@ateneodemadrid.com": {
-    "filmaffinity": 999656,
-    "name": "El caftán azul"
-  },
   "am57842-1777118400-1777118400@ateneodemadrid.com": {
     "category": "LITERATURE",
     "more": "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2256820"
-  },
-  "cbaDFD601BD-3F4A-5E3A-8587-8DA966C7F31A": {
-    "category": "LITERATURE",
-    "name": "Manu Martín presenta: Contra el patrimonio",
-    "more": "https://www.goodreads.com/book/show/246300200"
-  },
-  "ce15364": {
-    "url": "https://www.lacasaencendida.es/cine/poetas-2025-cine?eventId=7985",
-    "name": "Outrider",
-    "imdb": "tt4083038",
-    "img": "https://m.media-amazon.com/images/M/MV5BN2EyYTYyZTYtZTg0NS00MTBhLWFiNDItZTFjYjE2MDIwZTc4XkEyXkFqcGc@._V1_.jpg"
-  },
-  "ce15390": {
-    "name": "El camino soñado",
-    "filmaffinity": 323117
-  },
-  "ce15394": {
-    "name": "La felicidad de mi hermana",
-    "filmaffinity": 858487
-  },
-  "ce15515": {
-    "name": "Incels, criptomonedas y vendehúmos",
-    "filmaffinity": 689748,
-    "cycle": "Piezas sobre Tecnocapitalismo"
-  },
-  "ce15516": {
-    "name": "Knit's Island",
-    "filmaffinity": 269894,
-    "cycle": "Piezas sobre Tecnocapitalismo"
   },
   "ce15565": {
     "price": 13,
@@ -486,12 +402,6 @@
   "ce15603": {
     "price": 12,
     "category": "MUSIC"
-  },
-  "ce15607": {
-    "name": "Instrucción de novicias",
-    "more": "https://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=2257541",
-    "category": "READING_CLUB",
-    "img": "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1768970844i/243710832.jpg"
   },
   "fm1FA78838-E565-5EF3-A4B2-81C1D1856A0C": {
     "category": "CINEMA",
@@ -504,27 +414,6 @@
   "gt27247545": {
     "imdb": "tt37720830",
     "img": "https://m.media-amazon.com/images/M/MV5BYjMwMmE2ZmUtZDA3NC00MjI5LThiZDAtODBkZjhjZjgxY2VhXkEyXkFqcGc@._V1_FMjpg_UX768_.jpg"
-  },
-  "mc26607": {
-    "name": "Jubilee",
-    "filmaffinity": 108143
-  },
-  "mc26704": {
-    "name": "Gummo",
-    "filmaffinity": 834914
-  },
-  "mc26713": {
-    "name": "Els Buits",
-    "filmaffinity": 153197,
-    "img": "https://pics.filmaffinity.com/els_buits-244202726-large.jpg"
-  },
-  "mc26719": {
-    "name": "Guarapo",
-    "filmaffinity": 775508
-  },
-  "mc26744": {
-    "name": "Chica con jacintos",
-    "filmaffinity": 321900
   },
   "mc26752": {
     "category": "PARTY",
@@ -551,54 +440,21 @@
       }
     ]
   },
-  "mc43014-1775995200-1776006000@fal.cnt.es": {
-    "category": "CINEMA",
-    "more": "https://www.youtube.com/watch?v=tCArqRIR7YQ",
-    "name": "Jiyan: historia de una guerrillera + Maryam Fathi"
-  },
-  "mcmc26842": {
-    "name": "Manual para romper un cuerpo",
-    "more": "https://www.goodreads.com/book/show/230997755"
-  },
-  "mcmc26931": {
-    "filmaffinity": 927664,
-    "name": "Los renglones torcidos de Dios"
+  "mc43301-1779303600-1779310800@fal.cnt.es": {
+    "filmaffinity": 854927,
+    "name": "Arg(h)itzen"
   },
   "mcmc27007": {
     "category": "LITERATURE",
     "more": "https://www.goodreads.com/book/show/245821908"
   },
-  "mcmc27009": {
-    "category": "LITERATURE",
-    "more": "https://traficantes.net/libros/la-democracia-de-propietarios",
-    "name": "Pablo Carmona presenta: La democracia de los propietarios"
-  },
   "mcmc27048": {
     "price": 12,
     "more": "https://salavillanos.es/evento/meli-perea/"
   },
-  "mcmc27051": {
-    "category": "CINEMA",
-    "name": "Cinefórum Rebelde Sorpresa - proyección y coloquio"
-  },
-  "mcmc27069": {
-    "category": "LITERATURE",
-    "name": "Merchi Cortés presenta 'Manifiesto bi: Una ampliación necesaria'",
-    "more": "https://www.goodreads.com/book/show/240634567"
-  },
-  "mcmc27077": {
-    "category": "LITERATURE",
-    "name": "Brigitte Vasallo presenta: La fosa abierta",
-    "more": "https://www.goodreads.com/book/show/244502248"
-  },
   "mcmc27087": {
     "category": "READING_CLUB",
     "more": "https://levantafuego.com/producto/politicas-del-castigo-una-anatomia-del-auge-punitivo/"
-  },
-  "mcmc27098": {
-    "name": "#S3xpidemIA",
-    "category": "READING_CLUB",
-    "more": "https://www.goodreads.com/book/show/245658781"
   },
   "mcmc27145": {
     "name": "Actos Humanos, de Han Kang",
@@ -608,30 +464,6 @@
   "mcmc27183": {
     "category": "CINEMA",
     "more": "https://www.ignifugas.org/proyecto-documental"
-  },
-  "mcmc27184": {
-    "category": "READING_CLUB",
-    "name": "Villanos de todas las naciones",
-    "more": "https://traficantes.net/libros/villanos-de-todas-las-naciones"
-  },
-  "mcmc27200": {
-    "category": "CINEMA",
-    "more": "https://www.youtube.com/watch?v=tCArqRIR7YQ",
-    "name": "Jiyan: historia de una guerrillera + Maryam Fathi"
-  },
-  "mcmc27203": {
-    "name": "Sueños rosados",
-    "filmaffinity": 725746
-  },
-  "mcmc27223": {
-    "category": "CONFERENCE",
-    "more": "https://teatrodelbarrio.com/cuestionando-el-empleo-renta-basica-incondicional-me-lo-dices-o-me-lo-cantas/",
-    "name": "Renta básica universal e incondicional"
-  },
-  "mcmc27225": {
-    "category": "CINEMA",
-    "name": "Sal a la ferida: Impacto ecosocial de ICL en Catalunya y Palestina",
-    "more": "https://blogs.sindominio.net/salalaferidadocu/el-documental/"
   },
   "mcmc27250": {
     "more": "https://bienalanarquista.madrid/tercera-bienal-anarquista-de-madrid-2026#programa",
@@ -654,16 +486,6 @@
   "mcmc27269": {
     "category": "CONFERENCE",
     "more": "https://www.nonormal.org/ponentes"
-  },
-  "mcmc27306": {
-    "filmaffinity": 556362,
-    "name": "Latcho Drom"
-  },
-  "md6839": {
-    "category": "READING_CLUB",
-    "name": "Fun Home, de Alison Bechdel",
-    "more": "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1870889",
-    "img": "https://m.media-amazon.com/images/I/91gqhMgr8PL._SL1500_.jpg"
   },
   "md7308": {
     "category": "CONFERENCE",
@@ -689,10 +511,6 @@
     "cycle": "Festival Cúbit: Ciencia + Arte",
     "category": "THEATER"
   },
-  "md7530": {
-    "category": "CINEMA",
-    "name": "Flamenco en París"
-  },
   "md7561": {
     "cycle": "Festival Cúbit: Ciencia + Arte",
     "category": "CONFERENCE"
@@ -700,11 +518,6 @@
   "md7563": {
     "cycle": "Festival Cúbit: Ciencia + Arte",
     "category": "CONFERENCE"
-  },
-  "ms00cfd18dfac6d910VgnVCM200000f921e388RCRD": {
-    "name": "Fiesta de la lectura compartida",
-    "more": "https://casalector.fundaciongsr.org/meet-read-fiesta-de-la-lectura-compartida/",
-    "category": "PARTY"
   },
   "ms0a30e58cdebdc910VgnVCM200000f921e388RCRD": {
     "category": "MUSIC",
@@ -714,15 +527,6 @@
   "ms14a35bf675499910VgnVCM100000891ecb1aRCRD": {
     "category": "WORKSHOP",
     "cycle": "Talleres sobre el sonido"
-  },
-  "ms155e668549a1d910VgnVCM200000f921e388RCRD": {
-    "name": "Fiesta de la lectura compartida",
-    "more": "https://casalector.fundaciongsr.org/meet-read-fiesta-de-la-lectura-compartida/",
-    "category": "PARTY"
-  },
-  "ms2b3338e487aca910VgnVCM200000f921e388RCRD": {
-    "name": "Imposible decirte adiós",
-    "filmaffinity": 559722
   },
   "ms3d5fe58cdebdc910VgnVCM200000f921e388RCRD": {
     "category": "THEATER",
@@ -738,52 +542,14 @@
     "cycle": "Talleres sobre el sonido",
     "name": "El ruido de mi calle"
   },
-  "msdbcd59905ca3d910VgnVCM200000f921e388RCRD": {
-    "filmaffinity": 126406,
-    "name": "Una cabeza en la pared + Presentación premios Fugaz"
-  },
   "mse05b0d2bcf92d910VgnVCM200000f921e388RCRD": {
     "category": "PARTY",
     "more": "https://ludoverdeaso.wixsite.com/ludoverde"
-  },
-  "mse0efc4ec2a26d910VgnVCM200000f921e388RCRD": {
-    "category": "THEATER",
-    "more": "https://malasanaaescena.com/portfolio-item/el-muro-sabado-18-de-abril-a-las-18h-en-el-museo-de-historia-de-madrid",
-    "name": "El muro",
-    "img": "https://malasanaaescena.com/wp-content/uploads/2026/04/02-ElMuro-728x1030.png.webp"
   },
   "msf46fe58cdebdc910VgnVCM200000f921e388RCRD": {
     "category": "THEATER",
     "img": "https://www.madrid.es/UnidadesDescentralizadas/CiudadDistrito/ficheros/CIUDAD_DISTRITO_231015_es.jpg",
     "more": "https://21distritos.es/evento/paloma-calle-que-se-calle/"
-  },
-  "mx65FE5F55-2554-5020-BA70-25063C333F8E": {
-    "filmaffinity": 478002,
-    "name": "5 de chocolate y 1 de fresa"
-  },
-  "mx9DE9C51D-C959-5584-8A28-C411FCBAA7AC": {
-    "filmaffinity": 478002,
-    "name": "5 de chocolate y 1 de fresa"
-  },
-  "rs38384": {
-    "category": "CINEMA",
-    "name": "Salir del aula. Un día sin profes",
-    "img": "https://recursos.museoreinasofia.es/styles/large_landscape/public/Actividades/familias-desviadas.png.webp",
-    "more": "https://hamacaonline.net/titles/salir-del-aula-un-dia-sin-profes/"
-  },
-  "sb10861": {
-    "filmaffinity": 418539,
-    "name": "El hombre elefante"
-  },
-  "sb10914": {
-    "cycle": "Muestra de Cine Lésbico",
-    "more": "https://salaberlanga.com/ciclo/15a-muestra-de-cine-lesbico/",
-    "name": "Cortos Amateur"
-  },
-  "sb10923": {
-    "name": "Dos personas intercambiando saliva + Come See Me in the Good Light",
-    "filmaffinity": 813690,
-    "img": "https://pics.filmaffinity.com/come_see_me_in_the_good_light-739843096-large.jpg"
   },
   "sb10932": {
     "cycle": "Muestra de Cine Lésbico",
@@ -795,20 +561,6 @@
     "more": "https://salaberlanga.com/ciclo/15a-muestra-de-cine-lesbico/",
     "name": "Cortometrajes"
   },
-  "sb10953": {
-    "img": "https://m.media-amazon.com/images/M/MV5BNDM3OWM1NmUtMGQyMy00MzAyLTg4NWQtZGVjMzViMjczNjA5XkEyXkFqcGc@._V1_.jpg",
-    "imdb": "tt39210294",
-    "name": "Black Burns Fast"
-  },
-  "sb9875": {
-    "name": "Salt & Pepper",
-    "img": "https://salaberlanga.com/wp-content/uploads/2025/07/salt-pepper-cine-sordo-724x1024.jpg"
-  },
-  "seEQUIS2439": {
-    "category": "CONFERENCE",
-    "more": "https://www.cinecutre.com/2026/03/noticias/show-de-humor-vhz-especial-frankenstein/",
-    "name": "Cinecutre: Frankensteins chungos"
-  },
   "seEQUIS2878": {
     "category": "CONFERENCE",
     "duration": 90
@@ -817,14 +569,6 @@
     "category": "CONFERENCE",
     "name": "Renta básica universal e incondicional"
   },
-  "am57798-1777404600-1777404600@ateneodemadrid.com": {
-    "more": "https://www.atopos.es/index.php/2-revista/484-e-atopos-10-dialogos-en-torno-al-suicidio-en-el-sureste-de-madrid"
-  },
-  "ce15636": {
-    "category": "MUSIC"
-  },
-  "md7670": {"category": "CHILDISH"},
-  "20260429160000Z-152879@eventos.uc3m.es": {"category": "CONFERENCE"},
-  "am58790-1777491000-1777491000@ateneodemadrid.com": {"category": "SPAM"},
-  "am58796-1779476400-1779476400@ateneodemadrid.com": {"category": "NARRATIVE"},
+  "fmB036BEE8-7C7E-5842-9454-8B5B23E59000": {"name": "Up the Junction (1965) + Cathy Come Home (1966)"},
+  "fm87AD7595-B698-53B6-A4E6-B4077392909F": {"name": "Up the Junction (1965) + Cathy Come Home (1966)"}
 }

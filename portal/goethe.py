@@ -284,6 +284,12 @@ class Goethe:
             flags=re.I
         ):
             return Places.REPLIKA.value
+        if re_or(
+            lc,
+            ("Intermediae", "Matadero"),
+            flags=re.I
+        ):
+            return Places.MATADERO.value
         logger.warning(f"NOT FOUND place {lc} in {url}")
         return Place(
             address=lc,
@@ -349,6 +355,12 @@ class Goethe:
             flags=re.I
         ):
             return Category.THEATER
+        if re_or(
+            i['subheadline'],
+            r'Exposiciones?',
+            flags=re.I
+        ):
+            return Category.EXPO
         logger.warning(str(CategoryUnknown(url, et)))
         return Category.UNKNOWN
 
