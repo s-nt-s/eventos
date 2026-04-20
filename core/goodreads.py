@@ -69,7 +69,9 @@ class GoodReads:
             done.add(k)
         return tuple(books)
 
-    def search_by_title_author(self, title: str, author: str) -> tuple[Book, ...]:
+    def search(self, title: str, author: str = None) -> tuple[Book, ...]:
+        if author is None:
+            return self.search_by_title(title)
         for qr in (
             f"{title} {author}",
             title,
@@ -115,38 +117,6 @@ class GoodReads:
             if matchTitle:
                 books.append(b)
         return tuple(books)
-
-    def find(self, title_author: str):
-        m = _match(
-            title_author,
-            r"^(.+?) presenta: (.+)$"
-        )
-        if m:
-            book = self.search_by_title_author(m.group(2), m.group(1))
-            if book:
-                return book
-        m = _match(
-            title_author,
-            r"^'(.+)',?\s*escrito por (.+)$",
-            r"^'(.+)',\s*de (.+)$",
-            r"^'(.+)'\s*de (.+)$",
-            r"^(.+),\s*de (.+)$",
-            r"^(.+) de (.+)$",
-        )
-        if m:
-            book = self.search_by_title_author(m.group(1), m.group(2))
-            if book:
-                return book
-
-        m = _match(
-            title_author,
-            r".*Presentaci[oó]n del libro '([^']+?)'.*",
-            flags=re.I
-        )
-        if m:
-            book = self.search_by_title(m.group(1))
-            if len(book):
-                return book
 
 
 GR = GoodReads()

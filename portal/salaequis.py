@@ -96,12 +96,23 @@ class SalaEquis(Web):
             name=name,
             img=self.select_one("#productImage img").attrs["src"],
             price=0,
-            category=Category.CINEMA,
+            category=self.__find_category(),
             place=Places.SALA_EQUIS.value,
             duration=self.__find_duration(),
             sessions=sessions
         )
         return event
+
+    def __find_category(self):
+        name = get_text(self.select_one("h1.product_title"))
+        if re_or(
+            name,
+            "VHZ",
+            "cinecutre",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+        return Category.CINEMA
 
     def __find_duration(self):
         duration = set()

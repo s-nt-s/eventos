@@ -21,3 +21,4 @@ fastkml==1.4.0
 holidays==0.91
 markdown==3.7
 markdownify==1.1.0
+sparql-tsv==0.1.0

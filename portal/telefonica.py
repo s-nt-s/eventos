@@ -172,7 +172,7 @@ class Telefonica(Web):
         if re_or(name, "madresfera"):
             return Category.MATERNITY
         if re_or(name, "^encuentro con", flags=re.I):
-            return Category.CONFERENCE
+            return find_book_category(name, plain_description, Category.CONFERENCE)
         if cat == "exposicion":
             return Category.EXPO
         if re_or(

@@ -136,11 +136,19 @@ class EventOn:
                 raise ValueError(f"{yn} not in (yes, no)")
             return yn == "yes"
 
+        def _float(x):
+            if x is None:
+                return None
+            try:
+                return float(x)
+            except ValueError:
+                return float(x.replace(",", ".")) 
+
         def _re_parse(o):
             if not isinstance(o, dict):
                 return None
             for cast, fields in {
-                float: ('location_lat', 'location_lon'),
+                _float: ('location_lat', 'location_lon'),
                 _yes_no: ('featured', 'year_long_event', 'month_long_event', 'all_day_event', '_target')
             }.items():
                 for k in fields:

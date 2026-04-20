@@ -84,7 +84,8 @@ class FileManager:
             "sql": "txt",
             "gql": "txt",
             "htm": "html",
-            "ics": "txt"
+            "ics": "txt",
+            "sparql": "txt"
         }.get(ext, ext)
 
     def load(self, file, *args, **kwargs):

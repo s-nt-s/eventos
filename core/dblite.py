@@ -1,5 +1,4 @@
-
-from sqlite3 import OperationalError, connect, Cursor
+from sqlite3 import OperationalError, ProgrammingError, connect, Cursor
 from atexit import register
 import logging
 from functools import cache
@@ -57,8 +56,8 @@ class DBlite:
                 cursor.execute(sql, args)
             else:
                 cursor.execute(sql)
-        except OperationalError:
-            logger.critical(sql)
+        except (OperationalError, ProgrammingError):
+            logger.critical(f"len(args)=={len(args)} sql={sql}")
             raise
         for r in cursor:
             yield r

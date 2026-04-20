@@ -1,7 +1,7 @@
 import re
 from functools import cache
 
-_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️⚠]+"
+_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠]+"
 RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
 RE_DEDUP = re.compile(r"(!+|¡+|¿+|\?+)")
 
@@ -46,6 +46,8 @@ _SPECIAL_WORDS = (
     "Finzi Pasca",
     "O'Donnell",
     "XIII",
+    "III",
+    "EE.UU",
 )
 
 _RG_SPECIAL_WORDS = re.compile(
@@ -107,8 +109,15 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Ciclo de Cine Ecofeminista",
+        r"Medialab",
+        r"Intermediae",
+        r"Centro de Residencias Artísticas",
+        r"Sesi[óo]n de (clausura|inauguraci[oó]n)",
+        r"DEMM\d+\.? Conciertos (lunes|martes|mi[ée]rcoles|jueves|viernes|s[aá]bado|domingo) \d+ de \w+",
         r"Cinef[oó]rum con"+TAIL_NO_SEP,
         r"Cinef[oó]rum rebelde",
+        r"PSICOLOG[IÍ]A EN EL ATENEO",
         r"Documental",
         r"Mesa redonda",
         r"Concierto de piano",
@@ -209,6 +218,8 @@ def _rm_quote():
         r"Estreno del largometraje documental",
         r"Taller(?: de)?",
         r"Conferencias?",
+        r"Documental",
+        r"Jornadas",
     ])
     re_3 = r"(?:"+PREFIX+r")"
     re_prefix = re.compile(r"^"+re_3+NQ+r"*(["+_QT+r"])", flags=re.I)
@@ -239,6 +250,7 @@ def clean_name(name: str):
         return "Visita dialogada Matadero"
     bak = ['']
 
+    name = re.sub(r"&quot;", '"', name)
     while bak[-1] != name:
         bak.append(str(name))
         name = RE_DEDUP.sub(lambda m: m.group(0)[0], name)

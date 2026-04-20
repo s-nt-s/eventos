@@ -12,7 +12,7 @@ from functools import cache
 from core.util import to_uuid, isWorkingHours
 from core.dblite import DB
 from typing import TypeVar, Type
-from core.goodreads import GR
+from core.book import BF
 from core.util import my_filter
 from core.util.strng import clean_name
 from collections import defaultdict
@@ -137,6 +137,8 @@ class Category(IntEnum):
     PHOTO = 47
     PICTURE = 48
     FULL = 49
+    HISTORY = 50
+    TRIBUTE = 51
 
     def __str__(self):
         if self == Category.UNKNOWN:
@@ -271,6 +273,8 @@ class Session(NamedTuple):
 
 
 KO_IMG = (
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Agata/Eventos/ficheros/D%C3%ADadeEuropa_Cartel%20peliculas.png',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Bohemios/ficheros/D%C3%ADadeEuropa_Cartel%20peliculas%20.png',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/MadridPlat%C3%B3Cine_260.png',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Infantiles_Juveniles/Cine/ficheros/2504_CineForumPerezGaldos_260x260.jpg',
@@ -521,23 +525,10 @@ class Event:
     def _fix_more(self):
         if self.more:
             return self.more
-        if self.category in (
-            Category.READING_CLUB,
-            Category.CONFERENCE,
-        ):
-            more = {
-                "el antiedipo": "https://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=267016"
-            }.get(plain_text(self.name).lower())
-            if more:
-                return more
-        dom = get_domain(self.url)
-        if self.category in {
-            "madrid.es": (Category.CONFERENCE, Category.LITERATURE),
-            "ateneodemadrid.com": (Category.LITERATURE, )
-        }.get(dom, tuple()):
-            books = GR.find(self.name)
-            if books:
-                return books[0].url
+        if self.category in (Category.LITERATURE, Category.READING_CLUB):
+            url = BF.find(self.name)
+            if url:
+                return url
 
     @property
     def dates(self):
@@ -771,8 +762,9 @@ class Event:
             return "Madrid entre libros"
         if self.category == Category.VISIT and re_and(self.name, "ruta", "retiro", flags=re.I):
             return "Rutas por el Retiro"
-        if self.category == Category.CONFERENCE and re_or(self.name, "Ciclo conferencias Maqueta León Gil de Palacio", flags=re.I):
-            return "Maqueta León Gil de Palacio"
+        if self.category == Category.CONFERENCE:
+            if re_or(self.name, "Ciclo conferencias Maqueta León Gil de Palacio", flags=re.I):
+                return "Maqueta León Gil de Palacio"
         if urls.intersection((
             "https://www.centrocentro.org/musica/limo-2026",
             "https://www.centrocentro.org/musica/kali-malone",
@@ -800,6 +792,10 @@ class Event:
             "https://www.centrocentro.org/musica/feten-feten"
         )):
             return "Música sin etiquetas"
+        if urls.intersection((
+            "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-sobre-historia-con-Miguel-Arenas/?vgnextfmt=default&vgnextoid=c649606fb4e49910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
+        )):
+            return "Conferencias sobre historia"
         return None
 
 
@@ -831,12 +827,15 @@ class Cinema(Event):
                 if new_name and new_name != self.name:
                     object.__setattr__(self, "name", new_name)
             return
+
         for d in (
             'James Ward Byrkit',
             'Angela Schanelec',
             'Stephen Daldry',
             'Woody Allen',
-            'Albert Serra'
+            'Albert Serra',
+            'Soraya González Guerrero',
+            'Nuria Frigola Torrent',
         ):
             new_name = _mk_re(d).sub("", self.name).strip()
             if new_name and new_name != self.name:
@@ -845,17 +844,29 @@ class Cinema(Event):
                 object.__setattr__(self, "director", (d, ))
                 object.__setattr__(self, "name", new_name)
                 return
+            if d in self.name:
+                logger.debug(f"[{self.id}].__fix_name_director: director={d}")
+                object.__setattr__(self, "director", (d, ))
+                return
 
     def _fix_name_year(self):
-        m = re.match(r"^(.*?)\s*\(\s*(\d+)\s*\)\s*$", self.name)
-        if m is None:
+        years = tuple(i for i in map(int, re.findall(r"\d+", self.name)) if i>1900 and i<=TODAY.year+1)
+        if len(years) > 1:
             return
-        year = int(m.group(2))
-        if year > 1900 and year <= (TODAY.year + 1) and (self.year is None or self.year == year):
-            new_name = clean_name(m.group(1))
-            logger.debug(f"[{self.id}]._fix_name_year: year={year} name={new_name} <- {self.name}")
-            object.__setattr__(self, "year", year)
-            object.__setattr__(self, "name", new_name)
+        for r in (
+            r"^\s*(?P<title>.*?)\s*\(\s*(?P<year>\d+)\s*\)\s*$",
+            r"^\s*(?:Reposici[oó]n[\s:]*)[\"'](?P<title>.+?)[\"'] \(\D*(?P<year>\d+)\)\s*$",
+        ):
+            m = re.match(r, self.name, re.I)
+            if m is None:
+                continue
+            year = int(m.group('year'))
+            if year > 1900 and year <= (TODAY.year + 1) and self.year in (None, year):
+                new_name = clean_name(m.group('title').strip())
+                logger.debug(f"[{self.id}]._fix_name_year: year={year} name={new_name} <- {self.name}")
+                object.__setattr__(self, "year", year)
+                object.__setattr__(self, "name", new_name)
+                return
         
     def _fix_year(self):
         if self.year is not None:
@@ -863,32 +874,70 @@ class Cinema(Event):
         if self.imdb:
             return DB.one("select year from MOVIE where id = ?", self.imdb)
 
-    def get_full_aka(self):
-        aka = [self.name]
-        for t in (self.aka or []):
-            if t not in aka:
-                aka.append(t)
-        m = re.match(r"^([^\(\)]+) \(([^\(\)\d]+)\)$", self.name)
-        if m:
-            for t in m.groups():
-                if t not in aka:
-                    aka.append(t)
-        return tuple(aka)
+    
+    def iter_year_title(self):
+        y_t: dict[int|None, list[str]] = {}
+        def _add(y: int|None, t: str):
+            arr = y_t.get(y, [])
+            if t and t not in arr:
+                arr.append(t)
+                y_t[y] = arr
+        if self.imdb:
+            db_year = DB.one("select year from MOVIE where id = ?", self.imdb) or self.year
+            db_title = DB.to_tuple("select title from TITLE where movie = ?", self.imdb)
+            for t in db_title:
+                _add(db_year, t)
+        else:
+            aka = self.aka if self.aka else [self.name]
+            for a in aka:
+                m = re.match(r"^([^\(\)]+)\s+\(((?:19|20)\d{2})\)$", a)
+                if m:
+                    t, y = map(str.strip, m.groups())
+                    _add(int(y), t)
+                else:
+                    _add(self.year, a)
+        for y, tt in y_t.items():
+            yield y, tuple(tt)
+
 
     def __find_imdb(self):
+        fix = FIX_EVENT.get(self.id, {})
+        if "imdb" in fix:
+            return fix["imdb"]
         if isinstance(self.cycle, str):
             return None
-        for t in self.get_full_aka():
+        if self.imdb:
+            return self.imdb
+        ids: set[str] = set()
+        for y, tt in self.iter_year_title():
             imdb = DB.search_imdb_id(
-                t,
-                year=self.year,
+                *tt,
+                year=y,
                 director=self.director,
                 duration=self.duration
             )
             if imdb:
-                return imdb
+                ids.add(imdb)
+        if len(ids) == 0:
+            return None
+        if len(ids) == 1:
+            return ids.pop()
+        _id_: str = DB.one('''
+                select id from MOVIE
+                where id in (%s)
+                ORDER BY
+                    duration IS NULL ASC,
+                    duration DESC,
+                    id ASC
+            ''' % ", ".join(['?']*len(ids)),
+            *sorted(ids)
+        )
+        return _id_
 
     def _fix_filmaffinity(self) -> int:
+        fix = FIX_EVENT.get(self.id, {})
+        if "filmaffinity" in fix:
+            return fix["filmaffinity"]
         if self.filmaffinity is not None:
             return self.filmaffinity
         if self.imdb is not None:
@@ -1065,31 +1114,52 @@ def find_book_category(name: str, description: str, default: Category):
         r"poemas in[eé]ditos",
         r"libros? de poes[ií]a",
         r"una de las novelas\b.*\bm[aá]s le[ií]das",
+        r"participaci[oó]n del poeta",
+        r"recitar[aá]n poemas de",
         flags=re.I
     ):
         return Category.POETRY
-    if re_or(
-        description,
-        r"(La|Esta) novela (relata|retrata|presenta|publicada)",
-        r"(La|Esta) nueva novela de",
-        r"(La|Esta) novela es la cr[oó]nica",
-        r"A partir de ese momento comienza una aventura",
-        r"una novela (de aventuras|sobre|breve)",
-        r"novela hist[oó]rica",
-        r"presenta su primera novela",
-        r"Presentaci[oó]n de la novela editada",
-        r"El retrato de Dorian Gray",
-        r"libro de cuentos",
-        r"una de las novelas m[áa]s conocidas",
-        ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
-        ("a trav[eé]s de estas ficciones", "literatura"),
-        flags=re.I
-    ):
-        return Category.NARRATIVE
     if re_or(
         name,
         "Presentaci[óo]n de la novela",
         flags=re.I
     ):
         return Category.NARRATIVE
+    if re_or(
+        description,
+        r"(La|Esta) novela (relata|retrata|presenta|publicada)",
+        r"(La|Esta) (nueva|[uú]ltima) novela del?",
+        r"(La|Esta) novela es la cr[oó]nica",
+        r"A partir de ese momento comienza una aventura",
+        r"una novela (de aventuras|sobre|breve)",
+        r"novela (hist[oó]rica|de ficci[oó]n)",
+        r"su ([uú]litma|primera) novela",
+        r"Presentaci[oó]n de la novela",
+        r"El retrato de Dorian Gray",
+        r"libro de cuentos",
+        r"una de las novelas m[áa]s conocidas",
+        ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
+        ("a trav[eé]s de estas ficciones", "literatura"),
+        r"sus mejores novelas",
+        r"libros? de relatos",
+        r"ejercicio de imaginaci[oó]n hist[óo]rica para construir",
+        r"es una novela",
+        flags=re.I
+    ):
+        return Category.NARRATIVE
+
+    
+    if not re_or(
+        txt,
+        r"colonialismo",
+        r"critica",
+        r"reparaci[óo]n",
+        flags=re.I
+    ):
+        if re_or(
+            txt,
+            "Expedici[oó]n Elcano",
+            flags=re.I,
+        ):
+            return Category.HISTORY
     return default

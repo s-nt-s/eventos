@@ -69,7 +69,10 @@ def to_place(p: ApiPlace):
         latlon=latlon
     ).normalize()
     if not plc.zone and p.district:
-        plc = plc.merge(zone=p.district)
+        zone = {
+            "Moncloa-Aravaca": "Moncloa"
+        }.get(p.district, p.district)
+        plc = plc.merge(zone=zone)
     return plc
 
 
@@ -426,7 +429,7 @@ class MadridEs:
         e = Event(
             id=MadridEs.get_id(i.event.url),
             url=i.event.url,
-            name=i.event.title,
+            name=self.__find_name(i),
             price=i.event.price,
             category=category,
             place=place,
@@ -450,58 +453,57 @@ class MadridEs:
                 )
         return e
 
+    def __find_name(self, i: ApiInfo):
+        desc = re_sp.sub(" ", i.event.description or '').strip()
+        m = re.search(
+            r"Premio del P[uú]blico Lux \d+,? `(.+?)´",
+            desc,
+            re.IGNORECASE
+        )
+        if m:
+            return m.group(1)
+        return i.event.title
+
     def __find_cycle(self, cat: Category, place: Place, i: ApiInfo):
         tardes_romanas = "Tardes romanas"
-        urls = set(i.event.get_urls())
         if cat == Category.CONFERENCE:
             if re_or(
                 i.event.description,
                 r"Conferencias? del CSIC",
             ):
                 return "Las conferencias del CSIC"
-            for c, m in (
-                ("Los Clásicos en el Museo", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Los-Clasicos-en-el-Museo-V-Ciclo-de-Conferencias-/?vgnextfmt=default&vgnextoid=3a7136c30d489910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
-                ("Las lenguas clásicas y sus misterios", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Codigo-eterno-codigo-secreto-Las-lenguas-clasicas-y-sus-misterios-XXXIII-Ciclo-de-Conferencias-de-Otono-/?vgnextfmt=default&vgnextoid=abf8a70a5ac39910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
-                ("Sociedad Española de Retórica", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-de-la-Sociedad-Espanola-de-Retorica/?vgnextfmt=default&vgnextoid=6b8c61df8f06b910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"), 
-                ("Mujer y muerte en el mundo antiguo", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Memento-mori-Mujer-y-muerte-en-el-mundo-antiguo-Ciclo-de-conferencias/?vgnextfmt=default&vgnextoid=1d096787031bb910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
-                ("Charlas-taller de cactus y suculentas", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Charlas-taller-de-cactus-y-suculentas/?vgnextfmt=default&vgnextoid=d452d3d3508b7810VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
-                ("Las conferencias del CSIC", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-con-investigadores-del-CSIC/?vgnextfmt=default&vgnextoid=8f17641cea74c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
-                (tardes_romanas, "https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Arganzuela/Eventos/ficheros/Roma.png"),
-                ('El siglo de oro', 'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/III-Semana-de-El-Siglo-de-Oro-/?vgnextfmt=default&vgnextoid=7019de3ddda8d910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD'),
+        for c, *t in (
+            (tardes_romanas, "Tardes romanas"),
+            ("Las tertulias de Eirene Editorial",  r"^Las tertulias de Eirene Editorial"),
+            ("Escribo lo que soy: taller de escritura", "Escribo lo que soy", "taller de escritura"),
+        ):
+            if re_and(
+                i.event.title,
+                *t,
+                flags=re.I
             ):
-                if m in urls:
-                    return c
-            if re_or(i.event.title, "Tardes romanas", flags=re.I):
-                return tardes_romanas
-        if re_or(
-            i.event.title,
-            r"^Las tertulias de Eirene Editorial",
-            flags=re.I
+                return c
+        urls = set(i.event.get_urls())
+        for c, m in (
+            ("Los Clásicos en el Museo", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Los-Clasicos-en-el-Museo-V-Ciclo-de-Conferencias-/?vgnextfmt=default&vgnextoid=3a7136c30d489910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+            ("Las lenguas clásicas y sus misterios", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Codigo-eterno-codigo-secreto-Las-lenguas-clasicas-y-sus-misterios-XXXIII-Ciclo-de-Conferencias-de-Otono-/?vgnextfmt=default&vgnextoid=abf8a70a5ac39910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+            ("Sociedad Española de Retórica", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-de-la-Sociedad-Espanola-de-Retorica/?vgnextfmt=default&vgnextoid=6b8c61df8f06b910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"), 
+            ("Mujer y muerte en el mundo antiguo", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/-Memento-mori-Mujer-y-muerte-en-el-mundo-antiguo-Ciclo-de-conferencias/?vgnextfmt=default&vgnextoid=1d096787031bb910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+            ("Charlas-taller de cactus y suculentas", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Charlas-taller-de-cactus-y-suculentas/?vgnextfmt=default&vgnextoid=d452d3d3508b7810VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+            ("Las conferencias del CSIC", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-con-investigadores-del-CSIC/?vgnextfmt=default&vgnextoid=8f17641cea74c910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+            (tardes_romanas, "https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Arganzuela/Eventos/ficheros/Roma.png"),
+            ('El siglo de oro', 'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/III-Semana-de-El-Siglo-de-Oro-/?vgnextfmt=default&vgnextoid=7019de3ddda8d910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD'),
+            ("Conferencias sobre historia" , 'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-sobre-historia-con-Miguel-Arenas/?vgnextfmt=default&vgnextoid=c649606fb4e49910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD'),
+            ('Escuelita de mirones II: Oasis of Serenity', 'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Escuelita-de-mrones-II-Oasis-of-Serenity/?vgnextfmt=default&vgnextoid=a28b65ea4c90e910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD'),
+            ("Itinerarios guiados por El Retiro", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Itinerarios-guiados-por-El-Retiro/?vgnextfmt=default&vgnextoid=e7b01130a93b1810VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+            ("Concierto del alumnado del Conservatorio de Amaniel", "https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasEspecializadas/BibliotecaMusical/Actividades/ficheros/amaniel260x260.jpg"),
         ):
-            return "Las tertulias de Eirene Editorial"
-        if cat == Category.VISIT and (
-            urls.intersection((
-                "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Itinerarios-guiados-por-El-Retiro/?vgnextfmt=default&vgnextoid=e7b01130a93b1810VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
-            ))
-        ):
-            return "Itinerarios guiados por El Retiro"
-        if cat == Category.MUSIC and (
-            urls.intersection((
-                "https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasEspecializadas/BibliotecaMusical/Actividades/ficheros/amaniel260x260.jpg",
-            ))
-        ):
-            return "Concierto del alumnado del Conservatorio de Amaniel"
-        if re_and(
-            i.event.title,
-            "Escribo lo que soy",
-            "taller de escritura",
-            flags=re.I
-        ):
-            return "Escribo lo que soy: taller de escritura"
+            if m in urls:
+                return c
 
     def __find_year(self, i: ApiInfo) -> Optional[int]:
         yrs: set[int] = set()
-        for y in map(int, re.findall(r"(?:estrenada en|Año:?)\s*((?:19|20)\d+))", i.event.description or "")):
+        for y in map(int, re.findall(r"(?:estrenada en|Año:?)\s*((?:19|20)\d+)", i.event.description or "")):
             if y >= 1900 and y <= (TODAY.year+1):
                 yrs.add(y)
         if len(yrs) == 1:
@@ -557,6 +559,8 @@ class MadridEs:
             (r"dia", r"internacional", r"familias?"),
             (r"taller", r"pequeños"),
             r"Exploraci[oó]n Infantil",
+            r"cuento infantil",
+            r"Concierto matinal familiar",
             flags=re.I
         ):
             return Category.CHILDISH
@@ -573,10 +577,12 @@ class MadridEs:
             r"Recomendado para niñ[aox@e]s",
             r"familias con menores",
             r"familias con niñ[aox@e]s",
-            r"de 6 a 12 años",
-            r"entre 8 y 17 años",
+            r"De \d a (\d|1\d) años",
+            r"entre \d y (\d|1\d) años",
             (r"cuentacuentos", r"en familia"),
             r"Para familias e infancias",
+            r"cuento infantil",
+            r"compartir en familia",
             flags=re.I
         ):
             return Category.CHILDISH
@@ -702,6 +708,12 @@ class MadridEs:
             flags=re.I
         ):
             return Category.PUPPETRY
+        if re_or(
+            i.title,
+            "T[ií]teres al aire libre",
+            flags=re.I
+        ):
+            return Category.PUPPETRY
 
         if i.has_category(
             "documental",
@@ -758,6 +770,8 @@ class MadridEs:
             r"tertulia musical",
             r"Folksongs",
             r"Madrid a Tempo",
+            r"Madrid en canciones",
+            r"M[uú]sica de cine",
             flags=re.I
         ):
             return Category.MUSIC
@@ -799,6 +813,7 @@ class MadridEs:
             i.title,
             r"Presentaci[óo]n del? libro",
             r"Las tertulias de Eirene Editorial",
+            r"novela hist[oó]rica",
             flags=re.I
         ):
             return find_book_category(i.title, i.description, Category.LITERATURE)
@@ -971,6 +986,7 @@ class MadridEs:
             "belen viviente",
             r"Representaci[óo]n(es)? teatral(es)?",
             r"Mon[oó]logos? de humor",
+            r"desfile de moda castiza",
             flags=re.I
         ):
             return Category.THEATER
@@ -1261,6 +1277,7 @@ class MadridEs:
             "teatro",
             "radionovela",
             "espect[áa]culo (circense y )?teatral",
+            r"Lectura dramatizada",
             flags=re.I
         ):
             return Category.THEATER

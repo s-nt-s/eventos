@@ -8,12 +8,33 @@ from bs4 import Tag
 from core.util import to_uuid
 from datetime import date
 from core.md import MD
+from typing import NamedTuple, Optional
 
 logger = logging.getLogger(__name__)
 
 months = ('ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic')
 TODAY = date.today()
 RE_SESSION = re.compile(r"(\d+)(?:\s+de)?\s+(" + "|".join(months) + r")\S+\s+a\s+las?\s+([\d:]+)", flags=re.I)
+
+
+class Movie(NamedTuple):
+    title: str
+    original: Optional[str] = None
+    year: Optional[int] = None
+    director: tuple[str, ...] = tuple()
+
+    def get_title_year(self):
+        if self.year is None:
+            return self.title
+        return f"{self.title} ({self.year})"
+
+
+def to_title_year(t: str, y: int):
+    if t is None:
+        return None
+    if y is None:
+        return t
+    return f"{t} ({y})"
 
 
 class Dore(Web):
@@ -77,35 +98,71 @@ class Dore(Web):
             events.add(e)
         return tuple(sorted(events))
 
-    def __div_to_event(self, url: str, div: Tag):
-        name = get_text(div.select_one("h2"))
-        name = name.rstrip(" .,")
-        m = re.match(r"^([^\(\)]+)\s+(\([^\(\)]*(\d{4})\))$", name)
-        year = None
-        aka: list[str] = []
-        if m:
-            name, ori, year = m.groups()
-            aka.append(name)
-            ori = re.sub(r"^\(|[, ]*"+year+"\)$", "", ori).strip()
-            if ori:
-                aka.append(ori)
-            year = int(year)
-        else:
-            aka.append(name)
+    def __movies_from_div(self, div: Tag):
+        movies: list[Movie] = []
+        director: list[str] = []
+        for d in re.split(r", | y ", get_text(div.select_one("h3.subtitulo")) or ''):
+            d = re.sub(r"[\s,\.]+$", "", d)
+            if d not in ("", "VV.AA") and d not in director:
+                director.append(d)
+        
+        h2 = get_text(div.select_one("h2"))
+        h2 = h2.rstrip(" .,")
+        for title, original, year in re.findall(r"([^\(\)]+)\(([^\(\)]+\s*,\s*)?((?:19|20)\d{2})\)", h2):
+            title = re.sub(r"^y?\s+", "", title.strip())
+            original = re.sub(r"^\s+|\s*,$", "", original.strip())
+            m = Movie(
+                title=title,
+                original=original if original else None,
+                year=int(year),
+                director=tuple(director)
+            )
+            if m not in movies:
+                movies.append(m)
 
-        director = tuple(d for d in re.split(r", | y ", get_text(div.select_one("h3.subtitulo")) or '') if d)
+        if len(movies) == 0:
+            years = set(map(int, re.findall(r"[,\(]\s*((?:20|19)\d{2})\s*\)", h2)))
+            movies.append(Movie(
+                title=h2,
+                original=None,
+                year=years.pop() if years else None,
+                director=tuple(director)
+            ))
+
+        return movies
+
+
+    def __div_to_event(self, url: str, div: Tag):
+        movies = self.__movies_from_div(div)
+        aka: list[str] = []
+        names: list[str] = []
+        years: set[int] = set()
+        directors: set[tuple[str, ...]] = set()
+        for m in movies:
+            title = to_title_year(m.title, m.year)
+            if title not in names:
+                names.append(title)
+            for t in (m.title, m.original):
+                t = to_title_year(t, m.year)
+                if t and t not in aka:
+                    aka.append(t)
+            if m.year:
+                years.add(m.year)
+            if m.director:
+                directors.add(m.director)
+
         ev = Cinema(
             id='fm'+to_uuid(url),
             url=url,
-            name=name,
+            name=" + ".join(names),
+            aka=tuple(aka),
+            year=years.pop() if len(years) == 1 else None,
+            director=directors.pop() if len(directors) == 1 else None,
             category=Category.CINEMA,
             img=div.select_one("img").attrs["data-src"],
             place=Places.DORE.value,
             sessions=self.__find_sessions(div),
             price=Dore.PRICE,
-            aka=tuple(aka),
-            year=year,
-            director=director,
             duration=None #self.__find_duration(txt),
         )
         return ev
