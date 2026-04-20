@@ -1064,6 +1064,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"presentan? este poemario de",
         r"poemas in[eé]ditos",
         r"libros? de poes[ií]a",
+        r"una de las novelas\b.*\bm[aá]s le[ií]das",
         flags=re.I
     ):
         return Category.POETRY

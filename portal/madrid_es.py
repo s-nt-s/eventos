@@ -501,7 +501,7 @@ class MadridEs:
 
     def __find_year(self, i: ApiInfo) -> Optional[int]:
         yrs: set[int] = set()
-        for y in map(int, re.findall(r"Año:?\s*((?:19|20)\d+)", i.event.description or "")):
+        for y in map(int, re.findall(r"(?:estrenada en|Año:?)\s*((?:19|20)\d+))", i.event.description or "")):
             if y >= 1900 and y <= (TODAY.year+1):
                 yrs.add(y)
         if len(yrs) == 1:
