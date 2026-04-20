@@ -140,7 +140,7 @@ class MadConvoca:
             text = MD.convert(e.description)
             text = re.sub(r"\s*Cinef[óo]rum de la Rosa\s*", "\n", text, flags=re.I).strip()
             m = re.search(
-                r"([^\.\(\)]+?) \((\d{4})\),? dir.? ([^\.\(\)]+)",
+                r"([^\.\(\)]+?) \((\d{4})\),? (?:una pel[ií]cula de|dir.?) ([^\.\(\)]+)",
                 text,
                 flags=re.I
             )
@@ -353,7 +353,8 @@ class MadConvoca:
         ) or has_tag_or_title(
             'manifestaci[oó]n',
             'concentraci[oó]n',
-            'regularizaci[oó]n extraordinaria'
+            'regularizaci[oó]n extraordinaria',
+            'asamblea de vivienda',
         ):
             return Category.ACTIVISM
         if re_or(
@@ -370,9 +371,11 @@ class MadConvoca:
             "Bienvenida Nuev[oax@e]s? Rebeldes?",
             r"Mesa informativa.* alquiler",
             r"recogida (de )?material",
+            r"Cena vegana las Regañas",
             ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
             ("Grupo", "masculinidades",),
             ("Convocatoria", "Vivotecnia"),
+            r"Marcha Republicana",
             flags=re.I,
             to_log=e.id
         ):
@@ -393,7 +396,8 @@ class MadConvoca:
             "taller",
             "formaci[oó]n",
             "intercambio de idiomas",
-            "hacklab"
+            "hacklab",
+            "laboratorio ciudadano",
         ) or re_or(
             name,
             "^clases de",
@@ -409,7 +413,13 @@ class MadConvoca:
             return Category.LITERATURE
         if has_tag_or_title("teatro", "micro abierto", "performance", "mikro abierto"):
             return Category.THEATER
-        if has_tag_or_title("club de lectura", "grupo de lectura", "clubdelectura", "grupodelectura", "bookelarre"):
+        if has_tag_or_title(
+            "club de lectura",
+            "grupo de lectura",
+            "clubdelectura",
+            "grupodelectura",
+            "bookelarre"
+        ):
             return Category.READING_CLUB
         if has_tag("concierto") or re_or("^concierto", flags=re.I, to_log=e.id):
             return Category.MUSIC
@@ -478,6 +488,7 @@ class MadConvoca:
         if re_or(
             txt_desc,
             "Charla cr[ií]tica",
+            "charla sobre",
             "vendr[aá]n a conversar sobre",
             "conferencia",
             "conversaremos con",
@@ -507,12 +518,13 @@ class MadConvoca:
             return Category.THEATER
         if re_or(txt_desc, "taller", "Curso presencial", flags=re.I, to_log=e.id):
             return Category.WORKSHOP
-        if re_and(
+        if re_or(
             txt_desc,
-            "leer un texto",
             "razonar en com[uú]n",
             "club de lectura",
-            "leemos juntas",
+            r"Lectura y discusi[oó]n p[uú]blica",
+            r"grupo abierto de lectura",
+            r"leer un texto y razonar",
             flags=re.I
         ):
             return Category.READING_CLUB
@@ -590,6 +602,10 @@ class MadConvoca:
             return Category.ACTIVISM
         if isLibreria:
             return Category.LITERATURE
+        if has_tag_or_title(
+            "encuentros?"
+        ):
+            return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(e.url, f"{e}")))
         return Category.UNKNOWN
 

@@ -79,6 +79,14 @@ def _clean_name(name: str):
         return None
     if not isinstance(name, str):
         raise ValueError(f"name must be a str, but is a {type(name)}: {name}")
+
+    if re_or(
+        name,
+        "encuentro de escritores hispanoamericanos",
+        flags=re.I
+    ):
+        return "Escritores hispanoamericanos"
+
     bak = ['']
 
     while bak[-1] != name:
@@ -267,7 +275,8 @@ async def rq_to_page(r: ClientResponse):
     if price is None:
         logger.warning(f"NOT FOUND price {r.url}")
     if div:
-        description = MD.convert(div.select_one("div.elementor-element.elementor-widget.elementor-widget-text-editor"))
+        nodeDesc = div.select_one("div.elementor-element.elementor-widget.elementor-widget-text-editor")
+        description = MD.convert(nodeDesc)
         for li in map(get_text, div.select("div.elementor-widget-container ul li")):
             if not isinstance(li, str):
                 continue
@@ -384,13 +393,13 @@ class CasaMexico:
     def events(self):
         dct_events: dict[Event, Item] = {}
         for i in self._get_items():
-            category = self.__find_easy_category(i)
+            category = self.__find_category(i)
             duration, sessions = self.__get_duration_and_sessions(i)
             if len(sessions) == 0:
                 logger.debug(f"Descartado por no tener sesiones {i.url}")
                 continue
             cycle, name = self.__get_cycle_name(i)
-            if category == Category.CINEMA and not re_or(cycle, "series mexicanas", flags=re.I):
+            if category == Category.CINEMA:
                 cycle = None
             e = Event(
                 id=CasaMexico.get_id(i.url),
@@ -433,7 +442,10 @@ class CasaMexico:
         name = _clean_name(i.name)
         spl = tuple(x for x in re.split(r"\s+\|\s+", name) if x)
         if len(spl) == 2:
-            return tuple(spl)
+            cycle, name = spl
+            if re.search(r"Rutas en serie", cycle, flags=re.I):
+                name = re.sub(r"[\s\-]+episodios?[\sy\d]+\s*$", "", name, flags=re.I)
+            return cycle, name
         if len(spl) == 3 and re_or(spl[1], "encuentro de escritores hispanoamericanos", flags=re.I):
             return "Encuentro de escritores hispanoamericanos", re.sub(r"Mesa \d+\s+", "", spl[2], flags=re.I)
         return None, name
@@ -466,10 +478,17 @@ class CasaMexico:
     def get_id(url: str):
         return "mx" + to_uuid(url)
 
-    def __find_easy_category(self, i: Item):
+    def __find_category(self, i: Item):
         cat = FIX_EVENT.get(CasaMexico.get_id(i.url), {}).get('category')
         if isinstance(cat, str):
             return Category[cat]
+        if re_or(
+            i.description,
+            r"proyecci[óo]n privada para suscriptores",
+            r"de cine con Fotogramas",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
         if re_or(
             i.name,
             "Presentaci[oó]n del? libro",
@@ -489,12 +508,14 @@ class CasaMexico:
             i.name,
             r"cine familiar",
             r"Espect[aá]culo familiar",
+            r"Domingos? en Casa con Sapos y Princesas",
             flags=re.I
         ):
             return Category.CHILDISH
         if re_or(
             i.name,
             r"Proyecci[oó]n\b.*\bMeriidiano",
+            r"Proyecci[oó]n especial",
             r"MEXES",
             flags=re.I
         ):
@@ -502,8 +523,10 @@ class CasaMexico:
 
         if re_or(
             i.name,
+            r"Clase magistral",
             r"Coloquio",
             r"^Conferencia",
+            r"^Conversatorio",
             r"^Conversaciones Transatl[aá]nticas",
             r"encuentro de escritores",
             r"Mesa redonda",

@@ -237,14 +237,23 @@ class SalaBerlanga:
                 cycle = nuevos_territorios
             if cycle:
                 return ev.merge(cycle=cycle)
-        if ev.category == Category.CINEMA and re_or(
-            ev.name,
-            ("LA MIRADA TAB[ÚU]", "EDICI[OÓ]N"),
-            flags=re.I
-        ):
-            return ev.merge(
-                cycle="La mirada tabú: Cortometrajes"
-            )
+        if ev.category == Category.CINEMA:
+            if re_or(
+                ev.name,
+                ("LA MIRADA TAB[ÚU]", "EDICI[OÓ]N"),
+                flags=re.I
+            ):
+                return ev.merge(
+                    cycle="La mirada tabú: Cortometrajes"
+                )
+            if re_or(
+                ev.name,
+                ("Ramblas", "cap[íi]tulos?"),
+                flags=re.I
+            ):
+                return ev.merge(
+                    cycle="Ramblas"
+                )
         return ev
 
     def __find_category(self, ev: Event, item: Item):

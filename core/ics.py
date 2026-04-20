@@ -1,5 +1,5 @@
 from textwrap import dedent
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from dataclasses import dataclass, asdict
 import re
@@ -46,6 +46,22 @@ def _fix_width(s: str, prefix: int):
     if s:
         arr.append(s)
     return "\n ".join(arr)
+
+
+def normalize_date(dt: date | datetime, tz: ZoneInfo):
+    if isinstance(dt, date) and not isinstance(dt, datetime):
+        return datetime.combine(
+            dt,
+            datetime.min.time(),
+            tzinfo=tz
+        )
+    if isinstance(dt, datetime):
+        if dt.tzinfo is None:
+            return dt.replace(
+                tzinfo=tz
+            )
+        return dt.astimezone(tz)
+    raise ValueError(dt)
 
 
 @dataclass(frozen=True)
@@ -153,13 +169,9 @@ class IcsEventWrapper:
         if not isinstance(val, vDDDTypes):
             raise IcsEventInvalid(f"Valor no es vDDDTypes: {val!r}")
         dt = val.dt
-        if isinstance(dt, date) and not isinstance(dt, datetime):
-            return datetime.combine(dt, datetime.min.time(), tzinfo=ZoneInfo(TZ_ZONE))
-        if not isinstance(dt, datetime):
+        if not isinstance(dt, date) and not isinstance(dt, datetime):
             raise IcsEventInvalid(f"Valor no es vDDDTypes con datetime: {val!r}")
-        if dt.tzinfo is None:
-            return dt.replace(tzinfo=ZoneInfo(TZ_ZONE))
-        return dt.astimezone(tz=ZoneInfo(TZ_ZONE))
+        return normalize_date(dt, ZoneInfo(TZ_ZONE))
 
     def __get_text(self, key: str, mandatory: bool = False):
         val = self.__event.get(key)
@@ -249,6 +261,20 @@ class IcsEventWrapper:
         if self.publish:
             return self.publish.strftime("%Y-%m-%d")
 
+    def is_in(self, dt: date | datetime | None):
+        if dt is None:
+            return False
+        if not isinstance(dt, date) and isinstance(dt, datetime):
+            raise ValueError(dt)
+        dt = normalize_date(
+            dt,
+            ZoneInfo(TZ_ZONE)
+        )
+    
+        dtend = self.DTEND or (self.DTSTART + timedelta(days=1))
+
+        return self.DTSTART <= dt < dtend
+
 
 class IcsReader:
     def __init__(
@@ -261,6 +287,29 @@ class IcsReader:
         self.__s = buildSession()
         self.__verify_ssl = verify_ssl
         self.__isOkDate = isOkDate or (lambda x: True)
+
+    @classmethod
+    def safe_load(cls, url: str):
+        if url is None:
+            return None
+        try:
+            return cls(url)
+        except:
+            return None
+
+    def is_in(self, dt: date | datetime | None):
+        if dt is None:
+            return None
+        if not isinstance(dt, date) and isinstance(dt, datetime):
+            raise ValueError(dt)
+        dt = normalize_date(
+            dt,
+            ZoneInfo(TZ_ZONE)
+        )
+        for e in self.events:
+            if e.is_in(dt):
+                return True
+        return False
 
     def __from_ical(self, url: str):
         r = self.__s.get(url, timeout=10, verify=self.__verify_ssl)

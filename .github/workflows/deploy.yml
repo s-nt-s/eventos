@@ -52,6 +52,7 @@ jobs:
         uses: nick-fields/retry@v2
         env:
           PROXY_LIST: ${{ secrets.PROXY_LIST }}
+          ICS_BUSY: ${{ secrets.ICS_BUSY }}
         with:
           timeout_minutes: 50
           retry_wait_seconds: 60

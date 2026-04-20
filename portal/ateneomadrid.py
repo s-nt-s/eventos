@@ -1,5 +1,5 @@
 from core.ics import IcsReader, IcsEventWrapper
-from core.event import Event, Place, Category, Session, CategoryUnknown
+from core.event import Event, Place, Category, Session, CategoryUnknown, find_book_category
 from core.place import Places
 from functools import cached_property
 from core.util import plain_text, find_duplicates, re_or, re_and, find_euros
@@ -135,6 +135,7 @@ class AteneoMadrid:
             "las entradas se pueden (adquirir|comprar)",
             r"Socios c[oó]digo (de )?descuento",
             r"C[oó]digo (de )?descuento (para )?socios",
+            r"informaci[oó]n y entradas",
             flags=re.I
         ):
             return 999
@@ -171,7 +172,7 @@ class AteneoMadrid:
             ):
                 return Category.NARRATIVE
             if re_or(
-                e.DESCRIPTION,
+                f"{e.SUMMARY or ''} {e.DESCRIPTION or ''}".strip(),
                 "Andrés Trapiello",
                 "Pablo Díaz Espí",
                 "Agrupación Sabatini",
@@ -185,6 +186,11 @@ class AteneoMadrid:
                 "Foro Espa[ñn]a C[ií]vica",
                 "Cultura Militar",
                 "Mar[ií]a Mart[ií]n D[ií]ez de Balde[oó]n",
+                "Ana Pastor",
+                "Fernando J[aá]uregui",
+                "Radio Intereconom[ií]a",
+                "Jos[eé] Ortiz[\s\-]+Echagüe",
+                ("Gaceta Sindical", r"CC\.?OO\.?"),
             ):
                 return Category.INSTITUTIONAL_POLICY
             if re_or(
@@ -192,6 +198,7 @@ class AteneoMadrid:
                 "Jos[eé] Luis Cordeiro",
                 "Maristela Berm[uú]dez",
                 "Programaci[óo]n Neuroling[uü][ií]stica",
+                r"Juan Jos[eé] Tamayo",
                 flags=re.I
             ):
                 return Category.SPAM
@@ -207,6 +214,7 @@ class AteneoMadrid:
                 flags=re.I
             ):
                 return Category.PICTURE
+            return find_book_category(e.SUMMARY, e.DESCRIPTION, cat)
         if cat is not None:
             return cat
         if e.CATEGORIES:
@@ -221,7 +229,8 @@ class AteneoMadrid:
                 if re_or(c, *args, flags=re.I):
                     return True
             return False
-
+        if re.search(r"^Recuerdo de [A-Z]", e.SUMMARY or ''):
+            return Category.TRIBUTE
         if re_or(
             e.SUMMARY,
             'Cine y medicina',
@@ -232,6 +241,8 @@ class AteneoMadrid:
         if re_or(
             e.SUMMARY,
             r"Acto anual de gratitud a l[oa]s soci[ao]s",
+            r"Distinciones Dama de la l[aá]mpara",
+            r"Presentaci[oó]n del retrato",
             flags=re.I,
             to_log=e.UID
         ):
@@ -239,6 +250,7 @@ class AteneoMadrid:
         if re_or(
             e.SUMMARY,
             "comunicaci[óo]n corporativa",
+            r"(Cuarta|4[ºª\*\.]) Revoluci[oó]n Industrial",
             flags=re.I
         ):
             return Category.ENTERPRISE
@@ -251,6 +263,7 @@ class AteneoMadrid:
         ):
             return Category.POETRY
 
+        
         if re_and(
             e.SUMMARY,
             "presentaci[oó]n del?",
@@ -262,10 +275,11 @@ class AteneoMadrid:
 
         if _has_cat(r"Proyecci[óo]n", "cinef[óo]rum"):
             return Category.CINEMA
-        if _has_cat(r"Presentaci[óo]n del disco", "conciertos?"):
+        if _has_cat(r"Presentaci[óo]n del disco", "conciertos?", "recital de piano"):
             return Category.MUSIC
-        if _has_cat(r"mon[oó]logo", r"Lecturas? dramatizadas?", "teatro"):
+        if _has_cat(r"mon[oó]logo", r"Lecturas? dramatizadas?", "teatro", r"[oó]pera"):
             return Category.THEATER
+
         if _has_cat(r"Presentación del libro", 'Libros'):
             return Category.LITERATURE
         if _has_cat(r"Mesa redonda", "Conferencias", "Charlas?", 'Homenaje', 'Congreso'):
@@ -296,6 +310,7 @@ class AteneoMadrid:
         if re_or(
             e.SUMMARY,
             "concierto",
+            "recital de piano",
             flags=re.I
         ):
             return Category.MUSIC

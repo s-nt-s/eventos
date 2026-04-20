@@ -341,6 +341,11 @@ class TeatroBarrio:
         ):
             return Category.NO_EVENT
         if re_or(
+            i.name,
+            "Presentaci[oó]n del doss?ier"
+        ):
+            return Category.CONFERENCE
+        if re_or(
             i.summary,
             ("acto", "para (cuestionar|pensar)"),
             flags=re.I
@@ -358,7 +363,13 @@ class TeatroBarrio:
             flags=re.I
         ):
             return Category.ACTIVISM
-
+        if re_or(
+            i.name,
+            r"documental",
+            r"VideoForum",
+            flags=re.I
+        ):
+            return Category.CINEMA
         logger.critical(str(CategoryUnknown(i.url, f"{i.name} {i.category} {i.summary}")))
         return Category.UNKNOWN
 

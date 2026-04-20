@@ -76,6 +76,18 @@ class Eventim:
             flags=re.I
         ):
             return Category.VISIT
+        if re_or(
+            i.category,
+            "teatro",
+            flags=re.I
+        ):
+            return Category.THEATER
+        if re_or(
+            i.category,
+            "conversaci[oó]n",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(i.id, f"category={i.category}")))
         return Category.UNKNOWN
 

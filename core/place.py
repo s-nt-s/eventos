@@ -259,6 +259,16 @@ class Place:
             flags=re.I
         ):
             return Places.CASA_ARABE.value
+        if re_or(
+            name,
+            r"matadero",
+            flags=re.I
+        ) and re_or(
+            address,
+            "Legazpi,? 8",
+            flags=re.I
+        ):
+            return Places.MATADERO.value
         if re.match(r"^Sala Berlanga$", name, flags=re.I) and re.search(r"Andr[ée]s Mellado.*53", address, flags=re.I):
             return Places.SALA_BERLANGA.value
         if re.match(r"^Teatro Español$", name, flags=re.I):
@@ -466,7 +476,37 @@ class Place:
             flags=re.I
         )):
             return Places.ATENEO_VILLAVERDE.value
-
+        if re_or(
+            name,
+            "Observatorio de sostenibilidad",
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "ferrocaril",
+            "Ferroviarios",
+            flags=re.I
+        )):
+            return Places.OBSERVATORIO_SOSTENIBILIDAD.value
+        if re_or(
+            name,
+            "Daoiz y Velarde",
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "Alberche",
+            flags=re.I
+        )):
+            return Places.CC_DAOIZ_VALVERDE.value
+        if re_or(
+            name,
+            "Espacio Cultural Lorezana",
+            flags=re.I
+        ) and re_or(
+            address,
+            "Lorezana,? 2",
+            flags=re.I
+        ):
+            return Places.EC_LOREZANA.value
         if re_or(
             f"{name} {address}",
             ("vallekas", "Piketa"),
@@ -944,3 +984,31 @@ class Places(Enum):
         latlon="40.346850085863956,-3.7092837326225037",
         zone='Villaverde Alto'
     )
+    OBSERVATORIO_SOSTENIBILIDAD = Place(
+        name="Observatorio de sostenibilidad",
+        address="C. de Ferroviarios, 56, Usera, 28026 Madrid",
+        latlon="40.384476033604024,-3.7050664775612474",
+        zone='Usera'
+    )
+    MATADERO = Place(
+        name="Matadero",
+        address="Pl. de Legazpi, 8, Arganzuela, 28045 Madrid",
+        latlon="40.392102462104205,-3.6978248317467735",
+        map="https://maps.app.goo.gl/opiKxfB67sUhgGsr9",
+        zone="Legazpi"
+    )
+    CC_DAOIZ_VALVERDE = Place(
+        name="Centro cultural Daoíz y Velarde",
+        address="C/ del Alberche, 14, Retiro, 28007 Madrid",
+        latlon="40.401648823322034, -3.677005525256456",
+        map="https://maps.app.goo.gl/BbRBRoRL8X2Cdg3PA",
+        zone=Zones.PACIFICO.value.name
+    )
+    EC_LOREZANA = Place(
+        name="Espacio Cultural Lorezana",
+        address="C. de Lorenzana, 2, Bajo, Tetuán, 28039 Madrid",
+        latlon="40.4573740075384,-3.708572111244122",
+        map="https://maps.app.goo.gl/yzqL41xGj7sYxFtN6",
+        zone="Estrecho"
+    )
+    

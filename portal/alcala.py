@@ -1,5 +1,5 @@
 from core.eventon import EventOn, Event as EventOnEvent
-from core.event import Event, Place, Session, Category, CategoryUnknown
+from core.event import Event, Place, Session, Category, CategoryUnknown, Cinema
 from functools import cached_property
 from core.util import find_euros, re_or, re_and
 from core.util.strng import capitalize
@@ -19,6 +19,7 @@ from core.md import MD
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
+MAX_YEAR = datetime.now().year + 1
 
 
 @cache
@@ -125,7 +126,7 @@ class Alcala:
         store_dates: dict[str, tuple[datetime, ...]] = self.__get_store.get(*store_url)
         for id, urls in id_store.items():
             for u in urls:
-                for d in store_dates.get(u, tuple()):
+                for d in (store_dates.get(u) or tuple()):
                     sessions[id].add(Session(
                         date=d.strftime("%Y-%m-%d %H:%M")
                     ))
@@ -153,6 +154,22 @@ class Alcala:
             img=x.image_url,
             cycle=self.__find_cycle(x)
         )
+        e = self.__complete(e, x) or e
+        return e
+
+    def __complete(self, e: Event | Cinema, x: EventOnEvent):
+        e = e.fix_type()
+        if not isinstance(e, Cinema):
+            return e
+        txt_content = get_content(x)
+        if txt_content is None:
+            return e
+        m = set(y for y in map(int, re.findall(r"Año: (\d+)", txt_content)) if y > 1900 and y <= MAX_YEAR)
+        if len(m) == 1:
+            e = e.merge(year=m.pop())
+        m = set(s for s in map(str.strip, re.findall(r"Direcci[óo]n: ([^\n]+)", txt_content)) if s)
+        if len(m) == 1:
+            e = e.merge(director=(m.pop(), ))
         return e
 
     def __find_cycle(self, x: EventOnEvent):
@@ -210,14 +227,36 @@ class Alcala:
                 r"T[IÍ]TERES.*P[UÚ]BLICO FAMILIAR",
                 r"TEATRO (INFANTIL|FAMILIAR)",
                 r"[Ee]spect[aá]culo infantil",
-                r"ESPECIALMENTE RECOMENDADA PARA LA INFANCIA"
+                r"ESPECIALMENTE RECOMENDADA PARA LA INFANCIA",
+                r"[Ss]umergirse en familia"
+                r"Teatro familiar",
+                r"sumergirse en familia",
+                r"a partir de \d años",
             ),
-            Category.PARTY: (r"EXPERIENCIA GASTRON[OÓ]MICA", ),
-            Category.THEATER: (r"VISITA TEATRALIZADA", "TEATRO",),
-            Category.POETRY: (r"[dD]eclamaci[oó]n de poemas", ),
-            Category.PUPPETRY: (r"T[IÍ]TERES", ),
+            Category.PARTY: (
+                r"EXPERIENCIA GASTRON[OÓ]MICA",
+            ),
+            Category.THEATER: (
+                r"VISITA TEATRALIZADA",
+                "TEATRO",
+                r"ESPECT[AÁ]CULO DE CALLE.*[pP]asacalles?.*[Aa]ctor[aex@]s?",
+            ),
+            Category.POETRY: (
+                r"[dD]eclamaci[oó]n de poemas",
+                r"[iI]nstalaci[oó]n po[eé]tica",
+                r"[Gg][eé]nero: [pP]oes[ií]a",
+            ),
+            Category.PUPPETRY: (
+                r"T[IÍ]TERES",
+            ),
+            Category.MUSIC: (
+                r"ESPECT[AÁ]CULO DE CALLE.*Batucada itinerante",
+            ),
+            Category.WORKSHOP: (
+                r"G[eé]nero: Taller",
+            )
         }.items():
-            if re_or(txt_content, *_or_):
+            if re_or(txt_content, *_or_, flags=re.DOTALL):
                 return cat
         for tp in map(str.lower, x.event_types):
             if tp == "música y danza":

@@ -189,6 +189,12 @@ def _find_category(url: str, title: str, soup: Tag):
         return Category.WORKSHOP
     if re_or(
         full_title,
+        r"Presentaci[oó]n de la obra po[eé]tica",
+        flags=re.I
+    ):
+        return Category.POETRY
+    if re_or(
+        full_title,
         r"Presentaci[óo]n del libro",
         r"Presentaci[oó]n de la revista",
         flags=re.I
@@ -198,6 +204,7 @@ def _find_category(url: str, title: str, soup: Tag):
         full_title,
         r"Mesa Redonda",
         r"Conferencias?",
+        r"Conversaci[oó]n entre",
         flags=re.I
     ):
         return Category.CONFERENCE
@@ -213,6 +220,7 @@ def _find_category(url: str, title: str, soup: Tag):
         desc,
         "Beethoven crepuscular",
         "concierto",
+        r"m[úu]sicos\b.*\bse reunir[aá]n",
         flags=re.I
     ):
         return Category.MUSIC
@@ -226,6 +234,7 @@ def _find_category(url: str, title: str, soup: Tag):
         desc,
         r"La (pr[oó]xima )?(presentaci[oó]n|publicaci[óo]n) del libro",
         r"El libro re[uú]ne textos",
+        r"publicaci[oó]n de su libro",
         flags=re.I
     ):
         return find_book_category(full_title, desc, Category.LITERATURE)
@@ -233,8 +242,10 @@ def _find_category(url: str, title: str, soup: Tag):
         desc,
         r"panel de conversaci[óo]n",
         r"En esta conferencia",
+        r"En este seminario",
         "el podcast de",
         r"l[aox@]s ponentes (abordan|van)",
+        ("programa", "modera"),
         flags=re.I
     ):
         return Category.CONFERENCE
@@ -242,6 +253,7 @@ def _find_category(url: str, title: str, soup: Tag):
         desc,
         r"versi[oó]n mon[oó]logo que",
         r"conferencia dramatizada",
+        r"los actores\b.*\brecitar[aá]n fragmentos",
         flags=re.I
     ):
         return Category.THEATER
@@ -251,6 +263,12 @@ def _find_category(url: str, title: str, soup: Tag):
         flags=re.I
     ):
         return Category.POETRY
+    if re_or(
+        desc,
+        "esta presentaci[oó]n",
+        flags=re.I
+    ):
+        return Category.CONFERENCE
     logger.critical(str(CategoryUnknown(url, "")))
     return Category.UNKNOWN
 

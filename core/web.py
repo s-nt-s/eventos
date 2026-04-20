@@ -74,6 +74,8 @@ def iterhref(soup: BeautifulSoup):
 
 
 def buildSoup(root: str, source: str, parser="lxml"):
+    if source is None:
+        return None
     soup = BeautifulSoup(source, parser)
     if root:
         for n, attr, val in iterhref(soup):

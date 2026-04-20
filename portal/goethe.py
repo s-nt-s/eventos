@@ -71,7 +71,17 @@ def _find_duration(soup: Tag):
 
 
 def _clean_name(name: str):
-    name = re.sub(r"^CINE CLUB GOETHE[\s\|]*", "", name, flags=re.I)
+    if name is None:
+        return None
+    name = re.sub(
+        r"^(CINE CLUB GOETHE[\s\|]*|SESI[ÓO]N \d\s+-\s+)",
+        "",
+        name,
+        flags=re.I
+    )
+    name = name.strip()
+    if len(name) == 0:
+        return None
     return name
 
 
@@ -118,9 +128,10 @@ def _to_date(f: str, h: str):
 class Goethe:
     SEARCH = "https://www.goethe.de/rest/objeventcalendarRedesign/events/fetchEvents"
 
-    def __init__(self, max_price: int = None):
+    def __init__(self, max_price: int = None, skip_store: tuple[str, ...] = None):
         self.__s = ReqSession()
         self.__max_price = max_price
+        self.__skip_store = skip_store or tuple()
 
     def __search(self, params: dict, filterData: dict):
         params = urlencode({
@@ -188,6 +199,8 @@ class Goethe:
                 logger.debug(f"Descartado por price={price} {url}")
                 continue
             sessions, duration = self.__find_session_duration(url, i)
+            if len(sessions) == 0:
+                continue
             e = Event(
                 id=f"gt{_id_}",
                 url=clean_url(url),
@@ -218,6 +231,13 @@ class Goethe:
             )
             if (i.duration, e.duration) == (None, None):
                 logger.warning(f"NOT FOUND duration {e.url}")
+            if e.cycle is None and i.description and e.category == Category.CINEMA:
+                minutes = tuple(map(int, re.findall(r"(\d+)[’’]", i.description)))
+                shorts = tuple(i for i in minutes if i < 30)
+                #if len(minutes) > 1 and re.search(r"Jan Soldat", i.description):
+                #    e = e.merge(cycle="Jan Soldat")
+                #elif len(shorts) > 1:
+                #    e = e.merge(cycle="Cortometrajes")
             evs.add(e)
         logger.info(f"Goethe: Buscando eventos = {len(evs)}")
         return tuple(sorted(evs))
@@ -244,10 +264,16 @@ class Goethe:
         rl = i.get("registration_link_url")
         if rl and not re.match(r"^https?://.*", rl, flags=re.I):
             rl = None
+        url = clean_url(rl)
         s = Session(
             date=a.strftime("%Y-%m-%d %H:%M"),
-            url=clean_url(rl)
+            url=url
         )
+        if s.url:
+            for u in self.__skip_store:
+                if u.startswith(s.url):
+                    logger.debug(f"Descartada sesion={s.url} en {url}")
+                    return tuple(), duration
         return (s, ), duration
 
     def __find_place(self, url: str, i: dict):
@@ -284,6 +310,12 @@ class Goethe:
             flags=re.I
         ):
             return Places.REPLIKA.value
+        if re_or(
+            lc,
+            ("Intermediae", "Matadero"),
+            flags=re.I
+        ):
+            return Places.MATADERO.value
         logger.warning(f"NOT FOUND place {lc} in {url}")
         return Place(
             address=lc,
@@ -308,8 +340,9 @@ class Goethe:
             return Category.LITERATURE
         if re_or(
             et,
+            "Debate",
             "conferencia",
-            "presentaci[oó]n",
+            r"presentaci[oó]n",
             "Seminario",
             "Mesa redonda",
             flags=re.I
@@ -330,8 +363,8 @@ class Goethe:
             return Category.WORKSHOP
         if re_or(
             et,
-            "proyecci[oó]n",
-            "Pel[ií]cula",
+            "proyecci[oó]n(es)?",
+            "Pel[ií]culas?",
             flags=re.I
         ):
             return Category.CINEMA
@@ -349,6 +382,12 @@ class Goethe:
             flags=re.I
         ):
             return Category.THEATER
+        if re_or(
+            i['subheadline'],
+            r'Exposiciones?',
+            flags=re.I
+        ):
+            return Category.EXPO
         logger.warning(str(CategoryUnknown(url, et)))
         return Category.UNKNOWN
 

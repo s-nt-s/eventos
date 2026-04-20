@@ -337,7 +337,7 @@ def clean_url(url: str) -> str:
         url
     )
     if m:
-        return "https://eventbrite.es/e/"+m.group(1)
+        return "https://www.eventbrite.es/e/"+m.group(1)
     m = re.match(
         r"^https?://(?:www\.)?eventos\.(uc3m|ucm|uam|urjc|uah)\.es/.*?/(\d+)(?:$|[\?#/].*)",
         url
@@ -466,6 +466,7 @@ def un_camel(x: str):
 
 
 KO_IMG = (
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Agata/Eventos/ficheros/definitivo_AAFF_Proyecciones_DiadeEuropa%20(2)-001.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Conferencias/ficheros/260426_ValorLibro_260x260.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/MadridPlat%C3%B3Cine_260.png',
@@ -500,6 +501,9 @@ KO_IMG = (
 
 KO_MORE = (
     'https://www.semanacienciamadrid.org/',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-culturales-en-el-Espacio-de-Lectura-del-Parque-del-Oeste/?vgnextfmt=default&vgnextoid=7d60dd9d16fe8910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/San-Isidro-en-Carabanchel/?vgnextfmt=default&vgnextoid=679e36df97ecd910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-del-Libro-en-Retiro/?vgnextfmt=default&vgnextoid=6f75b0c1e0bad910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Semana-Santa-en-Arganzuela/?vgnextfmt=default&vgnextoid=7857ab0986d3d910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Dotacional-Integrado-Arganzuela-Angel-del-Rio/?vgnextfmt=default&vgnextoid=0758c4a248991910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-en-el-Centro-Sociocultural-Oporto/?vgnextfmt=default&vgnextoid=e990f36edd371910VgnVCM2000001f4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',

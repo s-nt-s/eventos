@@ -40,10 +40,13 @@ from concurrent.futures import ThreadPoolExecutor
 from portal.reinasofia import ReinaSofia
 from portal.ucm import Ucm
 from core.eventbrite import Api as EventBriteApi
+from os import environ
+from core.ics import IcsReader
 
 
 logger = logging.getLogger(__name__)
 
+ICS_BUSY = IcsReader.safe_load(environ.get("ICS_BUSY"))
 
 def get_events(source):
     if isinstance(
@@ -118,6 +121,8 @@ def isAlcalaOkDate(dt: datetime):
 def isOkDate(dt: datetime, delta: int = 0.5):
     if dt.date() in get_festivos(dt.year):
         return True
+    if ICS_BUSY and ICS_BUSY.is_in(dt):
+        return False
     min_hour = getMin(dt)
     if min_hour > 0:
         min_hour = min_hour + delta
@@ -156,6 +161,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         r"avenida de Betanzos",
         r"Aranjuez,? Madrid",
         r"San Lorenzo (de El|del) Escorial",
+        r"Legan[eé]s",
         # Vicálvaro
         r"Vic[aá]lvaro",
         flags=re.I
@@ -166,6 +172,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
     if name:
         if re_or(
             name,
+            "campus somosaguas",
             "San Lorenzo de Escorial",
             "Fuenlabrada",
             "Museo L[aá]zaro Galdiano",
@@ -273,6 +280,8 @@ def isKoEvent(e: Event):
         "tributo a Carmen Sevilla",
         r"Lectura en español y en ingl[eé]s",
         r"aniversario de (los )?(EE\.?UU|USA|estados unidos)",
+        r"Visita dialogada Matadero",
+        r"ven a bailar\b.*TabacaleraSwing",
         flags=re.I
     ):
         return True
@@ -325,18 +334,10 @@ def find_filmaffinity_if_needed(imdb_film: dict[str, int], e: Cinema):
         return _id_
     if isinstance(e.cycle, str):
         return None
-    if isinstance(e.imdb, str):
-        db_year = e.year or DB.one("select year from MOVIE where id = ?", e.imdb)
-        db_title = DB.to_tuple("select title from TITLE where movie = ?", e.imdb)
-        _id_ = FilmAffinityApi.search(
-            db_year,
-            *db_title
-        )
+    for y, tt in e.iter_year_title():
+        _id_ = FilmAffinityApi.search(y, *tt)
         if isinstance(_id_, int):
             return _id_
-    _id_ = FilmAffinityApi.search(e.year, *e.get_full_aka())
-    if isinstance(_id_, int):
-        return _id_
 
 
 class EventCollector:
@@ -384,7 +385,14 @@ class EventCollector:
             CirculoBellasArtes,
             ReinaSofia,
         )
-        places_with_store = set(e.place for e in store_events if e.place)
+        shop_urls: set[str] = set()
+        places_with_store: set[Place] = set()
+        for e in store_events:
+            for s in e.sessions:
+                if s.url:
+                    shop_urls.add(s.url)
+            if e.place:
+                places_with_store.add(e.place)
         places_with_store.update((
             Places.TEATRO_MONUMENTAL.value,
         ))
@@ -424,8 +432,12 @@ class EventCollector:
                     verify_ssl=False,
                     isOkPlace=isOkPlace,
                     isOkDate=isOkDate,
+                    max_price=self.__max_max_price
                 ),
-                Goethe(max_price=self.__max_max_price),
+                Goethe(
+                    max_price=self.__max_max_price,
+                    skip_store=tuple(sorted(shop_urls)),
+                ),
                 InstitutoFrances,
                 AcademiaCine,
             ) + \
