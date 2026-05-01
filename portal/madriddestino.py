@@ -406,9 +406,9 @@ class MadridDestino:
                 director=tuple(director),
                 year=int(year) if year and year.isdecimal() else None
             )
-            if not director and isVarios and len(
-                [i for i in map(int, re.findall(r"(\d+)['’]", desc or '')) if i < 30]
-            ) > 1:
+            minutes = tuple(map(int, re.findall(r"(\d+)['’]", desc or '')))
+            shorts = tuple(i for i in minutes if i < 30)
+            if len(shorts)>2 or (len(shorts)>1 and (isVarios or not director)):
                 ev = ev.merge(cycle="Cortometrajes")
         if not ev.director:
             director: list[str] = []

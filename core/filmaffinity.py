@@ -40,6 +40,23 @@ def _gap_year(y: int):
     return (None, y-1, y, y+1)
 
 
+def _is_match(titles: tuple[str, ...], year: int, y: int, *args):
+    if year not in _gap_year(y):
+        return False
+    rgs: list[re.Pattern] = []
+    for a in args:
+        if isinstance(a, re.Pattern):
+            rgs.append(a)
+            continue
+        if a in titles:
+            return True
+    for rg in rgs:
+        for t in titles:
+            if rg.search(t):
+                return True
+    return False
+
+
 class FilmAffinityApi:
     ACTIVE = True
 
@@ -52,7 +69,7 @@ class FilmAffinityApi:
             return None
         if not FilmAffinityApi.ACTIVE:
             return None
-        for k, y, t in (
+        for k, y, *tt in (
             (132739, 2025, "Sorda"),
             (411856, 1963, "El verdugo"),
             (513636, 1962, "Matar a un ruiseñor"),
@@ -83,8 +100,10 @@ class FilmAffinityApi:
             (795317, 2017, "La familia"),
             (304206, 2025, "Océano con David Attenborough"),
             (392601, 2026, "Crías"),
+            (922810, 2024, re.compile(r"Como agua para chocolate\b.*[Ee]pisodio")),
+            (588169, 2025, re.compile(r"Cometierra\b.*[Ee]pisodio")),
         ):
-            if t in titles and year in _gap_year(y):
+            if _is_match(titles, year, y, *tt):
                 return k
         if len(titles) > 1 and year is None:
             return None

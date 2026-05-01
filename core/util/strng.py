@@ -107,7 +107,10 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
-        r"Sesi[óo]n de clausura",
+        r"Medialab",
+        r"Intermediae",
+        r"Centro de Residencias Artísticas",
+        r"Sesi[óo]n de (clausura|inauguraci[oó]n)",
         r"DEMM\d+\.? Conciertos (lunes|martes|mi[ée]rcoles|jueves|viernes|s[aá]bado|domingo) \d+ de \w+",
         r"Cinef[oó]rum con"+TAIL_NO_SEP,
         r"Cinef[oó]rum rebelde",
