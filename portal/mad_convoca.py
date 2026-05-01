@@ -412,7 +412,13 @@ class MadConvoca:
             return Category.LITERATURE
         if has_tag_or_title("teatro", "micro abierto", "performance", "mikro abierto"):
             return Category.THEATER
-        if has_tag_or_title("club de lectura", "grupo de lectura", "clubdelectura", "grupodelectura", "bookelarre"):
+        if has_tag_or_title(
+            "club de lectura",
+            "grupo de lectura",
+            "clubdelectura",
+            "grupodelectura",
+            "bookelarre"
+        ):
             return Category.READING_CLUB
         if has_tag("concierto") or re_or("^concierto", flags=re.I, to_log=e.id):
             return Category.MUSIC
@@ -518,6 +524,7 @@ class MadConvoca:
             "club de lectura",
             "leemos juntas",
             r"Lectura y discusi[oó]n p[uú]blica",
+            r"grupo abierto de lectura",
             flags=re.I
         ):
             return Category.READING_CLUB

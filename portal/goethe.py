@@ -314,8 +314,9 @@ class Goethe:
             return Category.LITERATURE
         if re_or(
             et,
+            "Debate",
             "conferencia",
-            "presentaci[oó]n",
+            r"presentaci[oó]n",
             "Seminario",
             "Mesa redonda",
             flags=re.I
