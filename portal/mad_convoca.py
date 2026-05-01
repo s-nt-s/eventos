@@ -140,7 +140,7 @@ class MadConvoca:
             text = MD.convert(e.description)
             text = re.sub(r"\s*Cinef[óo]rum de la Rosa\s*", "\n", text, flags=re.I).strip()
             m = re.search(
-                r"([^\.\(\)]+?) \((\d{4})\),? dir.? ([^\.\(\)]+)",
+                r"([^\.\(\)]+?) \((\d{4})\),? (?:una pel[ií]cula de|dir.?) ([^\.\(\)]+)",
                 text,
                 flags=re.I
             )
@@ -517,14 +517,13 @@ class MadConvoca:
             return Category.THEATER
         if re_or(txt_desc, "taller", "Curso presencial", flags=re.I, to_log=e.id):
             return Category.WORKSHOP
-        if re_and(
+        if re_or(
             txt_desc,
-            "leer un texto",
             "razonar en com[uú]n",
             "club de lectura",
-            "leemos juntas",
             r"Lectura y discusi[oó]n p[uú]blica",
             r"grupo abierto de lectura",
+            r"leer un texto y razonar",
             flags=re.I
         ):
             return Category.READING_CLUB
