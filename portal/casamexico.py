@@ -479,6 +479,12 @@ class CasaMexico:
         if isinstance(cat, str):
             return Category[cat]
         if re_or(
+            i.description,
+            r"proyecci[óo]n privada para suscriptores",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+        if re_or(
             i.name,
             "Presentaci[oó]n del? libro",
             flags=re.I
