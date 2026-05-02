@@ -135,6 +135,7 @@ class AteneoMadrid:
             "las entradas se pueden (adquirir|comprar)",
             r"Socios c[oó]digo (de )?descuento",
             r"C[oó]digo (de )?descuento (para )?socios",
+            r"informaci[oó]n y entradas",
             flags=re.I
         ):
             return 999

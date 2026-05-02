@@ -398,7 +398,7 @@ class CasaMexico:
                 logger.debug(f"Descartado por no tener sesiones {i.url}")
                 continue
             cycle, name = self.__get_cycle_name(i)
-            if category == Category.CINEMA and not re_or(cycle, "series mexicanas", flags=re.I):
+            if category == Category.CINEMA:
                 cycle = None
             e = Event(
                 id=CasaMexico.get_id(i.url),

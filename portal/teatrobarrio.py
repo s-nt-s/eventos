@@ -366,6 +366,7 @@ class TeatroBarrio:
         if re_or(
             i.name,
             r"documental",
+            r"VideoForum",
             flags=re.I
         ):
             return Category.CINEMA
