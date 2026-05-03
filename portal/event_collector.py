@@ -275,6 +275,7 @@ def isKoEvent(e: Event):
         "tributo a Carmen Sevilla",
         r"Lectura en español y en ingl[eé]s",
         r"aniversario de (los )?(EE\.?UU|USA|estados unidos)",
+        r"Visita dialogada Matadero",
         flags=re.I
     ):
         return True
