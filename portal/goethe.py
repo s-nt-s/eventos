@@ -219,7 +219,7 @@ class Goethe:
             if (i.duration, e.duration) == (None, None):
                 logger.warning(f"NOT FOUND duration {e.url}")
             if e.category == Category.CINEMA:
-                minutes = tuple(map(int, re.findall(r"(\d+)['’]", i.description or '')))
+                minutes = tuple(map(int, re.findall(r"(\d+)[’’]", i.description or '')))
                 shorts = tuple(i for i in minutes if i < 30)
                 if e.cycle is None and len(shorts) > 1:
                     e = e.merge(cycle="Cortometrajes")
@@ -344,8 +344,8 @@ class Goethe:
             return Category.WORKSHOP
         if re_or(
             et,
-            "proyecci[oó]n",
-            "Pel[ií]cula",
+            "proyecci[oó]n(es)?",
+            "Pel[ií]culas?",
             flags=re.I
         ):
             return Category.CINEMA
