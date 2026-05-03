@@ -393,7 +393,7 @@ class CasaMexico:
     def events(self):
         dct_events: dict[Event, Item] = {}
         for i in self._get_items():
-            category = self.__find_easy_category(i)
+            category = self.__find_category(i)
             duration, sessions = self.__get_duration_and_sessions(i)
             if len(sessions) == 0:
                 logger.debug(f"Descartado por no tener sesiones {i.url}")
@@ -478,14 +478,14 @@ class CasaMexico:
     def get_id(url: str):
         return "mx" + to_uuid(url)
 
-    def __find_easy_category(self, i: Item):
+    def __find_category(self, i: Item):
         cat = FIX_EVENT.get(CasaMexico.get_id(i.url), {}).get('category')
         if isinstance(cat, str):
             return Category[cat]
         if re_or(
             i.description,
             r"proyecci[óo]n privada para suscriptores",
-            r"de cine con Fotogramas​",
+            r"de cine con Fotogramas",
             flags=re.I
         ):
             return Category.NO_EVENT

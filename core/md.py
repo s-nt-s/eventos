@@ -122,6 +122,7 @@ class MyMarkdownConverter(MarkdownConverter):
             html = html.strip()
             return '\n\n' + html + '\n\n'
         md = super().convert_table(el, text, parent_tags)
+        md = re.sub(r'[\u200B\u200C\u200D\uFEFF]', '', md)
         md = re.sub(r"\|\n\n+\|", r"|\n|", md)
         md = re.sub(r"^\|( \-+ \|)+$", lambda x: x.group().replace(" ", "-"), md, flags=re.MULTILINE)
         md = re.sub(r"\n^\|[ \|]+\|$", "", md, flags=re.MULTILINE)
