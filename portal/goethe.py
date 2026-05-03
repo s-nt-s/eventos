@@ -218,6 +218,11 @@ class Goethe:
             )
             if (i.duration, e.duration) == (None, None):
                 logger.warning(f"NOT FOUND duration {e.url}")
+            if e.category == Category.CINEMA:
+                minutes = tuple(map(int, re.findall(r"(\d+)['’]", i.description or '')))
+                shorts = tuple(i for i in minutes if i < 30)
+                if e.cycle is None and len(shorts) > 1:
+                    e = e.merge(cycle="Cortometrajes")
             evs.add(e)
         logger.info(f"Goethe: Buscando eventos = {len(evs)}")
         return tuple(sorted(evs))
@@ -242,7 +247,9 @@ class Goethe:
         if duration is None and z:
             duration = (z-a).total_seconds() // 60
         rl = i.get("registration_link_url")
-        if rl and not re.match(r"^https?://.*", rl, flags=re.I):
+        if rl and not re.match(r"^https?://.*", rl, flags=re.I) or rl in (
+            "https://tienda.madrid-destino.com/es/cineteca/",
+        ):
             rl = None
         s = Session(
             date=a.strftime("%Y-%m-%d %H:%M"),
