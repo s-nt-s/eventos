@@ -275,7 +275,8 @@ async def rq_to_page(r: ClientResponse):
     if price is None:
         logger.warning(f"NOT FOUND price {r.url}")
     if div:
-        description = MD.convert(div.select_one("div.elementor-element.elementor-widget.elementor-widget-text-editor"))
+        nodeDesc = div.select_one("div.elementor-element.elementor-widget.elementor-widget-text-editor")
+        description = MD.convert(nodeDesc)
         for li in map(get_text, div.select("div.elementor-widget-container ul li")):
             if not isinstance(li, str):
                 continue
@@ -481,6 +482,7 @@ class CasaMexico:
         if re_or(
             i.description,
             r"proyecci[óo]n privada para suscriptores",
+            r"de cine con Fotogramas​",
             flags=re.I
         ):
             return Category.NO_EVENT
