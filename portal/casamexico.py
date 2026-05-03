@@ -443,8 +443,8 @@ class CasaMexico:
         spl = tuple(x for x in re.split(r"\s+\|\s+", name) if x)
         if len(spl) == 2:
             cycle, name = spl
-            if re.search(r"Rutas en serie", cycle):
-                name = re.sub(r"[\s\-]+episodios?[\sy\d]+\s*$", name, flags=re.I)
+            if re.search(r"Rutas en serie", cycle, flags=re.I):
+                name = re.sub(r"[\s\-]+episodios?[\sy\d]+\s*$", "", name, flags=re.I)
             return cycle, name
         if len(spl) == 3 and re_or(spl[1], "encuentro de escritores hispanoamericanos", flags=re.I):
             return "Encuentro de escritores hispanoamericanos", re.sub(r"Mesa \d+\s+", "", spl[2], flags=re.I)
