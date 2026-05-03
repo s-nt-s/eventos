@@ -100,8 +100,8 @@ class FilmAffinityApi:
             (795317, 2017, "La familia"),
             (304206, 2025, "Océano con David Attenborough"),
             (392601, 2026, "Crías"),
-            (922810, 2024, re.compile(r"Como agua para chocolate\b.*[Ee]pisodio")),
-            (588169, 2025, re.compile(r"Cometierra\b.*[Ee]pisodio")),
+            (922810, 2024, re.compile(r"Como agua para chocolate\b.*(temporada|[Ee]pisodio)")),
+            (588169, 2025, re.compile(r"Cometierra\b.*(temporada|[Ee]pisodio)")),
         ):
             if _is_match(titles, year, y, *tt):
                 return k
