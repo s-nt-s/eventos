@@ -102,6 +102,7 @@ class FilmAffinityApi:
             (392601, 2026, "Crías"),
             (922810, 2024, re.compile(r"Como agua para chocolate\b.*(temporada|[Ee]pisodio)")),
             (588169, 2025, re.compile(r"Cometierra\b.*(temporada|[Ee]pisodio)")),
+            (122104, 2024, "La cocina"),
         ):
             if _is_match(titles, year, y, *tt):
                 return k

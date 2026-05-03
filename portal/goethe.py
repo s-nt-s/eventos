@@ -218,10 +218,12 @@ class Goethe:
             )
             if (i.duration, e.duration) == (None, None):
                 logger.warning(f"NOT FOUND duration {e.url}")
-            if e.category == Category.CINEMA:
-                minutes = tuple(map(int, re.findall(r"(\d+)[’’]", i.description or '')))
+            if e.cycle is None and i.description and e.category == Category.CINEMA:
+                minutes = tuple(map(int, re.findall(r"(\d+)[’’]", i.description)))
                 shorts = tuple(i for i in minutes if i < 30)
-                if e.cycle is None and len(shorts) > 1:
+                if len(minutes) > 1 and re.search(r"Jan Soldat", i.description):
+                    e = e.merge(cycle="Jan Soldat")
+                elif len(shorts) > 1:
                     e = e.merge(cycle="Cortometrajes")
             evs.add(e)
         logger.info(f"Goethe: Buscando eventos = {len(evs)}")
