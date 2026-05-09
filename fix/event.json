@@ -570,5 +570,15 @@
     "category": "CONFERENCE",
     "name": "Renta básica universal e incondicional"
   },
-  "ucm20260603140000Z-148592@eventos.ucm.es": {"category": "NO_EVENT"}
+  "ucm20260603140000Z-148592@eventos.ucm.es": {"category": "NO_EVENT"},
+  "tbECA09FEB-AA26-51D0-BE28-40BE1CABA508": {
+    "more": "https://teatrodelbarrio.com/los-martes-asamblea-de-juveniles/"
+  },
+  "tbB9A9817E-6A73-5ECE-AAC1-FA5E39A25CA0": {
+    "name": "15M: Excelente. Revulsivo. Importante",
+    "filmaffinity": 580587
+  },
+  "mcmc27421": {
+    "filmaffinity": "15M: Excelente. Revulsivo. Importante"
+  }
 }

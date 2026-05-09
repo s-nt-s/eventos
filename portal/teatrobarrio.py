@@ -370,7 +370,13 @@ class TeatroBarrio:
             flags=re.I
         ):
             return Category.CINEMA
-        logger.critical(str(CategoryUnknown(i.url, f"{i.name} {i.category} {i.summary}")))
+        if re_or(
+            i.name,
+            r"teatro",
+            flags=re.I
+        ):
+            return Category.THEATER
+        logger.critical(str(CategoryUnknown(i.url, f"{i.category} {i.name} {i.summary}")))
         return Category.UNKNOWN
 
 
