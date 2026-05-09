@@ -365,6 +365,7 @@ class Goethe:
             et,
             "proyecci[oó]n(es)?",
             "Pel[ií]culas?",
+            "Estreno",
             flags=re.I
         ):
             return Category.CINEMA
