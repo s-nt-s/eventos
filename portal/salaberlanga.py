@@ -224,7 +224,13 @@ class SalaBerlanga:
                 cycle="Teatro en la Berlanga",
             )
         if ev.cycle is None:
-            if re_or(ev.name, "sgae en corto", "Cortometrajes?", flags=re.I) or re.search(r"sgae-en-corto", ev.url or ''):
+            if re_or(
+                ev.name,
+                "sgae en corto",
+                "Cortometrajes?",
+                "sesi[oó]n( de)? cortos",
+                flags=re.I
+            ) or re.search(r"sgae-en-corto", ev.url or ''):
                 return ev.merge(
                     cycle="Cortometrajes",
                 )
