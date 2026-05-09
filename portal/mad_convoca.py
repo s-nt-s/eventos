@@ -595,8 +595,9 @@ class MadConvoca:
         if re_or(
             txt_desc,
             ("asamblea", r"c[óo]mo funcionamos", "participar"),
-            "MANIFESTACI[óO]N",
-            "CONCENTRACI[oÓ]N",
+            r"MANIFESTACI[óO]N",
+            r"CONCENTRACI[oÓ]N",
+            r"crear un grupo de trabajo",
             flags=re.I
         ):
             return Category.ACTIVISM

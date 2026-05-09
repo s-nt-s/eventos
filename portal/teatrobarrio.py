@@ -371,8 +371,9 @@ class TeatroBarrio:
         ):
             return Category.CINEMA
         if re_or(
-            i.name,
+            i.category,
             r"teatro",
+            r"humor",
             flags=re.I
         ):
             return Category.THEATER
