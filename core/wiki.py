@@ -7,29 +7,15 @@ from functools import wraps
 from collections import defaultdict
 from datetime import datetime, timedelta
 from core.util import iter_chunk
-from urllib.error import HTTPError
 import json
-from requests import Session
 from core.git import G
+from core.filemanager import FM
+from sparql_tsv import SparqlTsv
 
 
 logger = logging.getLogger(__name__)
-re_sp = re.compile(r"\s+")
-LANGS = ('es', 'en', 'ca', 'gl', 'it', 'fr')
-
-
-def _parse_wiki_val(s: str):
-    if not isinstance(s, str):
-        return s
-    s = s.strip()
-    if len(s) == 0:
-        return None
-    if s.startswith("http://www.wikidata.org/.well-known/genid/"):
-        return None
-    m = re.match(r"https?://www\.wikidata\.org/entity/(Q\d+)", s)
-    if m:
-        return f"wd:{m.group(1)}"
-    return s
+re_imdb = re.compile(r"^tt\d{3,}$")
+re_film = re.compile(r"^\d{3,}$")
 
 
 class WikiError(Exception):
@@ -121,179 +107,55 @@ def retry_fetch(chunk_size=5000):
     return decorator
 
 
+def _read(file: str):
+    path = FM.resolve_path(file)
+    return path.read_text()
+
+
 class WikiApi:
     def __init__(self):
         # https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_User-Agent_Policy
-        self.__last_query: str | None = None
-        self.__s = Session()
-        self.__s.headers = {
-            'User-Agent': f'ImdbBoot/0.0 ({G.remote}; {G.mail})',
-            "Accept": "application/sparql-results+json",
-            'Content-Type': 'application/sparql-query'
-        }
-
-    @property
-    def last_query(self):
-        return self.__last_query
-
-    def query_sparql(self, query: str) -> dict:
-        # https://query.wikidata.org/
-        query = dedent(query).strip()
-        query = re.sub(r"\n(\s*\n)+", "\n", query)
-        self.__last_query = query
-        try:
-            r = self.__s.post(
-                "https://query.wikidata.org/sparql",
-                data=self.__last_query.encode('utf-8')
-            )
-            return r.json()
-        except Exception as e:
-            code = e.code if isinstance(e, HTTPError) else None
-            raise WikiError(str(e), self.__last_query, http_code=code) from e
-
-    def query(self, query: str) -> list[dict[str, Any]]:
-        data = self.query_sparql(query)
-        if not isinstance(data, dict):
-            raise WikiError(str(data), self.__last_query)
-        result = data.get('results')
-        if not isinstance(result, dict):
-            raise WikiError(str(data), self.__last_query)
-        bindings = result.get('bindings')
-        if not isinstance(bindings, list):
-            raise WikiError(str(data), self.__last_query)
-        for i in bindings:
-            if not isinstance(i, dict):
-                raise WikiError(str(data), self.__last_query)
-            if i.get('subject') and i.get('object'):
-                raise WikiError(str(data), self.__last_query)
-        return bindings
+        self.__st = SparqlTsv(
+            endpoint="https://query.wikidata.org/sparql",
+            user_agent=f'ImdbBoot/0.0 ({G.remote}; {G.mail})',
+        )
 
     def get_filmaffinity(self, *args):
         r: dict[str, int] = dict()
-        for k, v in self.get_dict(
+        template = _read("sparql/imdb_film.sparql")
+        for k, v in self.__get_dict(
             *args,
-            key_field='wdt:P345',
-            val_field='wdt:P480'
+            template=template
         ).items():
-            vals = set(v)
-            if len(vals) == 1:
-                r[k] = vals.pop()
+            if k and re_imdb.match(k):
+                for i in list(v):
+                    if not i or not re_film.match(i):
+                        v.remove(i)
+                v.discard(None)
+                if len(v) == 1:
+                    r[k] = int(v.pop())
         return r
-
+    
     @retry_fetch(chunk_size=300)
-    def get_dict(
+    def __get_dict(
         self,
         *args,
-        key_field: str = None,
-        val_field: str = None,
-        by_field: str = None
-    ) -> dict[str, tuple[str | int, ...]]:
-        ids = " ".join(map(lambda x: x if x.startswith("wd:") else f'"{x}"', args))
-        if by_field:
-            query = dedent('''
-                SELECT ?k ?v WHERE {
-                    VALUES ?k { %s }
-                    ?item %s ?k ;
-                          %s ?b .
-                       ?b %s ?v .
-                }
-            ''').strip() % (
-                ids,
-                key_field,
-                by_field,
-                val_field,
-            )
-        elif key_field is None:
-            query = dedent('''
-                SELECT ?k ?v WHERE {
-                    VALUES ?k { %s }
-                    ?k %s ?v.
-                }
-            ''').strip() % (
-                ids,
-                val_field,
-            )
-        else:
-            query = dedent('''
-                SELECT ?k ?v WHERE {
-                    VALUES ?k { %s }
-                    ?item %s ?k.
-                    ?item %s ?v.
-                }
-            ''').strip() % (
-                ids,
-                key_field,
-                val_field,
-            )
-        r = defaultdict(list)
-        for i in self.query(query):
-            k = _parse_wiki_val(i['k']['value'])
-            v = _parse_wiki_val(i.get('v', {}).get('value'))
-            if v is None:
-                continue
-            if v.isdigit():
-                v = int(v)
-            r[k].append(v)
-        r = {k: tuple(v) for k, v in r.items()}
+        template: str = None
+    ):
+        r: dict[str, set[str]] = defaultdict(set)
+        ids = " ".join(map(lambda x: f'"{x}"', args))
+        query = re.sub(
+            r"(\bVALUES\s+\?\w+\s*\{)\s*\}",
+            r"\1 " + ids + r" }",
+            template
+        )
+        for k, v in self.__st.query(query):
+            r[k].add(v)
         return r
 
-    @retry_fetch(chunk_size=1000)
-    def get_wiki_url(self, *args):
-        ids = " ".join(map(lambda x: f'"{x}"', args))
-        order = []
-        for i, lang in enumerate(LANGS, start=1):
-            order.append(f'IF(CONTAINS(STR(?site), "://{lang}.wikipedia.org"), {i},')
-        len_order = len(order)
-        order.append(f"{len_order}" + (')' * len_order))
-        order_str = " ".join(order)
-
-        bindings = self.query(
-            """
-                SELECT ?imdb ?article WHERE {
-                VALUES ?imdb { %s }
-
-                ?item wdt:P345 ?imdb .
-                ?article schema:about ?item ;
-                        schema:isPartOf ?site .
-
-                FILTER(CONTAINS(STR(?site), "wikipedia.org"))
-
-                BIND(
-                    %s
-                    AS ?priority
-                )
-
-                {
-                    SELECT ?imdb (MIN(?priority) AS ?minPriority) WHERE {
-                    VALUES ?imdb { %s }
-                    ?item wdt:P345 ?imdb .
-                    ?article schema:about ?item ;
-                            schema:isPartOf ?site .
-                    FILTER(CONTAINS(STR(?site), "wikipedia.org"))
-                    BIND(
-                        %s
-                        AS ?priority
-                    )
-                    }
-                    GROUP BY ?imdb
-                }
-
-                FILTER(?priority = ?minPriority)
-                }
-                ORDER BY ?imdb
-            """ % (ids, order_str, ids, order_str)
-        )
-        obj: dict[str, set[str]] = defaultdict(set)
-        for i in bindings:
-            k = i['imdb']['value']
-            v = i.get('article', {}).get('value')
-            if isinstance(v, str):
-                v = v.strip()
-            if v is None or (isinstance(v, str) and len(v) == 0):
-                continue
-            obj[k].add(v)
-        obj = {k: v.pop() for k, v in obj.items() if len(v) == 1}
-        return obj
-
-
 WIKI = WikiApi()
+
+
+if __name__ == "__main__":
+    import sys
+    print(WIKI.get_filmaffinity(*sys.argv[1:]))
