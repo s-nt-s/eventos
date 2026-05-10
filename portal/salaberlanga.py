@@ -227,8 +227,8 @@ class SalaBerlanga:
             if re_or(
                 ev.name,
                 "sgae en corto",
-                "Cortometrajes?",
-                "sesi[oó]n( de)? cortos",
+                r"Cortometrajes?",
+                r"sesi[oó]n( de)? cortos",
                 flags=re.I
             ) or re.search(r"sgae-en-corto", ev.url or ''):
                 return ev.merge(
