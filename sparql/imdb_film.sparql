@@ -1,22 +1,5 @@
-SELECT DISTINCT ?imdb ?filmaffinity WHERE {
+SELECT DISTINCT ?k ?v WHERE {
     VALUES ?k {}
     ?item wdt:P345 ?k .
     ?item wdt:P480 ?v .
-    FILTER(REGEX(?k, "^tt[0-9][0-9][0-9]+$"))
-    FILTER(REGEX(?v, "^[0-9][0-9][0-9]+$"))
-
-    BIND(?k AS ?imdb)
-    BIND(?v AS ?filmaffinity)
-
-    # Asegurar que k tiene solo un v
-    FILTER(NOT EXISTS {
-        VALUES ?k {}
-        ?item2 wdt:P345 ?k .
-        ?item2 wdt:P480 ?v2 .
-        FILTER(REGEX(?k, "^tt[0-9]+$"))
-        FILTER(REGEX(?v2, "^[0-9]+$"))
-        FILTER(?v2 != ?v)
-    })
-
 }
-ORDER BY ?imdb
