@@ -20,6 +20,7 @@ from portal.teatrobarrio import TeatroBarrio
 from portal.alcala import Alcala
 from portal.goethe import Goethe
 from portal.ifrances import InstitutoFrances
+from portal.eventim import Eventim
 from datetime import datetime, date
 from core.util import round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
 from core.publish import PublishDB
@@ -59,6 +60,7 @@ def get_events(source):
             Goethe,
             MadridDestino,
             TeatroBarrio,
+            Eventim,
         )
     ):
         return source.events
@@ -399,6 +401,7 @@ class EventCollector:
         eventos = \
             store_events + \
             run_parallel(
+                Eventim("69ef5f152a2031003e75fe62"),
                 MadridEs(
                     isOkDate={
                         "villaverde": isOkDateVillaverde,
