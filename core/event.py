@@ -1144,6 +1144,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"libros? de relatos",
         r"ejercicio de imaginaci[oó]n hist[óo]rica para construir",
         r"es una novela",
+        r"Qu[eé] ocurrir[ií]a si un día secuestraran tus sueños",
         flags=re.I
     ):
         return Category.NARRATIVE
