@@ -116,6 +116,9 @@ class Ucm:
             more_urls: set[str] = set()
             more_urls.add(e.more or e._fix_more())
             if len(e.sessions) == 1:
+                if e.sessions[0].url == "https://www.ucm.es/cultura/entradas":
+                    # ya aparecerá en  self.__tim.events
+                    continue
                 more_urls.add(e.sessions[0].url)
             more_urls.discard(None)
             if len(more_urls)==0:
