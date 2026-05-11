@@ -225,6 +225,7 @@ def event_to_ics_description(e: Event, s: Session):
 
     url_shop = next(_iter_urls(
         re.compile(r"\btienda\.madrid-destino\.com/es/.+/\d+(/|$)", flags=re.I),
+        "eventim-light.com",
         "entradas.aliro.academiadecine.com",
         "entradasfilmoteca.sacatuentrada.es",
         "espacio.fundaciontelefonica.com",
