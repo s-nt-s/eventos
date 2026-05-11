@@ -12,6 +12,14 @@ dom_eventim = "eventim-light.com"
 
 
 def parse_place(p: Place):
+    if p is None:
+        return None
+    p = _parse_place(p) or p
+    return p.normalize()
+
+
+def _parse_place(p: Place):
+    place_address = f"{p.name or ''} {p.address or ''}".strip()
     if re_or(
         p.name,
         ("Facultad", "Bellas Artes"),
@@ -74,8 +82,8 @@ def parse_place(p: Place):
             zone=Zones.COMPLUTENSE.value.name
         )
     if re_or(
-        f"{p.name or ''} {p.address or ''}".strip(),
-        r"Facultad(es)? de Filolo[fg][ií]a",
+        place_address,
+        r"Facultad(es)? de (Filosof[ií]a|Filolog[ií]a)",
         flags=re.I
     ):
         return Place(
@@ -101,7 +109,10 @@ class Ucm:
         events: set[Event] = set()
         more_events: dict[str, set[Event]] = defaultdict(set)
         for e in self.__uni.events:
-            e = e.merge(id=f"ucm{e.id}")
+            e = e.merge(
+                id=f"ucm{e.id}",
+                place=parse_place(e.place)
+            )
             more_urls: set[str] = set()
             more_urls.add(e.more or e._fix_more())
             if len(e.sessions) == 1:
@@ -112,15 +123,14 @@ class Ucm:
             for more in more_urls:
                 more_events[more].add(e)
         for e in self.__tim.events:
-            e = e.merge(id=f"ucm{e.id}")
-            pl = parse_place(e.place)
             also_in: set[str] = set()
             for u in e.iter_urls():
                 for x in more_events.pop(u, set()):
                     if x.url:
                         also_in.add(x.url)
             e = e.merge(
-                place=pl.normalize() if pl else e.place,
+                id=f"ucm{e.id}",
+                place=parse_place(e.place),
                 also_in=tp_join(e.also_in, sorted(also_in))
             )
             events.add(e)
