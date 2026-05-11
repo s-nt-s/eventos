@@ -93,7 +93,7 @@ class Eventim:
             "Cine",
             flags=re.I
         ):
-            return Category.CINE
+            return Category.CINEMA
         
         logger.critical(str(CategoryUnknown(i.id, f"category={i.category}")))
         return Category.UNKNOWN
