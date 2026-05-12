@@ -636,6 +636,7 @@ class MadridEs:
             "Jornada de intercambio de semillas",
             "^Reparto de [aá]rboles",
             "Emprender con criterio",
+            r"para (in|e)?migrantes",
             flags=re.I
         ):
             return Category.NON_GENERAL_PUBLIC

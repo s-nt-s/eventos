@@ -3,7 +3,7 @@ from core.cache import TupleCache
 from typing import Set, Dict, List
 from functools import cached_property, cache
 import logging
-from core.event import Event, Session, Category, FieldNotFound, CategoryUnknown
+from core.event import Event, Session, Category, FieldNotFound, CategoryUnknown, find_book_category
 from core.place import Places
 import re
 from bs4 import Tag
@@ -266,7 +266,7 @@ class CasaAmerica(Web):
             return Category.NO_EVENT
 
         if re_or(content, "presentaci[óo]n (del )?libro", flags=re.I):
-            return Category.LITERATURE
+            return find_book_category(tit, content, Category.LITERATURE)
         if cat == "cine":
             return Category.CINEMA
         if cat == "exposiciones":
@@ -278,13 +278,13 @@ class CasaAmerica(Web):
         if cat == "literatura" and re_or(tit, "poesia"):
             return Category.POETRY
         if cat == "literatura" and re_or(tit, "club(es)? de lectura"):
-            return Category.READING_CLUB
+            return find_book_category(tit, content, Category.READING_CLUB)
         if cat == "literatura" and content.count("Diálogo") > 2:
             return Category.CONFERENCE
         if cat == "literatura" and re_or(content, "lectura perform[aá]tica", flags=re.I):
             return Category.THEATER
         if cat == "literatura" and re_or(content, "presentaci[óo]n del libro", flags=re.I):
-            return Category.LITERATURE
+            return find_book_category(tit, content, Category.LITERATURE)
         w1 = ((plain_text(content) or "").strip().lower().split()+[""])[0]
         if w1 == "concierto":
             return Category.MUSIC
