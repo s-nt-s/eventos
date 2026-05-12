@@ -465,6 +465,8 @@ class MadConvoca:
             return Category.ACTIVISM
         if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', 'Repair\s*Caf[eé]'):
             return Category.WORKSHOP
+        if has_tag_or_title("paseo") and has_tag_or_title("historia"):
+            return Category.VISIT
         if re_or(
             name,
             "Ruta",

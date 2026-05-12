@@ -819,7 +819,7 @@ class Cinema(Event):
 
     def _fix_name_director(self):
         def _mk_re(dr: str):
-            return re.compile(r"\s*,?\s*\bde\s+"+re.escape(dr)+"$", flags=re.I)
+            return re.compile(r"\s*,?\s*\bde\s+"+re.escape(dr)+"\s*$", flags=re.I)
 
         if self.director:
             if len(self.director) == 1:
@@ -836,6 +836,10 @@ class Cinema(Event):
             'Albert Serra',
             'Soraya González Guerrero',
             'Nuria Frigola Torrent',
+            "François-Xavier Tregan",
+            "Raquel Larrosa",
+            "Rodrigo García",
+            "Álvaro Hernández Blanco",
         ):
             new_name = _mk_re(d).sub("", self.name).strip()
             if new_name and new_name != self.name:
@@ -1122,12 +1126,14 @@ def find_book_category(name: str, description: str, default: Category):
         r"una de las novelas\b.*\bm[aá]s le[ií]das",
         r"participaci[oó]n del poeta",
         r"recitar[aá]n poemas de",
+        r"el poemario publicado",
         flags=re.I
     ):
         return Category.POETRY
     if re_or(
         name,
         "Presentaci[óo]n de la novela",
+        "Richard Turvey",
         flags=re.I
     ):
         return Category.NARRATIVE
@@ -1143,7 +1149,16 @@ def find_book_category(name: str, description: str, default: Category):
         r"Presentaci[oó]n de la novela",
         r"El retrato de Dorian Gray",
         r"libro de cuentos",
+        r"y ahora novelista",
+        r"transici[oó]n del periodismo a la ficci[oó]n",
         r"una de las novelas m[áa]s conocidas",
+        r"sus mejores novelas",
+        r"libros? de relatos",
+        r"ejercicio de imaginaci[oó]n hist[óo]rica para construir",
+        r"es una novela",
+        r"Qu[eé] ocurrir[ií]a si un día secuestraran tus sueños",
+        r"relato de ficci[oó]n",
+        r"libro de microrrelatos",
         ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
         ("a trav[eé]s de estas ficciones", "literatura"),
         r"sus mejores novelas",
@@ -1154,7 +1169,26 @@ def find_book_category(name: str, description: str, default: Category):
         flags=re.I
     ):
         return Category.NARRATIVE
-
+    if re_or(
+        txt,
+        r"Andr[ée]s Trapiello",
+        r"Pablo Díaz Esp[ií]",
+        r"María Zaplana Barcel[óo]",
+        r"Roc[ií]o Albert",
+        r"[aÁ]lvaro Fischer",
+        r"Cayetana [aÁ]lvarez de Toledo",
+        r"Jos[eé] Luis Cordeiro",
+        r"Jos[eé] Ortiz[\s\-]+Echagüe",
+        r"Maristela Berm[uú]dez",
+        r"Programaci[óo]n Neuroling[uü][ií]stica",
+        r"Juan Jos[eé] Tamayo",
+        r"OIKOS",
+        r"Foro Espa[ñn]a C[ií]vica",
+        r"Mar[ií]a Mart[ií]n D[ií]ez de Balde[oó]n",
+        r"Fernando J[aá]uregui",
+        flags=re.I
+    ):
+        return Category.SPAM
     
     if not re_or(
         txt,

@@ -102,6 +102,10 @@ class FilmAffinityApi:
             (588169, 2025, re.compile(r"Cometierra\b.*(temporada|[Ee]pisodio)")),
             (122104, 2024, "La cocina"),
             (493116, 2026, "Yo no moriré de amor"),
+            (920164, 1937, "Stella Dallas"),
+            (265442, 2024, "Los Cayucos de Kayar"),
+            (394043, 2024, "Disonancia"),
+            (616533, 2025, "Refugiados climáticos: un desafío global"),
         ):
             if _is_match(titles, year, y, *tt):
                 return k

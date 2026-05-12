@@ -143,28 +143,31 @@ class AteneoMadrid:
 
     def __find_category(self, e: IcsEventWrapper):
         cat = self.__find_category_basic(e)
-        if cat == Category.LITERATURE:
-            if re_or(
-                e.DESCRIPTION,
-                r"Intervienen los poetas",
-                flags=re.I
-            ):
-                return Category.POETRY
-            if re_or(
-                e.DESCRIPTION,
-                "Secci[oó]n(es)? de Literatura",
-                "Lectura de fragmentos de la obra por",
-                flags=re.I
-            ):
-                return Category.NARRATIVE
-            if re_or(
-                e.DESCRIPTION,
-                "Secci[oó]n(es)? de Fotograf[ií]a",
-                flags=re.I
-            ):
-                return Category.PHOTO
-
         if cat in (Category.CONFERENCE, Category.LITERATURE):
+            book_cat = find_book_category(e.SUMMARY, e.DESCRIPTION, cat)
+            if book_cat in (Category.SPAM, ):
+                return book_cat
+
+            if cat == Category.LITERATURE:
+                if re_or(
+                    e.DESCRIPTION,
+                    r"Intervienen los poetas",
+                    flags=re.I
+                ):
+                    return Category.POETRY
+                if re_or(
+                    e.DESCRIPTION,
+                    "Secci[oó]n(es)? de Literatura",
+                    "Lectura de fragmentos de la obra por",
+                    flags=re.I
+                ):
+                    return Category.NARRATIVE
+                if re_or(
+                    e.DESCRIPTION,
+                    "Secci[oó]n(es)? de Fotograf[ií]a",
+                    flags=re.I
+                ):
+                    return Category.PHOTO
             if re_or(
                 e.SUMMARY,
                 "Letras gallegas",
@@ -173,35 +176,16 @@ class AteneoMadrid:
                 return Category.NARRATIVE
             if re_or(
                 f"{e.SUMMARY or ''} {e.DESCRIPTION or ''}".strip(),
-                "Andrés Trapiello",
-                "Pablo Díaz Espí",
-                "Agrupación Sabatini",
+                r"Agrupaci[oó]n(es)? Sabatini",
                 "de opinión de El Mundo",
-                "María Zaplana Barceló",
                 "92 Liberales",
-                "Roc[ií]o Albert",
-                "OIKOS",
                 "Grupo PPE",
                 "diputado PP",
-                "Foro Espa[ñn]a C[ií]vica",
                 "Cultura Militar",
-                "Mar[ií]a Mart[ií]n D[ií]ez de Balde[oó]n",
-                "Ana Pastor",
-                "Fernando J[aá]uregui",
-                "Radio Intereconom[ií]a",
-                "Jos[eé] Ortiz[\s\-]+Echagüe",
+                r"Radio Intereconom[ií]a",
                 ("Gaceta Sindical", r"CC\.?OO\.?"),
             ):
                 return Category.INSTITUTIONAL_POLICY
-            if re_or(
-                e.DESCRIPTION,
-                "Jos[eé] Luis Cordeiro",
-                "Maristela Berm[uú]dez",
-                "Programaci[óo]n Neuroling[uü][ií]stica",
-                r"Juan Jos[eé] Tamayo",
-                flags=re.I
-            ):
-                return Category.SPAM
             if re_or(
                 e.DESCRIPTION,
                 "Mitos, Religiones y Humanidades",
@@ -214,7 +198,23 @@ class AteneoMadrid:
                 flags=re.I
             ):
                 return Category.PICTURE
-            return find_book_category(e.SUMMARY, e.DESCRIPTION, cat)
+            if re_or(
+                e.SUMMARY,
+                r"Unamuno",
+                r"Agust[ií]n Argüelles",
+                r"Del Renacimiento a la Ilustraci[oó]n",
+                r"Edificios? emblem[aá]ticos? (en el|del) Camino de Santiago",
+                flags=re.I
+            ) or re_or(
+                e.DESCRIPTION,
+                r"Agrupaci[óo]n(es)? Ateneos al Flamenco",
+                r"Agrupaci[óo]n(es)? Agust[ií]n Argüelles",
+                r"Secci[oó]n(es)? de Arquitectura",
+                r"Secci[oó]n(es)? Africanista",
+                flags=re.I
+            ):
+                return Category.OTHERS
+            return book_cat
         if cat is not None:
             return cat
         if e.CATEGORIES:
@@ -263,7 +263,6 @@ class AteneoMadrid:
         ):
             return Category.POETRY
 
-        
         if re_and(
             e.SUMMARY,
             "presentaci[oó]n del?",
@@ -276,6 +275,8 @@ class AteneoMadrid:
         if _has_cat(r"Proyecci[óo]n", "cinef[óo]rum"):
             return Category.CINEMA
         if _has_cat(r"Presentaci[óo]n del disco", "conciertos?", "recital de piano"):
+            return Category.MUSIC
+        if _has_cat("Velada") and re_or(e.DESCRIPTION, "piano", flags=re.I):
             return Category.MUSIC
         if _has_cat(r"mon[oó]logo", r"Lecturas? dramatizadas?", "teatro", r"[oó]pera"):
             return Category.THEATER

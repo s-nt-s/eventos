@@ -79,9 +79,10 @@ class BookFinder:
             "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2205945": r"\bMuerte accidental de un anarquista\b",
             "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2087546": r"\bLa mala costumbre\b",
             "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=267016": r"\bEl anti-?Edipo\b",
+            "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1912979": r"\bTesto yonqui\b",
+            "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1608475": r"\bLa [eÉ]tica animal,? ¿?una cuesti[oó]n feminista\?",
             "https://madrid.ebiblio.es/resources/699f20282753bd15e883053d": r"\b(Redes vacías|Tecnología catastrófica y fin de la democracia)\b",
             "https://www.sigloxxieditores.com/libro/el-capital-obra-completa_17971/": r"\bEl Capital\b",
-            "http://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1912979": r"\bTesto yonqui\b",
         }.items():
             if _is(title, r):
                 return k
