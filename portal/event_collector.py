@@ -47,8 +47,12 @@ from core.ics import IcsReader
 
 logger = logging.getLogger(__name__)
 
-ICS_BUSY = IcsReader.safe_load(environ.get("ICS_BUSY"))
-ICS_BUSY_VILLAVERDE = IcsReader.safe_load(environ.get("ICS_BUSY_VILLAVERDE"))
+def safe_load_ics(name: str):
+    return IcsReader.safe_load(environ.get(name), name=name)
+
+
+ICS_BUSY = safe_load_ics("ICS_BUSY")
+ICS_BUSY_VILLAVERDE = safe_load_ics(environ.get("ICS_BUSY_VILLAVERDE")
 
 def get_events(source):
     if isinstance(

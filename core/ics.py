@@ -280,20 +280,22 @@ class IcsReader:
     def __init__(
         self,
         *urls: str,
+        name: Optional[str] = None,
         verify_ssl: bool = True,
         isOkDate: Callable[[datetime], bool] = None,
     ):
         self.__urls = urls
+        self.__name = name
         self.__s = buildSession()
         self.__verify_ssl = verify_ssl
         self.__isOkDate = isOkDate or (lambda x: True)
 
     @classmethod
-    def safe_load(cls, url: str):
+    def safe_load(cls, url: str, name: Optional[str] = None):
         if url is None:
             return None
         try:
-            return cls(url)
+            return cls(url, name=name)
         except:
             return None
 
@@ -334,7 +336,7 @@ class IcsReader:
         for url in self.__urls:
             cal = self.__from_ical(url)
             if cal is not None:
-                logger.info(f"Recuperando eventos de {url}")
+                logger.info(f"Recuperando eventos de {self.__name or url}")
                 for e in cal.walk("VEVENT"):
                     e = IcsEventWrapper(e, source=url)
                     try:
@@ -347,7 +349,7 @@ class IcsReader:
                         ):
                             yield e
                     except IcsEventMandatory as err:
-                        logger.warning(f"{err} {url} {e}")
+                        logger.warning(f"{err} {self.__name or url} {e}")
                         continue
 
     @cached_property
