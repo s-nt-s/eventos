@@ -52,7 +52,7 @@ def safe_load_ics(name: str):
 
 
 ICS_BUSY = safe_load_ics("ICS_BUSY")
-ICS_BUSY_VILLAVERDE = safe_load_ics(environ.get("ICS_BUSY_VILLAVERDE")
+ICS_BUSY_VILLAVERDE = safe_load_ics("ICS_BUSY_VILLAVERDE")
 
 def get_events(source):
     if isinstance(

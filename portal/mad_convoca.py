@@ -510,6 +510,7 @@ class MadConvoca:
             txt_desc,
             ("performance", "micr[óo]fono abierto", "DJ Set(lists?)?"),
             ("Karaoke", r"DJ Set(s|lists?)?"),
+            ("pintxadas?", "elektronikas?"),
             to_log=e.id,
             flags=re.I
         ):
