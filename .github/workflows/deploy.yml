@@ -53,6 +53,7 @@ jobs:
         env:
           PROXY_LIST: ${{ secrets.PROXY_LIST }}
           ICS_BUSY: ${{ secrets.ICS_BUSY }}
+          ICS_BUSY_VILLAVERDE: ${{ secrets.ICS_BUSY_VILLAVERDE }}
         with:
           timeout_minutes: 50
           retry_wait_seconds: 60

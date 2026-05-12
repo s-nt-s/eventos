@@ -48,6 +48,7 @@ from core.ics import IcsReader
 logger = logging.getLogger(__name__)
 
 ICS_BUSY = IcsReader.safe_load(environ.get("ICS_BUSY"))
+ICS_BUSY_VILLAVERDE = IcsReader.safe_load(environ.get("ICS_BUSY_VILLAVERDE"))
 
 def get_events(source):
     if isinstance(
@@ -121,10 +122,10 @@ def isAlcalaOkDate(dt: datetime):
 
 
 def isOkDate(dt: datetime, delta: int = 0.5):
-    if dt.date() in get_festivos(dt.year):
-        return True
     if ICS_BUSY and ICS_BUSY.is_in(dt):
         return False
+    if dt.date() in get_festivos(dt.year):
+        return True
     min_hour = getMin(dt)
     if min_hour > 0:
         min_hour = min_hour + delta
@@ -132,6 +133,8 @@ def isOkDate(dt: datetime, delta: int = 0.5):
 
 
 def isOkDateVillaverde(dt: datetime):
+    if ICS_BUSY_VILLAVERDE and ICS_BUSY_VILLAVERDE.is_in(dt):
+        return False
     if dt.date() in get_festivos(dt.year):
         return True
     if not isOkDate(dt):
