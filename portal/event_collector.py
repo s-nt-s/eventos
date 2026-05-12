@@ -53,6 +53,7 @@ def safe_load_ics(name: str):
 
 ICS_BUSY = safe_load_ics("ICS_BUSY")
 ICS_BUSY_VILLAVERDE = safe_load_ics("ICS_BUSY_VILLAVERDE")
+ICS_BUSY_ALCALA = safe_load_ics("ICS_BUSY_ALCALA")
 
 def get_events(source):
     if isinstance(
@@ -114,6 +115,8 @@ def getMin(dt: date | datetime) -> int:
 
 
 def isAlcalaOkDate(dt: datetime):
+    if ICS_BUSY_ALCALA and ICS_BUSY_ALCALA.is_in(dt):
+        return False
     wd = dt.weekday()
     min_hour = max(
         getMin(dt) + 1,

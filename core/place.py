@@ -513,6 +513,16 @@ class Place:
             flags=re.I,
         ):
             return Places.CS_PILEKA.value
+        if re_or(
+            name,
+            "la riviera",
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "virgen del puerto",
+            flags=re.I
+        )):
+            return Places.LA_RIVIERA.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -1010,5 +1020,11 @@ class Places(Enum):
         latlon="40.4573740075384,-3.708572111244122",
         map="https://maps.app.goo.gl/yzqL41xGj7sYxFtN6",
         zone="Estrecho"
+    )
+    LA_RIVIERA = Place(
+        name="La Riviera",
+        address="P.º Bajo de la Virgen del Puerto, S/N, Arganzuela, 28005 Madrid",
+        latlon="40.41323679640723,-3.7221084845054877",
+        map="https://maps.app.goo.gl/wGGtB2UZHEjwFmHg9",
     )
     
