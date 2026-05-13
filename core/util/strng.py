@@ -210,6 +210,7 @@ def _rm_sufix():
 def _rm_quote():
     NQ = r"[^"+_QT+"]"
     PREFIX = "|".join([
+        r" GERMAN FILM FEST MADRID Focus Goethe( Institut)?",
         r"Concierto(?: de)?",
         r"Cineclub(?: con)?",
         r"Proyección(?: de)?",
