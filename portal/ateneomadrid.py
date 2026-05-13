@@ -278,7 +278,7 @@ class AteneoMadrid:
             return Category.MUSIC
         if _has_cat("Velada") and re_or(e.DESCRIPTION, "piano", flags=re.I):
             return Category.MUSIC
-        if _has_cat(r"mon[oó]logo", r"Lecturas? dramatizadas?", "teatro", r"[oó]pera"):
+        if _has_cat(r"mon[oó]logo", r"^Lecturas?$", r"Lecturas? dramatizadas?", "teatro", r"[oó]pera"):
             return Category.THEATER
 
         if _has_cat(r"Presentación del libro", 'Libros'):
