@@ -1,5 +1,6 @@
 import re
 from functools import cache
+from unidecode import unidecode
 
 _TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠]+"
 RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
@@ -269,3 +270,49 @@ def clean_name(name: str):
     if w1.isalpha():
         name = w1.upper()+name[1:]
     return name
+
+
+def _escape(s: str):
+    r = re.escape(s)
+    r = re.sub(
+        "[áéíóúÁÉÍÚÓ]",
+        lambda x: f"[{x.group()}{unidecode(x.group())}]",
+        r
+    )
+    return r
+
+
+DIRECTORS = list(map(_escape, map(str.lower, [
+    'Mia Maariel Meyer',
+    'James Ward Byrkit',
+    'Angela Schanelec',
+    'Stephen Daldry',
+    'Woody Allen',
+    'Albert Serra',
+    'Soraya González Guerrero',
+    'Nuria Frigola Torrent',
+    "François-Xavier Tregan",
+    "Raquel Larrosa",
+    "Rodrigo García",
+    "Álvaro Hernández Blanco",
+])))
+
+
+def _re_director(*directors):
+    for d in directors:
+        d = _escape(d.lower())
+        if d not in DIRECTORS:
+            DIRECTORS.append(d)
+
+    dr = "|".join(DIRECTORS)
+    re1 = re.compile(r"^\s*(?P<director>"+dr+r")\s*-\s*(?P<title>.+)\s*$", flags=re.I)
+    re2 = re.compile(r"^(?P<title>.+?)\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I)
+    return re1, re2
+
+
+def find_director(name: str, *directors: str):
+    for r in _re_director(*directors):
+        m = r.match(name)
+        if m:
+            return m.group('director'), m.group('title')
+    return None, None

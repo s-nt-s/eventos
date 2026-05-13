@@ -93,7 +93,7 @@ class FilmAffinityApi:
             (669924, 1927, "El gato y el canario"),
             (591219, 2026, "El canto de las mariposas"),
             (963958, 2024, "Jugar con fuego"),
-            (750980, 2024 ,"On falling"),
+            (750980, 2024, "On falling"),
             (821116, 2025, "Madrid, ext"),
             (795317, 2017, "La familia"),
             (304206, 2025, "Océano con David Attenborough"),
@@ -106,6 +106,8 @@ class FilmAffinityApi:
             (265442, 2024, "Los Cayucos de Kayar"),
             (394043, 2024, "Disonancia"),
             (616533, 2025, "Refugiados climáticos: un desafío global"),
+            (130415, 2015, "Escalera arriba"),
+            (701076, 2022, "La semilla")
         ):
             if _is_match(titles, year, y, *tt):
                 return k

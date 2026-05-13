@@ -3,7 +3,7 @@ from core.cache import Cache, TupleCache
 from urllib.parse import urlencode
 from core.util import parse_obj, find_euros, re_or, clean_url
 import re
-from core.event import Event, Category, CategoryUnknown, Session, Place, find_book_category
+from core.event import Event, Category, Cinema, CategoryUnknown, Session, Place, find_book_category
 from core.place import Places
 from functools import cached_property
 import logging
@@ -213,6 +213,13 @@ class Goethe:
                 sessions=sessions,
                 cycle=None
             )
+            e = e.fix_type()
+            if isinstance(e, Cinema):
+                d, y = self.__find_year_director(i)
+                e = e.merge(
+                    director=(d, ) if d else None,
+                    year=y
+                )
             evs.add(e)
         url_info: dict[str, InfoSoup] = Getter(
             onread=rq_to_info,
@@ -329,6 +336,13 @@ class Goethe:
             return prc
         logger.critical(f"NOT FOUND price {price} {url}")
         return 0
+
+    def __find_year_director(self, i: dict):
+        subheadline = re_sp.sub(" ", i.get('subheadline') or "").strip()
+        match = re.match(r"^([^\|]+) \| ((?:20|19)\d{2}) \|", subheadline)
+        if match:
+            return match.group(1), int(match.group(2))
+        return None, None
 
     def __find_category(self, url: str, i: dict):
         et = i['event_type']
