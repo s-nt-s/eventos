@@ -340,7 +340,6 @@ class MadConvoca:
         if re_or(
             e.place.name,
             r"online y en las calles",
-            r"Recogida de firmas",
             flags=re.I
         ):
             return Category.ACTIVISM
@@ -352,10 +351,11 @@ class MadConvoca:
         if has_tag(
             "asamblea"
         ) or has_tag_or_title(
-            'manifestaci[oó]n',
-            'concentraci[oó]n',
-            'regularizaci[oó]n extraordinaria',
-            'asamblea de vivienda',
+            r'manifestaci[oó]n',
+            r'concentraci[oó]n',
+            r'regularizaci[oó]n extraordinaria',
+            r'asamblea de vivienda',
+            r"Recogida de firmas",
         ):
             return Category.ACTIVISM
         if re_or(

@@ -819,7 +819,8 @@ class Cinema(Event):
 
     def _fix_name_director(self):
         def _mk_re(dr: str):
-            return re.compile(r"\s*,?\s*\bde\s+"+re.escape(dr)+"\s*$", flags=re.I)
+            dr = re.escape(dr)
+            return re.compile(r"^\s*"+dr+r"\s*-\s*|\s*,?\s*\bde\s+"+dr+r"\s*$", flags=re.I)
 
         if self.director:
             if len(self.director) == 1:
@@ -829,6 +830,7 @@ class Cinema(Event):
             return
 
         for d in (
+            'Mia Maariel Meyer',
             'James Ward Byrkit',
             'Angela Schanelec',
             'Stephen Daldry',
