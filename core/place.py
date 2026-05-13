@@ -529,6 +529,16 @@ class Place:
             flags=re.I
         ):
             return Places.PL_XOSE_TARRIO.value
+        if re_or(
+            name,
+            "cines embajadores",
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "Mar[ií]a de la Cabeza",
+            flags=re.I
+        )):
+            return Places.CINES_EMBAJADORES.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -1040,4 +1050,10 @@ class Places(Enum):
         map="https://maps.app.goo.gl/ui4kjJJWCyL5xjAz5",
         zone="Lavapiés",
     )
-
+    CINES_EMBAJADORES = Place(
+        name="Cines Embajadores",
+        address="Glorieta Sta. María de la Cabeza, 5, Arganzuela, 28045 Madrid",
+        latlon="40.400812584589474,-3.698521771163644",
+        map="https://maps.app.goo.gl/boe8qhj1fUcMLTf4A",
+        zone="Embajadores",
+    )
