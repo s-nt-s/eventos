@@ -208,22 +208,65 @@ class Alcala:
         if re_or(
             x.name,
             "MARCHAS PROCESIONALES",
-            "m[uú]sica procesional",
+            r"m[uú]sica procesional",
+            r"Rezo de vísperas",
             flags=re.I
         ):
             return Category.RELIGION
+        if re_or(
+            x.name,
+            r"magia infantil",
+            r"Pinta-?caras infantil",
+            r"para los m[áa]s pequeños",
+            flags=re.I
+        ):
+            return Category.CHILDISH
         if re_or(
             x.name,
             ("taller", "para j[oó]venes"),
             flags=re.I
         ):
             return Category.YOUTH
-        if not x.event_types:
-            logger.critical(f"event_types=None {x.permalink}")
-            return Category.UNKNOWN
+        if re_or(
+            x.name,
+            "Festival de poes[ií]a",
+            flags=re.I
+        ):
+            return Category.POETRY
+        if re_or(
+            x.name,
+            r"^Concierto",
+            r"^DJ",
+            r"Plaza del Ritmo",
+            r"Festival\b.*\b[oó]rgano",
+            r"Canto L[ií]rico",
+            r"Grupo de Pandereteras",
+            r"Batucada",
+            r"Guitarra Homenaje",
+            flags=re.I,
+        ):
+            return Category.MUSIC
+        if re_or(
+            x.name,
+            r"^Taller de",
+            r"Leroy merlin",
+            flags=re.I,
+        ):
+            return Category.WORKSHOP
+        if re_or(
+            x.name,
+            r"Actuaci[óo]n de Danzas?",
+            r"Baile Social",
+            r"Actuaci[óo]n\b.*\b(bailes?)",
+            r"Conga",
+            r"^Baile de",
+            flags=re.I,
+        ):
+            return Category.DANCE
         txt_content = get_content(x)
         for cat, _or_ in {
             Category.CHILDISH: (
+                r"M[ÚU]SICA INFANTIL",
                 r"T[IÍ]TERES.*P[UÚ]BLICO FAMILIAR",
                 r"TEATRO (INFANTIL|FAMILIAR)",
                 r"[Ee]spect[aá]culo infantil",
@@ -232,6 +275,7 @@ class Alcala:
                 r"Teatro familiar",
                 r"sumergirse en familia",
                 r"a partir de \d años",
+                r"para que los m[aá]s pequeños",
             ),
             Category.PARTY: (
                 r"EXPERIENCIA GASTRON[OÓ]MICA",
@@ -240,6 +284,7 @@ class Alcala:
                 r"VISITA TEATRALIZADA",
                 "TEATRO",
                 r"ESPECT[AÁ]CULO DE CALLE.*[pP]asacalles?.*[Aa]ctor[aex@]s?",
+                r"DESFILE",
             ),
             Category.POETRY: (
                 r"[dD]eclamaci[oó]n de poemas",
@@ -254,10 +299,24 @@ class Alcala:
             ),
             Category.WORKSHOP: (
                 r"G[eé]nero: Taller",
+                r"TALLER",
+            ),
+            Category.VISIT: (
+                r"VISITA",
+            ),
+            Category.EXPO: (
+                r"EXPOSICIÓN",
+                r"EXPO"
+            ),
+            Category.SPORT: (
+                r"YINCANA",
             )
         }.items():
             if re_or(txt_content, *_or_, flags=re.DOTALL):
                 return cat
+        if not x.event_types:
+            logger.critical(f"event_types=None {x.permalink}")
+            return Category.UNKNOWN
         for tp in map(str.lower, x.event_types):
             if tp == "música y danza":
                 if re_or(

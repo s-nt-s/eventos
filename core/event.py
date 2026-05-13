@@ -14,7 +14,7 @@ from core.dblite import DB
 from typing import TypeVar, Type
 from core.book import BF
 from core.util import my_filter
-from core.util.strng import clean_name
+from core.util.strng import clean_name, find_director
 from collections import defaultdict
 from core.place import Place
 import pytz
@@ -818,42 +818,25 @@ class Cinema(Event):
         return self
 
     def _fix_name_director(self):
-        def _mk_re(dr: str):
-            dr = re.escape(dr)
-            return re.compile(r"^\s*"+dr+r"\s*-\s*|\s*,?\s*\bde\s+"+dr+r"\s*$", flags=re.I)
-
-        if self.director:
-            if len(self.director) == 1:
-                new_name = _mk_re(self.director[0]).sub("", self.name).strip()
-                if new_name and new_name != self.name:
-                    object.__setattr__(self, "name", new_name)
+        old_dir = self.director or tuple()
+        director, title = find_director(self.name, *old_dir)
+        if director is None and title is None:
             return
-
-        for d in (
-            'Mia Maariel Meyer',
-            'James Ward Byrkit',
-            'Angela Schanelec',
-            'Stephen Daldry',
-            'Woody Allen',
-            'Albert Serra',
-            'Soraya González Guerrero',
-            'Nuria Frigola Torrent',
-            "François-Xavier Tregan",
-            "Raquel Larrosa",
-            "Rodrigo García",
-            "Álvaro Hernández Blanco",
-        ):
-            new_name = _mk_re(d).sub("", self.name).strip()
-            if new_name and new_name != self.name:
-                new_name = clean_name(new_name)
-                logger.debug(f"[{self.id}].__fix_name_director: director={d} name={new_name} <- {self.name}")
-                object.__setattr__(self, "director", (d, ))
-                object.__setattr__(self, "name", new_name)
-                return
-            if d in self.name:
-                logger.debug(f"[{self.id}].__fix_name_director: director={d}")
-                object.__setattr__(self, "director", (d, ))
-                return
+        if director not in old_dir and title != self.name:
+            new_name = clean_name(title)
+            logger.debug(f"[{self.id}].__fix_name_director: director={director} name={new_name} <- {self.name}")
+            object.__setattr__(self, "director", (director, ))
+            object.__setattr__(self, "name", new_name)
+            return
+        if director in old_dir and title != self.name:
+            new_name = clean_name(title)
+            logger.debug(f"[{self.id}].__fix_name_director: name={new_name} <- {self.name}")
+            object.__setattr__(self, "name", new_name)
+            return
+        if director not in old_dir and title == self.name:
+            logger.debug(f"[{self.id}].__fix_name_director: director={director} <- {self.director}")
+            object.__setattr__(self, "director", (director, ))
+            return
 
     def _fix_name_year(self):
         years = tuple(i for i in map(int, re.findall(r"\d+", self.name)) if i>1900 and i<=TODAY.year+1)
