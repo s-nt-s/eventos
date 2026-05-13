@@ -339,7 +339,8 @@ class MadConvoca:
 
         if re_or(
             e.place.name,
-            "online y en las calles",
+            r"online y en las calles",
+            r"Recogida de firmas",
             flags=re.I
         ):
             return Category.ACTIVISM
