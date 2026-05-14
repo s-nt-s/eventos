@@ -721,7 +721,14 @@ class Event:
             category=category,
             sessions=tuple(sessions),
             price=max(f_info.prices),
-        )
+        ).fix_type()
+        if isinstance(e, Cinema):
+            e = e.merge(
+                director=get_main_value(f_info.director),
+                year=get_main_value(f_info.year),
+                imdb=get_main_value(f_info.imdb),
+                filmaffinity=get_main_value(f_info.filmaffinity)
+            )
         e = e.fix()
         logger.debug(f"=== {e}")
         return e
@@ -1007,7 +1014,11 @@ class FusionInfo(NamedTuple):
     seen_in: list[str]
     sessions: dict[str, FusionSession]
     prices: list[float]
-    dates: tuple[str]
+    dates: tuple[str, ...]
+    year: list[int]
+    director: list[tuple[str, ...]]
+    imdb: list[str]
+    filmaffinity: list[str]
 
 
 def _get_info_fusion(evs: tuple[Event, ...]):
@@ -1028,7 +1039,16 @@ def _get_info_fusion(evs: tuple[Event, ...]):
     seen_in: list[str] = []
     s_dates: set[str] = set()
     prices: list[float] = []
+    years: list[int] = []
+    directors: list[tuple[str, ...]] = []
+    imdb: list[str] = []
+    filmaffinity: list[str] = []
     for e in evs:
+        if isinstance(e, Cinema):
+            _add(years, e.year)
+            _add(directors, e.director)
+            _add(imdb, e.imdb)
+            _add(filmaffinity, e.filmaffinity)
         _add(urls, e.url)
         _add(names, e.name)
         _add(categories, e.category, avoid=(None, Category.UNKNOWN))
@@ -1083,7 +1103,11 @@ def _get_info_fusion(evs: tuple[Event, ...]):
         seen_in=seen_in,
         sessions=sessions,
         prices=prices,
-        dates=ts_dates
+        dates=ts_dates,
+        year=years,
+        director=directors,
+        imdb=imdb,
+        filmaffinity=filmaffinity
     )
 
 
