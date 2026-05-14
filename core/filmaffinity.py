@@ -107,7 +107,7 @@ class FilmAffinityApi:
             (394043, 2024, "Disonancia"),
             (616533, 2025, "Refugiados climáticos: un desafío global"),
             (130415, 2015, "Escalera arriba"),
-            (701076, 2022, "La semilla")
+            (496314, 2026, re.compile(r"\bIván & Hadoum\b")),
         ):
             if _is_match(titles, year, y, *tt):
                 return k
