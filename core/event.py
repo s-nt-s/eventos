@@ -1116,6 +1116,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"participaci[oó]n del poeta",
         r"recitar[aá]n poemas de",
         r"el poemario publicado",
+        r"Este poemario presenta",
         flags=re.I
     ):
         return Category.POETRY
@@ -1170,6 +1171,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"Foro Espa[ñn]a C[ií]vica",
         r"Mar[ií]a Mart[ií]n D[ií]ez de Balde[oó]n",
         r"Fernando J[aá]uregui",
+        r"Felipe Gonz[aá]lez",
         flags=re.I
     ):
         return Category.SPAM
