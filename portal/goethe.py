@@ -392,14 +392,21 @@ class Goethe:
         if re_or(
             et,
             "teatro",
-            "esc[eé]nicas?",
+            r"esc[eé]nicas?",
             "Lectura teatral",
+            r"radioteatro",
             flags=re.I
         ):
             return Category.THEATER
         if re_or(
+            et,
+            r"Exposici[oó]n",
+            flags=re.I
+        ):
+            return Category.EXPO
+        if re_or(
             i['subheadline'],
-            r'Exposiciones?',
+            r'Exposici[óo]nes?',
             flags=re.I
         ):
             return Category.EXPO

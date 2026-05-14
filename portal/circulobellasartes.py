@@ -73,6 +73,21 @@ def table_to_dict(table: Tag):
     return info
 
 
+def _find_img(soup: Tag):
+    for n in soup.select(",".join((
+        'div.fl-col-small div.fl-photo[role="figure"] img.entered[data-src]',
+        'div.fl-col-small div.fl-photo[role="figure"] div.fl-photo-content > img.fl-photo-img[data-src]'
+    ))):
+        img = n.attrs.get("data-src")
+        if img:
+            return img
+    for n in soup.select('meta[property="og:image"][content]'):
+        img = n.attrs.get("content")
+        if img:
+            return img
+    return None
+
+
 async def soup_to_cinema(url: str, soup: Tag):
     if soup.find(string=re.compile(r"^\s*Este\s+evento\s+ha\s+finalizado\s*$")):
         return None
@@ -84,7 +99,6 @@ async def soup_to_cinema(url: str, soup: Tag):
         if aux:
             h3 = aux
     inf = table_to_dict(soup.select_one("table.cba_tabla_ficha"))
-    img = soup.select_one('div.fl-col-small div.fl-photo[role="figure"] img.entered[data-src]')
     year = inf.get("año")
     if year is not None and year.isdigit():
         year = int(year)
@@ -100,7 +114,7 @@ async def soup_to_cinema(url: str, soup: Tag):
         category=Category.CINEMA,
         sessions=tuple(),
         duration=inf.get("duration"),
-        img=img.attrs.get("data-src") if img else None,
+        img=_find_img(soup),
         price=None,
     )
     price_event: dict[float, Cinema] = {}
@@ -157,10 +171,9 @@ async def soup_to_event(url: str, soup: Tag):
     d, m, y, h, mm = dt_int
     dt = datetime(y, m, d, h, mm)
     name = get_text(soup.select_one("div[data-post-id] h1"))
-    meta = soup.select_one('meta[property="og:image"][content]')
     ev = Event(
         id="cba"+to_uuid(url),
-        img=meta.attrs.get("content") if meta else None,
+        img=_find_img(soup),
         url=url,
         name=name,
         place=Places.CIRCULO_BELLAS_ARTES.value,
@@ -205,6 +218,7 @@ def _find_category(url: str, title: str, soup: Tag):
         r"Mesa Redonda",
         r"Conferencias?",
         r"Conversaci[oó]n entre",
+        r"P[oó]dcast",
         flags=re.I
     ):
         return Category.CONFERENCE
@@ -243,7 +257,8 @@ def _find_category(url: str, title: str, soup: Tag):
         r"panel de conversaci[óo]n",
         r"En esta conferencia",
         r"En este seminario",
-        "el podcast de",
+        r"el podcast de",
+        r"mesa de (debate|di[aá]logo)",
         r"la mesa de di[aá]logo abordar[aá]",
         r"l[aox@]s ponentes (abordan|van)",
         ("programa", "modera"),

@@ -94,7 +94,13 @@ class Eventim:
             flags=re.I
         ):
             return Category.CINEMA
-        
+        if re_or(
+            i.category,
+            "Danza",
+            flags=re.I
+        ):
+            return Category.DANCE
+         
         logger.critical(str(CategoryUnknown(i.id, f"category={i.category}")))
         return Category.UNKNOWN
 

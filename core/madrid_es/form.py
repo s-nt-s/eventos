@@ -16,7 +16,7 @@ from core.madrid_es.tp import Place
 from html import unescape
 from icalendar import Calendar
 from core.ics import IcsEventWrapper
-from core.util import get_domain, clean_url, get_query
+from core.util import get_domain, clean_url, get_query, re_or
 from core.md import MD
 
 
@@ -78,6 +78,7 @@ class Page(NamedTuple):
     price: tuple[str, ...] = tuple()
     more: tuple[str, ...] = tuple()
     img: tuple[str, ...] = tuple()
+    audience: tuple[str, ...] = tuple()
 
 
 def _get_district(lc: Tag):
@@ -176,6 +177,40 @@ def _get_urls(soup: Tag, slc: str):
     return tuple(urls)
 
 
+def get_audience_from_node_page(tag: Tag):
+    if tag is None:
+        return None
+    text = get_text(tag)
+    if text is None:
+        return None
+    if re_or(
+        text,
+        r"mujeres mayores.*65",
+        flags=re.I
+    ):
+        return "Mayores"
+    if re_or(
+        text,
+        r"Dirigid[ao] a mujeres",
+        flags=re.I
+    ):
+        return "Mujeres"
+    if re_or(
+        text,
+        r"Dirigid[oa] a familias",
+        flags=re.I
+    ):
+        return "Familias"
+    if re_or(
+        text,
+        r"Dirigid[oa] a poblaci[oó]n general",
+        r"Dirigid[oa] a toda la poblaci[oó]n",
+        flags=re.I
+    ):
+        return "Población general"
+    return text
+
+
 async def rq_to_page(r: ClientResponse):
     soup = buildSoup(str(r.url), await r.read())
     more = _get_urls(
@@ -192,13 +227,21 @@ async def rq_to_page(r: ClientResponse):
         if p is not None and p not in price:
             price.append(p)
     free = soup.select_one("ul li p.gratuita") is not None
+    audience: list[str] = []
+    for txt in map(
+        get_audience_from_node_page,
+        soup.select("div.info-actividad div.tiny-text p.MsoNormal")
+    ):
+        if txt is not None and txt not in audience:
+            audience.append(txt)
 
     return Page(
         description=MD.convert(soup.select_one("div.tramites-content div.tiny-text")),
         price=tuple(price),
         more=more,
         img=img,
-        free=free
+        free=free,
+        audience=tuple(audience)
     )
 
 
@@ -507,4 +550,9 @@ if __name__ == "__main__":
     config_log("log/search.log")
     FS = FormSearch()
     evs = FS.get_events()
-    print(len(evs))
+    done: set[str] = set()
+    for p in FS.get_page(*(e.url for e in evs)).values():
+        for a in p.audience:
+            if a not in done:
+                print(a)
+                done.add(a)

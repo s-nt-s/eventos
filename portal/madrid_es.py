@@ -55,7 +55,6 @@ async def rq_to_text(r: ClientResponse):
     return txt
 
 
-
 @cache
 def to_place(p: ApiPlace):
     if p is None:
@@ -267,6 +266,7 @@ class MadridEs:
             e = e._replace(
                 more=tp_join(e.more, page.more),
                 img=tp_join(e.more, page.img),
+                audience=tp_join(e.audience, page.audience),
             )
             events[vgnextoid] = e
 
@@ -905,7 +905,15 @@ class MadridEs:
         if i.event.has_category(
             r'club(es)? de lectura',
         ):
-            return find_book_category(i.event.title, i.event.description, Category.READING_CLUB)
+            if i.event.has_audience(
+                r"mujeres?",
+            ):
+                return Category.NON_GENERAL_PUBLIC
+            return find_book_category(
+                i.event.title,
+                i.event.description,
+                Category.READING_CLUB
+            )
         if i.event.has_category(
             r'cursos?',
             r'taller(es)?',
@@ -1122,7 +1130,15 @@ class MadridEs:
             "club(es)? de lectura",
             flags=re.I
         ):
-            return find_book_category(i.event.title, i.event.description, Category.READING_CLUB)
+            if i.event.has_audience(
+                r"mujeres?",
+            ):
+                return Category.NON_GENERAL_PUBLIC
+            return find_book_category(
+                i.event.title,
+                i.event.description,
+                Category.READING_CLUB
+            )
         if re_or(
             i.event.title,
             ("elaboracion", "artesanal"),

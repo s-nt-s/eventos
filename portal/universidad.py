@@ -463,6 +463,7 @@ class Universidad:
         if re_or(
             description,
             r"M[aá]ster de",
+            r"Actividad abierta a la comunidad universitaria",
             flags=re.I
         ):
             return Category.NO_EVENT
@@ -531,9 +532,17 @@ class Universidad:
                 return Category.NO_EVENT
             if re_or(c, "teatro", flags=re.I):
                 return Category.THEATER
-            if re_or(c, "crossfit", flags=re.I):
+            if re_or(c, "crossfit", "Deporte profesional", flags=re.I):
                 return Category.SPORT
-            if re_or(c, "divulgaci[oó]n", "docencia", "congreso", "conferencia", flags=re.I):
+            if re_or(
+                c,
+                r"divulgaci[oó]n",
+                r"Conversaci[óo]n(es)?",
+                "docencia",
+                "congreso",
+                "conferencia",
+                flags=re.I
+            ):
                 return Category.CONFERENCE
             if re_or(c, "Producci[oó]n audiovisual", flags=re.I):
                 return Category.CINEMA

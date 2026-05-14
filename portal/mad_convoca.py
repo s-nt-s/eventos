@@ -410,7 +410,7 @@ class MadConvoca:
             return Category.WORKSHOP
         if re_or(name, "iniciaci[óo]n al",  flags=re.I, to_log=e.id) and has_tag("deporte", "gimnasia"):
             return Category.WORKSHOP
-        if has_tag_or_title("presentaci[óo]n de libro", "^libro$"):
+        if has_tag_or_title("presentaci[óo]n de libro", "^libro$", "Fanzine"):
             return Category.LITERATURE
         if has_tag_or_title("teatro", "micro abierto", "performance", "mikro abierto"):
             return Category.THEATER
@@ -452,6 +452,7 @@ class MadConvoca:
             "^Charla",
             "Charla Informativa",
             "Anarkademia",
+            "conoce tus derechos",
             flags=re.I,
             to_log=e.id
         ):
@@ -462,9 +463,13 @@ class MadConvoca:
             return Category.MUSIC
         if has_tag_or_title("exposición", "exposici[óo]n", "miniexpo", "mini-expo"):
             return Category.EXPO
-        if has_tag_or_title("mesa ciudadana", "movilizaciones por"):
+        if has_tag_or_title(
+            "mesa ciudadana",
+            "movilizaciones por",
+            "15años15M",
+        ):
             return Category.ACTIVISM
-        if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', 'Repair\s*Caf[eé]'):
+        if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', r'Repair\s*Caf[eé]'):
             return Category.WORKSHOP
         if has_tag_or_title("paseo") and has_tag_or_title("historia"):
             return Category.VISIT

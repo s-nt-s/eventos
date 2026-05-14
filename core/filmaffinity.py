@@ -108,6 +108,15 @@ class FilmAffinityApi:
             (616533, 2025, "Refugiados climáticos: un desafío global"),
             (130415, 2015, "Escalera arriba"),
             (496314, 2026, re.compile(r"\bIván & Hadoum\b")),
+            (502671, 2026, "Dos días"),
+            (224463, 1933, "Tú eres mío"),
+            (720686, 1932, "El Expreso de Shanghai"),
+            (270791, 2025, "El secreto de Portera", "El secreto de Alberto Portera"),
+            (701076, 2022, "La semilla"),
+            (118850, 2026, "Home Stories"),
+            (983329, 2026, "No Mercy"),
+            (956467, 2026, "El sueño americano"),
+            #(227540, 2022, re.compile(r"\bAs Bestas\b")),
         ):
             if _is_match(titles, year, y, *tt):
                 return k

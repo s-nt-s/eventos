@@ -6,7 +6,7 @@ from urllib.parse import urlparse, parse_qs, unquote_plus
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import NamedTuple, Optional
-from core.util import to_uuid, re_and
+from core.util import to_uuid, re_and, re_or
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.cache import TupleCache
@@ -32,7 +32,11 @@ async def rq_to_cal(r: ClientResponse):
     cycle: set[str] = set()
     for txt in map(get_text, div.select("a.c-enlace")):
         if txt and txt.startswith("Ciclo "):
-            cycle.add(txt[6:].strip())
+            c = txt[6:].strip()
+            if c not in (
+                "Bis de junio",
+            ):
+                cycle.add(c)
 
     return Info(
         cals=tuple(sorted(cals)),
@@ -85,6 +89,7 @@ def parse_google_calendar_template(url: str):
 
 def _clean_name(name: str):
     name = re.sub(r"^(Aula de \(Re\)estrenos) \d+.\s+", "", name)
+    name = re.sub(r"^Bis de junio \([^\)]+\)\s*:\s+", "", name)
     return name
 
 
@@ -143,7 +148,7 @@ class FundacionMarch:
                 cycle=info.cycle if e.category != Category.CINEMA else None
             ).fix_type()
             if isinstance(e, Cinema):
-                m = re.match(r"^(.+?) \((\d{4})\) de (.+)$", name)
+                m = re.match(r"^(.+?) \((\d{4})\),? de (.+)$", name)
                 if m:
                     e = e.merge(
                         name=m.group(1),
@@ -177,7 +182,7 @@ class FundacionMarch:
             url=url,
             name=_clean_name(cal.title),
             price=0,
-            category=self.__find_category(url, div),
+            category=self.__find_category(url, div, cal.title),
             img=img.attrs["src"],
             place=place,
             duration=(cal.end-cal.start).seconds//60,
@@ -187,7 +192,9 @@ class FundacionMarch:
         )
         return ev
 
-    def __find_category(self, url: str, div: Tag):
+    def __find_category(self, url: str, div: Tag, title: str):
+        if re.search(r"\bReposici[oó]n\b.*\(\d{4}\)", title or '', flags=re.I):
+            return Category.CINEMA
         cat = get_text(div.select_one("div.c-titular"))
         if cat is not None:
             cat = cat.lower()

@@ -1115,14 +1115,16 @@ def find_book_category(name: str, description: str, default: Category):
     txt = f"{name or ''}\n{description or ''}".strip()
     if re_or(
         txt,
-        r"novela gr[aá]fica",
-        r"comic",
-        r"tebeo",
+        r"novelas? gr[aá]ficas?",
+        r"comics?",
+        r"tebeos?",
+        r"Fanzines?",
         flags=re.I
     ):
         return default
     if re_or(
         name,
+        r"Antolog[ií]a po[ée]tica",
         r"por (el|la) poeta",
         flags=re.I
     ):
@@ -1140,7 +1142,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"participaci[oó]n del poeta",
         r"recitar[aá]n poemas de",
         r"el poemario publicado",
-        r"Este poemario presenta",
+        r"Este poemario (explora|presenta)",
         flags=re.I
     ):
         return Category.POETRY
@@ -1148,6 +1150,7 @@ def find_book_category(name: str, description: str, default: Category):
         name,
         "Presentaci[óo]n de la novela",
         "Richard Turvey",
+        "Askarien",
         flags=re.I
     ):
         return Category.NARRATIVE
@@ -1180,6 +1183,7 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.NARRATIVE
     if re_or(
         txt,
+        r"Leopoldo L[oó]pez Gil",
         r"Andr[ée]s Trapiello",
         r"Pablo Díaz Esp[ií]",
         r"María Zaplana Barcel[óo]",
@@ -1196,10 +1200,12 @@ def find_book_category(name: str, description: str, default: Category):
         r"Mar[ií]a Mart[ií]n D[ií]ez de Balde[oó]n",
         r"Fernando J[aá]uregui",
         r"Felipe Gonz[aá]lez",
+        r"Ketty Garat",
+        r"Raad Salam Naaman",
         flags=re.I
     ):
         return Category.SPAM
-    
+
     if not re_or(
         txt,
         r"colonialismo",

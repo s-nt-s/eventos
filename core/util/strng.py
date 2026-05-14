@@ -110,6 +110,9 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"FRANCIA EST[AÁ] EN PANTALLA",
+        r"Bis de junio \([A-Z]+\)\s*",
+        r"Reposici[oó]n",
         r"Domingo de cl[aá]sicos",
         r"Cl[aá]sicos al detalle",
         r"Cuba Vibra",
@@ -226,6 +229,7 @@ def _rm_quote():
         r"Conferencias?",
         r"Documental",
         r"Jornadas",
+        r"club de lectura",
     ])
     re_3 = r"(?:"+PREFIX+r")"
     re_prefix = re.compile(r"^"+re_3+NQ+r"*(["+_QT+r"])", flags=re.I)
