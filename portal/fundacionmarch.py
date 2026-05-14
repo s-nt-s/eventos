@@ -6,7 +6,7 @@ from urllib.parse import urlparse, parse_qs, unquote_plus
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import NamedTuple, Optional
-from core.util import to_uuid, re_and
+from core.util import to_uuid, re_and, re_or
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.cache import TupleCache
@@ -177,7 +177,7 @@ class FundacionMarch:
             url=url,
             name=_clean_name(cal.title),
             price=0,
-            category=self.__find_category(url, div),
+            category=self.__find_category(url, div, cal.title),
             img=img.attrs["src"],
             place=place,
             duration=(cal.end-cal.start).seconds//60,
@@ -187,7 +187,13 @@ class FundacionMarch:
         )
         return ev
 
-    def __find_category(self, url: str, div: Tag):
+    def __find_category(self, url: str, div: Tag, title: str):
+        if re_or(
+            title,
+            r"Reposici[oó]n\b.*\(\d{4}\)",
+            flags=re.I
+        ):
+            return Category.CINEMA
         cat = get_text(div.select_one("div.c-titular"))
         if cat is not None:
             cat = cat.lower()
