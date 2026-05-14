@@ -119,7 +119,7 @@ class CineEmbajadores:
             r"M[uú]sica en la oscuridad",
             flags=re.I
         ):
-            return Category.CINEMA
+            return Category.MUSIC
         for h in map(get_text, div.select("div.more h5")):
             m = re.match(r"^\s*Reparto\s*:\s*.*?(Documental).*?$", h, re.IGNORECASE)
             if m:

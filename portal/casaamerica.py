@@ -265,7 +265,12 @@ class CasaAmerica(Web):
         ):
             return Category.NO_EVENT
 
-        if re_or(content, "presentaci[óo]n (del )?libro", flags=re.I):
+        if re_or(
+            content,
+            r"presentaci[óo]n (del )?libro",
+            r"presentaci[oó]n\b.*monogr[áa]fico",
+            flags=re.I
+        ):
             return find_book_category(tit, content, Category.LITERATURE)
         if cat == "cine":
             return Category.CINEMA

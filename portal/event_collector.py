@@ -683,6 +683,7 @@ class EventCollector:
             re.compile(r"^https://www\.centrocentro\.org/\S+$"),
             re.compile(r"^https://ateneodemadrid\.com/evento/\S+$"),
             re.compile(r"^https://www\.eventim-light\.com/es/a/[a-z0-9]+/e/[a-z0-9]+$"),
+            re.compile(r"^https://www\.reservaentradas\.com/entrada/madrid/[^/]+/[^/]+/\d+/$")
         ):
             def _mk_url(e: Event | Cinema):
                 for u in e.iter_urls():
