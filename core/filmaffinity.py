@@ -109,6 +109,10 @@ class FilmAffinityApi:
             (130415, 2015, "Escalera arriba"),
             (496314, 2026, re.compile(r"\bIván & Hadoum\b")),
             (502671, 2026, "Dos días"),
+            (224463, 1933, "Tú eres mío"),
+            (720686, 1932, "El Expreso de Shanghai"),
+            (270791, 2025, "El secreto de Portera", "El secreto de Alberto Portera"),
+            (701076, 2022, "La semilla"),
         ):
             if _is_match(titles, year, y, *tt):
                 return k

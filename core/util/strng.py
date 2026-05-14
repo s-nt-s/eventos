@@ -228,6 +228,7 @@ def _rm_quote():
         r"Conferencias?",
         r"Documental",
         r"Jornadas",
+        r"club de lectura",
     ])
     re_3 = r"(?:"+PREFIX+r")"
     re_prefix = re.compile(r"^"+re_3+NQ+r"*(["+_QT+r"])", flags=re.I)
