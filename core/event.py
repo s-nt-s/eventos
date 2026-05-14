@@ -319,7 +319,11 @@ class Event:
             return NotImplemented
         flds = fields(Event)
         a = asdict(self)
+        a['place'] = self.place
+        a['sessions'] = self.sessions
         b = asdict(other)
+        b['place'] = other.place
+        b['sessions'] = other.sessions
         tp_a = tuple(a[f.name] for f in flds)
         tp_b = tuple(b[f.name] for f in flds)
         return tp_a < tp_b

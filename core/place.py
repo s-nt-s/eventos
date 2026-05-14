@@ -533,13 +533,18 @@ class Place:
             name,
             "cines? embajadores",
             flags=re.I
-        ) and (not address or re_or(
-            address,
-            "Mar[ií]a de la Cabeza",
-            "cines? embajadores",
-            flags=re.I
-        )):
-            return Places.CINE_EMBAJADORES.value
+        ):
+            ok = re_or(
+                address or name,
+                "Mar[ií]a de la Cabeza",
+                "cines? embajadores",
+                "ercilla",
+                flags=re.I
+            )
+            if ok is not None:
+                if ok == "ercilla":
+                    return Places.CINE_EMBAJADORES_RIO.value
+                return Places.CINE_EMBAJADORES.value
         for plc in Places:
             p = plc.value
             if (p.name, p.address) == (self.name, self.address):
@@ -1056,5 +1061,12 @@ class Places(Enum):
         address="Glorieta Sta. María de la Cabeza, 5, Arganzuela, 28045 Madrid",
         latlon="40.400812584589474,-3.698521771163644",
         map="https://maps.app.goo.gl/boe8qhj1fUcMLTf4A",
+        zone="Embajadores",
+    )
+    CINE_EMBAJADORES_RIO = Place(
+        name="Cine Embajadores Rio",
+        address="C. de Ercilla, 53, Arganzuela, 28045 Madrid",
+        latlon="40.40035861890966,-3.7005549269818605",
+        map="https://maps.app.goo.gl/QMGzz8msyod1zFws6",
         zone="Embajadores",
     )

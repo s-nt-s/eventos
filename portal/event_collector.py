@@ -17,6 +17,7 @@ from portal.universidad import Universidades
 from portal.ateneomadrid import AteneoMadrid
 from portal.circulobellasartes import CirculoBellasArtes
 from portal.teatrobarrio import TeatroBarrio
+from portal.cineembajadores import CineEmbajadores
 from portal.alcala import Alcala
 from portal.goethe import Goethe
 from portal.ifrances import InstitutoFrances
@@ -32,7 +33,6 @@ import pytz
 from collections import defaultdict
 from core.wiki import WIKI
 from core.filmaffinity import FilmAffinityApi
-from core.dblite import DB
 from functools import cache
 from core.zone import Circles
 from core.place import Place, Places
@@ -47,6 +47,7 @@ from core.ics import IcsReader
 
 logger = logging.getLogger(__name__)
 
+
 def safe_load_ics(name: str):
     return IcsReader.safe_load(environ.get(name), name=name)
 
@@ -54,6 +55,7 @@ def safe_load_ics(name: str):
 ICS_BUSY = safe_load_ics("ICS_BUSY")
 ICS_BUSY_VILLAVERDE = safe_load_ics("ICS_BUSY_VILLAVERDE")
 ICS_BUSY_ALCALA = safe_load_ics("ICS_BUSY_ALCALA")
+
 
 def get_events(source):
     if isinstance(
@@ -412,6 +414,7 @@ class EventCollector:
         eventos = \
             store_events + \
             run_parallel(
+                CineEmbajadores,
                 Eventim("69ef5f152a2031003e75fe62"),
                 MadridEs(
                     isOkDate={
