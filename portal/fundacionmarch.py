@@ -148,7 +148,7 @@ class FundacionMarch:
                 cycle=info.cycle if e.category != Category.CINEMA else None
             ).fix_type()
             if isinstance(e, Cinema):
-                m = re.match(r"^(.+?) \((\d{4})\) de (.+)$", name)
+                m = re.match(r"^(.+?) \((\d{4})\),? de (.+)$", name)
                 if m:
                     e = e.merge(
                         name=m.group(1),
