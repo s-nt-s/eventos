@@ -174,7 +174,7 @@ class CineEmbajadores:
         ):
             return 25
 
-        return 0
+        return 7.5
 
     def __find_director(self, div: Tag):
         for h in map(get_text, div.select("div.more h5")):
