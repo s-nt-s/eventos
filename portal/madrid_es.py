@@ -838,6 +838,7 @@ class MadridEs:
         if re_or(
             i.description,
             r"Presentaci[óo]n del? libro",
+            r"[ÁA]go?ra Editorial",
             flags=re.I
         ):
             return find_book_category(i.title, i.description, Category.LITERATURE)
