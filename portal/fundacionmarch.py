@@ -89,6 +89,7 @@ def parse_google_calendar_template(url: str):
 
 def _clean_name(name: str):
     name = re.sub(r"^(Aula de \(Re\)estrenos) \d+.\s+", "", name)
+    name = re.sub(r"^Bis de junio \([^\)]+\)\s*:\s+", "", name)
     return name
 
 
