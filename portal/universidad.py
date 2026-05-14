@@ -531,7 +531,7 @@ class Universidad:
                 return Category.NO_EVENT
             if re_or(c, "teatro", flags=re.I):
                 return Category.THEATER
-            if re_or(c, "crossfit", flags=re.I):
+            if re_or(c, "crossfit", "Deporte profesional", flags=re.I):
                 return Category.SPORT
             if re_or(c, "divulgaci[oó]n", "docencia", "congreso", "conferencia", flags=re.I):
                 return Category.CONFERENCE

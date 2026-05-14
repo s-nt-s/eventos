@@ -265,8 +265,9 @@ class CasaAmerica(Web):
         ):
             return Category.NO_EVENT
 
+        tit_content = f"{tit or ''} {content or ''}".strip()
         if re_or(
-            content,
+            tit_content,
             r"presentaci[óo]n (del )?libro",
             r"presentaci[oó]n\b.*monogr[áa]fico",
             flags=re.I
