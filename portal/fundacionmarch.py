@@ -32,7 +32,11 @@ async def rq_to_cal(r: ClientResponse):
     cycle: set[str] = set()
     for txt in map(get_text, div.select("a.c-enlace")):
         if txt and txt.startswith("Ciclo "):
-            cycle.add(txt[6:].strip())
+            c = txt[6:].strip()
+            if c not in (
+                "Bis de junio",
+            ):
+                cycle.add(c)
 
     return Info(
         cals=tuple(sorted(cals)),
@@ -188,11 +192,7 @@ class FundacionMarch:
         return ev
 
     def __find_category(self, url: str, div: Tag, title: str):
-        if re_or(
-            title,
-            r"Reposici[oó]n\b.*\(\d{4}\)",
-            flags=re.I
-        ):
+        if re.search(r"\bReposici[oó]n\b.*\(\d{4}\)", title or '', flags=re.I):
             return Category.CINEMA
         cat = get_text(div.select_one("div.c-titular"))
         if cat is not None:
