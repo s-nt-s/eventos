@@ -229,6 +229,12 @@ class Alcala:
             return Category.YOUTH
         if re_or(
             x.name,
+            "Festival de poes[ií]a",
+            flags=re.I
+        ):
+            return Category.POETRY
+        if re_or(
+            x.name,
             r"^Concierto",
             r"^DJ",
             r"Plaza del Ritmo",
