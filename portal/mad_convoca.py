@@ -452,6 +452,7 @@ class MadConvoca:
             "^Charla",
             "Charla Informativa",
             "Anarkademia",
+            "conoce tus derechos",
             flags=re.I,
             to_log=e.id
         ):
