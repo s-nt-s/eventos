@@ -83,6 +83,7 @@ class BookFinder:
             "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1608475": r"\bLa [eÉ]tica animal,? ¿?una cuesti[oó]n feminista\?",
             "https://madrid.ebiblio.es/resources/699f20282753bd15e883053d": r"\b(Redes vacías|Tecnología catastrófica y fin de la democracia)\b",
             "https://www.sigloxxieditores.com/libro/el-capital-obra-completa_17971/": r"\bEl Capital\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=1926434": "\bEl pueblo gitano contra el sistema mundo\b",
         }.items():
             if _is(title, r):
                 return k
