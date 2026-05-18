@@ -289,10 +289,18 @@ class CasaEncendida:
             if category in (Category.CONFERENCE, ):
                 return href, group
             if category == Category.MUSIC:
-                if re_or(group, "radio encendida", flags=re.I):
+                if re_or(
+                    group,
+                    "radio encendida",
+                    "reguet[oó]n",
+                    flags=re.I
+                ):
                     return href, group
-                if re_or(group, "reguet[oó]n", flags=re.I):
-                    return href, group
+        if category == Category.CINEMA:
+            desc = MD.convert(soup.select_one_txt("div.item-detail__info__content"))
+            minutes = tuple(map(int, re.findall(r"(\d+)’", desc)))
+            if len([i for i in minutes if i < 30]) > 1:
+                return None, "Cortometrajes"
         return None, None
 
     def __find_duration(self, info: List[Dict]):
