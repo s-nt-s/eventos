@@ -299,7 +299,7 @@ class CasaEncendida:
         if category == Category.CINEMA:
             desc = MD.convert(soup.select_one_txt("div.item-detail__info__content"))
             minutes = tuple(map(int, re.findall(r"(\d+)’", desc)))
-            if len((i for i in minutes if i < 30)) > 1:
+            if len([i for i in minutes if i < 30]) > 1:
                 return None, "Cortometrajes"
         return None, None
 
