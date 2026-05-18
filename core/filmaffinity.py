@@ -113,6 +113,8 @@ class FilmAffinityApi:
             (720686, 1932, "El Expreso de Shanghai"),
             (270791, 2025, "El secreto de Portera", "El secreto de Alberto Portera"),
             (701076, 2022, "La semilla"),
+            (118850, 2026, "Home Stories"),
+            (983329, 2026, "No Mercy"),
         ):
             if _is_match(titles, year, y, *tt):
                 return k
