@@ -1115,9 +1115,10 @@ def find_book_category(name: str, description: str, default: Category):
     txt = f"{name or ''}\n{description or ''}".strip()
     if re_or(
         txt,
-        r"novela gr[aá]fica",
-        r"comic",
-        r"tebeo",
+        r"novelas? gr[aá]ficas?",
+        r"comics?",
+        r"tebeos?",
+        r"Fanzines?",
         flags=re.I
     ):
         return default
