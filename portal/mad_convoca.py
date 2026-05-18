@@ -410,7 +410,7 @@ class MadConvoca:
             return Category.WORKSHOP
         if re_or(name, "iniciaci[óo]n al",  flags=re.I, to_log=e.id) and has_tag("deporte", "gimnasia"):
             return Category.WORKSHOP
-        if has_tag_or_title("presentaci[óo]n de libro", "^libro$"):
+        if has_tag_or_title("presentaci[óo]n de libro", "^libro$", "Fanzine"):
             return Category.LITERATURE
         if has_tag_or_title("teatro", "micro abierto", "performance", "mikro abierto"):
             return Category.THEATER
