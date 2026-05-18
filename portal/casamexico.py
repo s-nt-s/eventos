@@ -495,6 +495,18 @@ class CasaMexico:
             flags=re.I
         ):
             return find_book_category(i.name, i.description, Category.LITERATURE)
+        if re_or(
+            i.name,
+            r"(Encuentro|Clase) magistral",
+            r"Coloquio",
+            r"^Conferencia",
+            r"^Conversatorio",
+            r"^Conversaciones Transatl[aá]nticas",
+            r"encuentro de escritores",
+            r"Mesa redonda",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
         for t, c in {
             "familia": Category.CHILDISH,
             "cine": Category.CINEMA,
@@ -521,19 +533,6 @@ class CasaMexico:
         ):
             return Category.CINEMA
 
-        if re_or(
-            i.name,
-            r"Clase magistral",
-            r"Coloquio",
-            r"^Conferencia",
-            r"^Conversatorio",
-            r"^Conversaciones Transatl[aá]nticas",
-            r"encuentro de escritores",
-            r"Mesa redonda",
-            r"Encuentro magistral",
-            flags=re.I
-        ):
-            return Category.CONFERENCE
         if re_or(
             i.name,
             "^Curso",
