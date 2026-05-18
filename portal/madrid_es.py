@@ -55,7 +55,6 @@ async def rq_to_text(r: ClientResponse):
     return txt
 
 
-
 @cache
 def to_place(p: ApiPlace):
     if p is None:
@@ -267,6 +266,7 @@ class MadridEs:
             e = e._replace(
                 more=tp_join(e.more, page.more),
                 img=tp_join(e.more, page.img),
+                audience=tp_join(e.audience, page.audience),
             )
             events[vgnextoid] = e
 
