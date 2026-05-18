@@ -1180,6 +1180,7 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.NARRATIVE
     if re_or(
         txt,
+        r"Leopoldo López Gil",
         r"Andr[ée]s Trapiello",
         r"Pablo Díaz Esp[ií]",
         r"María Zaplana Barcel[óo]",
