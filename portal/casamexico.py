@@ -530,6 +530,7 @@ class CasaMexico:
             r"^Conversaciones Transatl[aá]nticas",
             r"encuentro de escritores",
             r"Mesa redonda",
+            r"Encuentro magistral",
             flags=re.I
         ):
             return Category.CONFERENCE

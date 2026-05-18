@@ -16,8 +16,10 @@ logger = logging.getLogger(__name__)
 RE_SUFIX = re.compile(r"\s*\(\s*(VOSE|DOBLADA AL ESPAÑOL)\s*\)$", re.IGNORECASE)
 NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
+
 def _clean_name(name: str):
     name = RE_SUFIX.sub("", name)
+    name = re.sub(r"\s+\(En diferido desde[^\(\)]+\)\s*$", "", name, flags=re.I)
     return name
 
 

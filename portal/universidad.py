@@ -463,6 +463,7 @@ class Universidad:
         if re_or(
             description,
             r"M[aá]ster de",
+            r"Actividad abierta a la comunidad universitaria",
             flags=re.I
         ):
             return Category.NO_EVENT
