@@ -463,9 +463,13 @@ class MadConvoca:
             return Category.MUSIC
         if has_tag_or_title("exposición", "exposici[óo]n", "miniexpo", "mini-expo"):
             return Category.EXPO
-        if has_tag_or_title("mesa ciudadana", "movilizaciones por"):
+        if has_tag_or_title(
+            "mesa ciudadana",
+            "movilizaciones por",
+            "15años15M",
+        ):
             return Category.ACTIVISM
-        if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', 'Repair\s*Caf[eé]'):
+        if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', r'Repair\s*Caf[eé]'):
             return Category.WORKSHOP
         if has_tag_or_title("paseo") and has_tag_or_title("historia"):
             return Category.VISIT
