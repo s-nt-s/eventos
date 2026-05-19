@@ -905,7 +905,7 @@ class MadridEs:
         if i.event.has_category(
             r'club(es)? de lectura',
         ):
-            if i.event.has_category(
+            if i.event.has_audience(
                 r"mujeres?",
             ):
                 return Category.NON_GENERAL_PUBLIC
@@ -1130,7 +1130,7 @@ class MadridEs:
             "club(es)? de lectura",
             flags=re.I
         ):
-            if i.event.has_category(
+            if i.event.has_audience(
                 r"mujeres?",
             ):
                 return Category.NON_GENERAL_PUBLIC
