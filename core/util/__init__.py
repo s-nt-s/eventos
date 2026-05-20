@@ -64,7 +64,7 @@ def to_num(x: str):
     m = re.match(r"^.*([,\.])\d{1,2}$", x)
     if m:
         sep = m.group(1)
-        ent, dec = x.rsplit(sep, 1)[-1]
+        ent, dec = x.rsplit(sep, 1)
         if ent.count(sep) > 0:
             raise ValueError(x)
         ent = re.sub(r"[\.,]", "", ent)
