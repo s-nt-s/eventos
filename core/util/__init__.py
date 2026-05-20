@@ -59,11 +59,17 @@ def to_num(x: str):
     if not isinstance(x, str):
         raise ValueError(x)
     x = x.strip()
-    m = re.match(r"([,\.])\d\d$", x)
+    if re.search(r"[^\d\.,]", x):
+        raise ValueError(x)
+    m = re.match(r"^.*([,\.])\d{1,2}$", x)
     if m:
         sep = m.group(1)
         ent, dec = x.rsplit(sep, 1)[-1]
+        if ent.count(sep) > 0:
+            raise ValueError(x)
         ent = re.sub(r"[\.,]", "", ent)
+        if not ent.isdecimal():
+            raise ValueError(x)
         x = f"{ent}.{dec}"
     return _to_num(x)
 
