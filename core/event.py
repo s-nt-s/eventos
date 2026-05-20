@@ -1200,10 +1200,11 @@ def find_book_category(name: str, description: str, default: Category):
         r"Fernando J[aá]uregui",
         r"Felipe Gonz[aá]lez",
         r"Ketty Garat",
+        r"Raad Salam Naaman",
         flags=re.I
     ):
         return Category.SPAM
-    
+
     if not re_or(
         txt,
         r"colonialismo",

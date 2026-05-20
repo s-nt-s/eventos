@@ -394,6 +394,7 @@ class Goethe:
             "teatro",
             "esc[eé]nicas?",
             "Lectura teatral",
+            r"radioteatro",
             flags=re.I
         ):
             return Category.THEATER

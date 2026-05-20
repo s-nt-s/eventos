@@ -115,6 +115,8 @@ class FilmAffinityApi:
             (701076, 2022, "La semilla"),
             (118850, 2026, "Home Stories"),
             (983329, 2026, "No Mercy"),
+            (956467, 2026, "El sueño americano"),
+            #(227540, 2022, re.compile(r"\bAs Bestas\b")),
         ):
             if _is_match(titles, year, y, *tt):
                 return k
