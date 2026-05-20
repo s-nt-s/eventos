@@ -43,6 +43,32 @@ block = heads + ("p", "div", "table", "article")
 inline = ("span", "strong", "i", "em", "u", "b", "del")
 
 
+def _to_num(x: int | float | str):
+    f = float(x)
+    i = int(f)
+    if f == i:
+        return i
+    return f
+
+
+def to_num(x: str):
+    if x is None:
+        return None
+    if isinstance(x, (int, float)):
+        return _to_num(x)
+    if not isinstance(x, str):
+        raise ValueError(x)
+    x = x.strip()
+    m = re.match(r"([,\.])\d\d$", x)
+    if m:
+        sep = m.group(1)
+        ent, dec = x.rsplit(sep, 1)[-1]
+        ent = re.sub(r"[\.,]", "", ent)
+        x = f"{ent}.{dec}"
+    return _to_num(x)
+
+
+
 def round_to_even(x):
     up = int((x + 2) // 2) * 2
     down = int(x // 2) * 2
@@ -384,12 +410,11 @@ def find_euros(*prices: Union[str, None]) -> None | float | int:
             return 0
         eur: set[float] = set()
         for s in re.findall(r"(\d[\d\.,]*)\s*(?:€|euros?)", prc, flags=re.I):
-            p = float(s.replace(",", "."))
-            if p == int(p):
-                p = int(p)
+            p = to_num(s)
             eur.add(p)
         if len(eur):
             return max(eur)
+
 
 
 @cache
