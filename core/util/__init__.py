@@ -195,7 +195,7 @@ def plain_text(s: Union[str, Tag], is_html=False):
 @cache
 def _mk_re(s: str, flags: int = 0):
     reg = str(s)
-    if reg[0] not in " ^":
+    if reg[0] not in " ^,":
         reg = r"\b" + reg
     if reg[-1] not in " $,/:":
         reg = reg + r"\b"
