@@ -653,7 +653,13 @@ class MadridDestino:
 
         if re_or(pt, "parking", to_log=id, flags=re.I):
             return Category.NO_EVENT
-        if re_or(pt, r"Charlas con altura", to_log=id, flags=re.I):
+        if re_or(
+            pt,
+            r"Charlas con altura",
+            r"^cima conversa",
+            to_log=id,
+            flags=re.I
+        ):
             return Category.CONFERENCE
         if re_or(psub, r"^Taller de", to_log=id, flags=re.I) or re_or(audience, "Taller", to_log=id, flags=re.I):
             return Category.WORKSHOP
