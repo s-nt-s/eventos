@@ -380,7 +380,7 @@ class TeatroBarrio:
 
         if re_or(
             i.category,
-            "acci[oó]n[\s\-]*vecinal",
+            r"acci[oó]n[\s\-]*vecinal",
             flags=re.I
         ):
             return Category.CONFERENCE

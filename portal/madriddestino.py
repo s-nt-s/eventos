@@ -352,7 +352,7 @@ class MadridDestino:
                 img=e['featuredImage']['url'],
                 price=e['highestPrice'],
                 duration=durt if durt is not None else 60,
-                category=self.__find_category(url, id, e, info),
+                category=self.__find_category(url, id, e, info, more),
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(url, e, soup),
                 more=None if more in KO_MORE else more
@@ -393,8 +393,8 @@ class MadridDestino:
                     continue
                 if re_or(
                     d,
-                    'Vari[oa].*director[eaox@]s?', 
-                    'Vari[oa].*autor[eaox@]s?', 
+                    'Vari[oa].*director[eaox@]s?',
+                    'Vari[oa].*autor[eaox@]s?',
                     flags=re.I
                 ):
                     isVarios = True
@@ -408,7 +408,7 @@ class MadridDestino:
             )
             minutes = tuple(map(int, re.findall(r"(\d+)['’]", desc or '')))
             shorts = tuple(i for i in minutes if i < 30)
-            if len(shorts)>2 or (len(shorts)>1 and (isVarios or not director)):
+            if len(shorts) > 2 or (len(shorts) > 1 and (isVarios or not director)):
                 ev = ev.merge(cycle="Cortometrajes")
         if not ev.director:
             director: list[str] = []
@@ -510,7 +510,7 @@ class MadridDestino:
                 return i
         logger.warning(str(FieldNotFound(f"{k}.id={id}", self.data.state[k])))
 
-    def __find_category(self, url: str, id: str, e: Dict, info: Dict):
+    def __find_category(self, url: str, id: str, e: Dict, info: Dict, more: str | None):
         cats: Set[str] = set()
         eventCategories = e.get('eventCategories') or []
         for c in self.data.state['categories']:
@@ -599,7 +599,7 @@ class MadridDestino:
             flags=re.I
         ):
             return find_book_category(e['title'], desc, Category.LITERATURE)
-        
+
         if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", to_log=id, flags=re.I):
             return Category.VIEW_POINT
         if re_or(pt, "taller infantil", "concierto matinal familiar", "canciones de cuna", to_log=id, flags=re.I):
@@ -688,6 +688,16 @@ class MadridDestino:
 
         if is_cat("audiovisual"):
             return Category.CINEMA
+
+        if more and more.startswith("https://www.cinetecamadrid.com/programacion/"):
+            soup = WEB.get_cached_soup(more)
+            fCat = get_text(soup.select_one("span.fCategory a[hreflang='es']"))
+            if re_or(
+                fCat,
+                "RELATOS DEL RUIDO",
+                flags=re.I
+            ):
+                return Category.MUSIC
 
         logger.critical(str(CategoryUnknown(url, f"{pt} - {psub} - {audience}: " + ", ".join(sorted(cats)))))
         return Category.UNKNOWN
