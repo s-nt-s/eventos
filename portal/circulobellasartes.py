@@ -218,6 +218,7 @@ def _find_category(url: str, title: str, soup: Tag):
         r"Mesa Redonda",
         r"Conferencias?",
         r"Conversaci[oó]n entre",
+        r"P[oó]dcast",
         flags=re.I
     ):
         return Category.CONFERENCE

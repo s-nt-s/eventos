@@ -9,7 +9,7 @@ from math import radians, sin, cos, sqrt, atan2
 from collections import Counter, defaultdict
 from os import environ
 from url_normalize import url_normalize
-from urllib.parse import urlparse, parse_qsl, urlsplit, urlencode, urlunparse, ParseResult
+from urllib.parse import urlparse, parse_qs, parse_qsl, urlsplit, urlencode, urlunparse, ParseResult, unquote
 from functools import cache
 import requests
 from datetime import date
@@ -376,7 +376,26 @@ def clean_url(url: str) -> str:
     )
     if m:
         return "https://eventos."+m.group(1)+".es/"+m.group(2)
+    sub_url = _find_sub_url(url)
+    if sub_url:
+        return clean_url(sub_url)
     return url
+
+
+def _find_sub_url(url: str):
+    if not isinstance(url, str):
+        return None
+    parsed = urlparse(url)
+    for tail, key in {
+        "safelinks.protection.outlook.com": "url",
+    }.items():
+        if parsed.netloc != tail and not parsed.netloc.endswith("."+tail):
+            continue
+        params = parse_qs(parsed.query)
+        urls_quote = params.get(key, [])
+        for u in map(unquote, urls_quote):
+            if u.lower().startswith(("http://", "https://")):
+                return u
 
 
 def normalize_url(url: str, *tail: str) -> str:

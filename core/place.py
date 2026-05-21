@@ -279,6 +279,8 @@ class Place:
             return Places.CENTRO_CENTRO.value
         if re.search("cineteca", name, flags=re.I) and (self.latlon == Places.CINETECA.value.latlon or re_or(self.address, "Legazpi", flags=re.I)):
             return Places.CINETECA.value
+        if re.search("cineteca( de)? Madrid", name, flags=re.I):
+            return Places.CINETECA.value
         if re.search(r"\bESLA EKO\b", name, flags=re.I) or re_and(address, "[aá]nade,? 10", flags=re.I):
             return Places.EKO.value
         if re_or(
@@ -523,6 +525,16 @@ class Place:
             flags=re.I
         )):
             return Places.LA_RIVIERA.value
+        if re_or(
+            name,
+            (r"biblioteca hist[óo]rica", "ucm"),
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "Noviciado",
+            flags=re.I
+        )):
+            return Places.BIBLIOTECA_HISTORICA.value
         if re_or(
             name,
             "Plaza Xos[ée] Tarr[íi]o",
@@ -1069,4 +1081,11 @@ class Places(Enum):
         latlon="40.40035861890966,-3.7005549269818605",
         map="https://maps.app.goo.gl/QMGzz8msyod1zFws6",
         zone="Embajadores",
+    )
+    BIBLIOTECA_HISTORICA = Place(
+        name="UCM Biblioteca historíca",
+        address="C. del Noviciado, 3, Centro, 28015 Madrid",
+        latlon="40.42567421555243,-3.707855184654574",
+        map="https://maps.app.goo.gl/j4A2J4bjg5V9pT7r9",
+        zone="Plaza España"
     )

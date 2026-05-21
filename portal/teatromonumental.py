@@ -138,8 +138,8 @@ class TeatroMonumental:
             dmy = get_nums(info.get("fecha"))
             hm = get_nums(info.get("hora"))
             url_session = a.attrs.get("href")
-            eventId = int(get_query(url_session)["event"])
-            i = self.info.get(eventId)
+            eventId = get_query(url_session).get("event")
+            i = None if eventId is None else self.info.get(int(eventId))
             if i is None:
                 logger.critical(f"ID no encontrado en info: {eventId} en {url}")
             else:

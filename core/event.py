@@ -1142,7 +1142,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"participaci[oó]n del poeta",
         r"recitar[aá]n poemas de",
         r"el poemario publicado",
-        r"Este poemario presenta",
+        r"Este poemario (explora|presenta)",
         flags=re.I
     ):
         return Category.POETRY
@@ -1151,6 +1151,7 @@ def find_book_category(name: str, description: str, default: Category):
         "Presentaci[óo]n de la novela",
         "Richard Turvey",
         "Askarien",
+        "premio planeta",
         flags=re.I
     ):
         return Category.NARRATIVE
@@ -1160,6 +1161,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"(La|Esta) (nueva|[uú]ltima) novela del?",
         r"(La|Esta) novela es la cr[oó]nica",
         r"A partir de ese momento comienza una aventura",
+        r"Presentaci[oó]n de esta novela",
         r"una novela (de aventuras|sobre|breve)",
         r"novela (hist[oó]rica|de ficci[oó]n)",
         r"su ([uú]litma|primera) novela",
@@ -1202,6 +1204,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"Felipe Gonz[aá]lez",
         r"Ketty Garat",
         r"Raad Salam Naaman",
+        r"Ana Palacio",
         flags=re.I
     ):
         return Category.SPAM

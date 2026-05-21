@@ -356,6 +356,7 @@ class MadConvoca:
             r'regularizaci[oó]n extraordinaria',
             r'asamblea de vivienda',
             r"Recogida de firmas",
+            r"Treque[\-\s]*Solidario",
         ):
             return Category.ACTIVISM
         if re_or(
@@ -399,6 +400,7 @@ class MadConvoca:
             "intercambio de idiomas",
             "hacklab",
             "laboratorio ciudadano",
+            r"talleres",
         ) or re_or(
             name,
             "^clases de",
@@ -440,7 +442,7 @@ class MadConvoca:
             return Category.PARTY
         if re_or(name, "bicicritica", to_log=e.id):
             return Category.SPORT
-        if has_tag_or_title("charlas?", "conversatorio"):
+        if has_tag_or_title("charlas?", "conversatorio", "coloquio?"):
             return Category.CONFERENCE
         if re_or(
             name,

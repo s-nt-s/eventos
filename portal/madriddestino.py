@@ -638,7 +638,7 @@ class MadridDestino:
 
         if is_cat("teatro", "teatro de objetos", "performance"):
             return Category.THEATER
-        if is_cat("conferencia"):
+        if is_cat("conferencia", "masterclass"):
             return Category.CONFERENCE
         if is_cat("música", "jazz", "arte sonoro"):
             return Category.MUSIC
@@ -657,6 +657,10 @@ class MadridDestino:
             pt,
             r"Charlas con altura",
             r"^cima conversa",
+<<<<<<< HEAD
+=======
+            r"^masterclass",
+>>>>>>> 576d422 (categorias)
             to_log=id,
             flags=re.I
         ):
@@ -689,16 +693,46 @@ class MadridDestino:
         if is_cat("audiovisual"):
             return Category.CINEMA
 
+        if get_domain(more) == "teatroespanol.es":
+            return Category.THEATER
+
         if more and more.startswith("https://www.cinetecamadrid.com/programacion/"):
             soup = WEB.get_cached_soup(more)
             fCat = get_text(soup.select_one("span.fCategory a[hreflang='es']"))
             if re_or(
                 fCat,
-                "RELATOS DEL RUIDO",
+                r"RELATOS DEL RUIDO",
                 flags=re.I
             ):
                 return Category.MUSIC
+            if re_or(
+                fCat,
+                r"ESTRENOS",
+                r"CINEZETA: J[OÓ]VENES PROGRAMANDO",
+                flags=re.I
+            ):
+                return Category.CINEMA
+            ciclo = get_text(soup.select_one("div.field-name-dynamic-token-fieldnode-ciclo-copia a"))
+            if re_or(
+                ciclo,
+                r"ECAM FORUM",
+                flags=re.I
+            ):
+                return Category.CONFERENCE
 
+            if re_or(
+                ciclo,
+                r"VERANO EN JAP[OÓ]N",
+                r"LA NOCHE Z",
+                r"RETROSPECTIVA MASAO ADACHI",
+                flags=re.I
+            ):
+                return Category.CINEMA
+            director = get_text(soup.select_one("div.field--name-field-director"))
+            year = get_text(soup.select_one("div.field--name-field-ano-filmacion"))
+            minutes = tuple(map(int, re.findall(r"(\d+)['’]", desc or '')))
+            if re_or(director, "vari[oa]s", flags=re.I) or (director and (year or len(minutes))):
+                return Category.CINEMA
         logger.critical(str(CategoryUnknown(url, f"{pt} - {psub} - {audience}: " + ", ".join(sorted(cats)))))
         return Category.UNKNOWN
 

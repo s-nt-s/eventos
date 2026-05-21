@@ -132,6 +132,7 @@ class CineEmbajadores:
             r"German Film Fest",
             r"Cortometrajes?",
             r"Pel[ií]cula SORPRESA",
+            r"Cine a ciegas",
             r"VOSE",
             r"DOBLADA AL ESPAÑOL",
             r"Cine con piano en directo",

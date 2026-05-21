@@ -588,7 +588,6 @@
   "ucm20260519170000Z-154105@eventos.ucm.es": {"category": "DUPE"},
   "am59664-1780142400-1780142400@ateneodemadrid.com": {"category": "NARRATIVE"},
   "mcmc27478": {"category": "WORKSHOP"},
-  "mcmc27477": {"name": "La ética animal, ¿una cuestión feminista?"},
   "am59957-1780342200-1780342200@ateneodemadrid.com": {
     "imdb": null,
     "filmaffinity": null
@@ -600,5 +599,13 @@
   "md7760": {"filmaffinity": 862315},
   "md7759": {"category": "CINEMA"},
   "md7778": {"category": "CONFERENCE"},
-  "cbaA53B245B-D16A-5724-8860-AC4742D69B74": {"filmaffinity": 435198}
+  "cbaA53B245B-D16A-5724-8860-AC4742D69B74": {"filmaffinity": 435198},
+  "gt27283241": {"category": "EXPO"},
+  "mcmc27477": {
+    "name": "La ética animal, ¿una cuestión feminista?"
+  },
+  "mcECFC6C61-2C02-5328-B654-805923769CB2": {
+    "name": "La ética animal, ¿una cuestión feminista?"
+  },
+  "ms2dc42327e4f4e910VgnVCM200000f921e388RCRD": {"category": "CONFERENCE"}
 }

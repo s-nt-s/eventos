@@ -98,6 +98,7 @@ class AteneoMadrid:
             return
         place = place.normalize()
         name = normalize_quote(e.SUMMARY)
+        category = self.__find_category(e)
         event = Event(
             id=f"am{e.UID}",
             url=e.URL,
@@ -106,24 +107,31 @@ class AteneoMadrid:
             img=e.ATTACH,
             price=self.__find_price(e),
             #publish=e.str_publish,
-            category=self.__find_category(e),
+            category=category,
             place=place,
             sessions=(
                 Session(
                     date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
                 ),
             ),
-            cycle=self.__find_cycle(name, e)
+            cycle=self.__find_cycle(name, e, category)
         )
         return event
 
-    def __find_cycle(self, name: str, e: IcsEventWrapper):
+    def __find_cycle(self, name: str, e: IcsEventWrapper, category: Category):
         m = re.search(r"\. Ciclo '([^'']+)'", name)
         if m:
             return m.group(1).strip()
         m = re.search(r"^Ciclo '([^'']+)'", name)
         if m:
             return m.group(1).strip()
+        if category != Category.CINEMA:
+            if re_or(
+                name,
+                r"Valle[\-\s]*Incl[aá]n",
+                flags=re.I
+            ):
+                return "Valle-Inclán"
 
     def __find_price(self, e: IcsEventWrapper):
         prc = find_euros(e.DESCRIPTION)
@@ -278,7 +286,7 @@ class AteneoMadrid:
             return Category.MUSIC
         if _has_cat("Velada") and re_or(e.DESCRIPTION, "piano", flags=re.I):
             return Category.MUSIC
-        if _has_cat(r"mon[oó]logo", r"^Lecturas?$", r"Lecturas? dramatizadas?", "teatro", r"[oó]pera"):
+        if _has_cat(r"mon[oó]logo", r"^Lecturas?$", r"Lecturas? dramatizadas?", "teatro", r"[oó]pera", r"Representaci[oó]n Teatral"):
             return Category.THEATER
 
         if _has_cat(r"Presentación del libro", 'Libros'):

@@ -252,7 +252,8 @@ class Goethe:
     def __improve_category(self, i: InfoSoup, e: Event):
         if e.category in (
             Category.LITERATURE,
-            Category.READING_CLUB
+            Category.READING_CLUB,
+            Category.CONFERENCE
         ):
             return find_book_category(e.name, i.description, e.category)
         #if e.category == Category.UNKNOWN:
@@ -359,6 +360,7 @@ class Goethe:
             r"presentaci[oó]n",
             "Seminario",
             "Mesa redonda",
+            r"Encuentro con la editora",
             flags=re.I
         ):
             return Category.CONFERENCE
@@ -398,6 +400,12 @@ class Goethe:
             flags=re.I
         ):
             return Category.THEATER
+        if re_or(
+            et,
+            r"Exposici[oó]n",
+            flags=re.I
+        ):
+            return Category.EXPO
         if re_or(
             i['subheadline'],
             r'Exposici[óo]nes?',

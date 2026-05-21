@@ -31,7 +31,9 @@ def _clean_name(s: str):
     s = re_sp.sub(" ", s).strip()
     s = re.sub(r"^Preestreno\s*:\s*", "", s, flags=re.I)
     s = re.sub(r"\s*\-\s*\d+\s*h(\s*\d+m?)?$", "", s, flags=re.I)
-    s = re.sub(r"^CINE\s*//\s*Preestreno\s*:?\s*", "", s, flags=re.I)
+    sep = r"[I\/\|:\-\.,]"
+    s = re.sub(r"^CINE\s"+sep+r"*\s*Preestrenos?\s*"+sep+r"*\s*", "", s, flags=re.I)
+    s = re.sub(r"^CINE\s"+sep+r"+\s*", "", s, flags=re.I)
     if len(s) == 0:
         return None
     return s
@@ -305,6 +307,7 @@ class InstitutoFrances:
                 "conferencia",
                 "mesa redonda",
                 "Tertulia",
+                r"Encuentro profesional",
                 flags=re.I
             ):
                 return Category.CONFERENCE
