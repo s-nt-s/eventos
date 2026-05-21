@@ -399,7 +399,7 @@ class Goethe:
             return Category.THEATER
         if re_or(
             i['subheadline'],
-            r'Exposiciones?',
+            r'Exposici[óo]nes?',
             flags=re.I
         ):
             return Category.EXPO

@@ -377,6 +377,13 @@ class TeatroBarrio:
             flags=re.I
         ):
             return Category.THEATER
+
+        if re_or(
+            i.category,
+            "acci[oó]n[\s\-]*vecinal",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(i.url, f"{i.category} {i.name} {i.summary}")))
         return Category.UNKNOWN
 

@@ -1124,6 +1124,7 @@ def find_book_category(name: str, description: str, default: Category):
         return default
     if re_or(
         name,
+        r"Antolog[ií]a po[ée]tica",
         r"por (el|la) poeta",
         flags=re.I
     ):
