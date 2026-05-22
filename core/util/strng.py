@@ -110,6 +110,7 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Ediciones Complutense",
         r"FRANCIA EST[AÁ] EN PANTALLA",
         r"Bis de junio \([A-Z]+\)\s*",
         r"Reposici[oó]n",

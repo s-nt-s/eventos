@@ -497,6 +497,7 @@ class Universidad:
         if re_or(
             e.SUMMARY,
             "Presentaci[óo]n del libro",
+            r"Ediciones Complutense",
             flags=re.I
         ):
             return Category.LITERATURE

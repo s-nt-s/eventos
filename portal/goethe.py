@@ -359,6 +359,7 @@ class Goethe:
             r"presentaci[oó]n",
             "Seminario",
             "Mesa redonda",
+            r"Encuentro con la editora",
             flags=re.I
         ):
             return Category.CONFERENCE
