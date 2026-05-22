@@ -1160,6 +1160,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"(La|Esta) (nueva|[uú]ltima) novela del?",
         r"(La|Esta) novela es la cr[oó]nica",
         r"A partir de ese momento comienza una aventura",
+        r"Presentaci[oó]n de esta novela",
         r"una novela (de aventuras|sobre|breve)",
         r"novela (hist[oó]rica|de ficci[oó]n)",
         r"su ([uú]litma|primera) novela",
