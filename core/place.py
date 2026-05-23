@@ -525,6 +525,16 @@ class Place:
             return Places.LA_RIVIERA.value
         if re_or(
             name,
+            ("biblioteca histr[ií]ca", "ucm"),
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "Noviciado",
+            flags=re.I
+        )):
+            return Places.BIBLIOTECA_HISTORICA.value
+        if re_or(
+            name,
             "Plaza Xos[ée] Tarr[íi]o",
             flags=re.I
         ):
@@ -1069,4 +1079,11 @@ class Places(Enum):
         latlon="40.40035861890966,-3.7005549269818605",
         map="https://maps.app.goo.gl/QMGzz8msyod1zFws6",
         zone="Embajadores",
+    )
+    BIBLIOTECA_HISTORICA = Place(
+        name="UCM Biblioteca historíca",
+        address="C. del Noviciado, 3, Centro, 28015 Madrid",
+        latlon="40.42567421555243,-3.707855184654574",
+        map="https://maps.app.goo.gl/j4A2J4bjg5V9pT7r9",
+        zone="Plaza España"
     )
