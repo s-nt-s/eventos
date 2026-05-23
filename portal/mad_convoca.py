@@ -356,6 +356,7 @@ class MadConvoca:
             r'regularizaci[oó]n extraordinaria',
             r'asamblea de vivienda',
             r"Recogida de firmas",
+            r"Treque[\-\s]*Solidario",
         ):
             return Category.ACTIVISM
         if re_or(
