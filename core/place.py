@@ -525,7 +525,7 @@ class Place:
             return Places.LA_RIVIERA.value
         if re_or(
             name,
-            ("biblioteca histr[ií]ca", "ucm"),
+            (r"biblioteca histor[ií]ca", "ucm"),
             flags=re.I
         ) and (not address or re_or(
             address,
