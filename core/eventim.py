@@ -180,7 +180,11 @@ class EventimApi:
 
     def __get_info(self):
         url = f"https://www.eventim-light.com/es/a/{self.__id}/index.pageContext.json"
-        return self.__get_data(url)
+        data = self.__get_data(url)
+        if data is not None:
+            return data
+        logger.warning(f"NO EVENTS {url}")
+        return []
 
     def get_info(self):
         items: dict[str, Item] = {}
