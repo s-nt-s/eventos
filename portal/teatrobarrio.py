@@ -381,6 +381,7 @@ class TeatroBarrio:
         if re_or(
             i.category,
             r"acci[oó]n[\s\-]*vecinal",
+            r"Conversatorio",
             flags=re.I
         ):
             return Category.CONFERENCE

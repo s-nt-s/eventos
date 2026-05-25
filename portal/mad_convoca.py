@@ -441,7 +441,7 @@ class MadConvoca:
             return Category.PARTY
         if re_or(name, "bicicritica", to_log=e.id):
             return Category.SPORT
-        if has_tag_or_title("charlas?", "conversatorio"):
+        if has_tag_or_title("charlas?", "conversatorio", "coloquio?"):
             return Category.CONFERENCE
         if re_or(
             name,

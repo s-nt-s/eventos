@@ -734,6 +734,7 @@ class MadridEs:
         if re_or(
             i.description,
             r"Una proyecci[oó]n de la pel[ií]cula",
+            r"Documental y Coloquio",
             flags=re.I
         ):
             return Category.CINEMA

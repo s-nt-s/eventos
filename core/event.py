@@ -1203,6 +1203,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"Felipe Gonz[aá]lez",
         r"Ketty Garat",
         r"Raad Salam Naaman",
+        r"Ana Palacio",
         flags=re.I
     ):
         return Category.SPAM
