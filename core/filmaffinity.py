@@ -122,8 +122,9 @@ class FilmAffinityApi:
             (540624, 2025, "El secreto del orfebre"),
             (221256, 2024, "Por todo lo alto"),
             (793818, 2024, "Marco"),
+            (386839, 2025, "El príncipe de Nanawa"),
+            (576456, 2014, "El recuerdo de Marnie"),
             (249352, 2024, re.compile("La habitaci[oó]n de al lado", flags=re.I)),
-            
         ):
             if _is_match(titles, year, y, *tt):
                 return k
