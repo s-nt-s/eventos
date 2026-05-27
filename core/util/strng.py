@@ -118,6 +118,7 @@ def _rm_prefix():
         r"Cl[aá]sicos al detalle",
         r"Cuba Vibra",
         r"Espacio Queer",
+        r"\d+ German Film Fest Madrid",
         r"GERMAN FILM FEST( MADRID Focus Goethe( Institut)?)?",
         r"Ciclo de Cine Ecofeminista",
         r"Medialab",

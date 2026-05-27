@@ -1151,6 +1151,7 @@ def find_book_category(name: str, description: str, default: Category):
         "Presentaci[óo]n de la novela",
         "Richard Turvey",
         "Askarien",
+        "premio planeta",
         flags=re.I
     ):
         return Category.NARRATIVE

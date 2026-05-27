@@ -279,6 +279,8 @@ class Place:
             return Places.CENTRO_CENTRO.value
         if re.search("cineteca", name, flags=re.I) and (self.latlon == Places.CINETECA.value.latlon or re_or(self.address, "Legazpi", flags=re.I)):
             return Places.CINETECA.value
+        if re.search("cineteca( de)? Madrid", name, flags=re.I):
+            return Places.CINETECA.value
         if re.search(r"\bESLA EKO\b", name, flags=re.I) or re_and(address, "[aá]nade,? 10", flags=re.I):
             return Places.EKO.value
         if re_or(

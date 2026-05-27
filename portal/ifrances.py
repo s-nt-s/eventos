@@ -307,6 +307,7 @@ class InstitutoFrances:
                 "conferencia",
                 "mesa redonda",
                 "Tertulia",
+                r"Encuentro profesional",
                 flags=re.I
             ):
                 return Category.CONFERENCE

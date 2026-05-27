@@ -91,6 +91,7 @@ class AteneoMadrid:
             return
         if e.DESCRIPTION in (
             "El contenido esta protegido.",
+            "CANCELADO",
         ):
             return None
         place = self.__find_place(e)

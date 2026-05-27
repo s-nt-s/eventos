@@ -400,6 +400,7 @@ class MadConvoca:
             "intercambio de idiomas",
             "hacklab",
             "laboratorio ciudadano",
+            r"talleres",
         ) or re_or(
             name,
             "^clases de",

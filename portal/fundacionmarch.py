@@ -207,6 +207,7 @@ class FundacionMarch:
             "entrevista": Category.CONFERENCE,
             "debate": Category.CONFERENCE,
             "coloquio": Category.CONFERENCE,
+            "teatro musical de cámara": Category.THEATER,
         }.get(cat)
         if val:
             return val

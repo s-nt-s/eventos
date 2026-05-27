@@ -690,6 +690,9 @@ class MadridDestino:
         if is_cat("audiovisual"):
             return Category.CINEMA
 
+        if get_domain(more) == "teatroespanol.es":
+            return Category.THEATER
+
         if more and more.startswith("https://www.cinetecamadrid.com/programacion/"):
             soup = WEB.get_cached_soup(more)
             fCat = get_text(soup.select_one("span.fCategory a[hreflang='es']"))

@@ -116,6 +116,7 @@ class FilmAffinityApi:
             (118850, 2026, "Home Stories"),
             (983329, 2026, "No Mercy"),
             (956467, 2026, "El sueño americano"),
+            #(227540, 2022, re.compile(r"\bAs Bestas\b")),
             (842054, 1975, re.compile(r"\bJeanne Dielman\b.*\b(Bruxelles|Bruselas)\b")),
             (932476, 1999, "Matrix"),
             (764207, 2025, "Votemos"),

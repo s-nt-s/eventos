@@ -989,7 +989,8 @@ class MadridEs:
         if re_or(
             i.event.title,
             r"certamen( de)? (pintura|decoraci[oó]n|ilustraci[oó]n)",
-            "festival by olavide"
+            "festival by olavide",
+            r"Apertura extraordinaria\b.*\bNoche en blanco",
         ):
             return Category.EXPO
         if re_or(
@@ -1282,10 +1283,10 @@ class MadridEs:
             flags=re.I
         ):
             return Category.MAGIC
-        if re_and(
+        if re_or(
             i.event.title,
-            "fiesta",
-            "aniversario",
+            ("fiesta", "aniversario"),
+            r"Partida( [uÚ]nica)? de Rol",
             flags=re.I
         ):
             return Category.PARTY
