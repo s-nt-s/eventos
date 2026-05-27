@@ -657,10 +657,7 @@ class MadridDestino:
             pt,
             r"Charlas con altura",
             r"^cima conversa",
-<<<<<<< HEAD
-=======
             r"^masterclass",
->>>>>>> 576d422 (categorias)
             to_log=id,
             flags=re.I
         ):
@@ -719,7 +716,6 @@ class MadridDestino:
                 flags=re.I
             ):
                 return Category.CONFERENCE
-
             if re_or(
                 ciclo,
                 r"VERANO EN JAP[OÓ]N",
