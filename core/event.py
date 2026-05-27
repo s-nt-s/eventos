@@ -1126,6 +1126,7 @@ def find_book_category(name: str, description: str, default: Category):
         name,
         r"Antolog[ií]a po[ée]tica",
         r"por (el|la) poeta",
+        r"Obra Po[eé]tica",
         flags=re.I
     ):
         return Category.POETRY
@@ -1143,6 +1144,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"recitar[aá]n poemas de",
         r"el poemario publicado",
         r"Este poemario (explora|presenta)",
+        r"obra de poes[ií]a",
         flags=re.I
     ):
         return Category.POETRY

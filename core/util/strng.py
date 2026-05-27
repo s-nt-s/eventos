@@ -165,6 +165,9 @@ def _rm_prefix():
         r"Representaci[óo]n teatral",
         r"Taller",
         r"Conversaciones WAIQ",
+        r"Muestra Teatral",
+        r"Espect[aá]culo de Danza",
+        r"Taller de Danza",
         r"TALLER DE FORMACI[OÓ]N LIBERTARIA, ANARKADEMIA, \d+.? EDICI[OÓ]N",
     ])
     PREFIX_2 = r"|".join({
