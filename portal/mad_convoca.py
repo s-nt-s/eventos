@@ -392,7 +392,7 @@ class MadConvoca:
             "documental"
         ):
             return Category.CINEMA
-        if has_tag("deporte") or has_tag_or_title("yoga", "pilates"):
+        if has_tag("deporte") or has_tag_or_title("yoga", "pilates", "Liga Cooperativa de Baloncesto"):
             return Category.SPORT
         if has_tag_or_title(
             "taller",

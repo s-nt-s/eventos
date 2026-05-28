@@ -347,6 +347,7 @@ class TeatroBarrio:
             return Category.CONFERENCE
         if re_or(
             i.summary,
+            r"mesa redonda",
             ("acto", "para (cuestionar|pensar)"),
             flags=re.I
         ):
