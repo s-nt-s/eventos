@@ -210,6 +210,7 @@ def _find_category(url: str, title: str, soup: Tag):
         full_title,
         r"Presentaci[óo]n del libro",
         r"Presentaci[oó]n de la revista",
+        r"Presentación del cat[aá]logo",
         flags=re.I
     ):
         return find_book_category(full_title, desc, Category.LITERATURE)
