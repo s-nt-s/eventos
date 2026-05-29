@@ -110,6 +110,8 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Festival fin de curso",
+        r"Akelarre Relacional",
         r"Documenta Madrid",
         r"Pre[\-\s]*Estreno Cortometraje",
         r"Danza contemporánea en la biblioteca",
@@ -229,6 +231,7 @@ def _rm_sufix():
 def _rm_quote():
     NQ = r"[^"+_QT+"]"
     PREFIX = "|".join([
+        r"Cinef[oó]rum Isabel S[aá]nchez",
         r"Concierto(?: de)?",
         r"Cineclub(?: con)?",
         r"Proyección(?: de)?",
@@ -313,6 +316,8 @@ DIRECTORS = list(map(_escape, map(str.lower, [
     "Raquel Larrosa",
     "Rodrigo García",
     "Álvaro Hernández Blanco",
+    "Robert Rodríguez",
+    "Joann Sfar",
 ])))
 
 

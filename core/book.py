@@ -74,6 +74,7 @@ class BookFinder:
 
     def __find(self, title: str, autor: str | None = None):
         for k, r in {
+            "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1747352": r"\bRealismo capitalista\b",
             "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1517923": r"\bUn verano kurdo\b",
             "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2254206": r"\bCuando el mundo duerme\b",
             "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2205945": r"\bMuerte accidental de un anarquista\b",

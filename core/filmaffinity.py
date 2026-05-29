@@ -127,6 +127,8 @@ class FilmAffinityApi:
             (576456, 2014, "El recuerdo de Marnie"),
             (249352, 2024, re.compile("La habitaci[oó]n de al lado", flags=re.I)),
             (919132, 2024, "Mariposas Negras"),
+            (169592, 2025, re.compile(r"\bAs estaçoes\b")),
+            (170495, 2026, "Aminetu"),
         ):
             if _is_match(titles, year, y, *tt):
                 return k

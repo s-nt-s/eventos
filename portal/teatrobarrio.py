@@ -368,6 +368,7 @@ class TeatroBarrio:
             i.name,
             r"documental",
             r"VideoForum",
+            r"Proyecci[óo]n de la pel[ií]cula",
             flags=re.I
         ):
             return Category.CINEMA

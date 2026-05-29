@@ -1027,6 +1027,7 @@ class MadridEs:
             "ruta a caballo",
             "cerro de",
             r"actividad(es)? acuaticas? pantano",
+            r"Deportes en Las Fiestas de",
             flags=re.I
         ):
             return Category.SPORT
@@ -1081,6 +1082,7 @@ class MadridEs:
             r"la magia de",
             r"^Magia:",
             r"Magia o plomo",
+            r"Piccola Magia",
             flags=re.I
         ):
             return Category.MAGIC
@@ -1287,6 +1289,7 @@ class MadridEs:
             i.event.title,
             ("fiesta", "aniversario"),
             r"Partida( [uÚ]nica)? de Rol",
+            r"Fiesta de verano en",
             flags=re.I
         ):
             return Category.PARTY
@@ -1303,7 +1306,9 @@ class MadridEs:
             return Category.THEATER
         if re_or(
             i.event.description,
-            "itinerario .* kil[ó]metros",
+            r"itinerario .* kil[ó]metros",
+            r"Entrega de premios\b.*\bjuegos deportivos",
+            r"Deportes en Las Fiestas",
             flags=re.I
         ):
             return Category.SPORT

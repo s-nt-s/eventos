@@ -922,7 +922,8 @@ class Cinema(Event):
             return None
         if len(ids) == 1:
             return ids.pop()
-        _id_: str = DB.one('''
+        _id_: str = DB.one(
+            '''
                 select id from MOVIE
                 where id in (%s)
                 ORDER BY
@@ -1160,6 +1161,7 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.NARRATIVE
     if re_or(
         description,
+        r"colecci[oó]n de microrrelatos",
         r"(La|Esta) novela (relata|retrata|presenta|publicada)",
         r"(La|Esta) (nueva|[uú]ltima) novela del?",
         r"(La|Esta) novela es la cr[oó]nica",

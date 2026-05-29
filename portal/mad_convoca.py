@@ -285,6 +285,7 @@ class MadConvoca:
         if re_or(
             e.DESCRIPTION,
             "conversa(re)?mos con",
+            r"^Charla",
             flags=re.I
         ):
             return Category.CONFERENCE
@@ -344,7 +345,7 @@ class MadConvoca:
         ):
             return Category.ACTIVISM
 
-        if has_tag_or_title("flinta", r"No[\-\s]*mixto"):
+        if has_tag_or_title("flinta", r"No[\-\s]*mixto", "Social Swing Queer"):
             return Category.NON_GENERAL_PUBLIC
         if has_tag_or_title("infantil"):
             return Category.CHILDISH
@@ -370,6 +371,7 @@ class MadConvoca:
             name,
             r"Presentaci[óo]n.* Marcha Republicana",
             r"Desayuno en Magdalena",
+            r"Desayuno domingo \d+ de",
             "Bienvenida Nuev[oax@e]s? Rebeldes?",
             r"Mesa informativa.* alquiler",
             r"recogida (de )?material",
@@ -383,7 +385,7 @@ class MadConvoca:
         ):
             return Category.ACTIVISM
 
-        if has_tag_or_title("kafeta"):
+        if has_tag_or_title("kafeta", "GAME NIGHT", "Juegos de mesa"):
             return Category.PARTY
         if has_tag_or_title(
             "cine",
@@ -442,7 +444,7 @@ class MadConvoca:
             return Category.PARTY
         if re_or(name, "bicicritica", to_log=e.id):
             return Category.SPORT
-        if has_tag_or_title("charlas?", "conversatorio", "coloquio?"):
+        if has_tag_or_title("charlas?", "conversatorio", "coloquio?", r"Psicolog[ií]a en el Ateneo"):
             return Category.CONFERENCE
         if re_or(
             name,
@@ -455,6 +457,7 @@ class MadConvoca:
             "Charla Informativa",
             "Anarkademia",
             "conoce tus derechos",
+            r"Jornadas? por",
             flags=re.I,
             to_log=e.id
         ):

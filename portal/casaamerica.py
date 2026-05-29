@@ -261,6 +261,7 @@ class CasaAmerica(Web):
             r"Bar[oó]metro Empresarial",
             r"Gala (del|de los) Premios?",
             r"D[ií]a Mundial de la Lengua Portuguesa",
+            "Premio Princesa de Girona",
             flags=re.I
         ):
             return Category.NO_EVENT

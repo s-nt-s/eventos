@@ -9,6 +9,7 @@ from core.util import to_uuid
 from datetime import date
 from core.md import MD
 from typing import NamedTuple, Optional
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +70,9 @@ class Dore(Web):
         return tuple(events)
 
     def __clean_events(self, all_events: set[Event]):
-        data: dict[str, set[Event]] = {}
+        data: dict[str, set[Event]] = defaultdict(set)
         for e in all_events:
-            if e.name not in data:
-                data[e.name] = set()
+            e = e.fix()
             data[e.name].add(e)
         vnts: set[Event] = set()
         for arr in map(sorted, data.values()):
@@ -105,16 +105,16 @@ class Dore(Web):
             d = re.sub(r"[\s,\.]+$", "", d)
             if d not in ("", "VV.AA") and d not in director:
                 director.append(d)
-        
+
         h2 = get_text(div.select_one("h2"))
         h2 = h2.rstrip(" .,")
-        for title, original, year in re.findall(r"([^\(\)]+)\(([^\(\)]+\s*,\s*)?((?:19|20)\d{2})\)", h2):
+        for title, original, year in re.findall(r"([^\(\)]+)\(([^\(\)]+\s*,\s*)?((?:19|20)\d{2})?\)", h2):
             title = re.sub(r"^y?\s+", "", title.strip())
             original = re.sub(r"^\s+|\s*,$", "", original.strip())
             m = Movie(
                 title=title,
                 original=original if original else None,
-                year=int(year),
+                year=int(year) if len(year) else None,
                 director=tuple(director)
             )
             if m not in movies:
@@ -130,7 +130,6 @@ class Dore(Web):
             ))
 
         return movies
-
 
     def __div_to_event(self, url: str, div: Tag):
         movies = self.__movies_from_div(div)

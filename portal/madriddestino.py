@@ -658,6 +658,7 @@ class MadridDestino:
             r"Charlas con altura",
             r"^cima conversa",
             r"^masterclass",
+            r"una conversacion con",
             to_log=id,
             flags=re.I
         ):
