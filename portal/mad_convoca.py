@@ -469,6 +469,7 @@ class MadConvoca:
             "mesa ciudadana",
             "movilizaciones por",
             "15años15M",
+            r"Asamblea\b.*\bPAH",
         ):
             return Category.ACTIVISM
         if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', r'Repair\s*Caf[eé]'):
