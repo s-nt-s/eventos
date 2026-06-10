@@ -19,6 +19,8 @@ def parse_place(p: Place):
 
 
 def _parse_place(p: Place):
+    if p is None:
+        return None
     place_address = f"{p.name or ''} {p.address or ''}".strip()
     if re_or(
         p.name,
@@ -93,6 +95,36 @@ def _parse_place(p: Place):
             map="https://maps.app.goo.gl/6KXtAxzdQmRH2rXK8",
             zone=Zones.COMPLUTENSE.value.name
         )
+    if re_or(
+        place_address,
+        r"Facultad de medicina",
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Medicina",
+            address=p.address,
+            latlon='40.44405542393555,-3.7246850644281952',
+            map="https://maps.app.goo.gl/ahAcFcXXEfQVfM4fA",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        place_address,
+        r"Edificio de Estudiantes",
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Edificio de Estudiantes",
+            address=p.address,
+            latlon='40.443425981504866,-3.7281114355682696',
+            map="https://maps.app.goo.gl/aHGdJjgpsjohTVdn7",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        p.name,
+        r"Parque de El Retiro",
+    ):
+        return p.merge(name="Parque el Retiro")
+        
 
 
 class Ucm:

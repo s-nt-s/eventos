@@ -190,7 +190,8 @@ class Alcala:
         return Place(
             name=_clean_name_place(x.location_name),
             address=x.location_address,
-            latlon=latlon
+            latlon=latlon,
+            zone="Alcalá de Henares"
         ).normalize()
 
     def __find_price(self, x: EventOnEvent):

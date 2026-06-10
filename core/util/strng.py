@@ -2,7 +2,7 @@ import re
 from functools import cache
 from unidecode import unidecode
 
-_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲]+"
+_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬]+"
 RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
 RE_DEDUP = re.compile(r"(!+|¡+|¿+|\?+)")
 
@@ -106,10 +106,17 @@ def normalize_quote(s: str):
 
 @cache
 def _rm_prefix():
-    SP = r":\-\.\|;"
+    SP = r":\-\.\|/;"
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"D[ií]a Europeo de la M[úu]sica",
+        r"Sesiones especiales",
+        r"Estrenos documentales",
+        r"Retrospectiva"+TAIL_NO_SEP,
+        r"FILMADRID",
+        r"Estrenos de ficci[oó]n",
+        r"CinePlaza: Superestrellas \d+",
         r"Festival fin de curso",
         r"Akelarre Relacional",
         r"Documenta Madrid",
@@ -194,6 +201,11 @@ def _rm_prefix():
 def _rm_sufix():
     SEP = r"[\-\.\|]"
     SUFIX_1 = "|".join([
+        r"Sede Sala Berlanga",
+        r"Sede centro cultural Paco Rabal",
+        r"Sede Sala Equis",
+        r"Sede Academia de Cine",
+        r"Sede Fundación Casa de M[eé]xico(?: en España)",
         r"(?:Actividades )?(?:viernes|s[aá]bado|domingo) (?:tarde|mañana)",
         r"Las tertulias de Eirene Editorial",
         r"Visita a la colecci[oó]n del Museo",
@@ -215,7 +227,7 @@ def _rm_sufix():
         r"Biblioteca Ana Mar[ií]a Matute",
         r"III Edici[oó]n",
         r"\d+ de abril",
-        r"\d+ª Muestra de Cine Lésbico"
+        r"\d+ª Muestra de Cine Lésbico",
     ])
     SUFIX_2 = "|".join([
         r"en el Espacio de Igualdad Lourdes Hernández",
@@ -243,6 +255,7 @@ def _rm_quote():
         r"Documental",
         r"Jornadas",
         r"club de lectura",
+        r"Mesa redonda",
     ])
     re_3 = r"(?:"+PREFIX+r")"
     re_prefix = re.compile(r"^"+re_3+NQ+r"*(["+_QT+r"])", flags=re.I)

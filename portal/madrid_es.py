@@ -125,6 +125,8 @@ def clean_lugar(s: str):
     s = re.sub(r"\s+de\s+Madrid$", "", s, flags=re.I)
     s = re.sub(r"^Centro dotacional integrado", "Centro dotacional integrado", s, flags=re.I)
     s = re.sub(r"\bFaro de la Moncloa\b", "Faro de Moncloa", s, flags=re.I)
+    s = re.sub(r"^Templete\b.*\b(Parque .+)$", r"\1 (templete)", s, flags=re.I)
+    s = re.sub(r"^Instalaci[oó]n Deportiva\b\.*\b(Parque .+)$", r"\1 (instalación deportiva)", s, flags=re.I)
     lw = plain_text(s).lower()
     if lw.startswith("museo de san isidro"):
         return "Museo San Isidro"
@@ -651,8 +653,10 @@ class MadridEs:
             i.title,
             "Voluntarios? por Madrid",
             r"Esquej[oó]dromo",
-            r"Intercambio de libros",
+            r"Intercambio( y recomendaciones)? de libros",
             r"Encuentro de nuevas promociones fhcn",
+            r"Preg[oó]n a cargo",
+            r"Federaci[oó]n de Grupos Tradicionales Madrileños",
             flags=re.I
         ):
             return Category.NO_EVENT
@@ -687,6 +691,7 @@ class MadridEs:
             r"Primeros pasos con Gmail",
             r"Quiero usar mi m[oó]vil",
             r"Tertulia de toros",
+            r"Misa mayor",
             flags=re.I
         ):
             return Category.SPAM
@@ -774,6 +779,9 @@ class MadridEs:
             r"Madrid a Tempo",
             r"Madrid en canciones",
             r"M[uú]sica de cine",
+            r"Actuaci[oó]n (orquesta|DJ|grupo|banda|agrupaci[óo]n)",
+            r"Vem[uú] musical",
+            ("Actuaci[oó]n", "tributo"),
             flags=re.I
         ):
             return Category.MUSIC
@@ -1287,6 +1295,9 @@ class MadridEs:
             return Category.MAGIC
         if re_or(
             i.event.title,
+            r"Paella popular",
+            r"Fuegos artificiales",
+            r"Reparto de chocolate con churros",
             ("fiesta", "aniversario"),
             r"Partida( [uÚ]nica)? de Rol",
             r"Fiesta de verano en",
@@ -1422,6 +1433,12 @@ class MadridEs:
         ):
             return Category.CONFERENCE
 
+        if re_or(
+            i.event.place.location,
+            r"templete\b.*m[úu]sica",
+            flags=re.I
+        ):
+            return Category.MUSIC
         logger.critical(str(CategoryUnknown(
             i.event.url,
             f"name={i.event.title} category={i.event.category}"

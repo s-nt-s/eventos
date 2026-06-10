@@ -417,19 +417,13 @@ def find_euros(*prices: Union[str, None]) -> None | float | int:
     for prc in prices:
         if prc is None:
             continue
-        if re.match(r"^\s*(gratuito|gratis)( (con )?previo registro)?\s*$", prc, flags=re.I):
-            return 0
-        if re.match(r"^gratis, ", prc, flags=re.I):
-            return 0
-        if re.search(
-            r"\b(gratuit[ao] (para|con)|(entrada|acceso) (gratuit[oa]|libre)|actividad(es)? gratuitas?)\b",
+        if re_or(
             prc,
-            flags=re.I
-        ):
-            return 0
-        if re.search(
-            r"Taller(es)? gratuitos?\b",
-            prc,
+            r"^\s*(gratuito|gratis)( (con )?previo registro)?\s*$",
+            r"^gratis, ",
+            r"(gratuit[ao] (para|con)|(entrada|acceso) (gratuit[oa]|libre)|actividad(es)? gratuitas?)",
+            r"Taller(es)? gratuitos?",
+            r"GratuitoReserva",
             flags=re.I
         ):
             return 0
@@ -551,6 +545,8 @@ KO_IMG = (
 
 KO_MORE = (
     'https://www.semanacienciamadrid.org/',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Moncloa-Aravaca-y-sus-fiestas-de-San-Antonio-de-la-Florida-/?vgnextfmt=default&vgnextoid=ef0959fdefd5e910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Programacion-Cultural/?vgnextfmt=default&vgnextoid=5ea6daba65bc4910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-culturales-en-el-Espacio-de-Lectura-del-Parque-del-Oeste/?vgnextfmt=default&vgnextoid=7d60dd9d16fe8910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/San-Isidro-en-Carabanchel/?vgnextfmt=default&vgnextoid=679e36df97ecd910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-del-Libro-en-Retiro/?vgnextfmt=default&vgnextoid=6f75b0c1e0bad910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',

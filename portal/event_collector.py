@@ -19,6 +19,7 @@ from portal.circulobellasartes import CirculoBellasArtes
 from portal.teatrobarrio import TeatroBarrio
 from portal.cineembajadores import CineEmbajadores
 from portal.alcala import Alcala
+from portal.casaasia import CasaAsia
 from portal.goethe import Goethe
 from portal.ifrances import InstitutoFrances
 from portal.eventim import Eventim
@@ -69,6 +70,7 @@ def get_events(source):
             MadridDestino,
             TeatroBarrio,
             Eventim,
+            CasaAsia,
         )
     ):
         return source.events
@@ -443,6 +445,7 @@ class EventCollector:
                 ),
                 FundacionMarch,
                 Ucm,
+                CasaAsia,
                 Universidades(
                     "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
                     "https://eventos.uam.es/ics/location/espana/lo-1.ics",

@@ -198,6 +198,12 @@ def clean_place_name(name: str, domain: str) -> str:
         flags=re.I
     ):
         return "Metro Tribunal"
+    if domain and "uc3m" and re_or(
+        name,
+        r"Residencia de estudiantes",
+        flags=re.I
+    ):
+        return "UC3M Residencia de estudiantes"
     return name
 
 
@@ -549,6 +555,8 @@ class Universidad:
                 return Category.CINEMA
             if re_or(c, "Club de lectura", flags=re.I):
                 return Category.READING_CLUB
+            if re_or(c, "Danza y baile", flags=re.I):
+                return Category.DANCE
         for m in menu:
             if re_or(m, "ponentes?", flags=re.I):
                 return Category.CONFERENCE

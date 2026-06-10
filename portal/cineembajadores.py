@@ -139,6 +139,7 @@ class CineEmbajadores:
             r"Domingo de cl[aá]sicos",
             r"Cuba vibra",
             r"Espacio Queer",
+            r"festival de cine",
             flags=re.I
         ):
             return Category.CINEMA

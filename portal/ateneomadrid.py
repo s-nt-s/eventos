@@ -252,6 +252,8 @@ class AteneoMadrid:
             r"Acto anual de gratitud a l[oa]s soci[ao]s",
             r"Distinciones Dama de la l[aá]mpara",
             r"Presentaci[oó]n del retrato",
+            r"Premios FEDEPE",
+            r"Gala de Esgrima",
             flags=re.I,
             to_log=e.UID
         ):

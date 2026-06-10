@@ -602,9 +602,19 @@ class MadridDestino:
 
         if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", to_log=id, flags=re.I):
             return Category.VIEW_POINT
-        if re_or(pt, "taller infantil", "concierto matinal familiar", "canciones de cuna", to_log=id, flags=re.I):
-            return Category.CHILDISH
-        if re_and(pt, "Fanzine sonoro", ("familiar", "adolescente"), to_log=id, flags=re.I):
+        if re_or(
+            pt,
+            "taller infantil",
+            "concierto matinal familiar",
+            "canciones de cuna",
+            ("Fanzine sonoro", ("familiar", "adolescente")),
+            to_log=id,
+            flags=re.I
+        ) or re_or(
+            desc,
+            "para beb[eé]s y primera infancia",
+            flags=re.I
+        ):
             return Category.CHILDISH
         if not is_cine and is_cat("en familia", "infantil"):
             return Category.CHILDISH
@@ -642,7 +652,7 @@ class MadridDestino:
             return Category.CONFERENCE
         if is_cat("música", "jazz", "arte sonoro"):
             return Category.MUSIC
-        if re_or(pt, 'musica', to_log=id):
+        if re_or(pt, 'musica', "concierto de cine", to_log=id):
             return Category.MUSIC
         if re_or(pt, "visitas", to_log=id):
             return Category.VISIT
@@ -659,6 +669,7 @@ class MadridDestino:
             r"^cima conversa",
             r"^masterclass",
             r"una conversacion con",
+            r"velada( sorpresa)? con",
             to_log=id,
             flags=re.I
         ):
@@ -673,13 +684,37 @@ class MadridDestino:
             return Category.EXPO
         if re_or(
             desc,
-            "para beb[eé]s y primera infancia",
+            "Un taller de creatividad",
             flags=re.I
         ):
-            return Category.CHILDISH
-        if re_or(desc, "Un taller de creatividad", flags=re.I):
             return Category.WORKSHOP
-        if re_or(desc, "Los Absurdos Teatro", "teatro de sombras", "Un taller de experimentaci[oó]n", "Un taller de reflexi[oó]n", ("[eE]n esta actividad exploraremos", "con diversos materiales"), flags=re.I):
+        if re_or(
+            pt,
+            r"^concierto de",
+            r"banda sinf[oó]nica",
+            r"orquesta y coro",
+            to_log=id,
+            flags=re.I
+        ) or re_or(
+            psub,
+            r"el pianista",
+            flags=re.I
+        ) or re_or(
+            desc,
+            r"no es solo un concierto",
+            r"m[áa]s que un concierto",
+            flags=re.I
+        ):
+            return Category.MUSIC
+        if re_or(
+            desc,
+            "Los Absurdos Teatro",
+            "teatro de sombras",
+            "Un taller de experimentaci[oó]n",
+            "Un taller de reflexi[oó]n",
+            ("[eE]n esta actividad exploraremos", "con diversos materiales"),
+            flags=re.I
+        ):
             return Category.THEATER
 
         if is_cat("pintura", "ilustración", "fotografía", "exposición"):

@@ -320,6 +320,20 @@ class Goethe:
             return Places.REPLIKA.value
         if re_or(
             lc,
+            "cine dor[eé]",
+            flags=re.I
+        ):
+            return Places.DORE.value
+        if re_or(
+            lc,
+            "Casa del Lector",
+            flags=re.I
+        ):
+            return Places.CASA_DEL_LECTOR.value
+
+         
+        if re_or(
+            lc,
             ("Intermediae", "Matadero"),
             flags=re.I
         ):

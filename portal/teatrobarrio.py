@@ -325,6 +325,12 @@ class TeatroBarrio:
         ):
             return Category.PARTY
         if re_or(
+            i.name,
+            "Recital de poes[ií]a",
+            flags=re.I
+        ):
+            return Category.POETRY
+        if re_or(
             i.category,
             "baile"
         ):
@@ -384,6 +390,7 @@ class TeatroBarrio:
             i.category,
             r"acci[oó]n[\s\-]*vecinal",
             r"Conversatorio",
+            r"Radio en ?vivo",
             flags=re.I
         ):
             return Category.CONFERENCE

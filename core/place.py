@@ -244,6 +244,12 @@ class Place:
             return Places.FARO_MONCLOA.value
         if re_or(
             name,
+            "mk2 cine paz",
+            flags=re.I
+        ):
+            return Places.MK2_CINE_PAZ.value
+        if re_or(
+            name,
             r"^Conde ?Duque$",
             (r"Contempor[aá]nea", r"Conde ?Duque"),
             flags=re.I
@@ -491,6 +497,12 @@ class Place:
             return Places.OBSERVATORIO_SOSTENIBILIDAD.value
         if re_or(
             name,
+            "cine Dor[ée]",
+            flags=re.I
+        ):
+            return Places.DORE.value
+        if re_or(
+            name,
             "Daoiz y Velarde",
             flags=re.I
         ) and (not address or re_or(
@@ -535,6 +547,16 @@ class Place:
             flags=re.I
         )):
             return Places.BIBLIOTECA_HISTORICA.value
+        if re_or(
+            name,
+            r"casa asia",
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "mayor",
+            flags=re.I
+        )):
+            return Places.CASA_ASIA.value
         if re_or(
             name,
             "Plaza Xos[ée] Tarr[íi]o",
@@ -1088,4 +1110,18 @@ class Places(Enum):
         latlon="40.42567421555243,-3.707855184654574",
         map="https://maps.app.goo.gl/j4A2J4bjg5V9pT7r9",
         zone="Plaza España"
+    )
+    CASA_ASIA = Place(
+        name="Casa Asia",
+        address="Palacio de Cañete, Calle Mayor, 69, Centro, 28013 Madrid",
+        latlon="40.41539166989173,-3.7111876355753055",
+        map="https://maps.app.goo.gl/kvnUx3DmiyFVxEEDA",
+        zone="Sol"
+    )
+    MK2_CINE_PAZ = Place(
+        name="MK2 cine Paz",
+        map="https://maps.app.goo.gl/iq6zrnvTNPkSfLHWA",
+        address="Calle de Fuencarral, 125, Chamberí, 28010 Madrid",
+        latlon="40.43097078426574,-3.7034094230177153",
+        zone="Tribunal"
     )
