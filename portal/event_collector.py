@@ -60,6 +60,11 @@ ICS_BUSY_ALCALA = safe_load_ics("ICS_BUSY_ALCALA")
 
 def get_events(source):
     if isinstance(
+        source,
+        SalaEquis
+    ):
+        return source().safe_events()
+    if isinstance(
         source, (
             Alcala,
             MadConvoca,
@@ -478,7 +483,7 @@ class EventCollector:
                 Dore,
                 CasaEncendida,
                 SalaBerlanga,
-                SalaEquis,
+                SalaEquis(),
                 CaixaForum,
                 CasaMexico,
             )

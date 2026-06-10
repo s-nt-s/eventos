@@ -10,6 +10,8 @@ import re
 from core.util import plain_text
 from portal.kinetike import KineTike
 from core.md import MD
+from requests.exceptions import ConnectTimeout
+
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +77,13 @@ class SalaEquis(Web):
             events.add(e)
         logger.info(f"Sala Equis: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
+
+    def safe_events(self):
+        try:
+            return self.events
+        except ConnectTimeout as e:
+            logger.critical(str(e))
+            return tuple()
 
     def __url_to_event(self, url):
         self.get(url)
