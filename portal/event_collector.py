@@ -63,7 +63,7 @@ def get_events(source):
         source,
         SalaEquis
     ):
-        return source().safe_events()
+        return source.safe_events()
     if isinstance(
         source, (
             Alcala,
