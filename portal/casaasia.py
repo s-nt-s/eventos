@@ -157,7 +157,6 @@ class CasaAsia:
         }.items():
             m = re.search(k, fch, flags=re.I)
             if m is None:
-                print(fch)
                 continue
             ss: list[Session] = []
             h, mi = map(int, m.groups())
@@ -188,6 +187,7 @@ class CasaAsia:
             return Category.THEATER
         logger.critical(str(CategoryUnknown(a['link'], ", ".join(sorted(cats)))))
         return Category.UNKNOWN
+
 
 if __name__ == "__main__":
     c = CasaAsia()
