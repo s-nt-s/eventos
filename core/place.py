@@ -226,14 +226,14 @@ class Place:
             flags=re.I
         ):
             return Zones.ALCALA_DE_HENARES.value.name
-        #cp = self.get_cp()
-        #zone = {
-        #
-        #}.get(cp)
+        cp = self.get_cp()
+        zone = {
+        
+        }.get(cp)
         if zone is not None:
             return zone
         if cp:
-            logger.debug(f"NOT FOUND cp={cp}")
+            logger.debug(f"NOT FOUND Zone for cp={cp}")
         return None
 
     def _fix_latlon(self):
