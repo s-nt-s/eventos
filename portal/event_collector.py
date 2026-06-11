@@ -592,7 +592,7 @@ class EventCollector:
                     if e.url:
                         mad_more_cat[e.url].add(e.category)
         ids = set(e.id for e in ok_events)
-        for e in set(self.__madrid_destino.events):
+        for e in set(self.__madrid_destino.get_events()):
             if not self.__filter(e, to_log=False) and e.id not in ids:
                 cat = get_main_value(mad_more_cat.get(e.url))
                 if cat not in (None, e.category):
