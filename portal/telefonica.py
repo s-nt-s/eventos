@@ -148,7 +148,7 @@ class Telefonica(Base):
             return None
         name = get_text(self.__w.soup.select_one("span.titulo"))
         ev = Event(
-            id="tl"+to_uuid(url),
+            id=f"tl{data['id']}",
             url=url,
             name=name or data['name'],
             img=data['image'],
