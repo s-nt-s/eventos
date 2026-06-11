@@ -111,7 +111,7 @@ def _rm_prefix():
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
         r"FIVER FESTIVAL",
-        r"Encuentros? Nodo Madrid",
+        r"Encuentros? Nodo Madrid [–\-,] redACTS",
         r"D[ií]a Europeo de la M[úu]sica",
         r"Sesiones especiales",
         r"Estrenos documentales",
