@@ -1,22 +1,24 @@
 from core.web import Web, get_text
-from core.cache import TupleCache, Cache
+from core.cache import Cache
 from typing import Set, Dict, List
 from functools import cached_property
 import logging
 from core.event import Event, Session, Category, CategoryUnknown, FieldUnknown, find_book_category
 from core.place import Places
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from core.util import plain_text, re_or, get_a_href, to_uuid
 import re
 import pytz
 from portal.base import Base
+from base64 import b64decode
+import json
 
 logger = logging.getLogger(__name__)
 NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
 class Telefonica(Base):
-    URL = "https://espacio.fundaciontelefonica.com/events/lista/pagina"
+    URL = "https://espacio.fundaciontelefonica.com/agenda/este-mes/"
     slc_data1 = "script:not(.aioseo-schema)[type='application/ld+json']"
     slc_data2 = "script.aioseo-schema[type='application/ld+json']"
 
@@ -45,25 +47,55 @@ class Telefonica(Base):
         logger.debug(url)
         return self.__w.get(url, auth, parser, **kwargs)
 
-    @cached_property
-    def url_events(self):
-        urls: List[str] = []
+    def __iter_js(self):
+        for script in self.__w.soup.select("script[src]"):
+            src = script.attrs.get("src")
+            if not (src or '').startswith('data:text/javascript;base64,'):
+                continue
+            base64_part = src.split(",", 1)[1]
+            js = b64decode(base64_part).decode("utf-8")
+            yield js
+
+    @Cache("rec/telefonica/data.json")
+    def get_data(self):
+        dt = (date.today() - timedelta(days=32)).replace(day=1)
+        data: dict[str, dict] = {}
         size = -1
-        i = 0
-        while len(urls) != size:
-            i = i + 1
-            url = Telefonica.URL + f"/{i}/"
-            size = len(urls)
+        while len(data) != size:
+            dt = (dt + timedelta(days=32)).replace(day=1)
+            url = Telefonica.URL + f"?idm={dt.month}&a={dt.year}"
+            size = len(data)
             self.get(url)
-            for href in map(get_a_href, self.__w.soup.select("a.tribe-events-calendar-list__event-title-link")):
-                if href and href not in urls:
-                    urls.append(href)
-        return tuple(urls)
+            for script in self.__iter_js():
+                spl = script.split('events:[{"id":', 1)
+                if len(spl) != 2:
+                    continue
+                js = '[{"id":' + spl[1]
+                spl = js.split(',eventRender:function', 1)
+                if len(spl) != 2:
+                    logger.warning(f"Revisar separador en {url}")
+                    continue
+                js = spl[0]
+                events = json.loads(js)
+                if not isinstance(events, list):
+                    logger.warning(f"Revisar json en {url}")
+                    continue
+                if len(events) == 0:
+                    continue
+                ko = 0
+                for i in events:
+                    if not isinstance(i, dict) or not isinstance(i.get("id"), int):
+                        ko = ko + 1
+                        continue
+                    data[i['id']] = i
+                if ko:
+                    logger.warning(f"Revisar json en {url}")
+        return sorted(data.values(), key=lambda x: x['id'])
 
     def _get_events(self):
         events: Set[Event] = set()
-        for url in self.url_events:
-            ev = self.__url_to_event(url)
+        for data in self.get_data():
+            ev = self.__data_to_event(data)
             if ev:
                 events.add(ev)
         return tuple(sorted(events))
@@ -74,8 +106,8 @@ class Telefonica(Base):
         error = []
         slc_error1 = f"{Telefonica.slc_data1} is not a Tuple[Dict]"
         slc_error2 = f"{Telefonica.slc_data2} is not a Dict['@graph, List[Dict[type, WebPage]]]"
-        data1 = self.select_one_json(Telefonica.slc_data1)
-        data2 = self.select_one_json(Telefonica.slc_data2)
+        data1 = self.__w.select_one_json(Telefonica.slc_data1)
+        data2 = self.__w.select_one_json(Telefonica.slc_data2)
         if not (isinstance(data1, list) and len(data1) == 1 and isinstance(data2, dict)):
             error.append(slc_error1)
         g = data2.get('@graph') if isinstance(data2, dict) else None
@@ -103,7 +135,8 @@ class Telefonica(Base):
         webpage = [i for i in graph if isinstance(i, dict) and i.get('@type') == 'WebPage'][0]
         return event, webpage
 
-    def __url_to_event(self, url: str):
+    def __data_to_event(self, data: dict):
+        url = data['url']
         self.get(url)
         if self.__w.soup.select_one("div.participar") and not self.__w.soup.select_one("div.participar a.reservabtn"):
             logger.warning(f"{url} no tiene reservas")
@@ -147,15 +180,18 @@ class Telefonica(Base):
         return duration, Session(date=start, url=url)
 
     def __find_place(self):
-        dir = self.select_one_txt("span.direccion")
+        dir = self.__w.select_one_txt("span.direccion")
         if dir == "C/ Fuencarral, 3, Madrid":
             return Places.FUNDACION_TELEFONICA.value
         raise FieldUnknown(self.__w.url, "place", dir)
 
     def __find_category(self, data: Dict, webpage: Dict):
         name = plain_text(data['name'])
-        cat = plain_text(self.select_one_txt("span.categoria"))
-        description = webpage.get('description', '') + ' ' + self.select_one_txt("#textoread")
+        cat = plain_text(self.__w.select_one_txt("span.categoria"))
+        description = ' '.join([
+            webpage.get('description', ''),
+            get_text(self.__w.soup.select_one("#textoread")) or ''
+        ])
         plain_description = plain_text(description)
         if cat == "taller":
             if re_or(plain_description, "taller para (familias|niñ[oa@xe]s)", flags=re.I):

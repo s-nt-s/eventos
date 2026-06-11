@@ -129,6 +129,7 @@ class FilmAffinityApi:
             (919132, 2024, "Mariposas Negras"),
             (169592, 2025, re.compile(r"\bAs estaçoes\b")),
             (170495, 2026, "Aminetu"),
+            (789723, 2026, "Backrooms"),
         ):
             if _is_match(titles, year, y, *tt):
                 return k

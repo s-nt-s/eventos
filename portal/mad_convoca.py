@@ -355,6 +355,7 @@ class MadConvoca(Base):
             r'asamblea de vivienda',
             r"Recogida de firmas",
             r"Treque[\-\s]*Solidario",
+            r"Proyecto Hebra",
         ):
             return Category.ACTIVISM
         if re_or(
@@ -382,7 +383,7 @@ class MadConvoca(Base):
         ):
             return Category.ACTIVISM
 
-        if has_tag_or_title("kafeta", "GAME NIGHT", "Juegos de mesa"):
+        if has_tag_or_title("kafeta", "GAME NIGHT", "Juegos de mesa", "fiest[oó]n"):
             return Category.PARTY
         if has_tag_or_title(
             "cine",
