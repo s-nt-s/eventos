@@ -1,20 +1,30 @@
 from core.web import Web, get_text
 from core.cache import Cache
 from typing import Set, Dict, List
-from functools import cached_property
 import logging
 from core.event import Event, Session, Category, CategoryUnknown, FieldUnknown, find_book_category
 from core.place import Places
 from datetime import datetime, date, timedelta
-from core.util import plain_text, re_or, get_a_href, to_uuid
+from core.util import plain_text, re_or
 import re
 import pytz
 from portal.base import Base
 from base64 import b64decode
 import json
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
-NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
+
+
+def gNow():
+    return datetime.now(tz=pytz.timezone('Europe/Madrid'))
+
+
+def to_datetime(s: str):
+    dt = datetime(*map(int, re.findall(r"\d+", s)))
+    return dt.replace(
+        tzinfo=ZoneInfo("Europe/Madrid")
+    )
 
 
 class Telefonica(Base):
@@ -90,7 +100,11 @@ class Telefonica(Base):
                     data[i['id']] = i
                 if ko:
                     logger.warning(f"Revisar json en {url}")
-        return sorted(data.values(), key=lambda x: x['id'])
+        now = gNow()
+        return sorted(
+            (d for d in data.values() if to_datetime(d['end']) > now),
+            key=lambda x: x['id']
+        )
 
     def _get_events(self):
         events: Set[Event] = set()
