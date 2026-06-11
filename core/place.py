@@ -11,17 +11,6 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 
-def find_cp(s: str):
-    if s is None:
-        return None
-    cp: set[int] = set()
-    for c in map(int, re.findall(r"\b(28\d+)", s)):
-        if c <= 28999:
-            cp.add(c)
-    if len(cp) == 1:
-        return cp.pop()
-
-
 def safe_lt(a: str | None, b: str | None):
     if (a, b) == (None, None):
         return None
@@ -34,6 +23,16 @@ def safe_lt(a: str | None, b: str | None):
     return a.__lt__(b)
 
 
+def _find_cp(s: str):
+    cp: set[int] = set()
+    for c in map(int, re.findall(r"\b28\d+", s or '')):
+        if c <= 28999:
+            cp.add(c)
+    if len(cp) == 1:
+        return cp.pop()
+    
+
+
 @dataclass(frozen=True)
 class Place:
     name: str
@@ -43,12 +42,10 @@ class Place:
     map: str = None
 
     def get_cp(self):
-        cp: set[int] = set()
-        for s in (self.name, self.address):
-            for c in map(int, re.findall(r"\b28\d{3}\b", s)):
-                cp.add(c)
-        if len(cp):
-            return cp.pop()
+        for s in (self.address, self.name):
+            cp = _find_cp(s)
+            if cp is not None:
+                return cp
 
     def merge(self, **kwargs):
         return replace(self, **kwargs)
@@ -229,10 +226,10 @@ class Place:
             flags=re.I
         ):
             return Zones.ALCALA_DE_HENARES.value.name
-        cp = find_cp(self.address) or find_cp(self.name)
-        zone = {
-            #
-        }.get(cp)
+        #cp = self.get_cp()
+        #zone = {
+        #
+        #}.get(cp)
         if zone is not None:
             return zone
         if cp:
