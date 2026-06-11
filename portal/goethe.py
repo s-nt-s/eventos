@@ -14,6 +14,7 @@ from core.web import buildSoup, get_text, Tag
 from typing import NamedTuple, Optional
 from unidecode import unidecode as ori_unidecode
 from core.md import MD
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
@@ -125,10 +126,11 @@ def _to_date(f: str, h: str):
     return datetime(*map(int, re.findall(r"\d+", f"{f} {h}")))
 
 
-class Goethe:
+class Goethe(Base):
     SEARCH = "https://www.goethe.de/rest/objeventcalendarRedesign/events/fetchEvents"
 
-    def __init__(self, max_price: int = None, skip_store: tuple[str, ...] = None):
+    def __init__(self, max_price: int = None, skip_store: tuple[str, ...] = None, cache: str|bool = True):
+        super().__init__(cache=cache)
         self.__s = ReqSession()
         self.__max_price = max_price
         self.__skip_store = skip_store or tuple()
@@ -171,10 +173,7 @@ class Goethe:
         )
         return obj
 
-    @cached_property
-    @TupleCache("rec/goethe.json", builder=Event.build)
-    def events(self):
-        logger.info("Goethe: Buscando eventos")
+    def _get_events(self):
         evs: set[Event] = set()
         for i in self.get_items():
             _id_ = i['object_id']
@@ -246,7 +245,6 @@ class Goethe:
                 #elif len(shorts) > 1:
                 #    e = e.merge(cycle="Cortometrajes")
             evs.add(e)
-        logger.info(f"Goethe: Buscando eventos = {len(evs)}")
         return tuple(sorted(evs))
 
     def __improve_category(self, i: InfoSoup, e: Event):
@@ -331,7 +329,6 @@ class Goethe:
         ):
             return Places.CASA_DEL_LECTOR.value
 
-         
         if re_or(
             lc,
             ("Intermediae", "Matadero"),
@@ -434,4 +431,4 @@ if __name__ == "__main__":
     from core.log import config_log
     config_log("log/goethe.log", log_level=logging.INFO)
     g = Goethe(max_price=10)
-    print(len(g.events))
+    print(len(g.get_events()))

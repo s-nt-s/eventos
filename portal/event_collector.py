@@ -44,7 +44,9 @@ from portal.ucm import Ucm
 from core.eventbrite import Api as EventBriteApi
 from os import environ
 from core.ics import IcsReader
-
+from portal.base import Base
+from requests.exceptions import ConnectTimeout
+from typing import Type
 
 logger = logging.getLogger(__name__)
 
@@ -58,28 +60,20 @@ ICS_BUSY_VILLAVERDE = safe_load_ics("ICS_BUSY_VILLAVERDE")
 ICS_BUSY_ALCALA = safe_load_ics("ICS_BUSY_ALCALA")
 
 
-def get_events(source):
+def get_events(source: Base | Type[Base]):
     if isinstance(
         source,
         SalaEquis
     ):
-        return source.safe_events()
+        return source.safe_get_events(ConnectTimeout)
     if isinstance(
-        source, (
-            Alcala,
-            MadConvoca,
-            AteneoMadrid,
-            Universidades,
-            MadridEs,
-            Goethe,
-            MadridDestino,
-            TeatroBarrio,
-            Eventim,
-            CasaAsia,
-        )
+        source,
+        Base
     ):
-        return source.events
-    return source().events
+        return source.get_events()
+    if issubclass(source, Base):
+        return source().get_events()
+    raise ValueError(str(type(source)))
 
 
 def run_parallel(*sources):

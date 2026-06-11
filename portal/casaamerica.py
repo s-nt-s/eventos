@@ -12,18 +12,20 @@ from core.util import plain_text, re_or, re_and, find_euros
 import json
 from core.md import MD
 import pytz
+from portal.base import Base
 
 
 logger = logging.getLogger(__name__)
 NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
-class CasaAmerica(Web):
+class CasaAmerica(Base):
     URL = "https://www.casamerica.es/agenda"
 
-    def __init__(self, refer=None, verify=True):
-        super().__init__(refer, verify)
-        self.s.headers.update({
+    def __init__(self, refer=None, verify=True, cache: str | bool = True):
+        super().__init__(cache=cache),
+        self.__w = Web(refer, verify)
+        self.__w.s.headers.update({
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -40,10 +42,10 @@ class CasaAmerica(Web):
         })
 
     def get(self, url, auth=None, parser="lxml", **kwargs):
-        if url == self.url:
-            return self.soup
+        if url == self.__w.url:
+            return self.__w.soup
         logger.debug(url)
-        return super().get(url, auth, parser, **kwargs)
+        return self.__w.get(url, auth, parser, **kwargs)
 
     @cached_property
     def calendar(self):
@@ -51,25 +53,21 @@ class CasaAmerica(Web):
         url = CasaAmerica.URL + "/" + NOW.strftime("%Y%m")
         while url:
             self.get(url)
-            if self.soup.select_one("div.view-grouping h2.dia") is None:
+            if self.__w.soup.select_one("div.view-grouping h2.dia") is None:
                 return tuple(urls)
             if url not in urls:
                 urls.append(url)
             url = None
-            cal = self.soup.select_one('nav.paginador-agenda a.page-link[rel="next"]')
+            cal = self.__w.soup.select_one('nav.paginador-agenda a.page-link[rel="next"]')
             if cal is not None:
                 url = cal.attrs["href"]
         return tuple(urls)
 
-    @property
-    @TupleCache("rec/casaamerica.json", builder=Event.build)
-    def events(self):
-        logger.info("Casa America: Buscando eventos")
+    def _get_events(self):
         events: Set[Event] = set()
         for url in self.calendar:
             events = events.union(self.__url_to_events(url))
         evs = self.__clean_events(events)
-        logger.info(f"Casa America: Buscando eventos = {len(evs)}")
         return evs
 
     def __clean_events(self, all_events: Set[Event]):
@@ -111,7 +109,7 @@ class CasaAmerica(Web):
         y = int(ym[:4])
         m = int(ym[4:])
         now = NOW.strftime("%Y-%m-%d")
-        for n in self.soup.select("div.view-content h2.dia, div.view-content li.row"):
+        for n in self.__w.soup.select("div.view-content h2.dia, div.view-content li.row"):
             cat = get_text(n)
             if cat is None:
                 continue
@@ -132,7 +130,7 @@ class CasaAmerica(Web):
             return None
         a = info.select_one("h3.titulo a")
         if a is None:
-            raise FieldNotFound("h3.titulo", self.url)
+            raise FieldNotFound("h3.titulo", self.__w.url)
         hm = get_text(h).split()[-1]
         url = a.attrs["href"]
 
@@ -154,7 +152,7 @@ class CasaAmerica(Web):
         if self.__is_block():
             return None
         js = self.__find_json()
-        content = "\n".join(filter(lambda x: x is not None, map(MD.convert, self.soup.select("div.contenido p"))))
+        content = "\n".join(filter(lambda x: x is not None, map(MD.convert, self.__w.soup.select("div.contenido p"))))
         category = self.__find_category(content)
         return Event(
             id="am"+js['path']['currentPath'].split("/")[-1],
@@ -169,24 +167,24 @@ class CasaAmerica(Web):
         )
 
     def __is_block(self):
-        cat = plain_text(self.soup.find("title"))
+        cat = plain_text(self.__w.soup.find("title"))
         if cat is None:
-            raise FieldNotFound("title", self.url)
+            raise FieldNotFound("title", self.__w.url)
         if cat.lower().startswith("acceso denegado"):
-            logger.warning("ACCESS DENIED "+self.url)
+            logger.warning("ACCESS DENIED "+self.__w.url)
             return True
         return False
 
     def __find_img(self):
-        return self.select_one("figure.imagen img").attrs["src"]
+        return self.__w.select_one("figure.imagen img").attrs["src"]
 
     def __find_json(self):
-        js = get_text(self.select_one('script[type="application/json"]'))
+        js = get_text(self.__w.select_one('script[type="application/json"]'))
         return json.loads(js)
 
     def __find_price(self):
         prices = set()
-        for p in map(get_text, self.soup.select("article p")):
+        for p in map(get_text, self.__w.soup.select("article p")):
             if p is None:
                 continue
             if re_or(
@@ -208,13 +206,13 @@ class CasaAmerica(Web):
             prices.add(find_euros(p))
         prices.discard(None)
         if len(prices) == 0:
-            logger.warning(f"NOT FOUND price {self.url}")
+            logger.warning(f"NOT FOUND price {self.__w.url}")
             return 0
         return max(prices)
 
     def __find_duration(self, category: Category, content: str):
         durations = set()
-        for p in map(get_text, self.soup.select("article p")):
+        for p in map(get_text, self.__w.soup.select("article p")):
             for d in map(int, re.findall(r"(\d+)['’]", p or '')):
                 if d < (60*5):
                     durations.add(d)
@@ -232,13 +230,13 @@ class CasaAmerica(Web):
             return 8*60
         if category in (Category.CONFERENCE, ):
             return 60
-        logger.warning(str(FieldNotFound("duration", self.url)))
+        logger.warning(str(FieldNotFound("duration", self.__w.url)))
         return 0
 
     def __find_category(self, content: str):
-        cat = plain_text(self.select_one("h1.tematica span.field")).lower()
-        tit = plain_text(self.select_one("h1.titulo span.field")).lower()
-        aut = plain_text(self.soup.select_one("h2.autor"))
+        cat = plain_text(self.__w.select_one("h1.tematica span.field")).lower()
+        tit = plain_text(self.__w.select_one("h1.titulo span.field")).lower()
+        aut = plain_text(self.__w.soup.select_one("h2.autor"))
         if cat == "infantil":
             return Category.CHILDISH
         if re_or(aut, "Ciclo Am[eé]rica Vota", flags=re.I):
@@ -321,11 +319,11 @@ class CasaAmerica(Web):
             return Category.CONFERENCE
         if cat == "politica":
             return Category.CONFERENCE
-        logger.critical(str(CategoryUnknown(self.url, cat)))
+        logger.critical(str(CategoryUnknown(self.__w.url, cat)))
         return Category.UNKNOWN
 
 
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/casaamerica.log", log_level=(logging.DEBUG))
-    (CasaAmerica().events)
+    (CasaAmerica().get_events())

@@ -7,21 +7,22 @@ import re
 import logging
 from typing import Callable
 from datetime import datetime
-from core.web import get_text, buildSoup
-from functools import cache
 from core.cache import TupleCache
 from core.md import MD
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
 re_sp = re.compile(r"\s+")
 
 
-class MadConvoca:
+class MadConvoca(Base):
     def __init__(
         self,
         isOkDate: Callable[[datetime], bool] = None,
+        cache: str | bool = True
     ):
+        super().__init__(cache=cache)
         self.__pre = {
             "mad.convoca.la": "mc",
             "calendario.extinctionrebellion.es": "ex",
@@ -46,10 +47,7 @@ class MadConvoca:
             isOkDate=isOkDate
         )
 
-    @cached_property
-    @TupleCache("rec/madconvoca.json", builder=Event.build)
-    def events(self):
-        logger.info("Buscando eventos en MadConvoca")
+    def _get_events(self):
         ok_events: set[Event] = set()
         for gc in (self.__mad, self.__ext, self.__hack):
             for e in gc.get_events():
@@ -87,7 +85,6 @@ class MadConvoca:
             ok_events.add(e)
 
         rt = tuple(sorted(e.merge(id=f"mc{e.id}") for e in ok_events))
-        logger.info(f"Buscando eventos en MadConvoca = {len(rt)}")
         return rt
 
     def __is_ko_place(self, url: str, place: Place):
@@ -633,5 +630,7 @@ class MadConvoca:
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/madconvoca.log", log_level=logging.INFO)
     m = MadConvoca()
-    e = m.events
+    e = m.get_events()

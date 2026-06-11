@@ -10,6 +10,7 @@ from aiohttp import ClientResponse
 from core.cache import TupleCache
 from core.md import MD
 import logging
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -291,10 +292,11 @@ def _find_category(url: str, title: str, soup: Tag):
     return Category.UNKNOWN
 
 
-class CirculoBellasArtes:
+class CirculoBellasArtes(Base):
     URL_CINEMA = "https://www.circulobellasartes.com/ciclos-cine/peliculas/"
 
-    def __init__(self):
+    def __init__(self, cache: bool | str = True):
+        super().__init__(cache=cache)
         self.__w = Web()
         self.__w.s.headers.update({
             'Accept-Encoding': 'gzip, deflate'
@@ -317,9 +319,7 @@ class CirculoBellasArtes:
                 urls.add(a.attrs["href"])
         return tuple(sorted(urls))
 
-    @cached_property
-    @TupleCache("rec/circulo.json", builder=Event.build)
-    def events(self):
+    def _get_events(self):
         evs: set[Event] = set()
         for x in Getter(
             onread=rq_to_events
@@ -335,5 +335,7 @@ class CirculoBellasArtes:
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/ciruclobellasartes.log", log_level=(logging.DEBUG))
     c = CirculoBellasArtes()
-    c.events
+    c.get_events()

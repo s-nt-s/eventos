@@ -9,19 +9,21 @@ from datetime import datetime
 from core.util import plain_text, re_or, get_a_href, to_uuid
 import re
 import pytz
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 
-class Telefonica(Web):
+class Telefonica(Base):
     URL = "https://espacio.fundaciontelefonica.com/events/lista/pagina"
     slc_data1 = "script:not(.aioseo-schema)[type='application/ld+json']"
     slc_data2 = "script.aioseo-schema[type='application/ld+json']"
 
-    def __init__(self, refer=None, verify=True):
-        super().__init__(refer, verify)
-        self.s.headers.update({
+    def __init__(self, refer=None, verify=True, cache: str | bool = True):
+        super().__init__(cache=cache)
+        self.__w = Web(refer, verify)
+        self.__w.s.headers.update({
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -38,10 +40,10 @@ class Telefonica(Web):
         })
 
     def get(self, url, auth=None, parser="lxml", **kwargs):
-        if url == self.url:
-            return self.soup
+        if url == self.__w.url:
+            return self.__w.soup
         logger.debug(url)
-        return super().get(url, auth, parser, **kwargs)
+        return self.__w.get(url, auth, parser, **kwargs)
 
     @cached_property
     def url_events(self):
@@ -53,21 +55,17 @@ class Telefonica(Web):
             url = Telefonica.URL + f"/{i}/"
             size = len(urls)
             self.get(url)
-            for href in map(get_a_href, self.soup.select("a.tribe-events-calendar-list__event-title-link")):
+            for href in map(get_a_href, self.__w.soup.select("a.tribe-events-calendar-list__event-title-link")):
                 if href and href not in urls:
                     urls.append(href)
         return tuple(urls)
 
-    @property
-    @TupleCache("rec/telefonica.json", builder=Event.build)
-    def events(self):
-        logger.info("Telefonica: Buscando eventos")
+    def _get_events(self):
         events: Set[Event] = set()
         for url in self.url_events:
             ev = self.__url_to_event(url)
             if ev:
                 events.add(ev)
-        logger.info(f"Telefonica: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
 
     @Cache("rec/telefonica/{}data.json")
@@ -99,7 +97,7 @@ class Telefonica(Web):
         data = self.__get_script_data(url)
         error = data.get('error')
         if error:
-            raise FieldUnknown(self.url, "script data", error)
+            raise FieldUnknown(self.__w.url, "script data", error)
         event: Dict = data[Telefonica.slc_data1][0]
         graph: List[Dict] = data[Telefonica.slc_data2]['@graph']
         webpage = [i for i in graph if isinstance(i, dict) and i.get('@type') == 'WebPage'][0]
@@ -107,7 +105,7 @@ class Telefonica(Web):
 
     def __url_to_event(self, url: str):
         self.get(url)
-        if self.soup.select_one("div.participar") and not self.soup.select_one("div.participar a.reservabtn"):
+        if self.__w.soup.select_one("div.participar") and not self.__w.soup.select_one("div.participar a.reservabtn"):
             logger.warning(f"{url} no tiene reservas")
             return None
         data, webpage = self.get_script_data(url)
@@ -115,7 +113,7 @@ class Telefonica(Web):
         duration, session = self.__get_session(data)
         if duration > (60*24):
             return None
-        name = get_text(self.soup.select_one("span.titulo"))
+        name = get_text(self.__w.soup.select_one("span.titulo"))
         ev = Event(
             id="tl"+to_uuid(url),
             url=url,
@@ -137,7 +135,7 @@ class Telefonica(Web):
 
     def __get_session(self, data: Dict):
         url = None
-        link = self.soup.select_one('a.reservabtn[id^="eventbrite-widget-modal-trigger-"]')
+        link = self.__w.soup.select_one('a.reservabtn[id^="eventbrite-widget-modal-trigger-"]')
         if link:
             _id_ = link.attrs["id"].split("-")[-1]
             if _id_ and _id_.isdecimal():
@@ -152,7 +150,7 @@ class Telefonica(Web):
         dir = self.select_one_txt("span.direccion")
         if dir == "C/ Fuencarral, 3, Madrid":
             return Places.FUNDACION_TELEFONICA.value
-        raise FieldUnknown(self.url, "place", dir)
+        raise FieldUnknown(self.__w.url, "place", dir)
 
     def __find_category(self, data: Dict, webpage: Dict):
         name = plain_text(data['name'])
@@ -203,11 +201,11 @@ class Telefonica(Web):
             flags=re.I
         ):
             return Category.CONFERENCE
-        logger.critical(str(CategoryUnknown(self.url, cat)))
+        logger.critical(str(CategoryUnknown(self.__w.url, cat)))
         return Category.UNKNOWN
 
 
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/telefonica.log", log_level=(logging.DEBUG))
-    print(Telefonica().events)
+    Telefonica().get_events()

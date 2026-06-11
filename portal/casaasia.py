@@ -11,6 +11,7 @@ import requests
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import pytz
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +25,11 @@ def str_to_datetime(s: str):
     return dt
 
 
-class CasaAsia:
+class CasaAsia(Base):
     URL = "https://www.casaasia.es/actividades/?lugar=madrid"
 
-    def __init__(self):
+    def __init__(self, cache: bool | str = True):
+        super().__init__(cache=cache)
         self.__w = Web()
         self.__now = datetime.now(tz=pytz.timezone(TZ_ZONE))
 
@@ -57,10 +59,8 @@ class CasaAsia:
         if len(data) and not all(isinstance(i, dict) for i in data):
             raise ValueError(url)
         return data
-    
-    @cached_property
-    @TupleCache("rec/casaasia.json", builder=Event.build)
-    def events(self):
+
+    def _get_events(self):
         activities = self.get_activities()
         if activities is None:
             return tuple()
@@ -190,8 +190,7 @@ class CasaAsia:
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/casaasia.log", log_level=(logging.DEBUG))
     c = CasaAsia()
-    for e in c.events:
-        print(e.url)
-        print(e.duration)
-        print(e.price)
+    print(c.get_events())

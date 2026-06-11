@@ -6,11 +6,12 @@ from urllib.parse import urlparse, parse_qs, unquote_plus
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import NamedTuple, Optional
-from core.util import to_uuid, re_and, re_or
+from core.util import to_uuid, re_and
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.cache import TupleCache
 from functools import cached_property
+from portal.base import Base
 import re
 
 
@@ -93,7 +94,7 @@ def _clean_name(name: str):
     return name
 
 
-class FundacionMarch:
+class FundacionMarch(Base):
     URL = "https://www.march.es/es/madrid"
     CASTELLO = Place(
         name="Fundación Juan March",
@@ -109,10 +110,8 @@ class FundacionMarch:
         })
         return w
 
-    @property
-    @TupleCache("rec/fundacionmarch.json", builder=Event.build)
-    def events(self):
-        logger.info("Fundación March: Buscando eventos")
+
+    def _get_events(self):
         all_events: set[Event] = set()
         self.__web.get(FundacionMarch.URL)
         for div in self.__web.soup.select("div.snippet"):
@@ -162,7 +161,6 @@ class FundacionMarch:
             ('name', 'place')
         )
         size = len(evs)
-        logger.info(f"Fundación March: Buscando eventos = {size}")
         if size == 0:
             logger.warning(str(self.__web.soup))
         return tuple(evs)
@@ -228,5 +226,7 @@ class FundacionMarch:
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/march.log", log_level=(logging.DEBUG))
     F = FundacionMarch()
     print(len(F.get_events()))

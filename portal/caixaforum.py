@@ -10,6 +10,7 @@ from datetime import datetime
 from core.util import plain_text, re_or, find_duplicates, get_main_value, round_to_even
 from functools import cached_property
 from core.md import MD
+from portal.base import Base
 import pytz
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ class MyIdTag(MyTag):
         self.id = id
 
 
-class CaixaForum:
+class CaixaForum(Base):
     TIT_SELECTOR = "a > h2, a > .activity-title, a > h3"
     URLS = (
         "https://caixaforum.org/es/madrid/actividades?p=999",
@@ -32,7 +33,8 @@ class CaixaForum:
         #"https://caixaforum.org/es/madrid/actividades?p=999&c=161124943"
     )
 
-    def __init__(self):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
         self.__w = Web()
         self.__w.s.headers.update({'Accept-Encoding': 'gzip, deflate'})
 
@@ -74,10 +76,7 @@ class CaixaForum:
                 js[k] = datetime.fromisoformat(v)
         return js
 
-    @property
-    @TupleCache("rec/caixaforum.json", builder=Event.build)
-    def events(self):
-        logger.info("Caixa Forum: Buscando eventos")
+    def _get_events(self):
         events: Set[Event] = set()
         for url in CaixaForum.URLS:
             divs = self.__get_div_events(url)
@@ -107,7 +106,6 @@ class CaixaForum:
                 also_in=tuple() if url else None
             )
             events.add(e)
-        logger.info(f"Caixa Forum: Buscando eventos {len(events)}")
         return tuple(sorted(events))
 
     def __get_div_events(self, url: str) -> Tuple[MyIdTag, ...]:
@@ -348,4 +346,4 @@ class CaixaForum:
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/caixaforum.log", log_level=(logging.DEBUG))
-    print(len(CaixaForum().events))
+    print(len(CaixaForum().get_events()))

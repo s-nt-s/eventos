@@ -16,7 +16,7 @@ from typing import Callable
 from requests import Session as ReqSession
 from bs4 import XMLParsedAsHTMLWarning
 from core.util import find_euros, get_obj
-from core.cache import HashTupleCache, TupleCache
+from core.cache import HashTupleCache, myhash
 from datetime import datetime
 import pytz
 import urllib3
@@ -24,6 +24,7 @@ import warnings
 import json
 from typing import NamedTuple, Optional
 from core.md import MD
+from portal.base import Base
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
@@ -98,8 +99,7 @@ class Info(NamedTuple):
         for shop in map(_fix, arr):
             if shop:
                 yield shop
-            
-    
+
     def get_img(self):
         if self.pog:
             img = self.pog.get('image')
@@ -249,15 +249,19 @@ def _get_pog(soup: Tag):
     return pog
 
 
-class Universidad:
+class Universidad(Base):
     def __init__(
         self,
         ics: str,
         verify_ssl=True,
         isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
         isOkDate: Callable[[datetime], bool] = None,
-        max_price: Optional[float] = None
+        max_price: Optional[float] = None,
+        cache: bool | str = True
     ):
+        if cache is True:
+            cache = f"out/events/{self.__class__.__name__}_{myhash(ics)}_max_price={max_price}.json"
+        super().__init__(cache=cache)
         self.__verify_ssl = verify_ssl
         self.__max_price = max_price
         self.__ics_url = ics
@@ -374,8 +378,7 @@ class Universidad:
                 rt[k] = v.pop()
         return MappingProxyType(rt)
 
-    @cached_property
-    def events(self):
+    def _get_events(self):
         events: set[Event] = set()
         for e in self.__ics.events:
             if e.DTSTART <= NOW:
@@ -633,7 +636,7 @@ class Universidad:
         return 0
 
 
-class Universidades:
+class Universidades(Base):
     def __init__(
         self,
         *urls: str,
@@ -642,16 +645,14 @@ class Universidades:
         isOkDate: Callable[[datetime], bool] = None,
         max_price: Optional[float] = None
     ):
+        super().__init__(cache=False)
         self.__urls = urls
         self.__verify_ssl = verify_ssl
         self.__isOkPlace = isOkPlace
         self.__isOkDate = isOkDate
         self.__max_price = max_price
 
-    @property
-    @TupleCache("rec/universidad.json", builder=Event.build)
-    def events(self):
-        logger.info("Buscando eventos en universidades")
+    def _get_events(self):
         events: set[Event] = set()
         for url in self.__urls:
             events.update(Universidad(
@@ -660,13 +661,14 @@ class Universidades:
                 isOkPlace=self.__isOkPlace,
                 isOkDate=self.__isOkDate,
                 max_price=self.__max_price
-            ).events)
+            ).get_events())
         evs = tuple(sorted(events))
-        logger.info(f"Buscando eventos en universidades = {len(evs)}")
         return evs
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/universidades.log", log_level=(logging.DEBUG))
     # https://eventos.uc3m.es/kml.html
     # https://eventos.ucm.es/kml.html
     # https://eventos.uam.es/kml.html
@@ -679,7 +681,4 @@ if __name__ == "__main__":
         "https://eventos.uah.es/ics/location/espana/lo-1.ics",
         max_price=10,
         verify_ssl=False,
-    ).events
-    for event in evs:
-        continue
-        print(event)
+    ).get_events()

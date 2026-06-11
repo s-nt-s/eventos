@@ -6,15 +6,16 @@ from typing import NamedTuple, Optional
 from types import MappingProxyType
 from core.event import Event, Category, CategoryUnknown, Session
 from core.place import Places
-from functools import cache, cached_property
+from functools import cached_property
 from core.web import buildSoup, get_text
 import re
 import logging
 from core.fetcher import Getter
 from aiohttp import ClientResponse
-from bs4 import Tag
 from datetime import datetime
 from core.md import MD
+from portal.base import Base
+
 
 logger = logging.getLogger(__name__)
 
@@ -155,13 +156,14 @@ def re_parse(obj):
     return obj
 
 
-class ReinaSofia:
+class ReinaSofia(Base):
     ROOT = "https://www.museoreinasofia.es"
     IMG = "https://recursos.museoreinasofia.es/styles/large_landscape/public/"
     SEARCH = "https://buscador.museoreinasofia.es/api/search?langcode=es&exactMatch=false"
     ENTRADA_GENERAL = 12
 
-    def __init__(self):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
         self.__s = ReqSession()
         self.__size = 100
 
@@ -222,10 +224,7 @@ class ReinaSofia:
             items=tuple(arr),
         )
 
-    @property
-    @TupleCache("rec/reinasofia.json", builder=Event.build)
-    def events(self):
-        logger.info("Buscando eventos en Reina Sofia")
+    def _get_events(self):
         evs: set[Event] = set()
         for i in self._index.items:
             _id_ = i['id']
@@ -253,7 +252,6 @@ class ReinaSofia:
                     cycle=self.__find_cycle(e, i)
                 )
             evs.add(e)
-        logger.info(f"Buscando eventos en Reina Sofia = {len(evs)}")
         return tuple(sorted(evs))
 
     def __find_cycle(self, ev: Event, i: dict):
@@ -438,5 +436,7 @@ class ReinaSofia:
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/reinasofia.log", log_level=logging.INFO)
     r = ReinaSofia()
-    r.events
+    r.get_events()

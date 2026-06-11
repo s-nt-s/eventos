@@ -11,6 +11,7 @@ import re
 from datetime import datetime
 import logging
 from core.md import MD
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -306,10 +307,11 @@ async def rq_to_page(r: ClientResponse):
     )
 
 
-class CasaMexico:
+class CasaMexico(Base):
     URL_LIST = "https://www.casademexico.es/wp-content/themes/hello-elementor/rellenar-agenda.php?fecha=todas"
 
-    def __init__(self):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
         self.__get_items = Getter(
             onread=rq_to_items
         )
@@ -388,9 +390,7 @@ class CasaMexico:
             items.add(i)
         return tuple(sorted(items))
 
-    @property
-    @TupleCache("rec/casamexico.json", builder=Event.build)
-    def events(self):
+    def _get_events(self):
         dct_events: dict[Event, Item] = {}
         for i in self._get_items():
             category = self.__find_category(i)
@@ -555,6 +555,8 @@ class CasaMexico:
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/casamexico.log", log_level=(logging.DEBUG))
     c = CasaMexico()
-    c.events
+    c.get_events()
     #print(*c._get_items(), sep="\n")

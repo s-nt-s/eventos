@@ -4,20 +4,23 @@ from datetime import datetime
 import logging
 from core.util import re_or
 import re
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
 
-class Eventim:
-    def __init__(self, id: str):
+class Eventim(Base):
+    def __init__(self, id: str, cache: str | bool = True):
+        if cache is True:
+            cache = f"out/events/{self.__class__.__name__}_{id}.json"
+        super().__init__(cache=cache)
         self.__api = EventimApi(id)
 
     @property
     def id(self):
         return self.__api.id
 
-    @property
-    def events(self):
+    def _get_events(self):
         events: set[Event] = set()
         for i in self.__api.get_info():
             d, ss = self.__get_duration_sessions(i)
@@ -106,4 +109,6 @@ class Eventim:
 
 
 if __name__ == "__main__":
-    Eventim("67349f8ab667c57a7581e251").events
+    from core.log import config_log
+    config_log("log/eventim.log", log_level=(logging.DEBUG))
+    Eventim("67349f8ab667c57a7581e251").get_events()

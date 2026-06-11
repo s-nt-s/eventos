@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 import pytz
 from core.md import MD
+from portal.base import Base
 
 
 logger = logging.getLogger(__name__)
@@ -48,13 +49,12 @@ def _find_place(p: Tag):
     return None
 
 
-class CineEmbajadores:
-    def __init__(self):
+class CineEmbajadores(Base):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
         self.web = Web()
 
-    @property
-    @TupleCache("rec/cineembajadores.json", builder=Event.build)
-    def events(self):
+    def _get_events(self):
         events: set[Event] = set()
         soup = self.web.get_soup("https://cinesembajadores.es/madrid/")
         for div in soup.select("li.movie"):
@@ -264,4 +264,4 @@ class CineEmbajadores:
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/cineembajadores.log", log_level=logging.INFO)
-    CineEmbajadores().events
+    CineEmbajadores().get_events()

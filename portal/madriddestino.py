@@ -1,5 +1,5 @@
 from core.web import Driver, WEB, get_text, buildSoup
-from core.util import re_or, plain_text, get_obj, re_and, get_domain
+from core.util import re_or, plain_text, get_obj, get_domain
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
@@ -15,6 +15,7 @@ from collections import defaultdict
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.md import MD
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 S = requests.Session()
@@ -178,10 +179,11 @@ HEADERS = {
 }
 
 
-class MadridDestino:
+class MadridDestino(Base):
     URL = "https://tienda.madrid-destino.com/es"
 
-    def __init__(self):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
         self.__data_getter = Getter(
             onread=rq_to_data,
             headers=HEADERS
@@ -329,10 +331,7 @@ class MadridDestino:
     def mk_id(id: int) -> int:
         return f"md{id}"
 
-    @property
-    @TupleCache("rec/madriddestino.json", builder=Event.build)
-    def events(self):
-        logger.info("Madrid Destino: Buscando eventos")
+    def _get_events(self):
         events: Set[Event] = set()
         for e in self.data.state['events']:
             org = self.__find("organizations", e['organization_id'])
@@ -359,7 +358,6 @@ class MadridDestino:
             )
             ev = self.__complete(ev, info)
             events.add(ev)
-        logger.info(f"Madrid Destino: Buscando eventos {len(events)}")
         return tuple(sorted(events))
 
     def __complete(self, ev: Event, info: dict):
@@ -772,5 +770,5 @@ class MadridDestino:
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/madriddestino.log", log_level=logging.INFO)
-    evs = MadridDestino(expand_max_price=10).events
+    evs = MadridDestino().get_events()
     #print(evs)

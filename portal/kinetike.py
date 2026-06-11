@@ -7,6 +7,7 @@ from core.event import Event, Category, Session, Place
 from core.place import Places
 from core.util import re_or, plain_text, get_query
 import logging
+from portal.base import Base
 
 
 logger = logging.getLogger(__name__)
@@ -29,11 +30,14 @@ def _get_hour(s: str):
     return f"{h:02d}:{m:02d}"
 
 
-class KineTike:
+class KineTike(Base):
     SALA_EQUIS = "cine=EQUIS"
     ERROR_URL = "https://kinetike.com:83/views/error.aspx"
 
-    def __init__(self, sala: str, place: Place):
+    def __init__(self, sala: str, place: Place, cache: str | bool = True):
+        if cache is True:
+            cache = f"out/events/{self.__class__.__name__}_{sala}.json"
+        super().__init__(cache=cache)
         self.__w = Web()
         self.__w.get(f"https://kinetike.com:83/views/sesionesFuturas.aspx?{sala}")
         id_button = self.__select_one_attr("#UpdatePanelCabecera input", "name")
@@ -80,15 +84,12 @@ class KineTike:
                 urls.add(url)
         return tuple(sorted(urls))
 
-    @cached_property
-    def events(self):
-        logger.info("KineTike: Buscando eventos")
+    def _get_events(self):
         evs: set[Event] = set()
         for url in self.urls:
             ev = self.__get_event_from_url(url)
             if ev:
                 evs.add(ev)
-        logger.info(f"KineTike: Buscando eventos = {len(evs)}")
         return tuple(sorted(evs))
 
     def __get_event_from_url(self, url):
@@ -188,5 +189,7 @@ class KineTike:
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/kinetike.log", log_level=logging.INFO)
     k = KineTike(KineTike.SALA_EQUIS, Places.SALA_EQUIS.value)
-    print(*k.events, sep="\n")
+    k.get_events()

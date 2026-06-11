@@ -20,6 +20,7 @@ from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.util.strng import clean_name
 from core.md import MD
+from portal.base import Base
 
 
 logger = logging.getLogger(__name__)
@@ -171,7 +172,7 @@ class ApiInfo(NamedTuple):
     ics: tuple[IcsEventWrapper, ...] = tuple()
 
 
-class MadridEs:
+class MadridEs(Base):
     def __init__(
         self,
         isOkDate: dict[str, Callable[[datetime], bool]] = None,
@@ -179,8 +180,10 @@ class MadridEs:
         max_price: Optional[float] = None,
         avoid_categories: tuple[Category, ...] = tuple(),
         isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
-        districts: tuple[str, ...] = tuple()
+        districts: tuple[str, ...] = tuple(),
+        cache: str | bool = True
     ):
+        super().__init__(cache=cache)
         self.__isOkPlace = isOkPlace or (lambda *_: True)
         self.__isOkDate = isOkDate or {}
         self.__places_with_store = places_with_store or tuple()
@@ -378,11 +381,7 @@ class MadridEs:
             ))
         return tuple(info)
 
-    @property
-    @TupleCache("rec/madrid_es.json", builder=Event.build)
-    def events(self) -> Tuple[Event, ...]:
-        logger.info("Madrid Es: Buscando eventos")
-
+    def _get_events(self) -> Tuple[Event, ...]:
         all_events: Set[Event] = set()
         for i in self.__get_api_info():
             e = self.__info_to_event(i)
@@ -418,7 +417,6 @@ class MadridEs:
             all_events,
             ('place', 'name')
         )
-        logger.info(f"Madrid Es: Buscando eventos = {len(rt)}")
         return rt
 
     def __info_to_event(self, i: ApiInfo):
@@ -1560,5 +1558,5 @@ if __name__ == "__main__":
     from core.log import config_log
     config_log("log/madrides.log", log_level=(logging.INFO))
     evs = MadridEs(
-    ).events
+    ).get_events()
     print(len(evs))

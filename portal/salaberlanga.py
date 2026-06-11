@@ -12,6 +12,7 @@ from collections import defaultdict
 from core.util import re_or, MONTH, re_and, get_query
 from datetime import date
 import logging
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -38,17 +39,18 @@ class Item(NamedTuple):
     inf: dict
 
 
-class SalaBerlanga:
+class SalaBerlanga(Base):
     PRICE = 4.40
     CINE_ENTRADAS = 2369
     HOME = "https://salaberlanga.com/programacion-de-actividades/"
     ACTIVIDADES = "https://salaberlanga.com/wp-json/wp/v2/actividad/?per_page=100"
 
-    def __init__(self):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
         self.__cine_entradas = CineEntradas(
             SalaBerlanga.CINE_ENTRADAS,
             price=SalaBerlanga.PRICE
-        ).events
+        ).get_events()
 
     @cached_property
     def items(self):
@@ -303,19 +305,17 @@ class SalaBerlanga:
             return None
         return p_txt[len(s_txt)+1:].strip()
 
-    @property
-    @TupleCache("rec/salaberlanga.json", builder=Event.build)
-    def events(self):
-        logger.info("Sala Berlanga: Buscando eventos")
+    def _get_events(self):
         events: set[Event] = set()
         for item in self.items:
             ev = self._to_event(item)
             if ev:
                 events.add(ev)
-        logger.info(f"Sala Berlanga: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/salaberlanga.log", log_level=logging.INFO)
     s = SalaBerlanga()
-    list(s.events or [])
+    s.get_events()

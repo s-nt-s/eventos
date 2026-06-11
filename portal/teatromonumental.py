@@ -8,6 +8,7 @@ from core.util import to_uuid, get_query, re_or
 import re
 import logging
 from core.cache import TupleCache
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ def get_nums(s: str | Tag | None) -> tuple[int, ...]:
     return tuple(map(int, re.findall(r"\d+", s)))
 
 
-class TeatroMonumental:
+class TeatroMonumental(Base):
 
     @cached_property
     def info(self):
@@ -72,10 +73,7 @@ class TeatroMonumental:
                 urls.add(href)
         return tuple(sorted(urls))
 
-    @property
-    @TupleCache("rec/teatromonumental.json", builder=Event.build)
-    def events(self):
-        logger.info("TeatroMonumental: Buscando eventos")
+    def _get_events(self):
         all_events: set[Event] = set()
         for url in self.urls:
             e = self.__get_event(url)
@@ -86,7 +84,6 @@ class TeatroMonumental:
             all_events,
             ('name', 'place')
         )
-        logger.info(f"TeatroMonumental: Buscando eventos = {len(evs)}")
         return evs
 
     def __get_event(self, url: str) -> Event | None:
@@ -168,6 +165,7 @@ class TeatroMonumental:
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/monumental.log", log_level=logging.INFO)
     tm = TeatroMonumental()
-    for x in tm.events:
-        print(x.price, x.name, len(x.sessions), x.url)
+    tm.get_events()

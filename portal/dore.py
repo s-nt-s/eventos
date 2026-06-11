@@ -10,6 +10,7 @@ from datetime import date
 from core.md import MD
 from typing import NamedTuple, Optional
 from collections import defaultdict
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -38,16 +39,20 @@ def to_title_year(t: str, y: int):
     return f"{t} ({y})"
 
 
-class Dore(Web):
+class Dore(Base):
     URL = "https://entradasfilmoteca.sacatuentrada.es/es/busqueda?precio_desde=0&precio_hasta=5&pagina="
     PRICE = 3
+
+    def __init__(self, cache: str|bool = True):
+        super().__init__(cache)
+        self.__w = Web()
 
     def __iter_divs(self):
         page = 0
         while True:
             page = page + 1
-            self.get(f"{Dore.URL}{page}")
-            divs = self.soup.select("#contenedor-productos div.productos > div")
+            self.__w.get(f"{Dore.URL}{page}")
+            divs = self.__w.soup.select("#contenedor-productos div.productos > div")
             if len(divs) == 0:
                 break
             for div in divs:
@@ -58,15 +63,11 @@ class Dore(Web):
                 if not div.find("span", string=re.compile(r"^\s*Agotado\s*$", flags=re.I)):
                     yield url_info, div
 
-    @property
-    @TupleCache("rec/dore.json", builder=Event.build)
-    def events(self):
-        logger.info("Dore: Buscando eventos")
+    def _get_events(self):
         events: set[Event] = set()
         for url_info, div in self.__iter_divs():
             events.add(self.__div_to_event(url_info, div))
         events = self.__clean_events(events)
-        logger.info(f"Dore: Buscando eventos = {len(events)}")
         return tuple(events)
 
     def __clean_events(self, all_events: set[Event]):
@@ -200,4 +201,4 @@ class Dore(Web):
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/dore.log", log_level=(logging.DEBUG))
-    print(Dore().events)
+    print(Dore().get_events())

@@ -7,27 +7,32 @@ import logging
 from core.event import Event, Session, Category, FieldNotFound
 from core.place import Places
 import re
-from core.util import plain_text
+from core.util import plain_text, re_or
 from portal.kinetike import KineTike
 from core.md import MD
 from requests.exceptions import ConnectTimeout
+from portal.base import Base
 
 
 logger = logging.getLogger(__name__)
 
 
-class SalaEquis(Web):
+class SalaEquis(Base):
     TAQUILLA = "https://salaequis.es/taquilla/"
     ENCUENTROS = "https://salaequis.es/encuentros/"
 
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
+        self.__w = Web()
+
     def get(self, url, auth=None, parser="lxml", **kwargs):
         logger.debug(url)
-        return super().get(url, auth, parser, **kwargs)
+        return self.__w.get(url, auth, parser, **kwargs)
 
     @cache
     def get_encuentros(self):
         data: Dict[str, List[Tag]] = {}
-        soup = self.get_soup(SalaEquis.ENCUENTROS)
+        soup = self.__w.get_soup(SalaEquis.ENCUENTROS)
         for i in soup.select("div.info"):
             txt = plain_text(i.select_one("div.title h2"))
             if txt is None:
@@ -41,16 +46,13 @@ class SalaEquis(Web):
     def get_links(self):
         links: Set[str] = set()
         self.get(SalaEquis.TAQUILLA)
-        for a in self.soup.select("div.buy a"):
+        for a in self.__w.soup.select("div.buy a"):
             links.add(a.attrs["href"])
         return tuple(sorted(links))
 
-    @property
-    @TupleCache("rec/salaequis.json", builder=Event.build)
-    def events(self):
+    def _get_events(self):
         buy_url: dict[str, str] = dict()
-        k_events = KineTike(KineTike.SALA_EQUIS, Places.SALA_EQUIS.value).events
-        logger.info("Sala Equis: Buscando eventos")
+        k_events = KineTike(KineTike.SALA_EQUIS, Places.SALA_EQUIS.value).get_events()
         events: Set[Event] = set()
         for url in self.get_links():
             ev_or_buy = self.__url_to_event(url)
@@ -75,24 +77,16 @@ class SalaEquis(Web):
                     )
             e = e.merge(id="se"+e.id)
             events.add(e)
-        logger.info(f"Sala Equis: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
-
-    def safe_events(self):
-        try:
-            return self.events
-        except ConnectTimeout as e:
-            logger.critical(str(e))
-            return tuple()
 
     def __url_to_event(self, url):
         self.get(url)
-        a_buy = self.soup.find("a", string=re.compile(r"^\s*Comprar\s*$", re.I))
+        a_buy = self.__w.soup.find("a", string=re.compile(r"^\s*Comprar\s*$", re.I))
         if a_buy:
             return a_buy.attrs["href"]
-        div = self.soup.find("div", attrs={"id": re.compile("^product-\d+$")})
+        div = self.__w.soup.find("div", attrs={"id": re.compile("^product-\d+$")})
         if div is None:
-            raise FieldNotFound("product-\\d+", self.url)
+            raise FieldNotFound("product-\\d+", self.__w.url)
         id = "se"+div.attrs["id"].split("-")[-1]
         name = get_text(self.select_one("h1.product_title")).title()
         sessions = self.__find_session(name)
@@ -125,10 +119,10 @@ class SalaEquis(Web):
 
     def __find_duration(self):
         duration = set()
-        for txt in map(MD.convert, self.soup.select("div.shortDescription p")):
+        for txt in map(MD.convert, self.__w.soup.select("div.shortDescription p")):
             duration = duration.union(map(int, re.findall(r"(\d+)\s*min\b", txt)))
         if len(duration) == 0:
-            logger.critical(str(FieldNotFound("div.shortDescription p[\\d+ min]", self.url)))
+            logger.critical(str(FieldNotFound("div.shortDescription p[\\d+ min]", self.__w.url)))
             return 120
         return sum(duration)
 
@@ -167,4 +161,4 @@ class SalaEquis(Web):
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/salaequis.log", log_level=(logging.DEBUG))
-    print(SalaEquis().events)
+    SalaEquis().get_events()

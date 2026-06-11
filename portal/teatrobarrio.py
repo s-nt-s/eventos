@@ -11,6 +11,7 @@ from core.event import Event, Session, Category, CategoryUnknown
 from core.place import Places
 from urllib.parse import urlencode
 from core.md import MD
+from portal.base import Base
 import pytz
 
 
@@ -146,14 +147,18 @@ class Item(NamedTuple):
         return Item(**obj)
 
 
-class TeatroBarrio:
+class TeatroBarrio(Base):
     AGENDA = "https://teatrodelbarrio.com/programacion/"
     SHOP = "https://es.patronbase.com/_TeatroDelBarrio/Productions"
 
     def __init__(
         self,
-        max_price: float = None
+        max_price: float = None,
+        cache: str | bool = True
     ):
+        if cache is True:
+            cache = f"out/events/{self.__class__.__name__}_max_price={max_price}.json"
+        super().__init__(cache=cache)
         self.__w = Web()
         self.__w.s.headers.update({'Accept-Encoding': 'gzip, deflate'})
         self.__max_price = max_price
@@ -281,16 +286,12 @@ class TeatroBarrio:
         dt = datetime(int(m.group(3)), MONTHS.index(m.group(2))+1, int(m.group(1)), int(m.group(4)), int(m.group(5)))
         return dt.strftime("%Y-%m-%d %H:%M")
 
-    @property
-    @TupleCache("rec/teatrobarrio.json", builder=Event.build)
-    def events(self):
-        logger.info("Teatro del barrio: Buscando eventos")
+    def _get_events(self):
         events: set[Event] = set()
         for i in self.get_items():
             e = self.__item_to_event(i)
             if e:
                 events.add(e)
-        logger.info(f"Teatro del barrio: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
 
     def __item_to_event(self, i: Item):
@@ -402,4 +403,4 @@ if __name__ == "__main__":
     from core.log import config_log
     config_log("log/teatrobarrio.log", log_level=logging.INFO)
     T = TeatroBarrio(max_price=10)
-    T.events
+    T.get_events()

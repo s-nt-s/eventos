@@ -8,6 +8,7 @@ from core.md import MD
 import re
 from datetime import datetime
 import logging
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +102,7 @@ def _re_parse(obj):
     return obj
 
 
-class InstitutoFrances:
+class InstitutoFrances(Base):
     ROOT = "https://madrid.extranet-aec.com/"
     SEARCH = "https://ifespagne.aec.app/api/public/core/v1/events/availableEventsToday"
     
@@ -116,10 +117,10 @@ class InstitutoFrances:
             "API_KEY": _find_var(soup, "aecExtranetWebAppsAPIKey")
         })
         return w
-    
+
     def __search(self, params: dict):
         return self.__w.json(InstitutoFrances.SEARCH+"?"+urlencode(params))
-    
+
     @Cache("rec/ifrances/items.json")
     def get_items(self):
         js:list[dict] = self.__search({
@@ -149,7 +150,7 @@ class InstitutoFrances:
                 del i['image_extension']
             arr.append(i)
         return arr
-    
+
     def __is_madrid(self, i: dict):
         cp = i.get("event_location_zipcode")
         if cp is not None and (cp // 1000) != 28:
@@ -170,11 +171,8 @@ class InstitutoFrances:
             ):
                 return False
         return True
-        
-    @cached_property
-    @TupleCache("rec/ifrances.json", builder=Event.build)
-    def events(self):
-        logger.info("Instituto francés: Buscando eventos")
+
+    def _get_events(self):
         evs: set[Event] = set()
         for i in self.get_items():
             name = _clean_name(i['product_name'])
@@ -200,7 +198,6 @@ class InstitutoFrances:
             )
             e = self.__complete(e, i) or e
             evs.add(e)
-        logger.info(f"Instituto francés: Buscando eventos = {len(evs)}")
         return tuple(sorted(evs))
 
     def __complete(self, e: Event, i: dict):
@@ -317,11 +314,16 @@ class InstitutoFrances:
                 flags=re.I
             ):
                 return Category.CONTEST
+            if re_or(
+                n,
+                "teatro",
+                flags=re.I
+            ):
+                return Category.THEATER
         logger.warning(str(CategoryUnknown(i['event_url'], name)))
         return Category.UNKNOWN
 
-
-    def __find_price(self, i:dict):
+    def __find_price(self, i: dict):
         prcs = _max(
             i,
             "product_price",
@@ -336,8 +338,10 @@ class InstitutoFrances:
 
         logger.warning(f"NOT FOUND price {i['event_url']}")
         return 0
-        
+
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/frances.log", log_level=logging.INFO)
     i = InstitutoFrances()
-    print(len(i.events))
+    print(len(i.get_events()))

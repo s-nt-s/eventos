@@ -8,6 +8,7 @@ from core.cache import Cache, TupleCache
 from core.event import Event, Session, Place, Category, FieldNotFound
 from core.filemanager import FM
 from core.util import re_or, re_and
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +53,13 @@ def hasMorePages(js: Union[Dict, List]):
     return False
 
 
-class CineEntradas:
+class CineEntradas(Base):
     SALA_BERLANGA = 2369
 
-    def __init__(self, cinema: int, price: float):
+    def __init__(self, cinema: int, price: float, cache: str | bool = True):
+        if cache is True:
+            cache = f"out/events/{self.__class__.__name__}_{cinema}.json"
+        super().__init__(cache=cache)
         self.cinema = cinema
         self.price = price
 
@@ -167,10 +171,7 @@ class CineEntradas:
             arr.extend(js['showGroups']['data'])
         return arr
 
-    @property
-    @CinemaEventCache("rec/cineentradas{cinema}.json")
-    def events(self):
-        logger.info("Cine Entradas: Buscando eventos")
+    def _get_events(self):
         events: Set[Event] = set()
         for i in self.get_sessions():
             category = Category.CINEMA
@@ -200,7 +201,6 @@ class CineEntradas:
             )
             events.add(e)
         evs = tuple(sorted(events))
-        logger.info(f"Cine Entradas: Buscando eventos = {len(evs)}")
         return evs
 
     def __find_sessions(self, root: str, shows: List[Dict]):
@@ -215,6 +215,5 @@ class CineEntradas:
 
 if __name__ == "__main__":
     from core.log import config_log
-
     config_log("log/cineentradas.log", log_level=(logging.DEBUG))
-    print(CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).events)
+    print(CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).get_events())

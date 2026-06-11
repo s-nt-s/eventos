@@ -11,6 +11,7 @@ from datetime import datetime
 from core.web import get_text, buildSoup
 from functools import cache
 from core.cache import TupleCache
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +33,13 @@ def clean_name(name: str):
     return name
 
 
-class AteneoMadrid:
+class AteneoMadrid(Base):
     def __init__(
         self,
         isOkDate: Callable[[datetime], bool] = None,
+        cache: str | bool = True
     ):
+        super().__init__(cache=cache)
         self.__ics = IcsReader(
             "https://ateneodemadrid.com/eventos/lista/?ical=1",
             "https://ateneodemadrid.com/eventos/lista/p%C3%A1gina/2/?ical=1",
@@ -45,10 +48,7 @@ class AteneoMadrid:
             isOkDate=isOkDate
         )
 
-    @cached_property
-    @TupleCache("rec/ateneo_madrid.json", builder=Event.build)
-    def events(self):
-        logger.info("Buscando eventos en Ateneo Madrid")
+    def _get_events(self):
         ok_events: set[Event] = set()
         done: set[str] = set()
         for e in self.__ics.events:
@@ -81,7 +81,6 @@ class AteneoMadrid:
             ok_events.add(e)
 
         rt = tuple(sorted(ok_events))
-        logger.info(f"Buscando eventos en Ateneo Madrid = {len(rt)}")
         return rt
 
     def __ics_to_event(self, e: IcsEventWrapper):
@@ -354,4 +353,4 @@ if __name__ == "__main__":
     from core.log import config_log
     config_log("log/ateneomadrid.log", log_level=logging.INFO)
     m = AteneoMadrid()
-    evs = m.events
+    evs = m.get_events()
