@@ -106,10 +106,12 @@ def normalize_quote(s: str):
 
 @cache
 def _rm_prefix():
-    SP = r":\-\.\|/;"
+    SP = r":\-\.\|/;–\-"
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"FIVER FESTIVAL",
+        r"Encuentros? Nodo Madrid",
         r"D[ií]a Europeo de la M[úu]sica",
         r"Sesiones especiales",
         r"Estrenos documentales",
@@ -199,7 +201,7 @@ def _rm_prefix():
 
 @cache
 def _rm_sufix():
-    SEP = r"[\-\.\|]"
+    SEP = r"[–\-\.\|]"
     SUFIX_1 = "|".join([
         r"Sede Sala Berlanga",
         r"Sede centro cultural Paco Rabal",
@@ -293,6 +295,7 @@ def clean_name(name: str):
         name = RE_TRIM.sub("", name)
         name = normalize_quote(name)
         name = re.sub(r"\.\.\.\s*", "… ", name).strip()
+        name = re.sub(r"–", "-", name).strip()
         name = _rm_prefix().sub("", name)
         name = _rm_sufix().sub("", name)
         name = _rm_quote().sub(r"\1", name)
