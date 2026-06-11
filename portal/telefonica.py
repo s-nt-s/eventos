@@ -151,7 +151,7 @@ class Telefonica(Base):
             id=f"tl{item['id']}",
             url=url,
             name=name or item.get('title') or data.get('name'),
-            img=data['image'],
+            img=data.get('image') or item.get('image'),
             price=0,
             category=self.__find_category(data, webpage),
             duration=duration,
