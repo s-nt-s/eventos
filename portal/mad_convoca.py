@@ -344,6 +344,8 @@ class MadConvoca(Base):
 
         if has_tag_or_title("flinta", r"No[\-\s]*mixto", "Social Swing Queer"):
             return Category.NON_GENERAL_PUBLIC
+        if has_tag_or_title("Bookelarre") and re_or(e.place.name, "ateneo\b.*\bmaliciosa", flags=re.I):
+            return Category.NON_GENERAL_PUBLIC
         if has_tag_or_title("infantil"):
             return Category.CHILDISH
         if has_tag(
