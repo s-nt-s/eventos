@@ -2,7 +2,7 @@ import re
 from functools import cache
 from unidecode import unidecode
 
-_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬]+"
+_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬📽]+"
 RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
 RE_DEDUP = re.compile(r"(!+|¡+|¿+|\?+)")
 
@@ -110,6 +110,7 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Programa de cine",
         r"FIVER FESTIVAL",
         r"Encuentros? Nodo Madrid [–\-,] redACTS",
         r"D[ií]a Europeo de la M[úu]sica",
@@ -295,7 +296,7 @@ def clean_name(name: str):
         name = RE_TRIM.sub("", name)
         name = normalize_quote(name)
         name = re.sub(r"\.\.\.\s*", "… ", name).strip()
-        name = re.sub(r"–", "-", name).strip()
+        name = re.sub(r"[–—]+", "-", name).strip()
         name = _rm_prefix().sub("", name)
         name = _rm_sufix().sub("", name)
         name = _rm_quote().sub(r"\1", name)
