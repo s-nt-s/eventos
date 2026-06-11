@@ -135,8 +135,8 @@ class Telefonica(Base):
         webpage = [i for i in graph if isinstance(i, dict) and i.get('@type') == 'WebPage'][0]
         return event, webpage
 
-    def __data_to_event(self, data: dict):
-        url = data['url']
+    def __data_to_event(self, item: dict):
+        url = item['url']
         self.get(url)
         if self.__w.soup.select_one("div.participar") and not self.__w.soup.select_one("div.participar a.reservabtn"):
             logger.warning(f"{url} no tiene reservas")
@@ -148,9 +148,9 @@ class Telefonica(Base):
             return None
         name = get_text(self.__w.soup.select_one("span.titulo"))
         ev = Event(
-            id=f"tl{data['id']}",
+            id=f"tl{item['id']}",
             url=url,
-            name=name or data['name'],
+            name=name or item.get('title') or data.get('name'),
             img=data['image'],
             price=0,
             category=self.__find_category(data, webpage),
