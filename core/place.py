@@ -25,8 +25,8 @@ def safe_lt(a: str | None, b: str | None):
 
 def _find_cp(s: str):
     cp: set[int] = set()
-    for c in map(int, re.findall(r"\b28\d+", s or '')):
-        if c <= 28999:
+    for c in map(int, re.findall(r"\d+", s or '')):
+        if c>=28000 and c <= 28999:
             cp.add(c)
     if len(cp) == 1:
         return cp.pop()
