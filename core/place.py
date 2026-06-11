@@ -42,6 +42,14 @@ class Place:
     zone: str = None
     map: str = None
 
+    def get_cp(self):
+        cp: set[int] = set()
+        for s in (self.name, self.address):
+            for c in map(int, re.findall(r"\b28\d{3}\b", s)):
+                cp.add(c)
+        if len(cp):
+            return cp.pop()
+
     def merge(self, **kwargs):
         return replace(self, **kwargs)
 
