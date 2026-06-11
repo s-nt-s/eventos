@@ -239,6 +239,7 @@ def event_to_ics_description(e: Event, s: Session):
         "tickets.caixaforum.org",
         "giglon.com",
         "es.patronbase.com",
+        "casaasia.powerappsportals.com",
         re.compile(r"\blacasaencendida\.es/.*eventId=\d+", flags=re.I),
         "lacasaencendida.es",
         "teatromonumental.es",
