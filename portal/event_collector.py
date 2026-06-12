@@ -58,7 +58,19 @@ def safe_load_ics(name: str):
 ICS_BUSY = safe_load_ics("ICS_BUSY")
 ICS_BUSY_VILLAVERDE = safe_load_ics("ICS_BUSY_VILLAVERDE")
 ICS_BUSY_ALCALA = safe_load_ics("ICS_BUSY_ALCALA")
-
+KO_CP = (
+    28029,
+    28033,
+    28223
+    28300
+    28931
+    28040
+    28039
+    28035
+    28023
+    28020
+    28011
+)
 
 def get_events(source: Base | Type[Base]):
     if isinstance(
@@ -153,12 +165,6 @@ def isOkDateVillaverde(dt: datetime):
     if dt.weekday() == 4:
         min_hour = 16.5
     return not isWorkingHours(dt, min_hour=min_hour)
-
-KO_CP = (
-    28029,
-    28931,
-    28033
-)
 
 @cache
 def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
