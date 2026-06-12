@@ -80,5 +80,7 @@ class Base:
             data = safe_json(url)
             if data is not None:
                 logger.info(f"Recuperando de la versión anterior {url}")
-                return tuple(map(Event.build, data))
+                data = tuple(map(Event.build, data))
+                self.__dump_cache(data)
+                return data
         return tuple()
