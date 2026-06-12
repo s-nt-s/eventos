@@ -492,7 +492,13 @@ class Universidad(Base):
             flags=re.I
         ):
             return Category.CHILDISH
-        if re_or(e.SUMMARY, r"UN REGRESO DE CINE", flags=re.I):
+        if re_or(
+            e.SUMMARY,
+            r"UN REGRESO DE CINE",
+            r"Cine foro",
+            r"cinef[oó]rum",
+            flags=re.I
+        ):
             return Category.CINEMA
         if re_or(
             e.SUMMARY,
@@ -537,12 +543,6 @@ class Universidad(Base):
             flags=re.I
         ):
             return Category.CONFERENCE
-        if re_or(
-            description,
-            r"cinefor[uú]n",
-            flags=re.I
-        ):
-            return Category.CINEMA
         categories = (info.get_categories() if info else None) or tuple()
         menu = (info.get_menu() if info else None) or tuple()
         for c in categories:
@@ -566,7 +566,7 @@ class Universidad(Base):
                 return Category.CINEMA
             if re_or(c, "Club de lectura", flags=re.I):
                 return Category.READING_CLUB
-            if re_or(c, "Danza y baile", flags=re.I):
+            if re_or(c, "Danza y baile", "Music, theatre and dance", flags=re.I):
                 return Category.DANCE
         for m in menu:
             if re_or(m, "ponentes?", flags=re.I):
