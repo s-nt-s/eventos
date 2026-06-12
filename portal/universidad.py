@@ -198,9 +198,9 @@ def clean_place_name(name: str, domain: str) -> str:
         flags=re.I
     ):
         return "Metro Tribunal"
-    if domain == "ucm" and re_or(name, r"facultad\b.*\bqu[ií]micas?", flags=re.I):
+    if domain and "ucm" in domain and re_or(name, r"facultad\b.*\bqu[ií]micas?", flags=re.I):
         return "UCM Química"
-    if domain == "uc3m" and re_or(
+    if domain and "uc3m" in domain and re_or(
         name,
         r"Residencia de estudiantes",
         flags=re.I
