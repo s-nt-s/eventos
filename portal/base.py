@@ -76,7 +76,7 @@ class Base:
         except ex as e:
             logger.critical(str(e))
         if self.__cache is not None and self.__cache.is_relative_to(self.__out):
-            url = f"{self.__site}/{self.__cache.relative_to(self.out)}"
+            url = f"{self.__site}/{self.__cache.relative_to(self.__out)}"
             data = safe_json(url)
             if data is not None:
                 logger.info(f"Recuperando de la versión anterior {url}")
