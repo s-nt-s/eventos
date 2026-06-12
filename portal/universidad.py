@@ -198,7 +198,7 @@ def clean_place_name(name: str, domain: str) -> str:
         flags=re.I
     ):
         return "Metro Tribunal"
-    if domain == "ucm" and re_or(name, "facultad\b.*\bqu[ií]micas?", flags=re.I):
+    if domain == "ucm" and re_or(name, r"facultad\b.*\bqu[ií]micas?", flags=re.I):
         return "UCM Química"
     if domain == "uc3m" and re_or(
         name,
@@ -537,6 +537,12 @@ class Universidad(Base):
             flags=re.I
         ):
             return Category.CONFERENCE
+        if re_or(
+            description,
+            r"cinefor[uú]n",
+            flags=re.I
+        ):
+            return Category.CINEMA
         categories = (info.get_categories() if info else None) or tuple()
         menu = (info.get_menu() if info else None) or tuple()
         for c in categories:
