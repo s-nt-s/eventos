@@ -218,7 +218,13 @@ class Place:
             return Zones.ALCALA_DE_HENARES.value.name
         cp = self.get_cp()
         zone = {
-        
+            28012: Zones.LAVAPIES.value.name,
+            #28027: "Concepción",
+            28014: "Paseo del Prado",
+            28040: Zones.COMPLUTENSE.value.name,
+            28045: Zones.LEGAZPI.value.name,
+            28004: Zones.TRIBUNAL.value.name,
+            28025: Zones.CARABANCHEL.value.name,
         }.get(cp)
         if zone is not None:
             return zone
