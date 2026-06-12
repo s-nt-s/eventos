@@ -74,7 +74,7 @@ KO_CP = (
 
 
 def get_events(source: Base | Type[Base]):
-    if issubclass(source, Base):
+    if isinstance(source, type) and issubclass(source, Base):
         source = source()
     if not isinstance(
         source,
