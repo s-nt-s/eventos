@@ -27,7 +27,7 @@ from core.dwn import DWN
 
 config_log("log/build_site.log")
 logger = logging.getLogger(__name__)
-if environ.get("PAGE_OUT"):
+if environ.get("PAGE_OUT") is None:
     environ["PAGE_OUT"] = "out/"
 
 PAGE_URL = environ['PAGE_URL']
