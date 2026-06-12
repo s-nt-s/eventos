@@ -72,20 +72,24 @@ KO_CP = (
     28011,
 )
 
+
 def get_events(source: Base | Type[Base]):
-    if isinstance(
-        source,
-        SalaEquis
-    ):
-        return source.safe_get_events(ConnectTimeout)
-    if isinstance(
+    if issubclass(source, Base):
+        source = source()
+    if not isinstance(
         source,
         Base
     ):
-        return source.get_events()
-    if issubclass(source, Base):
-        return source().get_events()
-    raise ValueError(str(type(source)))
+        raise ValueError(str(type(source)))
+    if isinstance(
+        source,
+        (
+            SalaEquis,
+            ReinaSofia
+        )
+    ):
+        return source.safe_get_events(ConnectTimeout)
+    return source.get_events()
 
 
 def run_parallel(*sources):
