@@ -48,6 +48,7 @@ from portal.base import Base
 from requests.exceptions import ConnectTimeout
 from typing import Type
 from asyncio import TimeoutError
+from aiohttp.client_exceptions import ClientConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -82,21 +83,13 @@ def get_events(source: Base | Type[Base]):
         Base
     ):
         raise ValueError(str(type(source)))
-    if isinstance(
-        source,
-        (
-            SalaEquis,
-            ReinaSofia
-        )
-    ):
-        return source.safe_get_events(ConnectTimeout)
-    if isinstance(
-        source,
-        (
-            CasaMexico
-        )
-    ):
-        return source.safe_get_events(TimeoutError)
+    for c, e in {
+        (SalaEquis, ReinaSofia): (ConnectTimeout,),
+        (CasaMexico, ): (TimeoutError,),
+        (MadridEs, ): (ClientConnectionError, )
+    }.items():
+        if isinstance(source, c):
+            return source.safe_get_events(*e)
     return source.get_events()
 
 
