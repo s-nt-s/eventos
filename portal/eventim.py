@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class Eventim(Base):
     def __init__(self, id: str, cache: str | bool = True):
         if cache is True:
-            cache = f"out/events/{self.__class__.__name__}_{id}.json"
+            cache = f"events/{self.__class__.__name__}_{id}.json"
         super().__init__(cache=cache)
         self.__api = EventimApi(id)
 

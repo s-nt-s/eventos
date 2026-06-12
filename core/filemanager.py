@@ -46,7 +46,7 @@ class FileManager:
 
         self.root = root
 
-    def resolve_path(self, file) -> Path:
+    def resolve_path(self, file) -> Path | None:
         """
         Si es una ruta absoluta se devuelve tal cual
         Si es una ruta relativa se devuelve bajo la ruta root

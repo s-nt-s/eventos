@@ -47,6 +47,7 @@ from core.ics import IcsReader
 from portal.base import Base
 from requests.exceptions import ConnectTimeout
 from typing import Type
+from asyncio import TimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +90,13 @@ def get_events(source: Base | Type[Base]):
         )
     ):
         return source.safe_get_events(ConnectTimeout)
+    if isinstance(
+        source,
+        (
+            CasaMexico
+        )
+    ):
+        return source.safe_get_events(TimeoutError)
     return source.get_events()
 
 

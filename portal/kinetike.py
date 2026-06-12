@@ -36,7 +36,7 @@ class KineTike(Base):
 
     def __init__(self, sala: str, place: Place, cache: str | bool = True):
         if cache is True:
-            cache = f"out/events/{self.__class__.__name__}_{sala}.json"
+            cache = f"events/{self.__class__.__name__}_{sala}.json"
         super().__init__(cache=cache)
         self.__w = Web()
         self.__w.get(f"https://kinetike.com:83/views/sesionesFuturas.aspx?{sala}")

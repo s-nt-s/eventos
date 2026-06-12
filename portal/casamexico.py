@@ -313,11 +313,13 @@ class CasaMexico(Base):
     def __init__(self, cache: str | bool = True):
         super().__init__(cache=cache)
         self.__get_items = Getter(
-            onread=rq_to_items
+            onread=rq_to_items,
+            timeout=60
         )
         self.__get_pages = Getter(
             onread=rq_to_page,
-            raise_for_status=False
+            raise_for_status=False,
+            timeout=60
         )
 
     @TupleCache(r"rec/casamexico/items.json", builder=Item.build)

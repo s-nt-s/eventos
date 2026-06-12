@@ -260,7 +260,7 @@ class Universidad(Base):
         cache: bool | str = True
     ):
         if cache is True:
-            cache = f"out/events/{self.__class__.__name__}_{myhash(ics)}_max_price={max_price}.json"
+            cache = f"events/{self.__class__.__name__}_{myhash(ics)}_max_price={max_price}.json"
         super().__init__(cache=cache)
         self.__verify_ssl = verify_ssl
         self.__max_price = max_price

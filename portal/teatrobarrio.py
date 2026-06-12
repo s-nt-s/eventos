@@ -157,7 +157,7 @@ class TeatroBarrio(Base):
         cache: str | bool = True
     ):
         if cache is True:
-            cache = f"out/events/{self.__class__.__name__}_max_price={max_price}.json"
+            cache = f"events/{self.__class__.__name__}_max_price={max_price}.json"
         super().__init__(cache=cache)
         self.__w = Web()
         self.__w.s.headers.update({'Accept-Encoding': 'gzip, deflate'})

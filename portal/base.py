@@ -4,16 +4,38 @@ from core.filemanager import FM
 import time
 import os
 import logging
+import requests
 
 logger = logging.getLogger(__name__)
 
 
+def safe_json(url: str) -> list[dict] | None:
+    try:
+        r = requests.get(url)
+        r.raise_for_status()
+        data = r.json()
+        if not isinstance(data, list):
+            logger.critical(f"NOT list {url}")
+            return None
+        if not all(isinstance(i, dict) for i in data):
+            logger.critical(f"NOT list[dict] {url}")
+            return None
+        return data
+    except (requests.RequestException, ValueError):
+        logger.critical(f"NOT JSON {url}")
+        return None
+
+
 class Base:
     def __init__(self, cache: str | bool = True, cache_ttl: int = 3):
+        self.__out = FM.resolve_path(os.environ.get("PAGE_OUT"))
+        self.__site = os.environ["PAGE_URL"]
         if cache is True:
-            cache = f"out/events/{self.__class__.__name__}.json"
+            cache = f"events/{self.__class__.__name__}.json"
         if cache is False:
             cache = None
+        if isinstance(cache, str):
+            cache = str(self.__out / cache)
         self.__cache = FM.resolve_path(
             cache
         )
@@ -46,11 +68,17 @@ class Base:
         self.__dump_cache(data)
         return data
 
-    def safe_get_events(self, *ex: Exception):
+    def safe_get_events(self, *ex: Exception) -> tuple[Event, ...]:
         if len(ex) == 0:
-            return ValueError()
+            raise ValueError()
         try:
             return self.get_events()
         except ex as e:
             logger.critical(str(e))
+        if self.__cache is not None and self.__cache.is_relative_to(self.__out):
+            url = f"{self.__site}/{self.__cache.relative_to(self.out)}"
+            data = safe_json(url)
+            if data is not None:
+                logger.info(f"Recuperando de la versión anterior {url}")
+                return tuple(map(Event.build, data))
         return tuple()

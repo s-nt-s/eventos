@@ -58,7 +58,7 @@ class CineEntradas(Base):
 
     def __init__(self, cinema: int, price: float, cache: str | bool = True):
         if cache is True:
-            cache = f"out/events/{self.__class__.__name__}_{cinema}.json"
+            cache = f"events/{self.__class__.__name__}_{cinema}.json"
         super().__init__(cache=cache)
         self.cinema = cinema
         self.price = price
