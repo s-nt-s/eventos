@@ -110,6 +110,7 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Cine Foro BAUM",
         r"Programa de cine",
         r"FIVER FESTIVAL",
         r"Encuentros? Nodo Madrid [–\-,] redACTS",
@@ -246,6 +247,7 @@ def _rm_sufix():
 def _rm_quote():
     NQ = r"[^"+_QT+"]"
     PREFIX = "|".join([
+        r"Presentaci[oó]n del libro",
         r"Cinef[oó]rum Isabel S[aá]nchez",
         r"Concierto(?: de)?",
         r"Cineclub(?: con)?",
