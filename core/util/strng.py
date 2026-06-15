@@ -2,7 +2,7 @@ import re
 from functools import cache
 from unidecode import unidecode
 
-_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬📽]+"
+_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬📽 🌎🗣]+"
 RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
 RE_DEDUP = re.compile(r"(!+|¡+|¿+|\?+)")
 
@@ -110,6 +110,10 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Encuentro art[ií]stico",
+        r"Festival de f[ií]n de curso",
+        r"Akelarre Digital",
+        r"Cine Foro BAUM",
         r"Programa de cine",
         r"FIVER FESTIVAL",
         r"Encuentros? Nodo Madrid [–\-,] redACTS",
@@ -204,11 +208,9 @@ def _rm_prefix():
 def _rm_sufix():
     SEP = r"[–\-\.\|]"
     SUFIX_1 = "|".join([
-        r"Sede Sala Berlanga",
-        r"Sede centro cultural Paco Rabal",
-        r"Sede Sala Equis",
-        r"Sede Academia de Cine",
-        r"Sede Fundación Casa de M[eé]xico(?: en España)",
+        r"[OÓ]h!pera Summer \d+",
+        r"(?:Sede )?(?:Sala Berlanga|centro cultural Paco Rabal|Sala Equis|Academia de Cine)",
+        r"(?:Sede )?Fundación Casa de M[eé]xico(?: en España)",
         r"(?:Actividades )?(?:viernes|s[aá]bado|domingo) (?:tarde|mañana)",
         r"Las tertulias de Eirene Editorial",
         r"Visita a la colecci[oó]n del Museo",
@@ -246,6 +248,11 @@ def _rm_sufix():
 def _rm_quote():
     NQ = r"[^"+_QT+"]"
     PREFIX = "|".join([
+        r"Representaci[oó]n teatral",
+        r"Presentación del informe",
+        r"Grupo de lectura",
+        r"Muestra de teatro del colectivo de la Rosa",
+        r"Presentaci[oó]n del libro",
         r"Cinef[oó]rum Isabel S[aá]nchez",
         r"Concierto(?: de)?",
         r"Cineclub(?: con)?",

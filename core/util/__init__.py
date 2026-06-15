@@ -640,3 +640,12 @@ def parse_obj(
         if new_obj is not None or keep_re_parse_none is True:
             return new_obj
     return obj
+
+
+def find_cp(s: str):
+    cp: set[int] = set()
+    for c in map(int, re.findall(r"\d+", s or '')):
+        if c >= 28000 and c <= 28999:
+            cp.add(c)
+    if len(cp) == 1:
+        return cp.pop()

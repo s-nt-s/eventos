@@ -253,6 +253,12 @@ class MadConvoca(Base):
             flags=re.I
         ):
             return Category.READING_CLUB
+        if re_or(
+            e.SUMMARY,
+            r"proyecci[oó]n de cortos",
+            flags=re.I
+        ):
+            return Category.CINEMA
 
         if _has_cat(r"Proyecci[óo]n", "cinef[óo]rum"):
             return Category.CINEMA
@@ -344,6 +350,8 @@ class MadConvoca(Base):
 
         if has_tag_or_title("flinta", r"No[\-\s]*mixto", "Social Swing Queer"):
             return Category.NON_GENERAL_PUBLIC
+        if has_tag_or_title("Bookelarre") and re_or(e.place.name, "ateneo\b.*\bmaliciosa", flags=re.I):
+            return Category.NON_GENERAL_PUBLIC
         if has_tag_or_title("infantil"):
             return Category.CHILDISH
         if has_tag(
@@ -355,6 +363,7 @@ class MadConvoca(Base):
             r'asamblea de vivienda',
             r"Recogida de firmas",
             r"Treque[\-\s]*Solidario",
+            r"Proyecto Hebra",
         ):
             return Category.ACTIVISM
         if re_or(
@@ -382,7 +391,7 @@ class MadConvoca(Base):
         ):
             return Category.ACTIVISM
 
-        if has_tag_or_title("kafeta", "GAME NIGHT", "Juegos de mesa"):
+        if has_tag_or_title("kafeta", "GAME NIGHT", "Juegos de mesa", "fiest[oó]n"):
             return Category.PARTY
         if has_tag_or_title(
             "cine",
@@ -395,11 +404,12 @@ class MadConvoca(Base):
             return Category.SPORT
         if has_tag_or_title(
             "taller",
-            "formaci[oó]n",
+            r"formaci[oó]n",
             "intercambio de idiomas",
             "hacklab",
             "laboratorio ciudadano",
             r"talleres",
+            r"hack",
         ) or re_or(
             name,
             "^clases de",

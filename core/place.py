@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict, fields, replace
-from core.util import get_obj, plain_text, re_or, re_and
+from core.util import get_obj, plain_text, re_or, re_and, find_cp
 from core.util.strng import capitalize
 from urllib.parse import quote
 import logging
@@ -23,16 +23,6 @@ def safe_lt(a: str | None, b: str | None):
     return a.__lt__(b)
 
 
-def _find_cp(s: str):
-    cp: set[int] = set()
-    for c in map(int, re.findall(r"\d+", s or '')):
-        if c>=28000 and c <= 28999:
-            cp.add(c)
-    if len(cp) == 1:
-        return cp.pop()
-    
-
-
 @dataclass(frozen=True)
 class Place:
     name: str
@@ -43,7 +33,7 @@ class Place:
 
     def get_cp(self):
         for s in (self.address, self.name):
-            cp = _find_cp(s)
+            cp = find_cp(s)
             if cp is not None:
                 return cp
 
@@ -228,7 +218,13 @@ class Place:
             return Zones.ALCALA_DE_HENARES.value.name
         cp = self.get_cp()
         zone = {
-        
+            28012: Zones.LAVAPIES.value.name,
+            #28027: "Concepción",
+            28014: "Paseo del Prado",
+            28040: Zones.COMPLUTENSE.value.name,
+            28045: Zones.LEGAZPI.value.name,
+            28004: Zones.TRIBUNAL.value.name,
+            28025: Zones.CARABANCHEL.value.name,
         }.get(cp)
         if zone is not None:
             return zone

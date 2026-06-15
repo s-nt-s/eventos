@@ -27,9 +27,11 @@ from core.dwn import DWN
 
 config_log("log/build_site.log")
 logger = logging.getLogger(__name__)
+if environ.get("PAGE_OUT") is None:
+    environ["PAGE_OUT"] = "out/"
 
 PAGE_URL = environ['PAGE_URL']
-OUT = "out/"
+OUT = environ["PAGE_OUT"]
 WHITE = (255, 255, 255)
 STR_TODAY = date.today().strftime("%Y-%m-%d")
 

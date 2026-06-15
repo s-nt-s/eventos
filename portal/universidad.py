@@ -198,7 +198,9 @@ def clean_place_name(name: str, domain: str) -> str:
         flags=re.I
     ):
         return "Metro Tribunal"
-    if domain and "uc3m" and re_or(
+    if domain and "ucm" in domain and re_or(name, r"facultad\b.*\bqu[ií]micas?", flags=re.I):
+        return "UCM Química"
+    if domain and "uc3m" in domain and re_or(
         name,
         r"Residencia de estudiantes",
         flags=re.I
@@ -260,7 +262,7 @@ class Universidad(Base):
         cache: bool | str = True
     ):
         if cache is True:
-            cache = f"out/events/{self.__class__.__name__}_{myhash(ics)}_max_price={max_price}.json"
+            cache = f"events/{self.__class__.__name__}_{myhash(ics)}_max_price={max_price}.json"
         super().__init__(cache=cache)
         self.__verify_ssl = verify_ssl
         self.__max_price = max_price
@@ -490,7 +492,13 @@ class Universidad(Base):
             flags=re.I
         ):
             return Category.CHILDISH
-        if re_or(e.SUMMARY, r"UN REGRESO DE CINE", flags=re.I):
+        if re_or(
+            e.SUMMARY,
+            r"UN REGRESO DE CINE",
+            r"Cine foro",
+            r"cinef[oó]rum",
+            flags=re.I
+        ):
             return Category.CINEMA
         if re_or(
             e.SUMMARY,
@@ -558,7 +566,7 @@ class Universidad(Base):
                 return Category.CINEMA
             if re_or(c, "Club de lectura", flags=re.I):
                 return Category.READING_CLUB
-            if re_or(c, "Danza y baile", flags=re.I):
+            if re_or(c, "Danza y baile", "Music, theatre and dance", flags=re.I):
                 return Category.DANCE
         for m in menu:
             if re_or(m, "ponentes?", flags=re.I):

@@ -24,7 +24,7 @@ from portal.goethe import Goethe
 from portal.ifrances import InstitutoFrances
 from portal.eventim import Eventim
 from datetime import datetime, date
-from core.util import round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
+from core.util import find_cp, round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
 from core.publish import PublishDB
 import logging
 from typing import Tuple
@@ -47,6 +47,8 @@ from core.ics import IcsReader
 from portal.base import Base
 from requests.exceptions import ConnectTimeout
 from typing import Type
+from asyncio import TimeoutError
+from aiohttp.client_exceptions import ClientConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -58,22 +60,37 @@ def safe_load_ics(name: str):
 ICS_BUSY = safe_load_ics("ICS_BUSY")
 ICS_BUSY_VILLAVERDE = safe_load_ics("ICS_BUSY_VILLAVERDE")
 ICS_BUSY_ALCALA = safe_load_ics("ICS_BUSY_ALCALA")
+KO_CP = (
+    28029,
+    28033,
+    28223,
+    28300,
+    28931,
+    28040,
+    28039,
+    28035,
+    28023,
+    28020,
+    28011,
+)
 
 
 def get_events(source: Base | Type[Base]):
-    if isinstance(
-        source,
-        SalaEquis
-    ):
-        return source.safe_get_events(ConnectTimeout)
-    if isinstance(
+    if isinstance(source, type) and issubclass(source, Base):
+        source = source()
+    if not isinstance(
         source,
         Base
     ):
-        return source.get_events()
-    if issubclass(source, Base):
-        return source().get_events()
-    raise ValueError(str(type(source)))
+        raise ValueError(str(type(source)))
+    for c, e in {
+        (SalaEquis, ReinaSofia): (ConnectTimeout,),
+        (CasaMexico, ): (TimeoutError,),
+        (MadridEs, ): (ClientConnectionError, )
+    }.items():
+        if isinstance(source, c):
+            return source.safe_get_events(*e)
+    return source.get_events()
 
 
 def run_parallel(*sources):
@@ -154,17 +171,12 @@ def isOkDateVillaverde(dt: datetime):
         min_hour = 16.5
     return not isWorkingHours(dt, min_hour=min_hour)
 
-
 @cache
 def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
     latlon = None
     name = None
     if isinstance(p, Place):
-        if p.get_cp() in (
-            28029,
-            28931,
-            28033
-        ):
+        if p.get_cp() in KO_CP:
             return False
         name = p.name
         address = p.address
@@ -174,6 +186,9 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         name = p
     elif isinstance(p, tuple) and len(p) == 2:
         latlon = p
+    if find_cp(address) in KO_CP:
+        return False
+
     if re_or(
         address,
         r"Milano$",

@@ -256,6 +256,7 @@ class CasaAmerica(Base):
             return Category.POETRY
         if re_or(
             tit,
+            r"Premios Archiletras",
             r"Bar[oó]metro Empresarial",
             r"Gala (del|de los) Premios?",
             r"D[ií]a Mundial de la Lengua Portuguesa",
