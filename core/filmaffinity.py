@@ -130,6 +130,7 @@ class FilmAffinityApi:
             (169592, 2025, re.compile(r"\bAs estaçoes\b")),
             (170495, 2026, "Aminetu"),
             (789723, 2026, "Backrooms"),
+            (158471, 2026, "Viva"),
         ):
             if _is_match(titles, year, y, *tt):
                 return k

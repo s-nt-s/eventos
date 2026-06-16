@@ -237,7 +237,7 @@ class AteneoMadrid(Base):
                 if re_or(c, *args, flags=re.I):
                     return True
             return False
-        if re.search(r"^(En )?Recuerdo de [A-Z]", e.SUMMARY or ''):
+        if re.search(r"^(En )?[rR]ecuerdo de [A-Z]", e.SUMMARY or ''):
             return Category.TRIBUTE
         if re_or(
             e.SUMMARY,

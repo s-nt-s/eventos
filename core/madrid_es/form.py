@@ -263,7 +263,7 @@ async def rq_to_ics(r: ClientResponse):
     try:
         cal = Calendar.from_ical(txt)
         for e in cal.walk("VEVENT"):
-            e = IcsEventWrapper(e, source=r.url)
+            e = IcsEventWrapper(e, source=str(r.url))
             arr.append(e)
     except Exception as e:
         logger.critical(f"Calendario erróneo {r.url} {e}", exc_info=True)
