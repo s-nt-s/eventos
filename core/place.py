@@ -241,6 +241,7 @@ class Place:
     def normalize(self):
         name = self.name or ''
         address = self.address or ''
+        name_address = f"{name} {address}".strip()
         if re.match(r"^Faro de (la )?Moncloa$", name, flags=re.I):
             return Places.FARO_MONCLOA.value
         if re_or(
@@ -305,7 +306,7 @@ class Place:
             return Places.CSO_DISKORDIA.value
         if re.search(r"Sala Clamores", name, flags=re.I) and re.search(r"Alburquerque.*14", address, flags=re.I):
             return Places.SALA_CLAMORES.value
-        if re.search(r"casa del barrio.*carabanchel", name, flags=re.I):
+        if re.search(r"casa del barrio.*carabanchel", name_address, flags=re.I):
             return Places.CASA_DEL_BARRIO_CARABANCHEL.value
         if re.search(r"la an[oó]nima", name, flags=re.I) and re.search(r"Embajadores.*166", address, flags=re.I):
             return Places.LA_ANONIMA.value
@@ -1134,4 +1135,17 @@ class Places(Enum):
         address="Calle de Fuencarral, 125, Chamberí, 28010 Madrid",
         latlon="40.43097078426574,-3.7034094230177153",
         zone="Tribunal"
+    )
+    YELMO_IDEAL = Place(
+        name="Yelmo Ideal",
+        map="https://maps.app.goo.gl/iFeMwTPkVTBkejms9",
+        address="Calle del Dr Cortezo, 6, Centro, 28012 Madrid",
+        latlon="40.41399410605028,-3.703789357721422",
+        zone="Sol"
+    )
+    CC_PACO_RABAL = Place(
+        name="centro cultural paco rabal",
+        map="https://maps.app.goo.gl/t1j7bTVn51zUFkk49",
+        address="C. de Felipe de Diego, 13, Puente de Vallecas, 28018 Madrid",
+        latlon="40.380009618423806,-3.6606199401143384"
     )

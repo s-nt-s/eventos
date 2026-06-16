@@ -131,6 +131,7 @@ class FilmAffinityApi:
             (170495, 2026, "Aminetu"),
             (789723, 2026, "Backrooms"),
             (158471, 2026, "Viva"),
+            (365421, 2025, re.compile(r"Flamingos\b.*\bLa vida despu[eé]s del meteorito")),
         ):
             if _is_match(titles, year, y, *tt):
                 return k

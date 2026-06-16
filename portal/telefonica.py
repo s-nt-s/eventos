@@ -221,6 +221,12 @@ class Telefonica(Base):
             return Category.MATERNITY
         if re_or(name, "^encuentro con", flags=re.I):
             return find_book_category(name, plain_description, Category.CONFERENCE)
+        if re_or(
+            name,
+            r"Proyecci[óo]n( del)? documental",
+            flags=re.I
+        ):
+            return Category.CINEMA
         if cat == "exposicion":
             return Category.EXPO
         if re_or(

@@ -174,11 +174,11 @@ def _rm_prefix():
         r"Pel[íi]cula",
         r"Visita(?: a la exposici[oó]n| comentada| guiada)?",
         r"Lectura dramatizada",
-        r"Presentación del libro",
+        r"Presentaci[oó]n(?: del| de los)? libros?",
         r"Cinef[oó]rum(?:(?: de)? (?:Isabel S[aá]nchez|Esqueria))?",
         r"Madrid, plató de cine",
         r"Conferencia(?: y audiovisual)?",
-        r"Proyecci[oó]n(?: del documental| de la pel[ií]cula)?",
+        r"Proyecci[oó]n(?:(?: del)? documental|(?: de la) pel[ií]cula)?",
         r"Exposici[oó]n",
         r"Danza",
         r"Noches? de Cl[aá]sicos?",
@@ -209,7 +209,7 @@ def _rm_sufix():
     SEP = r"[–\-\.\|]"
     SUFIX_1 = "|".join([
         r"[OÓ]h!pera Summer \d+",
-        r"(?:Sede:? )?(?:Sala Berlanga|centro cultural Paco Rabal|Sala Equis|Academia de Cine|Cine Dor[ée])",
+        r"(?:Sede:? )?(?:Sala Berlanga|centro cultural Paco Rabal|Sala Equis|Academia de Cine|Cine Dor[ée]|Yelmo Ideal)",
         r"(?:Sede:? )?Fundación Casa de M[eé]xico(?: en España)",
         r"(?:Actividades )?(?:viernes|s[aá]bado|domingo) (?:tarde|mañana)",
         r"Las tertulias de Eirene Editorial",
@@ -279,7 +279,6 @@ def _sub_1():
         r"(Red de Escuelas) Municipales del Ayuntamiento de Madrid",
         r"(Piano City) (?:Madrid *'?\d+|Madrid|'?\d+)"
         r"(Asociación de Jubilados) (?:del )?Ayuntamiento(?: de Madrid)?",
-        r"^[a-zA-ZáéÁÉ]+ con Historia[\.\s]+([vV]isitas guiadas tem[aá]ticas a la colecci[oó]n)[\.\s]+[a-zA-Z]+",
         r"(¿|¡|«|“|‘|`|\(|\[)\s+",
         r"\s+(\?|\!|»|”|’|´|\)|\]|\.|,|;|:)",
     ])
@@ -307,7 +306,7 @@ def clean_name(name: str):
         name = _rm_prefix().sub("", name)
         name = _rm_sufix().sub("", name)
         name = _rm_quote().sub(r"\1", name)
-        name = _sub_1().sub(r"\1", name)
+        name = _sub_1().sub(lambda m: next(g for g in m.groups() if g is not None), name)
         name = capitalize(name)
         if len(name) < 2:
             name = bak[-1]

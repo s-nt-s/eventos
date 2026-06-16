@@ -273,6 +273,7 @@ class Session(NamedTuple):
 
 
 KO_IMG = (
+    'https://cdn.lacasaencendida.es/storage/40902/conversions/QBjURc0yKs3fbh9cx3B8Gy88rFTwAx-metaQ29tcHJlbmRlciA1LmpwZw==--detail.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Agata/Eventos/ficheros/D%C3%ADadeEuropa_Cartel%20peliculas.png',
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Bohemios/ficheros/D%C3%ADadeEuropa_Cartel%20peliculas%20.png',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',

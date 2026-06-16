@@ -61,6 +61,7 @@ ICS_BUSY = safe_load_ics("ICS_BUSY")
 ICS_BUSY_VILLAVERDE = safe_load_ics("ICS_BUSY_VILLAVERDE")
 ICS_BUSY_ALCALA = safe_load_ics("ICS_BUSY_ALCALA")
 KO_CP = (
+    28018,
     28029,
     28033,
     28223,

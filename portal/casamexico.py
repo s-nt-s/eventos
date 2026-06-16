@@ -3,7 +3,7 @@ from aiohttp import ClientResponse
 from core.web import buildSoup, get_text, Tag
 from core.event import Category, Event, CategoryUnknown, Session, FIX_EVENT, find_book_category
 from core.place import Places
-from core.util import get_obj, re_or, find_euros, to_uuid, get_main_value, get_domain, clean_url
+from core.util import get_obj, re_or, find_euros, to_uuid, get_main_value, get_domain, clean_url, plain_text
 from typing import NamedTuple, Optional
 from core.cache import TupleCache
 from collections import defaultdict
@@ -257,10 +257,11 @@ async def rq_to_page(r: ClientResponse):
     div = soup.select_one("div.e-con-inner")
     director = None
     year = None
-    price = find_euros(get_text(_find_div_img(
+    price_str = get_text(_find_div_img(
         div,
         "https://www.casademexico.es/wp-content/uploads/2023/12/precio.svg"
-    )))
+    ))
+    price = find_euros(price_str)
     public = get_text(_find_div_img(
         div,
         "https://www.casademexico.es/wp-content/uploads/2023/12/publico.svg"
@@ -273,7 +274,10 @@ async def rq_to_page(r: ClientResponse):
     description = None
     links: list[str] = []
     evenbrite: list[str] = []
-    if price is None:
+    if price_str in ("Por definir", ):
+        logger.warning(f"price={price_str} {r.url}")
+        price = 9999
+    elif price is None:
         logger.warning(f"NOT FOUND price {r.url}")
     if div:
         nodeDesc = div.select_one("div.elementor-element.elementor-widget.elementor-widget-text-editor")
@@ -412,7 +416,7 @@ class CasaMexico(Base):
                 img=i.img,
                 duration=duration,
                 sessions=sessions,
-                place=Places.CASA_MEXICO.value,
+                place=self.__find_place(i),
                 cycle=cycle
             )
             if e.category == Category.CINEMA and (i.director or i.year):
@@ -439,6 +443,40 @@ class CasaMexico(Base):
                 e = e.merge(more=get_main_value(e_more[e.url]))
             events.add(e)
         return tuple(sorted(events))
+
+    def __find_place(self, i: Item):
+        place = plain_text(
+            re.sub(r"\s+-\s+", " ", (i.place or '').lower())
+        )
+        name_place = plain_text(
+            re.sub(r"^.*\s+-\s+(sede:?\s+)?", "", i.name, flags=re.I)
+        )
+        if place in (
+            "fundacion casa de mexico en españa",
+            "salon de usos multiples",
+            "cine auditorio",
+            "sala de juntas",
+        ):
+            return Places.CASA_MEXICO.value
+        plc = {
+            "sala berlanga": Places.SALA_BERLANGA,
+            "cine dore": Places.DORE,
+            "sala equis": Places.SALA_EQUIS,
+            "yelmo ideal": Places.YELMO_IDEAL,
+            "mk2 cibeles de cine": Places.CENTRO_CENTRO,
+            "centro cultural paco rabal": Places.CC_PACO_RABAL,
+            "cine estudio del circulo de bellas artes": Places.CIRCULO_BELLAS_ARTES
+        }.get(place) or {
+            "academia de cine": Places.ACADEMIA_CINE,
+            "centro cultural paco rabal": Places.CC_PACO_RABAL,
+            "fundacion casa de mexico en españa": Places.CASA_MEXICO,
+            "sala equis": Places.SALA_EQUIS,
+            "sala berlanga": Places.SALA_BERLANGA
+        }.get(name_place)
+        if plc is None:
+            logger.warning(f"LUGAR DESCONOCIDO place={place} name={i.name}")
+            return Places.CASA_MEXICO.value
+        return plc.value
 
     def __get_cycle_name(self, i: Item):
         name = _clean_name(i.name)
