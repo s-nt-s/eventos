@@ -334,6 +334,8 @@ class MadConvoca(Base):
                 return True
             return False
 
+        if isLibreria and re_or(name, "poes[íi]as?", flags=re.I):
+            return Category.POETRY
         if re_or(
             txt_desc,
             "debatiremos sobre la novela",
@@ -552,16 +554,13 @@ class MadConvoca(Base):
         ):
             return Category.READING_CLUB
 
-        if isLibreria:
-            if re_or(name, "poes[íi]aa?", flags=re.I):
-                return Category.POETRY
-            if re_or(
-                name,
-                "presentaci[oó]n",
-                "El libro analiza",
-                flags=re.I
-            ):
-                return Category.LITERATURE
+        if isLibreria and re_or(
+            name,
+            "presentaci[oó]n",
+            "El libro analiza",
+            flags=re.I
+        ):
+            return Category.LITERATURE
 
         if re_or(name, "Presentaci[óo]n del libro", to_log=e.id, flags=re.I):
             return Category.LITERATURE

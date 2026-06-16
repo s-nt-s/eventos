@@ -1147,6 +1147,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"Este poemario (explora|presenta)",
         r"obra de poes[ií]a",
         r"[aá]lbum po[eé]tico",
+        r"narrativa, poes[íi]a",
         flags=re.I
     ):
         return Category.POETRY
@@ -1212,9 +1213,17 @@ def find_book_category(name: str, description: str, default: Category):
         r"Ketty Garat",
         r"Raad Salam Naaman",
         r"Ana Palacio",
+        r"Eduardo Aguirre",
         flags=re.I
     ):
         return Category.SPAM
+
+    if re_or(
+        txt,
+        r"narrativas fotogr[aá]ficas y ensayos visuales",
+        flags=re.I
+    ):
+        return Category.PHOTO
 
     if not re_or(
         txt,
