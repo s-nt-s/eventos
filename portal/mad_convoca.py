@@ -508,6 +508,7 @@ class MadConvoca(Base):
 
         if re_or(
             txt_desc,
+            r"Damos la charlita",
             "Charla cr[ií]tica",
             "charla sobre",
             "vendr[aá]n a conversar sobre",

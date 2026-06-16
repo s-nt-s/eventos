@@ -714,6 +714,12 @@ class MadridDestino(Base):
             flags=re.I
         ):
             return Category.THEATER
+        if re_or(
+            desc,
+            "Mesa redonda",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
 
         if is_cat("pintura", "ilustración", "fotografía", "exposición"):
             for r in e.get('rooms', []):

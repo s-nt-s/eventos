@@ -340,6 +340,8 @@ class Place:
             return Places.CSO_ROSA.value
         if re_and(self.address, r"CNT", "embajadores", flags=re.I):
             return Places.CNT_EMBAJADORES.value
+        if re_and(self.name, "museo", "thyssen", flags=re.I):
+            return Places.MUSEO_THYSSEN.value
         if re_and(self.name, "museo", "prado", flags=re.I):
             return Places.MUSEO_PRADO.value
         if re_and(self.name, "demo", "Swing", "Lab", flags=re.I) and re_and(self.address, "Magdalena", flags=re.I):
@@ -603,6 +605,13 @@ class Places(Enum):
         latlon="40.427566448169316,-3.6939387798888634",
         zone='Alonso Martinez',
         map="https://maps.app.goo.gl/qV55n7KZ4fXNCg8dA",
+    )
+    MUSEO_THYSSEN = Place(
+        name="Museo Thyssen Bornemisza",
+        address="P.º del Prado, 8, Centro, 28014 Madrid",
+        latlon="40.41631015956411,-3.695021959912201",
+        zone='Paseo del Pardo',
+        map="https://maps.app.goo.gl/QzR7tKDsfNR6CeoE6",
     )
     MUSEO_PRADO = Place(
         name="Museo del Prado",
