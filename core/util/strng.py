@@ -342,7 +342,7 @@ DIRECTORS = list(map(_escape, map(str.lower, [
     "Robert Rodríguez",
     "Joann Sfar",
     'Jean-Claude Flamand-Barny',
-    'Sébastien Lifshitz'
+    'Sébastien Lifshitz',
     'Gilles Perret',
     'Stéphane Demoustier',
     'Sophie Deraspe',
