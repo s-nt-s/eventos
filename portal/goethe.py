@@ -418,6 +418,12 @@ class Goethe(Base):
         ):
             return Category.EXPO
         if re_or(
+            et,
+            r"fiesta",
+            flags=re.I
+        ):
+            return Category.PARTY
+        if re_or(
             i['subheadline'],
             r'Exposici[óo]nes?',
             flags=re.I
