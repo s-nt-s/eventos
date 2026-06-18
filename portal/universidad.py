@@ -497,6 +497,7 @@ class Universidad(Base):
             r"UN REGRESO DE CINE",
             r"Cine foro",
             r"cinef[oó]rum",
+            r"Muestra( Internacional)? de Cine",
             flags=re.I
         ):
             return Category.CINEMA
@@ -562,7 +563,12 @@ class Universidad(Base):
                 flags=re.I
             ):
                 return Category.CONFERENCE
-            if re_or(c, "Producci[oó]n audiovisual", flags=re.I):
+            if re_or(
+                c,
+                r"Producci[oó]n audiovisual",
+                r"Audiovisual production",
+                flags=re.I
+            ):
                 return Category.CINEMA
             if re_or(c, "Club de lectura", flags=re.I):
                 return Category.READING_CLUB

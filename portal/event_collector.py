@@ -73,6 +73,7 @@ KO_CP = (
     28023,
     28020,
     28011,
+    28027,
 )
 
 
@@ -204,6 +205,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         r"Vic[aá]lvaro",
         r", Barcelona(, \d+)$",
         r"M[oó]stoles$",
+        r"Rivas-Vaciamadrid",
         flags=re.I
     ):
         return False

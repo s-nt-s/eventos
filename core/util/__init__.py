@@ -422,6 +422,7 @@ def find_euros(*prices: Union[str, None]) -> None | float | int:
             r"^\s*(gratuito|gratis)( (con )?previo registro)?\s*$",
             r"^gratis, ",
             r"(gratuit[ao] (para|con)|(entrada|acceso) (gratuit[oa]|libre)|actividad(es)? gratuitas?)",
+            r"gratuito previa descarga",
             r"Taller(es)? gratuitos?",
             r"GratuitoReserva",
             flags=re.I
