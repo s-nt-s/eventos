@@ -6,10 +6,9 @@ from urllib.parse import urlparse, parse_qs, unquote_plus
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import NamedTuple, Optional
-from core.util import to_uuid, re_and
+from core.util import to_uuid, re_and, re_or
 from core.fetcher import Getter
 from aiohttp import ClientResponse
-from core.cache import TupleCache
 from functools import cached_property
 from portal.base import Base
 import re
@@ -113,8 +112,15 @@ class FundacionMarch(Base):
 
     def _get_events(self):
         all_events: set[Event] = set()
-        self.__web.get(FundacionMarch.URL)
-        for div in self.__web.soup.select("div.snippet"):
+        soup = self.__web.get(FundacionMarch.URL)
+        title = get_text(soup.select_one("title"))
+        if re_or(
+            title,
+            "Access denied",
+            flags=re.I
+        ):
+            raise PermissionError(title)
+        for div in soup.select("div.snippet"):
             ev = self.__div_to_event(div)
             if ev is not None:
                 all_events.add(ev)

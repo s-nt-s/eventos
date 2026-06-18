@@ -87,7 +87,8 @@ def get_events(source: Base | Type[Base]):
     for c, e in {
         (SalaEquis, ReinaSofia): (ConnectTimeout,),
         (CasaMexico, ): (TimeoutError,),
-        (MadridEs, ): (ClientConnectionError, )
+        (MadridEs, ): (ClientConnectionError, ),
+        (FundacionMarch, ): (PermissionError, )
     }.items():
         if isinstance(source, c):
             return source.safe_get_events(*e)
