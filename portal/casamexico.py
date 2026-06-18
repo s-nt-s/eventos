@@ -19,7 +19,8 @@ logger = logging.getLogger(__name__)
 MONTHS = ('ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic')
 RE_MONTHS = r"(" + "|".join(map(str.capitalize, MONTHS)) + r")"
 RE_DATE_1 = re.compile(r"^(\d+) de " + RE_MONTHS + r" de (\d+)[·\s]+(\d+):(\d+)\s*-\s*(\d+):(\d+)$")
-RE_DATE_2 = re.compile(r"^Del (\d+) de "+RE_MONTHS+r"\S* al (\d+) de "+RE_MONTHS+r"\S* de (\d+)$")
+RE_DATE_2 = re.compile(r"^Del (\d+) de "+ RE_MONTHS + r"\S* al (\d+) de "+RE_MONTHS+r"\S* de (\d+)$")
+RE_DATE_3 = re.compile(r"^(\d+) de "+ RE_MONTHS + r"\S* de (\d+)$")
 re_sp = re.compile(r"\s+")
 MAX_YEAR = datetime.now().year + 1
 
@@ -129,6 +130,12 @@ def _to_datetimes(f: str):
         y = int(m.group(5))
         a = datetime(y, MONTHS.index(m.group(2).lower())+1, int(m.group(1)), 0, 0)
         z = datetime(y, MONTHS.index(m.group(4).lower())+1, int(m.group(3)), 23, 59)
+        return a, z
+    m = RE_DATE_3.match(f)
+    if m is not None:
+        y = int(m.group(3))
+        a = datetime(y, MONTHS.index(m.group(2).lower())+1, int(m.group(1)), 0, 0)
+        z = a.replace(hour=23, minute=59)
         return a, z
     return None
 
