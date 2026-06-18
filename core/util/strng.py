@@ -341,6 +341,13 @@ DIRECTORS = list(map(_escape, map(str.lower, [
     "Álvaro Hernández Blanco",
     "Robert Rodríguez",
     "Joann Sfar",
+    'Jean-Claude Flamand-Barny',
+    'Sébastien Lifshitz'
+    'Gilles Perret',
+    'Stéphane Demoustier',
+    'Sophie Deraspe',
+    'Stefan Liberski',
+    'Mehdi Idir y Grand Corps Malade',
 ])))
 
 
@@ -351,9 +358,12 @@ def _re_director(*directors):
             DIRECTORS.append(d)
 
     dr = "|".join(DIRECTORS)
-    re1 = re.compile(r"^\s*(?P<director>"+dr+r")\s*-\s*(?P<title>.+)\s*$", flags=re.I)
-    re2 = re.compile(r"^(?P<title>.+?)\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I)
-    return re1, re2
+    return (
+        re.compile(r"^\s*(?P<director>"+dr+r")\s*-\s*(?P<title>.+)\s*$", flags=re.I),
+        re.compile(r"^'\s*(?P<title>.+?)\s*'\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I),
+        re.compile(r"^«\s*(?P<title>.+?)\s*»\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I),
+        re.compile(r"^(?P<title>.+?)\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I)
+    )
 
 
 def find_director(name: str, *directors: str):
