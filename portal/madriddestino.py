@@ -691,6 +691,7 @@ class MadridDestino(Base):
             r"^concierto de",
             r"banda sinf[oó]nica",
             r"orquesta y coro",
+            r"piano ?city",
             to_log=id,
             flags=re.I
         ) or re_or(
@@ -733,6 +734,8 @@ class MadridDestino(Base):
         if get_domain(more) == "teatroespanol.es":
             return Category.THEATER
 
+        if more and more.startswith("https://www.centrocentro.org/musica/"):
+            return Category.MUSIC
         if more and more.startswith("https://www.cinetecamadrid.com/programacion/"):
             soup = WEB.get_cached_soup(more)
             fCat = get_text(soup.select_one("span.fCategory a[hreflang='es']"))
