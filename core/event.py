@@ -777,6 +777,8 @@ class Event:
         if self.category == Category.CONFERENCE:
             if re_or(self.name, "Ciclo conferencias Maqueta León Gil de Palacio", flags=re.I):
                 return "Maqueta León Gil de Palacio"
+        if urls.intersection({"https://pianocitymadrid.es/", }) or re_or(self.name, "piano ?city", flags=re.I):
+            return "Piano City"
         if urls.intersection((
             "https://www.centrocentro.org/musica/limo-2026",
             "https://www.centrocentro.org/musica/kali-malone",
