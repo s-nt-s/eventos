@@ -272,7 +272,12 @@ class AteneoMadrid(Base):
             flags=re.I
         ):
             return Category.POETRY
-
+        if re_or(
+            e.SUMMARY,
+            r"astrolog[ií]a",
+            flags=re.I
+        ):
+            return Category.SPAM
         if re_and(
             e.SUMMARY,
             "presentaci[oó]n del?",
