@@ -589,6 +589,8 @@ class CasaMexico(Base):
         if re_or(
             i.name,
             "^Visitas Xtraordinarias",
+            r"Altar de muertos",
+            flags=re.I
         ):
             return Category.VISIT
         if re_or(

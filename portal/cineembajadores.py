@@ -52,11 +52,11 @@ def _find_place(p: Tag):
 class CineEmbajadores(Base):
     def __init__(self, cache: str | bool = True):
         super().__init__(cache=cache)
-        self.web = Web()
+        self.__web = Web(verify=False)
 
     def _get_events(self):
         events: set[Event] = set()
-        soup = self.web.get_soup("https://cinesembajadores.es/madrid/")
+        soup = self.__web.get_soup("https://cinesembajadores.es/madrid/")
         for div in soup.select("li.movie"):
             evs = self.__div_to_event(div)
             if evs is not None and len(evs):

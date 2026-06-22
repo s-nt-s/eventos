@@ -354,7 +354,8 @@ class MadridDestino(Base):
                 category=self.__find_category(url, id, e, info, more),
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(url, e, soup),
-                more=None if more in KO_MORE else more
+                more=None if more in KO_MORE else more,
+                cycle=self.__find_cycle(url, id, e, info, more)
             )
             ev = self.__complete(ev, info)
             events.add(ev)
@@ -507,6 +508,17 @@ class MadridDestino(Base):
             if isinstance(i, dict) and i.get('id') == id:
                 return i
         logger.warning(str(FieldNotFound(f"{k}.id={id}", self.data.state[k])))
+
+    def __find_cycle(self, url: str, id: str, e: Dict, info: Dict, more: str | None):
+        psub = plain_text(e.get('subtitle')) or ''
+        pt = plain_text(e['title']) or ''
+        desc = info.get('description') or ''
+        if re_or(
+            f"{pt} {psub} {desc}",
+            r"Piano[\-\s]*City",
+            flags=re.I
+        ):
+            return "Piano City"
 
     def __find_category(self, url: str, id: str, e: Dict, info: Dict, more: str | None):
         cats: Set[str] = set()

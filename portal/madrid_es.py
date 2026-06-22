@@ -465,6 +465,12 @@ class MadridEs(Base):
         return i.event.title
 
     def __find_cycle(self, cat: Category, place: Place, i: ApiInfo):
+        if re_or(
+            i.event.description,
+            r"piano[\-\s]*city",
+            flags=re.I
+        ):
+            return "Piano City"
         tardes_romanas = "Tardes romanas"
         if cat == Category.CONFERENCE:
             if re_or(
@@ -813,6 +819,7 @@ class MadridEs(Base):
             r"Jardines del Campo del Moro",
             r"Parque Enrique Tierno Galv[aá]n",
             r"^RUTA\s*/",
+            (r"parque", r"itinerario",),
             flags=re.I
         ):
             return Category.VISIT

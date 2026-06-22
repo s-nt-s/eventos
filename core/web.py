@@ -122,7 +122,7 @@ class WebException(Exception):
 
 class Web:
     def __init__(self, refer=None, verify=True):
-        self.s = buildScraper()
+        self.s = buildSession() if verify is False else buildScraper()
         self.s.headers = default_headers
         self.response = None
         self.soup = None

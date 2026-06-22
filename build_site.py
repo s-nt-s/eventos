@@ -352,6 +352,7 @@ def set_icons(html: str, **kwargs):
         dom = get_domain(href)
         dom = dom.rsplit(".", 1)[0]
         ico = {
+            "pianocitymadrid": "https://pianocitymadrid.es/wp-content/uploads/2024/05/cropped-PCM_LOGO_DEF-2-32x32.png",
             "autocines": "https://autocines.com/wp-content/uploads/2021/01/cropped-favicon-32x32-1-32x32.png",
             "filmaffinity": "https://www.filmaffinity.com/favicon.png",
             "atrapalo": "https://www.atrapalo.com/favicon.ico",

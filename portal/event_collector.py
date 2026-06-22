@@ -625,35 +625,27 @@ class EventCollector:
         return tuple(e.fix_type().fix() for e in ok_events)
 
     def __dedup_fusion(self, ok_events: set[Event]):
-        def _mk_key_madrid_music(e: Event):
-            if e.category != Category.MUSIC:
+        def _mk_key_piano_city(e: Event):
+            re_pianio = re.compile(r"\bPiano[\-\s]*city", flags=re.I)
+            if not any((
+                re_pianio.search(e.cycle or ''),
+                re_pianio.search(e.name or ''),
+                re_pianio.search(" ".join(e.iter_urls())),
+            )):
                 return None
-            doms = set(map(get_domain, (e.url, e.more)))
-            doms.discard(None)
-            if len(doms) != 1 or doms.pop() != "madrid.es":
-                return None
-
-            return (e.more or e.url, e.place, e.price)
+            return (e.category, e.place, e.price)
 
         for evs in find_duplicates(
             ok_events,
-            _mk_key_madrid_music
+            _mk_key_piano_city
         ):
             for e in evs:
                 ok_events.remove(e)
 
-            more = evs[0].more
-            _id_ = None
-            name = None
-            if more and get_domain(more) == "madrid.es":
-                _id_ = MadridEs.get_id(more)
-                name = MadridEs.get_name(more)
-
             e = Event.fusion(
                 *evs,
-                id=_id_,
-                url=more,
-                name=name
+                more="https://pianocitymadrid.es/",
+                name="Piano City"
             )
             ok_events.add(e)
 

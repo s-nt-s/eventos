@@ -208,6 +208,7 @@ def _rm_prefix():
 def _rm_sufix():
     SEP = r"[–\-\.\|]"
     SUFIX_1 = "|".join([
+        r"Muestra '?Raquel P[eé]rez Formaci[oó]n Actoral'?",
         r"[OÓ]h!pera Summer \d+",
         r"(?:Sede:? )?(?:Cine Estudio CBA|Sala Berlanga|centro cultural Paco Rabal|Sala Equis|Academia de Cine|Cine Dor[ée]|Yelmo Ideal)",
         r"(?:Sede:? )?Fundación Casa de M[eé]xico(?: en España)",

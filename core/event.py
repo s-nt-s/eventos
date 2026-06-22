@@ -648,7 +648,14 @@ class Event:
         return tuple(sorted(mrg_events))
 
     @staticmethod
-    def fusion(*evs: "Event", name: str = None, id: str = None, url: str = None, also_in: tuple[str, ...] = None):
+    def fusion(
+        *evs: "Event",
+        name: str = None,
+        id: str = None,
+        url: str = None,
+        more: str = None,
+        also_in: tuple[str, ...] = None
+    ):
         if len(evs) == 0:
             raise ValueError("len(events)==0")
         if len(evs) == 1:
@@ -688,14 +695,14 @@ class Event:
             url = get_main_value(u for u in f_info.seen_in if u not in ss_url)
 
         category = get_main_value(f_info.categories, default=Category.UNKNOWN)
-        no_more = category in (Category.CINEMA, )
-        more = None
+        no_more = more is None and category in (Category.CINEMA, )
         st_more = set(f_info.mores)
-        if len(st_more) == 1:
-            more = st_more.pop()
-            no_more = False
-        elif not no_more:
-            more = get_main_value(f_info.mores)
+        if more is None:
+            if len(st_more) == 1:
+                more = st_more.pop()
+                no_more = False
+            elif not no_more:
+                more = get_main_value(f_info.mores)
         if also_in is None:
             st_also_in = set(f_info.seen_in)
             st_also_in.discard(url)
