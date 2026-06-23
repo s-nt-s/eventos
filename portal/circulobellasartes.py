@@ -263,6 +263,7 @@ def _find_category(url: str, title: str, soup: Tag):
         r"la conferencia",
         r"mesa de (debate|di[aá]logo)",
         r"la mesa de di[aá]logo abordar[aá]",
+        r"Una conversación entre",
         r"l[aox@]s ponentes (abordan|van)",
         ("programa", "modera"),
         flags=re.I

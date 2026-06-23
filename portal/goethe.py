@@ -425,6 +425,12 @@ class Goethe(Base):
             return Category.PARTY
         if re_or(
             i['subheadline'],
+            "RAVE JAM",
+            flags=re.I
+        ):
+            return Category.MUSIC
+        if re_or(
+            i['subheadline'],
             r'Exposici[óo]nes?',
             flags=re.I
         ):
