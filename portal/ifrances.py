@@ -215,19 +215,24 @@ class InstitutoFrances(Base):
                 if v:
                     return v
         d = tuple(
-            x for x in 
-            map(str.strip, re.split(r"\s*,\s*", _gField(r"DIRECCI[OÓ]N") or ''))
+            x for x in
+            map(str.strip, re.split(r"\s*,\s*", _gField(r"(DIRECCI[OÓ]N|Director)") or ''))
             if x
         )
-        t = _gField(r"T[ÍI]TULO ORIGINAL")
-        y: set[int] = set()
-        for x in map(int, re.findall(r"(\d+)\s*/", desc)):
-            if x > 1900 and x <= MAX_YEAR:
-                y.add(x)
+        t = _gField(r"(T[ÍI]TULO ORIGINAL|T[ií]tulo Original)")
+        yr = _gField(r"Año de Producci[oó]n")
+        if yr and yr.isdecimal():
+            yr = int(yr)
+        else:
+            y: set[int] = set()
+            for x in map(int, re.findall(r"(\d+)\s*/", desc)):
+                if x > 1900 and x <= MAX_YEAR:
+                    y.add(x)
+            yr = y.pop() if len(y) == 1 else None
         e = e.merge(
             director=d,
             aka=(e.name, t) if t else tuple(),
-            year=y.pop() if len(y) == 1 else None,
+            year=yr,
         )
         return e
 
