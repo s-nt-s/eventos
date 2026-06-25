@@ -133,6 +133,15 @@ class FilmAffinityApi:
             (158471, 2026, "Viva"),
             (365421, 2025, re.compile(r"Flamingos\b.*\bLa vida despu[eé]s del meteorito")),
             (571201, 2024, "Fanon"),
+            (144050, 2025, "En el camino"),
+            (822006, 2021, "Canta 2"),
+            (486640, 2018, "Bohemian Rhapsdy"),
+            (925667, 2025, "La copia perfecta"),
+            (753623, 2024, "Wicked"),
+            (665782, 2025, "A la cara"),
+            (689956, 2016, "La La Land"),
+            (336014, 2008, "Mamma Mía!"),
+            (255392, 2001, "Moulín Rouge"),
         ):
             if _is_match(titles, year, y, *tt):
                 return k

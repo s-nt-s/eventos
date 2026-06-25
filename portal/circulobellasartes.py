@@ -7,7 +7,6 @@ import re
 from datetime import date, datetime
 from core.fetcher import Getter
 from aiohttp import ClientResponse
-from core.cache import TupleCache
 from core.md import MD
 import logging
 from portal.base import Base
@@ -251,6 +250,7 @@ def _find_category(url: str, title: str, soup: Tag):
         r"La (pr[oó]xima )?(presentaci[oó]n|publicaci[óo]n) del libro",
         r"El libro re[uú]ne textos",
         r"publicaci[oó]n de su libro",
+        r"A partir del libro de",
         flags=re.I
     ):
         return find_book_category(full_title, desc, Category.LITERATURE)

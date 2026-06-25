@@ -1,6 +1,6 @@
 from core.web import Web, get_text, Tag
 from functools import cached_property
-from core.cache import Cache, TupleCache
+from core.cache import Cache
 from urllib.parse import urlencode, urljoin
 from core.util import parse_obj, re_or
 from core.event import Event, Category, CategoryUnknown, Session, Place, Cinema
@@ -284,6 +284,7 @@ class InstitutoFrances(Base):
             if re_or(
                 n,
                 "cine",
+                "Preestreno",
                 flags=re.I
             ):
                 return Category.CINEMA
