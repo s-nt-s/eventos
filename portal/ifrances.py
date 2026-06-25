@@ -216,10 +216,10 @@ class InstitutoFrances(Base):
                     return v
         d = tuple(
             x for x in
-            map(str.strip, re.split(r"\s*,\s*", _gField(r"(DIRECCI[OÓ]N|Director)") or ''))
+            map(str.strip, re.split(r"\s*,\s*", _gField(r"(?:DIRECCI[OÓ]N|Director)") or ''))
             if x
         )
-        t = _gField(r"(T[ÍI]TULO ORIGINAL|T[ií]tulo Original)")
+        t = _gField(r"(?:T[ÍI]TULO ORIGINAL|T[ií]tulo Original)")
         yr = _gField(r"Año de Producci[oó]n")
         if yr and yr.isdecimal():
             yr = int(yr)
