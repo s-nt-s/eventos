@@ -141,7 +141,7 @@ class FilmAffinityApi:
             (665782, 2025, "A la cara"),
             (689956, 2016, "La La Land"),
             (336014, 2008, "Mamma Mía!"),
-            (255392, 2001, "Moulín Rouge"),
+            (255392, 2001, re.compile(r"Moul[ií]n Rouge")),
         ):
             if _is_match(titles, year, y, *tt):
                 return k
