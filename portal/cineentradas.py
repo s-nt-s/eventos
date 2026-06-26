@@ -106,6 +106,8 @@ class CineEntradas(Base):
         logger.debug(root)
 
         def __get(*urls) -> dict:
+            if len(urls) == 0:
+                raise ValueError()
             slc1 = 'script[type="application/ld+json"]'
             slc2 = '#__NUXT_DATA__'
             w = Web()
@@ -124,7 +126,13 @@ class CineEntradas(Base):
                         for i in js:
                             if isinstance(i, str) and i.startswith('{"@context":'):
                                 return json.loads(i)
-            raise WebException(f"No se pudo obtener el JSON de {urls[-1]}")
+            url = urls[-1]
+            h1 = get_text(w.soup.select_one("h1"))
+            if h1 in (
+                "Esta página no está disponible.",
+            ):
+                raise PermissionError(f"{h1} {url}")
+            raise WebException(f"No se pudo obtener el JSON de {url}")
 
         js = __get(
             root,
