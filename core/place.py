@@ -553,6 +553,16 @@ class Place:
             return Places.BIBLIOTECA_HISTORICA.value
         if re_or(
             name,
+            r"sala (13|trece) rosas",
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "L[oó]pez de Vega 38",
+            flags=re.I
+        )):
+            return Places.CCOO.value
+        if re_or(
+            name,
             r"casa asia",
             flags=re.I
         ) and (not address or re_or(
@@ -1144,8 +1154,14 @@ class Places(Enum):
         zone="Sol"
     )
     CC_PACO_RABAL = Place(
-        name="centro cultural paco rabal",
+        name="Centro cultural Paco Rabal",
         map="https://maps.app.goo.gl/t1j7bTVn51zUFkk49",
         address="C. de Felipe de Diego, 13, Puente de Vallecas, 28018 Madrid",
         latlon="40.380009618423806,-3.6606199401143384"
+    )
+    CCOO = Place(
+        name="CC.OO.",
+        map="https://maps.app.goo.gl/zH6KttgRKuEvtem97",
+        address="C. de Lope de Vega, 38, 5°, Centro, 28014 Madrid",
+        latlon="40.41377003143784,-3.6950476131448333"
     )
