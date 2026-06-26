@@ -142,6 +142,9 @@ class FilmAffinityApi:
             (689956, 2016, "La La Land"),
             (336014, 2008, "Mamma Mía!"),
             (255392, 2001, re.compile(r"Moul[ií]n Rouge")),
+            (584300, 2025, "Los domingos"),
+            (169465, 2025, "Incontrolable"),
+            (699169, 2025, "Los pecadores"),
         ):
             if _is_match(titles, year, y, *tt):
                 return k
