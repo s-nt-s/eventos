@@ -553,11 +553,11 @@ class Place:
             return Places.BIBLIOTECA_HISTORICA.value
         if re_or(
             name,
-            r"sala (13|trece) rosas",
+            r"sala (las )?(13|trece) rosas",
             flags=re.I
         ) and (not address or re_or(
             address,
-            "L[oó]pez de Vega 38",
+            r"L[oó]pez de Vega 38",
             flags=re.I
         )):
             return Places.CCOO.value
