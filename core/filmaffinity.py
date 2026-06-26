@@ -145,6 +145,8 @@ class FilmAffinityApi:
             (584300, 2025, "Los domingos"),
             (169465, 2025, "Incontrolable"),
             (699169, 2025, "Los pecadores"),
+            (650623, 2026, "México 86"),
+            (445332, 2026, "Corredora"),
         ):
             if _is_match(titles, year, y, *tt):
                 return k
