@@ -194,8 +194,8 @@ async def rq_to_items(r: ClientResponse):
             if t and t not in tags and t not in ("privado", ):
                 tags.append(t)
         info_date = get_text(div.select_one(".info-fecha"))
-        if info_date is None:
-            logger.critical(f".info-fecha en {url} via {root}")
+        if info_date in (None, "Varias sesiones"):
+            logger.critical(f".info-fecha={info_date} en {url} via {root}")
             continue
         az = _to_datetimes(info_date)
         if az is None:
