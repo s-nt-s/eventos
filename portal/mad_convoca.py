@@ -446,6 +446,7 @@ class MadConvoca(Base):
             "Paella Republicana",
             "Comida bailable",
             "gymkhana",
+            r"Verm[uú]",
             ("Software", ("Free", "libre"), ("day", "día")),
             flags=re.I,
             to_log=e.id
