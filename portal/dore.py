@@ -117,11 +117,12 @@ class Dore(Base):
                 r"([^\(\)]+) \(([^\(\)]+)\) \(((?:19|20)\d{2})?\)"
             ):
                 for title, original, year in re.findall(r, h2):
-                    if len(title):
-                        ok = True
-                        title = re.sub(r"^y?\s+", "", title.strip())
-                        original = re.sub(r"^\s+|\s*,$", "", original.strip())
-                        yield title, original, int(year) if len(year) else None
+                    title = re.sub(r"^y?\s+", "", title.strip())
+                    original = re.sub(r"^\s+|\s*,$", "", original.strip())
+                    if len(title) == 0:
+                        continue
+                    ok = True
+                    yield title, original, int(year) if len(year) else None
             if ok is False:
                 years = set(map(int, re.findall(r"[,\(]\s*((?:20|19)\d{2})\s*\)", h2)))
                 yield h2, None, years.pop() if years else None,
@@ -133,7 +134,6 @@ class Dore(Base):
                 year=year,
                 director=tuple(director)
             )
-            print(m)
             if m not in movies:
                 movies.append(m)
 
