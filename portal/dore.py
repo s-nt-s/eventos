@@ -109,26 +109,33 @@ class Dore(Base):
 
         h2 = get_text(div.select_one("h2"))
         h2 = h2.rstrip(" .,")
-        for title, original, year in re.findall(r"([^\(\)]+)\(([^\(\)]+\s*,\s*)?((?:19|20)\d{2})?\)", h2):
-            title = re.sub(r"^y?\s+", "", title.strip())
-            original = re.sub(r"^\s+|\s*,$", "", original.strip())
+
+        def _iter():
+            ok = False
+            for r in (
+                r"([^\(\)]+)\(([^\(\)]+\s*,\s*)?((?:19|20)\d{2})?\)",
+                r"([^\(\)]+) \(([^\(\)]+)\) \(((?:19|20)\d{2})?\)"
+            ):
+                for title, original, year in re.findall(r, h2):
+                    if len(title):
+                        ok = True
+                        title = re.sub(r"^y?\s+", "", title.strip())
+                        original = re.sub(r"^\s+|\s*,$", "", original.strip())
+                        yield title, original, int(year) if len(year) else None
+            if ok is False:
+                years = set(map(int, re.findall(r"[,\(]\s*((?:20|19)\d{2})\s*\)", h2)))
+                yield h2, None, years.pop() if years else None,
+
+        for title, original, year in _iter():
             m = Movie(
                 title=title,
                 original=original if original else None,
-                year=int(year) if len(year) else None,
+                year=year,
                 director=tuple(director)
             )
+            print(m)
             if m not in movies:
                 movies.append(m)
-
-        if len(movies) == 0:
-            years = set(map(int, re.findall(r"[,\(]\s*((?:20|19)\d{2})\s*\)", h2)))
-            movies.append(Movie(
-                title=h2,
-                original=None,
-                year=years.pop() if years else None,
-                director=tuple(director)
-            ))
 
         return movies
 
@@ -201,4 +208,4 @@ class Dore(Base):
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/dore.log", log_level=(logging.DEBUG))
-    print(Dore().get_events())
+    Dore().get_events()
