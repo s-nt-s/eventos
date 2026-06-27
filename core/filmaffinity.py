@@ -147,6 +147,7 @@ class FilmAffinityApi:
             (699169, 2025, "Los pecadores"),
             (650623, 2026, "México 86"),
             (445332, 2026, "Corredora"),
+            (501691, 2024, "Furiosa: Saga Mad Max"),
         ):
             if _is_match(titles, year, y, *tt):
                 return k
