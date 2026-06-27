@@ -114,7 +114,7 @@ class Dore(Base):
             ok = False
             for r in (
                 r"([^\(\)]+)\(([^\(\)]+\s*,\s*)?((?:19|20)\d{2})?\)",
-                r"([^\(\)]+) \(([^\(\)]+)\) \(((?:19|20)\d{2})?\)"
+                r"([^\(\)]+) \(([^\(\)]+)\) \(((?:19|20)\d{2})?\)",
             ):
                 for title, original, year in re.findall(r, h2):
                     title = re.sub(r"^y?\s+", "", title.strip())

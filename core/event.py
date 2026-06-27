@@ -1196,6 +1196,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"relato de ficci[oó]n",
         r"libro de microrrelatos",
         r"novela sobre",
+        r"toca dram[oó]n",
         ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
         ("a trav[eé]s de estas ficciones", "literatura"),
         flags=re.I
