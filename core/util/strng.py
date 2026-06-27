@@ -294,10 +294,11 @@ def clean_name(name: str):
         raise ValueError(f"name must be a str, but is a {type(name)}: {name}")
     if re.search(r"Visitas? dialogadas? Matadero", name):
         return "Visita dialogada Matadero"
-    bak = ['']
+
+    bak = []
 
     name = re.sub(r"&quot;", '"', name)
-    while bak[-1] != name:
+    while len(name) >= 2 and name not in bak:
         bak.append(str(name))
         name = RE_DEDUP.sub(lambda m: m.group(0)[0], name)
         name = RE_TRIM.sub("", name)
@@ -309,11 +310,11 @@ def clean_name(name: str):
         name = _rm_quote().sub(r"\1", name)
         name = _sub_1().sub(lambda m: next(g for g in m.groups() if g is not None), name)
         name = capitalize(name)
-        if len(name) < 2:
-            name = bak[-1]
-    w1 = name[0]
-    if w1.isalpha():
-        name = w1.upper()+name[1:]
+
+    if bak and len(name) < 2:
+        name = bak[-1]
+    if name and name[0].isalpha():
+        name = name[0].upper()+name[1:]
     return name
 
 
