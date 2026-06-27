@@ -253,6 +253,7 @@ class AteneoMadrid(Base):
             r"Presentaci[oó]n del retrato",
             r"Premios FEDEPE",
             r"Gala de Esgrima",
+            r"Acto de entrega del premio",
             flags=re.I,
             to_log=e.UID
         ):

@@ -646,7 +646,9 @@ def parse_obj(
 def find_cp(s: str):
     cp: set[int] = set()
     for c in map(int, re.findall(r"\d+", s or '')):
-        if c >= 28000 and c <= 28999:
+        if (c >= 28000 and c <= 28999) or c in (
+            11403,
+        ):
             cp.add(c)
     if len(cp) == 1:
         return cp.pop()

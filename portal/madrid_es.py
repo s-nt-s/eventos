@@ -440,7 +440,10 @@ class MadridEs(Base):
             img=_first_ok_url(i.event.img, KO_IMG),
         ).fix_type()
         if isinstance(e, Cinema):
-            e = e.merge(year=self.__find_year(i))
+            e = e.merge(
+                year=self.__find_year(i),
+                director=self.__find_director(i)
+            )
         if len(e.sessions) == 1 and e.sessions[0].url is None:
             urls = set(m for m in i.event.more if m.startswith("https://eventbrite.es/e/"))
             if len(urls) == 1:
@@ -506,6 +509,16 @@ class MadridEs(Base):
         ):
             if m in urls:
                 return c
+
+    def __find_director(i: ApiInfo) -> tuple[str, ...]:
+        drc: list[str] = []
+        for d in map(str.strip, re.findall(
+            r"(?:Direcci[óo]n|Directora?):\s*([^\n\.]+)",
+            i.event.description or ""
+        )):
+            if d and d not in drc:
+                drc.append(d)
+        return tuple(drc)
 
     def __find_year(self, i: ApiInfo) -> Optional[int]:
         yrs: set[int] = set()
@@ -1096,6 +1109,8 @@ class MadridEs(Base):
             r"^Magia:",
             r"Magia o plomo",
             r"Piccola Magia",
+            r"Magia con acento",
+            r"Magia para todos",
             flags=re.I
         ):
             return Category.MAGIC
