@@ -510,7 +510,7 @@ class MadridEs(Base):
             if m in urls:
                 return c
 
-    def __find_director(i: ApiInfo) -> tuple[str, ...]:
+    def __find_director(self, i: ApiInfo) -> tuple[str, ...]:
         drc: list[str] = []
         for d in map(str.strip, re.findall(
             r"(?:Direcci[óo]n|Directora?):\s*([^\n\.]+)",
