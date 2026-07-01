@@ -1321,6 +1321,7 @@ class MadridEs(Base):
             ("fiesta", "aniversario"),
             r"Partida( [uÚ]nica)? de Rol",
             r"Fiesta de verano en",
+            ("Micro Abierto", "Karaoke"),
             flags=re.I
         ):
             return Category.PARTY

@@ -147,7 +147,7 @@ class FilmAffinityApi:
             (699169, 2025, "Los pecadores"),
             (650623, 2026, "México 86"),
             (445332, 2026, "Corredora"),
-            (501691, 2024, re.compile(r"Furiosa\b.*\bSaga Mad Max", flags=re.I)),
+            (501691, 2024, re.compile(r"Furiosa\b.*\bSaga Mad *Max", flags=re.I)),
         ):
             if _is_match(titles, year, y, *tt):
                 return k

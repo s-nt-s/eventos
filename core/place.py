@@ -325,6 +325,16 @@ class Place:
             flags=re.I
         ):
             return Places.ATENEO_MADRID.value
+        if re_or(
+            self.name,
+            "C'est la Vie",
+            flags=re.I
+        ) and re_and(
+            self.address,
+            "Cabeza,? 26",
+            flags=re.I
+        ):
+            return Places.TEATRO_C_EST_LA_VIE.value
         if re_and(self.name, "ateneo", "maliciosa", flags=re.I) and re_and(self.address, "peñuelas", flags=re.I):
             return Places.ATENEO_MALICIOSA.value
         if re_and(self.name, "espacio", flags=re.I) and re_and(self.address, "Sierra Carbonera.* 32", flags=re.I):
@@ -747,6 +757,12 @@ class Places(Enum):
         address="C. del Ánade, 10, Carabanchel, 28019 Madrid",
         latlon="40.391899629090574,-3.7310781522792906",
         map="https://maps.app.goo.gl/CkMnFa3ph4cNGDXs7"
+    )
+    TEATRO_C_EST_LA_VIE = Place(
+        name="C'Est la Vie",
+        address="C. de la Cabeza, 26, Centro, 28012 Madrid",
+        latlon="40.41196988717932, -3.7019254384563527",
+        map="https://maps.app.goo.gl/wiHxgoXvckrdqqn46"
     )
     FUNDACION_ALSELMO_LORENZO = Place(
         name="Fundación Anselmo Lorenzo",
