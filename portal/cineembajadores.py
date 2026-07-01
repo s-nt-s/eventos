@@ -174,6 +174,8 @@ class CineEmbajadores(Base):
             re.compile(r"^\s*(Reparto|Direcci[oó]n)\s*:\s*.+\s*$", re.I)
         ))) > 1:
             return Category.CINEMA
+        if get_text(div.select_one("div.info li.doblaje")):
+            return Category.CINEMA
         logger.critical(str(CategoryUnknown(url, name)))
         return Category.UNKNOWN
 
