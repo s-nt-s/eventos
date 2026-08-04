@@ -74,6 +74,8 @@ class BookFinder:
 
     def __find(self, title: str, autor: str | None = None):
         for k, r in {
+            "https://docta.ucm.es/entities/publication/7f46dedb-946d-4cee-8bb9-56fe80177a0a": r"\bMujeres [Mm]ayores\b",
+            "https://espepons.com/maybe-never-again-2025/#esp": r"\bMaybe never again\b",
             "https://archive.org/details/por-que-he-robado": r"\bPor qu[ée] he robado\b",
             "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=1843349": r"\bHomenaje a Cataluña\b",
             "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=1747352": r"\bRealismo capitalista\b",
