@@ -136,6 +136,7 @@ class Api:
             "Entradas disponibles próximamente en entradas.com y en la taquilla del recinto",
             "Consultar descuentos especiales",
             "Información sobre inscripciones en breve",
+            "Más info en breve",
         ):
             logger.critical(f"Campo price inexperado: {b.price}")
 

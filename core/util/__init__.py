@@ -9,7 +9,7 @@ from math import radians, sin, cos, sqrt, atan2
 from collections import Counter, defaultdict
 from os import environ
 from url_normalize import url_normalize
-from urllib.parse import urlparse, parse_qsl, urlsplit, urlencode, urlunparse, ParseResult
+from urllib.parse import urlparse, parse_qs, parse_qsl, urlsplit, urlencode, urlunparse, ParseResult, unquote
 from functools import cache
 import requests
 from datetime import date
@@ -41,6 +41,38 @@ tag_right = ('p',)
 heads = ("h1", "h2", "h3", "h4", "h5", "h6")
 block = heads + ("p", "div", "table", "article")
 inline = ("span", "strong", "i", "em", "u", "b", "del")
+
+
+def _to_num(x: int | float | str):
+    f = float(x)
+    i = int(f)
+    if f == i:
+        return i
+    return f
+
+
+def to_num(x: str):
+    if x is None:
+        return None
+    if isinstance(x, (int, float)):
+        return _to_num(x)
+    if not isinstance(x, str):
+        raise ValueError(x)
+    x = x.strip()
+    if re.search(r"[^\d\.,]", x):
+        raise ValueError(x)
+    m = re.match(r"^.*([,\.])\d{1,2}$", x)
+    if m:
+        sep = m.group(1)
+        ent, dec = x.rsplit(sep, 1)
+        if ent.count(sep) > 0:
+            raise ValueError(x)
+        ent = re.sub(r"[\.,]", "", ent)
+        if not ent.isdecimal():
+            raise ValueError(x)
+        x = f"{ent}.{dec}"
+    return _to_num(x)
+
 
 
 def round_to_even(x):
@@ -163,7 +195,7 @@ def plain_text(s: Union[str, Tag], is_html=False):
 @cache
 def _mk_re(s: str, flags: int = 0):
     reg = str(s)
-    if reg[0] not in " ^":
+    if reg[0] not in " ^,":
         reg = r"\b" + reg
     if reg[-1] not in " $,/:":
         reg = reg + r"\b"
@@ -258,10 +290,16 @@ def get_main_value(arr: List[T], default: Optional[T] = None, min_ocurrence: int
     contador = Counter(arr)
     max_rep = max(contador.values())
     if max_rep < min_ocurrence:
-        return None
+        return default
+    ok: set[str] = set()
     for e in arr:
         if contador[e] == max_rep:
-            return e
+            if not isinstance(e, str):
+                return e
+            ok.add(e)
+    if len(ok) == 0:
+        return default
+    return sorted(ok, key=lambda x: (-len(x), x))[0]
 
 
 def to_uuid(s: str):
@@ -344,7 +382,26 @@ def clean_url(url: str) -> str:
     )
     if m:
         return "https://eventos."+m.group(1)+".es/"+m.group(2)
+    sub_url = _find_sub_url(url)
+    if sub_url:
+        return clean_url(sub_url)
     return url
+
+
+def _find_sub_url(url: str):
+    if not isinstance(url, str):
+        return None
+    parsed = urlparse(url)
+    for tail, key in {
+        "safelinks.protection.outlook.com": "url",
+    }.items():
+        if parsed.netloc != tail and not parsed.netloc.endswith("."+tail):
+            continue
+        params = parse_qs(parsed.query)
+        urls_quote = params.get(key, [])
+        for u in map(unquote, urls_quote):
+            if u.lower().startswith(("http://", "https://")):
+                return u
 
 
 def normalize_url(url: str, *tail: str) -> str:
@@ -366,30 +423,24 @@ def find_euros(*prices: Union[str, None]) -> None | float | int:
     for prc in prices:
         if prc is None:
             continue
-        if re.match(r"^\s*(gratuito|gratis)( (con )?previo registro)?\s*$", prc, flags=re.I):
-            return 0
-        if re.match(r"^gratis, ", prc, flags=re.I):
-            return 0
-        if re.search(
-            r"\b(gratuit[ao] (para|con)|(entrada|acceso) (gratuit[oa]|libre)|actividad(es)? gratuitas?)\b",
+        if re_or(
             prc,
-            flags=re.I
-        ):
-            return 0
-        if re.search(
-            r"Taller(es)? gratuitos?\b",
-            prc,
+            r"^\s*(gratuito|gratis)( (con )?previo registro)?\s*$",
+            r"^gratis, ",
+            r"(gratuit[ao] (para|con)|(entrada|acceso) (gratuit[oa]|libre)|actividad(es)? gratuitas?)",
+            r"gratuito previa descarga",
+            r"Taller(es)? gratuitos?",
+            r"GratuitoReserva",
             flags=re.I
         ):
             return 0
         eur: set[float] = set()
         for s in re.findall(r"(\d[\d\.,]*)\s*(?:€|euros?)", prc, flags=re.I):
-            p = float(s.replace(",", "."))
-            if p == int(p):
-                p = int(p)
+            p = to_num(s)
             eur.add(p)
         if len(eur):
             return max(eur)
+
 
 
 @cache
@@ -501,6 +552,8 @@ KO_IMG = (
 
 KO_MORE = (
     'https://www.semanacienciamadrid.org/',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Moncloa-Aravaca-y-sus-fiestas-de-San-Antonio-de-la-Florida-/?vgnextfmt=default&vgnextoid=ef0959fdefd5e910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
+    'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Programacion-Cultural/?vgnextfmt=default&vgnextoid=5ea6daba65bc4910VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Actividades-culturales-en-el-Espacio-de-Lectura-del-Parque-del-Oeste/?vgnextfmt=default&vgnextoid=7d60dd9d16fe8910VgnVCM100000891ecb1aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/San-Isidro-en-Carabanchel/?vgnextfmt=default&vgnextoid=679e36df97ecd910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
     'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Dia-del-Libro-en-Retiro/?vgnextfmt=default&vgnextoid=6f75b0c1e0bad910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD',
@@ -594,3 +647,14 @@ def parse_obj(
         if new_obj is not None or keep_re_parse_none is True:
             return new_obj
     return obj
+
+
+def find_cp(s: str):
+    cp: set[int] = set()
+    for c in map(int, re.findall(r"\d+", s or '')):
+        if (c >= 28000 and c <= 28999) or c in (
+            11403,
+        ):
+            cp.add(c)
+    if len(cp) == 1:
+        return cp.pop()

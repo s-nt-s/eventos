@@ -11,6 +11,7 @@ from datetime import datetime
 from core.web import get_text, buildSoup
 from functools import cache
 from core.cache import TupleCache
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +33,13 @@ def clean_name(name: str):
     return name
 
 
-class AteneoMadrid:
+class AteneoMadrid(Base):
     def __init__(
         self,
         isOkDate: Callable[[datetime], bool] = None,
+        cache: str | bool = True
     ):
+        super().__init__(cache=cache)
         self.__ics = IcsReader(
             "https://ateneodemadrid.com/eventos/lista/?ical=1",
             "https://ateneodemadrid.com/eventos/lista/p%C3%A1gina/2/?ical=1",
@@ -45,10 +48,7 @@ class AteneoMadrid:
             isOkDate=isOkDate
         )
 
-    @cached_property
-    @TupleCache("rec/ateneo_madrid.json", builder=Event.build)
-    def events(self):
-        logger.info("Buscando eventos en Ateneo Madrid")
+    def _get_events(self):
         ok_events: set[Event] = set()
         done: set[str] = set()
         for e in self.__ics.events:
@@ -81,7 +81,6 @@ class AteneoMadrid:
             ok_events.add(e)
 
         rt = tuple(sorted(ok_events))
-        logger.info(f"Buscando eventos en Ateneo Madrid = {len(rt)}")
         return rt
 
     def __ics_to_event(self, e: IcsEventWrapper):
@@ -91,6 +90,7 @@ class AteneoMadrid:
             return
         if e.DESCRIPTION in (
             "El contenido esta protegido.",
+            "CANCELADO",
         ):
             return None
         place = self.__find_place(e)
@@ -98,6 +98,7 @@ class AteneoMadrid:
             return
         place = place.normalize()
         name = normalize_quote(e.SUMMARY)
+        category = self.__find_category(e)
         event = Event(
             id=f"am{e.UID}",
             url=e.URL,
@@ -106,24 +107,31 @@ class AteneoMadrid:
             img=e.ATTACH,
             price=self.__find_price(e),
             #publish=e.str_publish,
-            category=self.__find_category(e),
+            category=category,
             place=place,
             sessions=(
                 Session(
                     date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
                 ),
             ),
-            cycle=self.__find_cycle(name, e)
+            cycle=self.__find_cycle(name, e, category)
         )
         return event
 
-    def __find_cycle(self, name: str, e: IcsEventWrapper):
+    def __find_cycle(self, name: str, e: IcsEventWrapper, category: Category):
         m = re.search(r"\. Ciclo '([^'']+)'", name)
         if m:
             return m.group(1).strip()
         m = re.search(r"^Ciclo '([^'']+)'", name)
         if m:
             return m.group(1).strip()
+        if category != Category.CINEMA:
+            if re_or(
+                name,
+                r"Valle[\-\s]*Incl[aá]n",
+                flags=re.I
+            ):
+                return "Valle-Inclán"
 
     def __find_price(self, e: IcsEventWrapper):
         prc = find_euros(e.DESCRIPTION)
@@ -229,7 +237,7 @@ class AteneoMadrid:
                 if re_or(c, *args, flags=re.I):
                     return True
             return False
-        if re.search(r"^Recuerdo de [A-Z]", e.SUMMARY or ''):
+        if re.search(r"^(En )?[rR]ecuerdo de [A-Z]", e.SUMMARY or ''):
             return Category.TRIBUTE
         if re_or(
             e.SUMMARY,
@@ -243,6 +251,9 @@ class AteneoMadrid:
             r"Acto anual de gratitud a l[oa]s soci[ao]s",
             r"Distinciones Dama de la l[aá]mpara",
             r"Presentaci[oó]n del retrato",
+            r"Premios FEDEPE",
+            r"Gala de Esgrima",
+            r"(Gala|Acto) de entrega del? premios?",
             flags=re.I,
             to_log=e.UID
         ):
@@ -262,7 +273,12 @@ class AteneoMadrid:
             flags=re.I
         ):
             return Category.POETRY
-
+        if re_or(
+            e.SUMMARY,
+            r"astrolog[ií]a",
+            flags=re.I
+        ):
+            return Category.SPAM
         if re_and(
             e.SUMMARY,
             "presentaci[oó]n del?",
@@ -278,10 +294,10 @@ class AteneoMadrid:
             return Category.MUSIC
         if _has_cat("Velada") and re_or(e.DESCRIPTION, "piano", flags=re.I):
             return Category.MUSIC
-        if _has_cat(r"mon[oó]logo", r"^Lecturas?$", r"Lecturas? dramatizadas?", "teatro", r"[oó]pera"):
+        if _has_cat(r"mon[oó]logo", r"^Lecturas?$", r"Lecturas? dramatizadas?", "teatro", r"[oó]pera", r"Representaci[oó]n Teatral"):
             return Category.THEATER
 
-        if _has_cat(r"Presentación del libro", 'Libros'):
+        if _has_cat(r"Presentaci[oó]n del? libro", 'Libros'):
             return Category.LITERATURE
         if _has_cat(r"Mesa redonda", "Conferencias", "Charlas?", 'Homenaje', 'Congreso'):
             return Category.CONFERENCE
@@ -306,7 +322,7 @@ class AteneoMadrid:
             flags=re.I
         ):
             return Category.CONFERENCE
-        if _has_cat(r"exposiciones"):
+        if _has_cat(r"exposici[óo]n(es)?"):
             return Category.EXPO
         if re_or(
             e.SUMMARY,
@@ -343,4 +359,4 @@ if __name__ == "__main__":
     from core.log import config_log
     config_log("log/ateneomadrid.log", log_level=logging.INFO)
     m = AteneoMadrid()
-    evs = m.events
+    evs = m.get_events()

@@ -17,6 +17,7 @@ from core.util import my_filter
 from core.util.strng import clean_name, find_director
 from collections import defaultdict
 from core.place import Place
+from core.filmaffinity import FilmAffinityApi
 import pytz
 
 T = TypeVar("T")
@@ -273,6 +274,7 @@ class Session(NamedTuple):
 
 
 KO_IMG = (
+    'https://cdn.lacasaencendida.es/storage/40902/conversions/QBjURc0yKs3fbh9cx3B8Gy88rFTwAx-metaQ29tcHJlbmRlciA1LmpwZw==--detail.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Agata/Eventos/ficheros/D%C3%ADadeEuropa_Cartel%20peliculas.png',
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Bohemios/ficheros/D%C3%ADadeEuropa_Cartel%20peliculas%20.png',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
@@ -295,6 +297,18 @@ KO_IMG = (
     'https://www.madrid.es/UnidadWeb/UGBBDD/EntidadesYOrganismos/CulturaYOcio/InstalacionesCulturales/CentrosCulturalesMunicipales/CCVillaverde/Ficheros/CentroSocioCult.jpg',
     'https://cdn.tenemosplan.com/tenemosplan/default_image.jpg',
     'https://www.goethe.de/resources/files/jpg1436/clad-event-02-1000x1000-formatkey-jpg-w320r.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20JULIO/Rififi-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20JULIO/September5-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20JULIO/Como_entrenar_tuDragon-001.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Salamanca/Actividades/ficheros/CineV/0108Sirat.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/Forajidos-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/Mickey17-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/LiloYStich-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/Sed_de_mal-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/Furiosa_MadMax-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/Futbolisimos2-001.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Salamanca/Actividades/ficheros/CineV/2208Incontrolable.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Salamanca/Actividades/ficheros/CineV/2908Domingos.jpg',
 )
 
 
@@ -647,7 +661,14 @@ class Event:
         return tuple(sorted(mrg_events))
 
     @staticmethod
-    def fusion(*evs: "Event", name: str = None, id: str = None, url: str = None, also_in: tuple[str, ...] = None):
+    def fusion(
+        *evs: "Event",
+        name: str = None,
+        id: str = None,
+        url: str = None,
+        more: str = None,
+        also_in: tuple[str, ...] = None
+    ):
         if len(evs) == 0:
             raise ValueError("len(events)==0")
         if len(evs) == 1:
@@ -687,14 +708,14 @@ class Event:
             url = get_main_value(u for u in f_info.seen_in if u not in ss_url)
 
         category = get_main_value(f_info.categories, default=Category.UNKNOWN)
-        no_more = category in (Category.CINEMA, )
-        more = None
+        no_more = more is None and category in (Category.CINEMA, )
         st_more = set(f_info.mores)
-        if len(st_more) == 1:
-            more = st_more.pop()
-            no_more = False
-        elif not no_more:
-            more = get_main_value(f_info.mores)
+        if more is None:
+            if len(st_more) == 1:
+                more = st_more.pop()
+                no_more = False
+            elif not no_more:
+                more = get_main_value(f_info.mores)
         if also_in is None:
             st_also_in = set(f_info.seen_in)
             st_also_in.discard(url)
@@ -776,6 +797,8 @@ class Event:
         if self.category == Category.CONFERENCE:
             if re_or(self.name, "Ciclo conferencias Maqueta León Gil de Palacio", flags=re.I):
                 return "Maqueta León Gil de Palacio"
+        if urls.intersection({"https://pianocitymadrid.es/", }) or re_or(self.name, "piano ?city", flags=re.I):
+            return "Piano City"
         if urls.intersection((
             "https://www.centrocentro.org/musica/limo-2026",
             "https://www.centrocentro.org/musica/kali-malone",
@@ -820,11 +843,12 @@ class Cinema(Event):
 
     def fix(self, **kwargs):
         self._fix_field('cycle')
-        self._fix_field('year')
         self._fix_name_director()
         self._fix_name_year()
-        self._fix_field('imdb', self.__find_imdb)
         self._fix_field('filmaffinity')
+        self._fix_field('imdb', self.__find_imdb)
+        if self.imdb is not None and self.filmaffinity is None:
+            self._fix_field('imdb', self.__find_imdb)
         super().fix(**kwargs)
         return self
 
@@ -867,17 +891,20 @@ class Cinema(Event):
                 object.__setattr__(self, "year", year)
                 object.__setattr__(self, "name", new_name)
                 return
-        
-    def _fix_year(self):
-        if self.year is not None:
-            return self.year
-        if self.imdb:
-            return DB.one("select year from MOVIE where id = ?", self.imdb)
 
-    
+    def _fix_director(self):
+        if self.director or not self.imdb:
+            return self.director
+        return DB.to_tuple("select distinct p.name from PERSON p join DIRECTOR d on d.person = p.id where d.movie = ?", self.imdb)
+
+    def _fix_year(self):
+        if self.year or not self.imdb:
+            return self.year
+        return DB.one("select year from MOVIE where id = ?", self.imdb)
+
     def iter_year_title(self):
-        y_t: dict[int|None, list[str]] = {}
-        def _add(y: int|None, t: str):
+        y_t: dict[int | None, list[str]] = {}
+        def _add(y: int | None, t: str):
             arr = y_t.get(y, [])
             if t and t not in arr:
                 arr.append(t)
@@ -899,7 +926,6 @@ class Cinema(Event):
         for y, tt in y_t.items():
             yield y, tuple(tt)
 
-
     def __find_imdb(self):
         fix = FIX_EVENT.get(self.id, {})
         if "imdb" in fix:
@@ -908,6 +934,10 @@ class Cinema(Event):
             return None
         if self.imdb:
             return self.imdb
+        if self.filmaffinity:
+            _id_ = DB.one("select movie from EXTRA where filmaffinity = ?", self.filmaffinity)
+            if _id_:
+                return _id_
         ids: set[str] = set()
         for y, tt in self.iter_year_title():
             imdb = DB.search_imdb_id(
@@ -922,7 +952,8 @@ class Cinema(Event):
             return None
         if len(ids) == 1:
             return ids.pop()
-        _id_: str = DB.one('''
+        _id_: str = DB.one(
+            '''
                 select id from MOVIE
                 where id in (%s)
                 ORDER BY
@@ -940,6 +971,10 @@ class Cinema(Event):
             return fix["filmaffinity"]
         if self.filmaffinity is not None:
             return self.filmaffinity
+        if self.year and self.name:
+            _id_ = FilmAffinityApi.fast_search(self.year, self.name)
+            if _id_:
+                return _id_
         if self.imdb is not None:
             _id_ = DB.one("select filmaffinity from EXTRA where movie = ?", self.imdb)
             if _id_:
@@ -1124,7 +1159,12 @@ def find_book_category(name: str, description: str, default: Category):
         return default
     if re_or(
         name,
+        r"Antolog[ií]a po[ée]tica",
         r"por (el|la) poeta",
+        r"Obra Po[eé]tica",
+        r"Presentaci[oó]n (del|de los) poemarios?",
+        r"Edmond Jab[eèé]s",
+        r"Defender el [AÁ]lamo",
         flags=re.I
     ):
         return Category.POETRY
@@ -1141,7 +1181,10 @@ def find_book_category(name: str, description: str, default: Category):
         r"participaci[oó]n del poeta",
         r"recitar[aá]n poemas de",
         r"el poemario publicado",
-        r"Este poemario presenta",
+        r"Este poemario (explora|presenta)",
+        r"obra de poes[ií]a",
+        r"[aá]lbum po[eé]tico",
+        r"narrativa, poes[íi]a",
         flags=re.I
     ):
         return Category.POETRY
@@ -1149,15 +1192,21 @@ def find_book_category(name: str, description: str, default: Category):
         name,
         "Presentaci[óo]n de la novela",
         "Richard Turvey",
+        "Askarien",
+        "premio planeta",
+        "Confianza Agustina",
         flags=re.I
     ):
         return Category.NARRATIVE
     if re_or(
         description,
+        r"una novela quinqui",
+        r"colecci[oó]n de microrrelatos",
         r"(La|Esta) novela (relata|retrata|presenta|publicada)",
         r"(La|Esta) (nueva|[uú]ltima) novela del?",
         r"(La|Esta) novela es la cr[oó]nica",
         r"A partir de ese momento comienza una aventura",
+        r"Presentaci[oó]n de esta novela",
         r"una novela (de aventuras|sobre|breve)",
         r"novela (hist[oó]rica|de ficci[oó]n)",
         r"su ([uú]litma|primera) novela",
@@ -1174,6 +1223,12 @@ def find_book_category(name: str, description: str, default: Category):
         r"Qu[eé] ocurrir[ií]a si un día secuestraran tus sueños",
         r"relato de ficci[oó]n",
         r"libro de microrrelatos",
+        r"novela sobre",
+        r"toca dram[oó]n",
+        r"la aclamada novela de",
+        r"[AÁ]ngel Garc[ií]a Galiano",
+        r"Mar[ií]a Dueñas",
+        r"Marta Galatas",
         ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
         ("a trav[eé]s de estas ficciones", "literatura"),
         flags=re.I
@@ -1198,10 +1253,23 @@ def find_book_category(name: str, description: str, default: Category):
         r"Mar[ií]a Mart[ií]n D[ií]ez de Balde[oó]n",
         r"Fernando J[aá]uregui",
         r"Felipe Gonz[aá]lez",
+        r"Ketty Garat",
+        r"Raad Salam Naaman",
+        r"Ana Palacio",
+        r"Eduardo Aguirre",
+        r"Fuencisla Casanova",
+        r"Silvia Bara Bancel",
         flags=re.I
     ):
         return Category.SPAM
-    
+
+    if re_or(
+        txt,
+        r"narrativas fotogr[aá]ficas y ensayos visuales",
+        flags=re.I
+    ):
+        return Category.PHOTO
+
     if not re_or(
         txt,
         r"colonialismo",

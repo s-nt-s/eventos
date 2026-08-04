@@ -18,12 +18,15 @@ from portal.ateneomadrid import AteneoMadrid
 from portal.circulobellasartes import CirculoBellasArtes
 from portal.teatrobarrio import TeatroBarrio
 from portal.cineembajadores import CineEmbajadores
+from portal.artisticmetropol import ArtisticMetropol
+from portal.cinescallao import CinesCallao
 from portal.alcala import Alcala
+from portal.casaasia import CasaAsia
 from portal.goethe import Goethe
 from portal.ifrances import InstitutoFrances
 from portal.eventim import Eventim
 from datetime import datetime, date
-from core.util import round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
+from core.util import find_cp, round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
 from core.publish import PublishDB
 import logging
 from typing import Tuple
@@ -43,7 +46,11 @@ from portal.ucm import Ucm
 from core.eventbrite import Api as EventBriteApi
 from os import environ
 from core.ics import IcsReader
-
+from portal.base import Base
+from requests.exceptions import ConnectTimeout
+from typing import Type
+from asyncio import TimeoutError
+from aiohttp.client_exceptions import ClientConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -55,24 +62,42 @@ def safe_load_ics(name: str):
 ICS_BUSY = safe_load_ics("ICS_BUSY")
 ICS_BUSY_VILLAVERDE = safe_load_ics("ICS_BUSY_VILLAVERDE")
 ICS_BUSY_ALCALA = safe_load_ics("ICS_BUSY_ALCALA")
+KO_CP = (
+    11403,
+    28018,
+    28029,
+    28033,
+    28223,
+    28300,
+    28931,
+    28040,
+    28039,
+    28035,
+    28023,
+    28020,
+    28011,
+    28027,
+    8001,
+)
 
 
-def get_events(source):
-    if isinstance(
-        source, (
-            Alcala,
-            MadConvoca,
-            AteneoMadrid,
-            Universidades,
-            MadridEs,
-            Goethe,
-            MadridDestino,
-            TeatroBarrio,
-            Eventim,
-        )
+def get_events(source: Base | Type[Base]):
+    if isinstance(source, type) and issubclass(source, Base):
+        source = source()
+    if not isinstance(
+        source,
+        Base
     ):
-        return source.events
-    return source().events
+        raise ValueError(str(type(source)))
+    for c, e in {
+        (SalaEquis, ReinaSofia): (ConnectTimeout,),
+        (CasaMexico, ): (TimeoutError,),
+        (MadridEs, ): (ClientConnectionError, ),
+        (FundacionMarch, ): (PermissionError, )
+    }.items():
+        if isinstance(source, c):
+            return source.safe_get_events(*e)
+    return source.get_events()
 
 
 def run_parallel(*sources):
@@ -131,8 +156,9 @@ def isAlcalaOkDate(dt: datetime):
 
 
 def isOkDate(dt: datetime, delta: int = 0.5):
-    if ICS_BUSY and ICS_BUSY.is_in(dt):
-        return False
+    if not(dt.year == 2026 and dt.month == 8 and dt.day <= 9):
+        if ICS_BUSY and ICS_BUSY.is_in(dt):
+            return False
     if dt.date() in get_festivos(dt.year):
         return True
     min_hour = getMin(dt)
@@ -159,6 +185,8 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
     latlon = None
     name = None
     if isinstance(p, Place):
+        if p.get_cp() in KO_CP:
+            return False
         name = p.name
         address = p.address
         if p.latlon:
@@ -167,6 +195,9 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         name = p
     elif isinstance(p, tuple) and len(p) == 2:
         latlon = p
+    if find_cp(address) in KO_CP:
+        return False
+
     if re_or(
         address,
         r"Milano$",
@@ -178,6 +209,9 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         r"Legan[eé]s",
         # Vicálvaro
         r"Vic[aá]lvaro",
+        r", Barcelona(, \d+)$",
+        r"M[oó]stoles$",
+        r"Rivas-Vaciamadrid",
         flags=re.I
     ):
         return False
@@ -436,11 +470,14 @@ class EventCollector:
                         "carabanchel",
                     )
                 ),
+                ArtisticMetropol,
+                CinesCallao,
                 AteneoMadrid(
                     isOkDate=isOkDate,
                 ),
                 FundacionMarch,
                 Ucm,
+                CasaAsia,
                 Universidades(
                     "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
                     "https://eventos.uam.es/ics/location/espana/lo-1.ics",
@@ -473,7 +510,7 @@ class EventCollector:
                 Dore,
                 CasaEncendida,
                 SalaBerlanga,
-                SalaEquis,
+                SalaEquis(),
                 CaixaForum,
                 CasaMexico,
             )
@@ -582,7 +619,7 @@ class EventCollector:
                     if e.url:
                         mad_more_cat[e.url].add(e.category)
         ids = set(e.id for e in ok_events)
-        for e in set(self.__madrid_destino.events):
+        for e in set(self.__madrid_destino.get_events()):
             if not self.__filter(e, to_log=False) and e.id not in ids:
                 cat = get_main_value(mad_more_cat.get(e.url))
                 if cat not in (None, e.category):
@@ -596,35 +633,27 @@ class EventCollector:
         return tuple(e.fix_type().fix() for e in ok_events)
 
     def __dedup_fusion(self, ok_events: set[Event]):
-        def _mk_key_madrid_music(e: Event):
-            if e.category != Category.MUSIC:
+        def _mk_key_piano_city(e: Event):
+            re_pianio = re.compile(r"\bPiano[\-\s]*city", flags=re.I)
+            if not any((
+                re_pianio.search(e.cycle or ''),
+                re_pianio.search(e.name or ''),
+                re_pianio.search(" ".join(e.iter_urls())),
+            )):
                 return None
-            doms = set(map(get_domain, (e.url, e.more)))
-            doms.discard(None)
-            if len(doms) != 1 or doms.pop() != "madrid.es":
-                return None
-
-            return (e.more or e.url, e.place, e.price)
+            return (e.category, e.place, e.price)
 
         for evs in find_duplicates(
             ok_events,
-            _mk_key_madrid_music
+            _mk_key_piano_city
         ):
             for e in evs:
                 ok_events.remove(e)
 
-            more = evs[0].more
-            _id_ = None
-            name = None
-            if more and get_domain(more) == "madrid.es":
-                _id_ = MadridEs.get_id(more)
-                name = MadridEs.get_name(more)
-
             e = Event.fusion(
                 *evs,
-                id=_id_,
-                url=more,
-                name=name
+                more="https://pianocitymadrid.es/",
+                name="Piano City"
             )
             ok_events.add(e)
 
@@ -698,6 +727,38 @@ class EventCollector:
                     ok_events.remove(e)
                 e = Event.fusion(*evs)
                 ok_events.add(e)
+
+        def _mk_filmaffinity(e: Event | Cinema):
+            if e.category != Category.CINEMA:
+                return None
+            e = e.fix_type().fix()
+            if isinstance(e, Cinema) and e.filmaffinity is not None:
+                k = (e.place, e.category, e.name, e.filmaffinity)
+                return k
+
+        for evs in find_duplicates(
+            ok_events,
+            _mk_filmaffinity
+        ):
+            for e in evs:
+                ok_events.remove(e)
+            e = Event.fusion(*evs)
+            ok_events.add(e)
+
+        def _mk_film(e: Event | Cinema):
+            if e.category != Category.CINEMA:
+                return None
+            k = (e.place, e.category, e.name)
+            return k
+
+        for evs in find_duplicates(
+            ok_events,
+            _mk_film
+        ):
+            for e in evs:
+                ok_events.remove(e)
+            e = Event.fusion(*evs)
+            ok_events.add(e)
 
         return ok_events
 

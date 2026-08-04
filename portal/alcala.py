@@ -1,6 +1,5 @@
 from core.eventon import EventOn, Event as EventOnEvent
 from core.event import Event, Place, Session, Category, CategoryUnknown, Cinema
-from functools import cached_property
 from core.util import find_euros, re_or, re_and
 from core.util.strng import capitalize
 import logging
@@ -12,9 +11,9 @@ import re
 from collections import defaultdict
 from core.fetcher import Getter
 from aiohttp import ClientResponse
-from core.cache import TupleCache
 from functools import cache
 from core.md import MD
+from portal.base import Base
 
 
 logger = logging.getLogger(__name__)
@@ -74,11 +73,13 @@ async def rq_to_dates(r: ClientResponse):
     return tuple(sorted(dts))
 
 
-class Alcala:
+class Alcala(Base):
     def __init__(
             self,
             isOkDate: Callable[[datetime], bool] = None,
+            cache: str | bool = True
     ):
+        super().__init__(cache=cache)
         self.__eventon = EventOn("https://culturalcala.es/wp-json")
         self.__isOkDate = isOkDate or (lambda x: True)
         self.__get_store = Getter(
@@ -88,11 +89,8 @@ class Alcala:
             raise_for_status=False,
         )
 
-    @cached_property
-    @TupleCache("rec/alcala.json", builder=Event.build)
-    def events(self):
+    def _get_events(self):
         id_store: dict[str, set[str]] = defaultdict(set)
-        logger.info("Alcala: Buscando eventos")
         events: dict[str, Event] = {}
         for x in self.__eventon.get_eventon():
             e = self.__eventon_to_event(x)
@@ -115,7 +113,6 @@ class Alcala:
                 sessions=tuple(sorted(ss))
             )
         evs = tuple(events.values())
-        logger.info(f"Alcala: Buscando eventos = {len(evs)}")
         return evs
 
     def __find_session_in_store(self, id_store: dict[str, set[str]]):
@@ -190,7 +187,8 @@ class Alcala:
         return Place(
             name=_clean_name_place(x.location_name),
             address=x.location_address,
-            latlon=latlon
+            latlon=latlon,
+            zone="Alcalá de Henares"
         ).normalize()
 
     def __find_price(self, x: EventOnEvent):
@@ -382,4 +380,4 @@ if __name__ == "__main__":
     from core.log import config_log
     config_log("log/alcala.log", log_level=(logging.DEBUG))
     a = Alcala()
-    print(len(a.events))
+    print(len(a.get_events()))

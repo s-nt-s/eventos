@@ -3,7 +3,7 @@ from aiohttp import ClientResponse
 from core.web import buildSoup, get_text, Tag
 from core.event import Category, Event, CategoryUnknown, Session, FIX_EVENT, find_book_category
 from core.place import Places
-from core.util import get_obj, re_or, find_euros, to_uuid, get_main_value, get_domain, clean_url
+from core.util import get_obj, re_or, find_euros, to_uuid, get_main_value, get_domain, clean_url, plain_text
 from typing import NamedTuple, Optional
 from core.cache import TupleCache
 from collections import defaultdict
@@ -11,6 +11,7 @@ import re
 from datetime import datetime
 import logging
 from core.md import MD
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,8 @@ logger = logging.getLogger(__name__)
 MONTHS = ('ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic')
 RE_MONTHS = r"(" + "|".join(map(str.capitalize, MONTHS)) + r")"
 RE_DATE_1 = re.compile(r"^(\d+) de " + RE_MONTHS + r" de (\d+)[·\s]+(\d+):(\d+)\s*-\s*(\d+):(\d+)$")
-RE_DATE_2 = re.compile(r"^Del (\d+) de "+RE_MONTHS+r"\S* al (\d+) de "+RE_MONTHS+r"\S* de (\d+)$")
+RE_DATE_2 = re.compile(r"^Del (\d+) de "+ RE_MONTHS + r"\S* al (\d+) de "+RE_MONTHS+r"\S* de (\d+)$")
+RE_DATE_3 = re.compile(r"^(\d+) de "+ RE_MONTHS + r"\S* de (\d+)$")
 re_sp = re.compile(r"\s+")
 MAX_YEAR = datetime.now().year + 1
 
@@ -129,6 +131,12 @@ def _to_datetimes(f: str):
         a = datetime(y, MONTHS.index(m.group(2).lower())+1, int(m.group(1)), 0, 0)
         z = datetime(y, MONTHS.index(m.group(4).lower())+1, int(m.group(3)), 23, 59)
         return a, z
+    m = RE_DATE_3.match(f)
+    if m is not None:
+        y = int(m.group(3))
+        a = datetime(y, MONTHS.index(m.group(2).lower())+1, int(m.group(1)), 0, 0)
+        z = a.replace(hour=23, minute=59)
+        return a, z
     return None
 
 
@@ -186,8 +194,8 @@ async def rq_to_items(r: ClientResponse):
             if t and t not in tags and t not in ("privado", ):
                 tags.append(t)
         info_date = get_text(div.select_one(".info-fecha"))
-        if info_date is None:
-            logger.critical(f".info-fecha en {url} via {root}")
+        if info_date in (None, "Varias sesiones"):
+            logger.critical(f".info-fecha={info_date} en {url} via {root}")
             continue
         az = _to_datetimes(info_date)
         if az is None:
@@ -256,10 +264,11 @@ async def rq_to_page(r: ClientResponse):
     div = soup.select_one("div.e-con-inner")
     director = None
     year = None
-    price = find_euros(get_text(_find_div_img(
+    price_str = get_text(_find_div_img(
         div,
         "https://www.casademexico.es/wp-content/uploads/2023/12/precio.svg"
-    )))
+    ))
+    price = find_euros(price_str)
     public = get_text(_find_div_img(
         div,
         "https://www.casademexico.es/wp-content/uploads/2023/12/publico.svg"
@@ -272,7 +281,10 @@ async def rq_to_page(r: ClientResponse):
     description = None
     links: list[str] = []
     evenbrite: list[str] = []
-    if price is None:
+    if price_str in ("Por definir", ):
+        logger.warning(f"price={price_str} {r.url}")
+        price = 9999
+    elif price is None:
         logger.warning(f"NOT FOUND price {r.url}")
     if div:
         nodeDesc = div.select_one("div.elementor-element.elementor-widget.elementor-widget-text-editor")
@@ -306,16 +318,19 @@ async def rq_to_page(r: ClientResponse):
     )
 
 
-class CasaMexico:
+class CasaMexico(Base):
     URL_LIST = "https://www.casademexico.es/wp-content/themes/hello-elementor/rellenar-agenda.php?fecha=todas"
 
-    def __init__(self):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
         self.__get_items = Getter(
-            onread=rq_to_items
+            onread=rq_to_items,
+            timeout=60
         )
         self.__get_pages = Getter(
             onread=rq_to_page,
-            raise_for_status=False
+            raise_for_status=False,
+            timeout=60
         )
 
     @TupleCache(r"rec/casamexico/items.json", builder=Item.build)
@@ -388,9 +403,7 @@ class CasaMexico:
             items.add(i)
         return tuple(sorted(items))
 
-    @property
-    @TupleCache("rec/casamexico.json", builder=Event.build)
-    def events(self):
+    def _get_events(self):
         dct_events: dict[Event, Item] = {}
         for i in self._get_items():
             category = self.__find_category(i)
@@ -410,7 +423,7 @@ class CasaMexico:
                 img=i.img,
                 duration=duration,
                 sessions=sessions,
-                place=Places.CASA_MEXICO.value,
+                place=self.__find_place(i),
                 cycle=cycle
             )
             if e.category == Category.CINEMA and (i.director or i.year):
@@ -438,6 +451,41 @@ class CasaMexico:
             events.add(e)
         return tuple(sorted(events))
 
+    def __find_place(self, i: Item):
+        place = plain_text(
+            re.sub(r"\s+-\s+", " ", (i.place or '').lower())
+        )
+        name_place = plain_text(
+            re.sub(r"^.*\s+-\s+(sede:?\s+)?", "", i.name, flags=re.I)
+        )
+        if place in (
+            "fundacion casa de mexico en españa",
+            "salon de usos multiples",
+            "cine auditorio",
+            "sala de juntas",
+        ):
+            return Places.CASA_MEXICO.value
+        plc = {
+            "sala berlanga": Places.SALA_BERLANGA,
+            "cine dore": Places.DORE,
+            "sala equis": Places.SALA_EQUIS,
+            "yelmo ideal": Places.YELMO_IDEAL,
+            "mk2 cibeles de cine": Places.CENTRO_CENTRO,
+            "centro cultural paco rabal": Places.CC_PACO_RABAL,
+            "centro cultural paco rabal | centro cultural perez de la riva las rozas": Places.CC_PACO_RABAL,
+            "cine estudio del circulo de bellas artes": Places.CIRCULO_BELLAS_ARTES
+        }.get(place) or {
+            "academia de cine": Places.ACADEMIA_CINE,
+            "centro cultural paco rabal": Places.CC_PACO_RABAL,
+            "fundacion casa de mexico en españa": Places.CASA_MEXICO,
+            "sala equis": Places.SALA_EQUIS,
+            "sala berlanga": Places.SALA_BERLANGA
+        }.get(name_place)
+        if plc is None:
+            logger.warning(f"LUGAR DESCONOCIDO place={place} name={i.name}")
+            return Places.CASA_MEXICO.value
+        return plc.value
+
     def __get_cycle_name(self, i: Item):
         name = _clean_name(i.name)
         spl = tuple(x for x in re.split(r"\s+\|\s+", name) if x)
@@ -448,6 +496,9 @@ class CasaMexico:
             return cycle, name
         if len(spl) == 3 and re_or(spl[1], "encuentro de escritores hispanoamericanos", flags=re.I):
             return "Encuentro de escritores hispanoamericanos", re.sub(r"Mesa \d+\s+", "", spl[2], flags=re.I)
+        m = re.search(r"Sesiones sonoras con (.+)$", name, flags=re.I)
+        if m:
+            return "Sesiones sonoras", m.group(1).strip()
         return None, name
 
     def __get_duration_and_sessions(self, i: Item):
@@ -495,6 +546,18 @@ class CasaMexico:
             flags=re.I
         ):
             return find_book_category(i.name, i.description, Category.LITERATURE)
+        if re_or(
+            i.name,
+            r"(Encuentro|Clase) magistral",
+            r"Coloquio",
+            r"^Conferencia",
+            r"^Conversatorio",
+            r"^Conversaciones Transatl[aá]nticas",
+            r"encuentro de escritores",
+            r"Mesa redonda",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
         for t, c in {
             "familia": Category.CHILDISH,
             "cine": Category.CINEMA,
@@ -504,6 +567,12 @@ class CasaMexico:
         }.items():
             if t in i.tags:
                 return c
+        if re_or(
+            i.name,
+            "Sesiones sonoras",
+            flags=re.I
+        ):
+            return Category.MUSIC
         if re_or(
             i.name,
             r"cine familiar",
@@ -523,18 +592,6 @@ class CasaMexico:
 
         if re_or(
             i.name,
-            r"Clase magistral",
-            r"Coloquio",
-            r"^Conferencia",
-            r"^Conversatorio",
-            r"^Conversaciones Transatl[aá]nticas",
-            r"encuentro de escritores",
-            r"Mesa redonda",
-            flags=re.I
-        ):
-            return Category.CONFERENCE
-        if re_or(
-            i.name,
             "^Curso",
             r"Sesi[óo]n de dibujo",
         ):
@@ -542,6 +599,8 @@ class CasaMexico:
         if re_or(
             i.name,
             "^Visitas Xtraordinarias",
+            r"Altar de muertos",
+            flags=re.I
         ):
             return Category.VISIT
         if re_or(
@@ -555,6 +614,8 @@ class CasaMexico:
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/casamexico.log", log_level=(logging.DEBUG))
     c = CasaMexico()
-    c.events
+    c.get_events()
     #print(*c._get_items(), sep="\n")

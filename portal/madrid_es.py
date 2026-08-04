@@ -20,6 +20,7 @@ from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.util.strng import clean_name
 from core.md import MD
+from portal.base import Base
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,6 @@ async def rq_to_text(r: ClientResponse):
         logger.warning(f"{slc} empty in {r.url}")
         return None
     return txt
-
 
 
 @cache
@@ -126,6 +126,8 @@ def clean_lugar(s: str):
     s = re.sub(r"\s+de\s+Madrid$", "", s, flags=re.I)
     s = re.sub(r"^Centro dotacional integrado", "Centro dotacional integrado", s, flags=re.I)
     s = re.sub(r"\bFaro de la Moncloa\b", "Faro de Moncloa", s, flags=re.I)
+    s = re.sub(r"^Templete\b.*\b(Parque .+)$", r"\1 (templete)", s, flags=re.I)
+    s = re.sub(r"^Instalaci[oó]n Deportiva\b\.*\b(Parque .+)$", r"\1 (instalación deportiva)", s, flags=re.I)
     lw = plain_text(s).lower()
     if lw.startswith("museo de san isidro"):
         return "Museo San Isidro"
@@ -170,7 +172,7 @@ class ApiInfo(NamedTuple):
     ics: tuple[IcsEventWrapper, ...] = tuple()
 
 
-class MadridEs:
+class MadridEs(Base):
     def __init__(
         self,
         isOkDate: dict[str, Callable[[datetime], bool]] = None,
@@ -178,8 +180,10 @@ class MadridEs:
         max_price: Optional[float] = None,
         avoid_categories: tuple[Category, ...] = tuple(),
         isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
-        districts: tuple[str, ...] = tuple()
+        districts: tuple[str, ...] = tuple(),
+        cache: str | bool = True
     ):
+        super().__init__(cache=cache)
         self.__isOkPlace = isOkPlace or (lambda *_: True)
         self.__isOkDate = isOkDate or {}
         self.__places_with_store = places_with_store or tuple()
@@ -267,6 +271,7 @@ class MadridEs:
             e = e._replace(
                 more=tp_join(e.more, page.more),
                 img=tp_join(e.more, page.img),
+                audience=tp_join(e.audience, page.audience),
             )
             events[vgnextoid] = e
 
@@ -284,12 +289,12 @@ class MadridEs:
             price: float = None
             imgs: tuple[str, ...] = tuple()
             for more_e in mores:
-                imgs = imgs + more_e.img
+                imgs = tp_join(imgs, more_e.img)
                 if more_e.price is not None:
                     price = max(price or -1, more_e.price)
             e = e._replace(
                 price=price if e.price is None else e.price,
-                img=tp_join(imgs)
+                img=imgs
             )
             events[vgnextoid] = e
 
@@ -376,11 +381,7 @@ class MadridEs:
             ))
         return tuple(info)
 
-    @property
-    @TupleCache("rec/madrid_es.json", builder=Event.build)
-    def events(self) -> Tuple[Event, ...]:
-        logger.info("Madrid Es: Buscando eventos")
-
+    def _get_events(self) -> Tuple[Event, ...]:
         all_events: Set[Event] = set()
         for i in self.__get_api_info():
             e = self.__info_to_event(i)
@@ -416,7 +417,6 @@ class MadridEs:
             all_events,
             ('place', 'name')
         )
-        logger.info(f"Madrid Es: Buscando eventos = {len(rt)}")
         return rt
 
     def __info_to_event(self, i: ApiInfo):
@@ -440,7 +440,10 @@ class MadridEs:
             img=_first_ok_url(i.event.img, KO_IMG),
         ).fix_type()
         if isinstance(e, Cinema):
-            e = e.merge(year=self.__find_year(i))
+            e = e.merge(
+                year=self.__find_year(i),
+                director=self.__find_director(i)
+            )
         if len(e.sessions) == 1 and e.sessions[0].url is None:
             urls = set(m for m in i.event.more if m.startswith("https://eventbrite.es/e/"))
             if len(urls) == 1:
@@ -465,6 +468,12 @@ class MadridEs:
         return i.event.title
 
     def __find_cycle(self, cat: Category, place: Place, i: ApiInfo):
+        if re_or(
+            i.event.description,
+            r"piano[\-\s]*city",
+            flags=re.I
+        ):
+            return "Piano City"
         tardes_romanas = "Tardes romanas"
         if cat == Category.CONFERENCE:
             if re_or(
@@ -496,10 +505,21 @@ class MadridEs:
             ("Conferencias sobre historia" , 'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-sobre-historia-con-Miguel-Arenas/?vgnextfmt=default&vgnextoid=c649606fb4e49910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD'),
             ('Escuelita de mirones II: Oasis of Serenity', 'https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Escuelita-de-mrones-II-Oasis-of-Serenity/?vgnextfmt=default&vgnextoid=a28b65ea4c90e910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD'),
             ("Itinerarios guiados por El Retiro", "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Itinerarios-guiados-por-El-Retiro/?vgnextfmt=default&vgnextoid=e7b01130a93b1810VgnVCM1000001d4a900aRCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD"),
+            ("Itinerarios guiados por El Retiro", "https://www.madrid.es/UnidadesDescentralizadas/Educacion_Ambiental/EspecialesInformativos/HabitatMadridActividadesAmbientales/ActividadesRetiro/ItinerarioEsculturasRetiro.jpg"),
             ("Concierto del alumnado del Conservatorio de Amaniel", "https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasEspecializadas/BibliotecaMusical/Actividades/ficheros/amaniel260x260.jpg"),
         ):
             if m in urls:
                 return c
+
+    def __find_director(self, i: ApiInfo) -> tuple[str, ...]:
+        drc: list[str] = []
+        for d in map(str.strip, re.findall(
+            r"(?:Direcci[óo]n|Directora?):\s*([^\n\.]+)",
+            i.event.description or ""
+        )):
+            if d and d not in drc:
+                drc.append(d)
+        return tuple(drc)
 
     def __find_year(self, i: ApiInfo) -> Optional[int]:
         yrs: set[int] = set()
@@ -651,8 +671,10 @@ class MadridEs:
             i.title,
             "Voluntarios? por Madrid",
             r"Esquej[oó]dromo",
-            r"Intercambio de libros",
+            r"Intercambio( y recomendaciones)? de libros",
             r"Encuentro de nuevas promociones fhcn",
+            r"Preg[oó]n (a cargo|de las fiestas)",
+            r"Federaci[oó]n de Grupos Tradicionales Madrileños",
             flags=re.I
         ):
             return Category.NO_EVENT
@@ -687,6 +709,9 @@ class MadridEs:
             r"Primeros pasos con Gmail",
             r"Quiero usar mi m[oó]vil",
             r"Tertulia de toros",
+            r"Misa mayor",
+            r"Procesi[oó]n de (Ntra|Nuestra)",
+            r"Bert[ií]n Osborne",
             flags=re.I
         ):
             return Category.SPAM
@@ -707,9 +732,7 @@ class MadridEs:
             place,
             "t[ií]teres",
             flags=re.I
-        ):
-            return Category.PUPPETRY
-        if re_or(
+        ) or re_or(
             i.title,
             "T[ií]teres al aire libre",
             flags=re.I
@@ -732,8 +755,23 @@ class MadridEs:
             return Category.SPAM
 
         if re_or(
+            i.title,
+            "Circo y Malabares",
+            flags=re.I
+        ):
+            return Category.CIRCUS
+
+        if re_or(
+            i.description,
+            r"espect[aá]culo de t[íi]teres",
+            flags=re.I
+        ):
+            return Category.PUPPETRY
+
+        if re_or(
             i.description,
             r"Una proyecci[oó]n de la pel[ií]cula",
+            r"Documental y Coloquio",
             flags=re.I
         ):
             return Category.CINEMA
@@ -747,6 +785,9 @@ class MadridEs:
             r"Iniciaci[oó]n al cultivo",
             "Editatona",
             r"Armon[ií]a Coral Participativa",
+            r"taller (hagamos|desayunos|de onigiri)",
+            r"Decora tu propia torta gallega",
+            r"degustaci[oó]n de",
             flags=re.I
         ):
             return Category.WORKSHOP
@@ -773,6 +814,13 @@ class MadridEs:
             r"Madrid a Tempo",
             r"Madrid en canciones",
             r"M[uú]sica de cine",
+            r"Actuaci[oó]n (orquesta|DJ|grupo|banda|agrupaci[óo]n)",
+            r"Vem[uú] musical",
+            r"The Decrolers",
+            r"^DJ",
+            r"Grupo Grupo",
+            r"Tam Tam Go",
+            ("Actuaci[oó]n", "tributo"),
             flags=re.I
         ):
             return Category.MUSIC
@@ -791,6 +839,7 @@ class MadridEs:
             r"Baile sin cuartel",
             r"D[íi]a (Internacional )?de la Danza",
             r"Festival 4 estaciones",
+            r"Bailes folcl[oó]ricos",
             flags=re.I
         ):
             return Category.DANCE
@@ -806,6 +855,7 @@ class MadridEs:
             r"Jardines del Campo del Moro",
             r"Parque Enrique Tierno Galv[aá]n",
             r"^RUTA\s*/",
+            (r"parque", r"itinerario",),
             flags=re.I
         ):
             return Category.VISIT
@@ -846,6 +896,8 @@ class MadridEs:
             i.description,
             r"Este proyecto musical",
             r"piano a cuatro manos",
+            r"este DJ destaca",
+            r"Banda de versiones de pop",
             ("banda", "tributo"),
             flags=re.I
         ):
@@ -905,7 +957,15 @@ class MadridEs:
         if i.event.has_category(
             r'club(es)? de lectura',
         ):
-            return find_book_category(i.event.title, i.event.description, Category.READING_CLUB)
+            if i.event.has_audience(
+                r"mujeres?",
+            ):
+                return Category.NON_GENERAL_PUBLIC
+            return find_book_category(
+                i.event.title,
+                i.event.description,
+                Category.READING_CLUB
+            )
         if i.event.has_category(
             r'cursos?',
             r'taller(es)?',
@@ -980,7 +1040,8 @@ class MadridEs:
         if re_or(
             i.event.title,
             r"certamen( de)? (pintura|decoraci[oó]n|ilustraci[oó]n)",
-            "festival by olavide"
+            "festival by olavide",
+            r"Apertura extraordinaria\b.*\bNoche en blanco",
         ):
             return Category.EXPO
         if re_or(
@@ -1017,6 +1078,7 @@ class MadridEs:
             "ruta a caballo",
             "cerro de",
             r"actividad(es)? acuaticas? pantano",
+            r"Deportes en Las Fiestas de",
             flags=re.I
         ):
             return Category.SPORT
@@ -1071,6 +1133,9 @@ class MadridEs:
             r"la magia de",
             r"^Magia:",
             r"Magia o plomo",
+            r"Piccola Magia",
+            r"Magia con acento",
+            r"Magia para todos",
             flags=re.I
         ):
             return Category.MAGIC
@@ -1122,7 +1187,15 @@ class MadridEs:
             "club(es)? de lectura",
             flags=re.I
         ):
-            return find_book_category(i.event.title, i.event.description, Category.READING_CLUB)
+            if i.event.has_audience(
+                r"mujeres?",
+            ):
+                return Category.NON_GENERAL_PUBLIC
+            return find_book_category(
+                i.event.title,
+                i.event.description,
+                Category.READING_CLUB
+            )
         if re_or(
             i.event.title,
             ("elaboracion", "artesanal"),
@@ -1265,10 +1338,15 @@ class MadridEs:
             flags=re.I
         ):
             return Category.MAGIC
-        if re_and(
+        if re_or(
             i.event.title,
-            "fiesta",
-            "aniversario",
+            r"Paella popular",
+            r"Fuegos artificiales",
+            r"Reparto de chocolate con churros",
+            ("fiesta", "aniversario"),
+            r"Partida( [uÚ]nica)? de Rol",
+            r"Fiesta de verano en",
+            ("Micro Abierto", "Karaoke"),
             flags=re.I
         ):
             return Category.PARTY
@@ -1285,7 +1363,9 @@ class MadridEs:
             return Category.THEATER
         if re_or(
             i.event.description,
-            "itinerario .* kil[ó]metros",
+            r"itinerario .* kil[ó]metros",
+            r"Entrega de premios\b.*\bjuegos deportivos",
+            r"Deportes en Las Fiestas",
             flags=re.I
         ):
             return Category.SPORT
@@ -1399,6 +1479,12 @@ class MadridEs:
         ):
             return Category.CONFERENCE
 
+        if re_or(
+            i.event.place.location,
+            r"templete\b.*m[úu]sica",
+            flags=re.I
+        ):
+            return Category.MUSIC
         logger.critical(str(CategoryUnknown(
             i.event.url,
             f"name={i.event.title} category={i.event.category}"
@@ -1520,5 +1606,5 @@ if __name__ == "__main__":
     from core.log import config_log
     config_log("log/madrides.log", log_level=(logging.INFO))
     evs = MadridEs(
-    ).events
+    ).get_events()
     print(len(evs))

@@ -8,6 +8,7 @@ from core.cache import Cache, TupleCache
 from core.event import Event, Session, Place, Category, FieldNotFound
 from core.filemanager import FM
 from core.util import re_or, re_and
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +53,13 @@ def hasMorePages(js: Union[Dict, List]):
     return False
 
 
-class CineEntradas:
+class CineEntradas(Base):
     SALA_BERLANGA = 2369
 
-    def __init__(self, cinema: int, price: float):
+    def __init__(self, cinema: int, price: float, cache: str | bool = True):
+        if cache is True:
+            cache = f"events/{self.__class__.__name__}_{cinema}.json"
+        super().__init__(cache=cache)
         self.cinema = cinema
         self.price = price
 
@@ -102,6 +106,8 @@ class CineEntradas:
         logger.debug(root)
 
         def __get(*urls) -> dict:
+            if len(urls) == 0:
+                raise ValueError()
             slc1 = 'script[type="application/ld+json"]'
             slc2 = '#__NUXT_DATA__'
             w = Web()
@@ -120,7 +126,13 @@ class CineEntradas:
                         for i in js:
                             if isinstance(i, str) and i.startswith('{"@context":'):
                                 return json.loads(i)
-            raise WebException(f"No se pudo obtener el JSON de {urls[-1]}")
+            url = urls[-1]
+            h1 = get_text(w.soup.select_one("h1"))
+            if h1 in (
+                "Esta página no está disponible.",
+            ):
+                raise PermissionError(f"{h1} {url}")
+            raise WebException(f"No se pudo obtener el JSON de {url}")
 
         js = __get(
             root,
@@ -167,10 +179,7 @@ class CineEntradas:
             arr.extend(js['showGroups']['data'])
         return arr
 
-    @property
-    @CinemaEventCache("rec/cineentradas{cinema}.json")
-    def events(self):
-        logger.info("Cine Entradas: Buscando eventos")
+    def _get_events(self):
         events: Set[Event] = set()
         for i in self.get_sessions():
             category = Category.CINEMA
@@ -200,7 +209,6 @@ class CineEntradas:
             )
             events.add(e)
         evs = tuple(sorted(events))
-        logger.info(f"Cine Entradas: Buscando eventos = {len(evs)}")
         return evs
 
     def __find_sessions(self, root: str, shows: List[Dict]):
@@ -215,6 +223,5 @@ class CineEntradas:
 
 if __name__ == "__main__":
     from core.log import config_log
-
     config_log("log/cineentradas.log", log_level=(logging.DEBUG))
-    print(CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).events)
+    print(CineEntradas(CineEntradas.SALA_BERLANGA, price=4.40).get_events())

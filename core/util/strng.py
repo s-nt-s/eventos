@@ -2,7 +2,7 @@ import re
 from functools import cache
 from unidecode import unidecode
 
-_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠]+"
+_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬📽 🌎🗣🎉🌍🍉🥾📚💥]+"
 RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
 RE_DEDUP = re.compile(r"(!+|¡+|¿+|\?+)")
 
@@ -47,6 +47,7 @@ _SPECIAL_WORDS = (
     "Finzi Pasca",
     "O'Donnell",
     "XIII",
+    "XXI",
     "III",
     "EE.UU",
 )
@@ -106,16 +107,45 @@ def normalize_quote(s: str):
 
 @cache
 def _rm_prefix():
-    SP = r":\-\.\|;"
+    SP = r":\-\.\|/;–\-"
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Cineforum Ateneo",
+        r"Voces del cine europeo contempor[aá]neo",
+        r"Casa Asia en el Festival de las Ideas",
+        r"Casa (de )?M[eé]xico",
+        r"Mercado Guzm[aá]n el Bueno",
+        r"Encuentro art[ií]stico",
+        r"Festival de f[ií]n de curso",
+        r"Akelarre Digital",
+        r"Cine Foro BAUM",
+        r"Programa de cine",
+        r"FIVER FESTIVAL",
+        r"Encuentros? Nodo Madrid [–\-,] redACTS",
+        r"D[ií]a Europeo de la M[úu]sica",
+        r"Sesiones especiales",
+        r"Estrenos documentales",
+        r"Retrospectiva"+TAIL_NO_SEP,
+        r"FILMADRID",
+        r"Estrenos de ficci[oó]n",
+        r"CinePlaza: Superestrellas \d+",
+        r"Festival fin de curso",
+        r"Akelarre Relacional",
+        r"Documenta Madrid",
+        r"Pre[\-\s]*Estreno Cortometraje",
+        r"Danza contemporánea en la biblioteca",
+        r"Camino'escena",
+        r"Comedia",
+        r"Ediciones Complutense",
+        r"FRANCIA EST[AÁ] EN PANTALLA",
         r"Bis de junio \([A-Z]+\)\s*",
         r"Reposici[oó]n",
         r"Domingo de cl[aá]sicos",
         r"Cl[aá]sicos al detalle",
         r"Cuba Vibra",
         r"Espacio Queer",
+        r"\d+ German Film Fest Madrid",
         r"GERMAN FILM FEST( MADRID Focus Goethe( Institut)?)?",
         r"Ciclo de Cine Ecofeminista",
         r"Medialab",
@@ -138,7 +168,7 @@ def _rm_prefix():
         r"Celebra\d+",
         r"Cap[ií]tulo XXX",
         r"CIMA (?:proyecta|Conversa)",
-        r"(?:Grupo|Club) de lectura",
+        r"(?:Grupo|Club) de lectur[Ⓐa]",
         r"Charla",
         r"Concierto",
         r"Ciclo de conferencias?",
@@ -150,11 +180,11 @@ def _rm_prefix():
         r"Pel[íi]cula",
         r"Visita(?: a la exposici[oó]n| comentada| guiada)?",
         r"Lectura dramatizada",
-        r"Presentación del libro",
+        r"Presentaci[oó]n(?: del| de los)? libros?",
         r"Cinef[oó]rum(?:(?: de)? (?:Isabel S[aá]nchez|Esqueria))?",
         r"Madrid, plató de cine",
         r"Conferencia(?: y audiovisual)?",
-        r"Proyecci[oó]n(?: del documental| de la pel[ií]cula)?",
+        r"Proyecci[oó]n(?:(?: del)? documental|(?: de la) pel[ií]cula)?",
         r"Exposici[oó]n",
         r"Danza",
         r"Noches? de Cl[aá]sicos?",
@@ -162,6 +192,9 @@ def _rm_prefix():
         r"Representaci[óo]n teatral",
         r"Taller",
         r"Conversaciones WAIQ",
+        r"Muestra Teatral",
+        r"Espect[aá]culo de Danza",
+        r"Taller de Danza",
         r"TALLER DE FORMACI[OÓ]N LIBERTARIA, ANARKADEMIA, \d+.? EDICI[OÓ]N",
     ])
     PREFIX_2 = r"|".join({
@@ -179,8 +212,14 @@ def _rm_prefix():
 
 @cache
 def _rm_sufix():
-    SEP = r"[\-\.\|]"
+    SEP = r"[–\-\.\|]"
     SUFIX_1 = "|".join([
+        r"Fiesta de verano",
+        r"Cl[aá]sicos a refugio",
+        r"Muestra '?Raquel P[eé]rez Formaci[oó]n Actoral'?",
+        r"[OÓ]h!pera Summer \d+",
+        r"(?:Sede:? )?(?:Cine Estudio CBA|Sala Berlanga|centro cultural Paco Rabal|Sala Equis|Academia de Cine|Cine Dor[ée]|Yelmo Ideal)",
+        r"(?:Sede:? )?Fundación Casa de M[eé]xico(?: en España)",
         r"(?:Actividades )?(?:viernes|s[aá]bado|domingo) (?:tarde|mañana)",
         r"Las tertulias de Eirene Editorial",
         r"Visita a la colecci[oó]n del Museo",
@@ -202,7 +241,7 @@ def _rm_sufix():
         r"Biblioteca Ana Mar[ií]a Matute",
         r"III Edici[oó]n",
         r"\d+ de abril",
-        r"\d+ª Muestra de Cine Lésbico"
+        r"\d+ª Muestra de Cine Lésbico",
     ])
     SUFIX_2 = "|".join([
         r"en el Espacio de Igualdad Lourdes Hernández",
@@ -218,6 +257,14 @@ def _rm_sufix():
 def _rm_quote():
     NQ = r"[^"+_QT+"]"
     PREFIX = "|".join([
+        r"CLUB DE LECTUR[aⒶ] del Ateneo\.?",
+        r"Cine[\-\s*]*f[oó]rum del Ateneo[\s\.\-]*Proyecci[óo]n de",
+        r"Representaci[oó]n teatral",
+        r"Presentación del informe",
+        r"Grupo de lectura",
+        r"Muestra de teatro del colectivo de la Rosa",
+        r"Presentaci[oó]n del libro",
+        r"Cinef[oó]rum Isabel S[aá]nchez",
         r"Concierto(?: de)?",
         r"Cineclub(?: con)?",
         r"Proyección(?: de)?",
@@ -229,6 +276,7 @@ def _rm_quote():
         r"Documental",
         r"Jornadas",
         r"club de lectura",
+        r"Mesa redonda",
     ])
     re_3 = r"(?:"+PREFIX+r")"
     re_prefix = re.compile(r"^"+re_3+NQ+r"*(["+_QT+r"])", flags=re.I)
@@ -242,7 +290,6 @@ def _sub_1():
         r"(Red de Escuelas) Municipales del Ayuntamiento de Madrid",
         r"(Piano City) (?:Madrid *'?\d+|Madrid|'?\d+)"
         r"(Asociación de Jubilados) (?:del )?Ayuntamiento(?: de Madrid)?",
-        r"^[a-zA-ZáéÁÉ]+ con Historia[\.\s]+([vV]isitas guiadas tem[aá]ticas a la colecci[oó]n)[\.\s]+[a-zA-Z]+",
         r"(¿|¡|«|“|‘|`|\(|\[)\s+",
         r"\s+(\?|\!|»|”|’|´|\)|\]|\.|,|;|:)",
     ])
@@ -257,25 +304,27 @@ def clean_name(name: str):
         raise ValueError(f"name must be a str, but is a {type(name)}: {name}")
     if re.search(r"Visitas? dialogadas? Matadero", name):
         return "Visita dialogada Matadero"
-    bak = ['']
+
+    bak = []
 
     name = re.sub(r"&quot;", '"', name)
-    while bak[-1] != name:
+    while len(name) >= 2 and name not in bak:
         bak.append(str(name))
         name = RE_DEDUP.sub(lambda m: m.group(0)[0], name)
         name = RE_TRIM.sub("", name)
         name = normalize_quote(name)
         name = re.sub(r"\.\.\.\s*", "… ", name).strip()
+        name = re.sub(r"[–—]+", "-", name).strip()
         name = _rm_prefix().sub("", name)
         name = _rm_sufix().sub("", name)
         name = _rm_quote().sub(r"\1", name)
-        name = _sub_1().sub(r"\1", name)
+        name = _sub_1().sub(lambda m: next(g for g in m.groups() if g is not None), name)
         name = capitalize(name)
-        if len(name) < 2:
-            name = bak[-1]
-    w1 = name[0]
-    if w1.isalpha():
-        name = w1.upper()+name[1:]
+
+    if bak and len(name) < 2:
+        name = bak[-1]
+    if name and name[0].isalpha():
+        name = name[0].upper()+name[1:]
     return name
 
 
@@ -293,15 +342,35 @@ DIRECTORS = list(map(_escape, map(str.lower, [
     'Mia Maariel Meyer',
     'James Ward Byrkit',
     'Angela Schanelec',
+    'Jessica Palud',
     'Stephen Daldry',
+    'Mike Nichols',
     'Woody Allen',
+    'Avelina Prat',
     'Albert Serra',
+    'Jim Jarmusch',
     'Soraya González Guerrero',
     'Nuria Frigola Torrent',
     "François-Xavier Tregan",
     "Raquel Larrosa",
     "Rodrigo García",
     "Álvaro Hernández Blanco",
+    "Robert Rodríguez",
+    "Joann Sfar",
+    'Jean-Claude Flamand-Barny',
+    'Sébastien Lifshitz',
+    'Gilles Perret',
+    'Stéphane Demoustier',
+    'Sophie Deraspe',
+    'Stefan Liberski',
+    'Mehdi Idir y Grand Corps Malade',
+    'Jean-Paul Salomé',
+    'Sol Iglesias',
+    'Jack Hazan',
+    'Lucrecia Martel',
+    'Yorgos Lanthimos',
+    'Binka Zheliazkova',
+    'Jacques Deray',
 ])))
 
 
@@ -312,9 +381,12 @@ def _re_director(*directors):
             DIRECTORS.append(d)
 
     dr = "|".join(DIRECTORS)
-    re1 = re.compile(r"^\s*(?P<director>"+dr+r")\s*-\s*(?P<title>.+)\s*$", flags=re.I)
-    re2 = re.compile(r"^(?P<title>.+?)\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I)
-    return re1, re2
+    return (
+        re.compile(r"^\s*(?P<director>"+dr+r")\s*[\-\.]+\s*(?P<title>.+)\s*$", flags=re.I),
+        re.compile(r"^'\s*(?P<title>.+?)\s*'\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I),
+        re.compile(r"^«\s*(?P<title>.+?)\s*»\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I),
+        re.compile(r"^(?P<title>.+?)\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I)
+    )
 
 
 def find_director(name: str, *directors: str):

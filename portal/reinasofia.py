@@ -4,26 +4,30 @@ from urllib.parse import urljoin
 from core.util import parse_obj, get_obj, re_or, find_euros
 from typing import NamedTuple, Optional
 from types import MappingProxyType
-from core.event import Event, Category, CategoryUnknown, Session
+from core.event import Event, Category, CategoryUnknown, Session, Cinema
 from core.place import Places
-from functools import cache, cached_property
+from functools import cached_property
 from core.web import buildSoup, get_text
 import re
 import logging
 from core.fetcher import Getter
 from aiohttp import ClientResponse
-from bs4 import Tag
 from datetime import datetime
 from core.md import MD
+from portal.base import Base
+from bs4 import Tag
+
 
 logger = logging.getLogger(__name__)
-
+TOP_YEAR = datetime.now().year + 1
 
 class InfoSoup(NamedTuple):
     capacity: Optional[str] = None
     audience: Optional[str] = None
     shop: Optional[str] = None
+    schedule: Optional[str] = None
     txt: Optional[str] = None
+    language: Optional[str] = None
     disabled: Optional[bool] = False
 
 
@@ -56,7 +60,8 @@ async def rq_to_info(r: ClientResponse):
             continue
         k = {
             "aforo": "capacity",
-            "audiencia": "audience"
+            "audiencia": "audience",
+            "activity.details.languaje": "language"
         }.get(k.lower())
         if k:
             info[k] = v
@@ -66,12 +71,22 @@ async def rq_to_info(r: ClientResponse):
     f = div.select_one("a[class*='LinkButton-module--disabled']")
     if f:
         info['disabled'] = True
-    txt = []
-    for s in map(MD.convert, div.select("div[class*='ButtonWithHelpText']")):
-        if s and s not in txt:
-            txt.append(s)
-    if txt:
-        info['txt'] = "\n\n".join(txt)
+
+    def _to_md(d: Tag, slc: str):
+        if not isinstance(d, Tag):
+            return None
+        txt: list[str] = []
+        for s in map(MD.convert, d.select(slc)):
+            if s and s not in txt:
+                txt.append(s)
+        md = "\n\n".join(txt)
+        md = md.strip()
+        if len(md):
+            return md
+
+    info['schedule'] = _to_md(soup, "div[class*='FutureActivity-module--activityContent'] div[class*='ScheduleItem-module--scheduleItem']")
+    info['txt'] = _to_md(div, "div[class*='ButtonWithHelpText']")
+
     return InfoSoup(**info)
 
 
@@ -147,21 +162,17 @@ def re_parse(obj):
     s_id = obj.get('id')
     if isinstance(s_id, str) and s_id.isdecimal():
         obj['id'] = int(s_id)
-    lang = obj.get("language")
-    if lang not in ("es", None):
-        return None
-    if lang == "es":
-        del obj['language']
     return obj
 
 
-class ReinaSofia:
+class ReinaSofia(Base):
     ROOT = "https://www.museoreinasofia.es"
     IMG = "https://recursos.museoreinasofia.es/styles/large_landscape/public/"
     SEARCH = "https://buscador.museoreinasofia.es/api/search?langcode=es&exactMatch=false"
     ENTRADA_GENERAL = 12
 
-    def __init__(self):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
         self.__s = ReqSession()
         self.__size = 100
 
@@ -222,10 +233,7 @@ class ReinaSofia:
             items=tuple(arr),
         )
 
-    @property
-    @TupleCache("rec/reinasofia.json", builder=Event.build)
-    def events(self):
-        logger.info("Buscando eventos en Reina Sofia")
+    def _get_events(self):
         evs: set[Event] = set()
         for i in self._index.items:
             _id_ = i['id']
@@ -248,13 +256,29 @@ class ReinaSofia:
                 ) for s in i['processedDates']),
                 cycle=None
             )
-            if e.category != Category.CINEMA:
+            if e.category == Category.CINEMA:
+                e = e.fix_type().merge(
+                    year=self.__find_year(e, i)
+                )
+            else:
                 e = e.merge(
                     cycle=self.__find_cycle(e, i)
                 )
             evs.add(e)
-        logger.info(f"Buscando eventos en Reina Sofia = {len(evs)}")
         return tuple(sorted(evs))
+
+    def __find_year(self, ev: Cinema, i: dict):
+        _id_ = i['id']
+        info = self._index.info.get(_id_)
+        if info is None or info.schedule is None:
+            return None
+        years: set[int] = set()
+        for m in re.findall(r", (\d{4}),", info.schedule):
+            y = int(m)
+            if y > 1900 and y <= TOP_YEAR:
+                years.add(y)
+        if len(years) == 1:
+            return years.pop()
 
     def __find_cycle(self, ev: Event, i: dict):
         if ev.category == Category.CONFERENCE and re_or(
@@ -336,6 +360,13 @@ class ReinaSofia:
         title = get_text(i['title'])
         subtitle = get_text(i.get('subtitle'))
         if re_or(
+            title,
+            r"^Refugio clim[aá]tico$",
+            r"Microcredencial universitaria",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+        if re_or(
             subtitle,
             "para grupos de Educaci[oó]n Infantil",
             r"p[uú]blico infantil",
@@ -385,6 +416,12 @@ class ReinaSofia:
                 "visita",
                 flags=re.I
             ):
+                if re_or(
+                    info.language if info else None,
+                    r"^ingl[ée]s$",
+                    flags=re.I
+                ):
+                    return Category.NON_GENERAL_PUBLIC
                 return Category.VISIT
             if re_or(
                 txt,
@@ -438,5 +475,7 @@ class ReinaSofia:
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/reinasofia.log", log_level=logging.INFO)
     r = ReinaSofia()
-    r.events
+    r.get_events()

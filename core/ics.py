@@ -5,7 +5,7 @@ from dataclasses import dataclass, asdict
 import re
 from core.filemanager import FM
 from typing import Union, Callable, Optional
-from core.util import to_uuid
+from core.util import to_uuid, get_domain
 from icalendar import Calendar, vDDDTypes, Component, vText
 from icalendar.prop import vCategory
 from datetime import date
@@ -48,7 +48,7 @@ def _fix_width(s: str, prefix: int):
     return "\n ".join(arr)
 
 
-def normalize_date(dt: date | datetime, tz: ZoneInfo):
+def normalize_date(dt: date | datetime, tz: ZoneInfo, domain: Optional[str] = None):
     if isinstance(dt, date) and not isinstance(dt, datetime):
         return datetime.combine(
             dt,
@@ -56,7 +56,7 @@ def normalize_date(dt: date | datetime, tz: ZoneInfo):
             tzinfo=tz
         )
     if isinstance(dt, datetime):
-        if dt.tzinfo is None:
+        if dt.tzinfo is None or (domain == "madrid.cnt.es" and str(dt.tzinfo) == "Europe/Helsinki"):
             return dt.replace(
                 tzinfo=tz
             )
@@ -152,6 +152,7 @@ class IcsEventWrapper:
     def __init__(self, event: Component, source: str = None):
         self.__event = event
         self.__source = source
+        self.__domain = get_domain(source)
 
     @property
     def source(self):
@@ -171,7 +172,7 @@ class IcsEventWrapper:
         dt = val.dt
         if not isinstance(dt, date) and not isinstance(dt, datetime):
             raise IcsEventInvalid(f"Valor no es vDDDTypes con datetime: {val!r}")
-        return normalize_date(dt, ZoneInfo(TZ_ZONE))
+        return normalize_date(dt, ZoneInfo(TZ_ZONE), domain=self.__domain)
 
     def __get_text(self, key: str, mandatory: bool = False):
         val = self.__event.get(key)
@@ -359,7 +360,7 @@ class IcsReader:
 
 if __name__ == "__main__":
     ics = IcsReader(
-        "https://fal.cnt.es/events/lista/?ical=1",
+        "https://madrid.cnt.es/agenda/lista/?ical=1",
     )
     for e in ics.events:
         print(e.DTSTART, e.DTEND)

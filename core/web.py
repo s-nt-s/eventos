@@ -51,7 +51,8 @@ default_headers = {
     "Expires": "Thu, 01 Jan 1970 00:00:00 GMT",
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
-    'Accept-Encoding': 'gzip, deflate, br',
+    #'Accept-Encoding': 'gzip, deflate, br',
+    'Accept-Encoding': 'gzip, deflate',
     'DNT': '1',
     'Connection': 'keep-alive',
     'Upgrade-Insecure-Requests': '1',
@@ -106,6 +107,22 @@ def get_text(node: Tag | str, default: Optional[str] = None):
     return txt
 
 
+def get_attr(node: Tag | str, attr: str, default: Optional[str] = None):
+    if node is None:
+        return default
+    if isinstance(node, str):
+        node = buildSoup(None, node)
+    txt = node.attrs.get(attr)
+    if txt is None:
+        return default
+    if not isinstance(txt, str):
+        raise ValueError(txt)
+    txt = re_sp.sub(" ", txt).strip()
+    if len(txt) == 0:
+        return default
+    return txt
+
+
 def refind(tag: Tag, slc: str, rgx: str) -> tuple[Tag]:
     arr: list[Tag] = []
     for n in tag.select(slc):
@@ -121,7 +138,7 @@ class WebException(Exception):
 
 class Web:
     def __init__(self, refer=None, verify=True):
-        self.s = buildScraper()
+        self.s = buildSession() if verify is False else buildScraper()
         self.s.headers = default_headers
         self.response = None
         self.soup = None

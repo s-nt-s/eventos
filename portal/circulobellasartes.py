@@ -7,9 +7,9 @@ import re
 from datetime import date, datetime
 from core.fetcher import Getter
 from aiohttp import ClientResponse
-from core.cache import TupleCache
 from core.md import MD
 import logging
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +73,21 @@ def table_to_dict(table: Tag):
     return info
 
 
+def _find_img(soup: Tag):
+    for n in soup.select(",".join((
+        'div.fl-col-small div.fl-photo[role="figure"] img.entered[data-src]',
+        'div.fl-col-small div.fl-photo[role="figure"] div.fl-photo-content > img.fl-photo-img[data-src]'
+    ))):
+        img = n.attrs.get("data-src")
+        if img:
+            return img
+    for n in soup.select('meta[property="og:image"][content]'):
+        img = n.attrs.get("content")
+        if img:
+            return img
+    return None
+
+
 async def soup_to_cinema(url: str, soup: Tag):
     if soup.find(string=re.compile(r"^\s*Este\s+evento\s+ha\s+finalizado\s*$")):
         return None
@@ -84,7 +99,6 @@ async def soup_to_cinema(url: str, soup: Tag):
         if aux:
             h3 = aux
     inf = table_to_dict(soup.select_one("table.cba_tabla_ficha"))
-    img = soup.select_one('div.fl-col-small div.fl-photo[role="figure"] img.entered[data-src]')
     year = inf.get("año")
     if year is not None and year.isdigit():
         year = int(year)
@@ -100,7 +114,7 @@ async def soup_to_cinema(url: str, soup: Tag):
         category=Category.CINEMA,
         sessions=tuple(),
         duration=inf.get("duration"),
-        img=img.attrs.get("data-src") if img else None,
+        img=_find_img(soup),
         price=None,
     )
     price_event: dict[float, Cinema] = {}
@@ -157,10 +171,9 @@ async def soup_to_event(url: str, soup: Tag):
     d, m, y, h, mm = dt_int
     dt = datetime(y, m, d, h, mm)
     name = get_text(soup.select_one("div[data-post-id] h1"))
-    meta = soup.select_one('meta[property="og:image"][content]')
     ev = Event(
         id="cba"+to_uuid(url),
-        img=meta.attrs.get("content") if meta else None,
+        img=_find_img(soup),
         url=url,
         name=name,
         place=Places.CIRCULO_BELLAS_ARTES.value,
@@ -179,7 +192,7 @@ def _find_category(url: str, title: str, soup: Tag):
     desc = MD.convert(soup.select_one(
         'div:has(+ footer) div.fl-col:not(.fl-col-small) div.fl-module-rich-text[data-node]'
     ))
-    isPresentacion = re_or(full_title, "presentaci[oó]n", flags=re.I)
+    isPresentacion = re_or(full_title, "presentaci[oó]n", flags=re.I) or re.search(r"^Presentamos\b", desc or '')
     if re_or(
         cat,
         "cursos",
@@ -197,6 +210,7 @@ def _find_category(url: str, title: str, soup: Tag):
         full_title,
         r"Presentaci[óo]n del libro",
         r"Presentaci[oó]n de la revista",
+        r"Presentación del cat[aá]logo",
         flags=re.I
     ):
         return find_book_category(full_title, desc, Category.LITERATURE)
@@ -205,9 +219,24 @@ def _find_category(url: str, title: str, soup: Tag):
         r"Mesa Redonda",
         r"Conferencias?",
         r"Conversaci[oó]n entre",
+        r"P[oó]dcast",
+        r"Ficciones Pol[ií]ticas",
         flags=re.I
     ):
         return Category.CONFERENCE
+    if re_or(
+        full_title,
+        "Jugar para encontrarse",
+        r"Tranjis Games",
+        flags=re.I
+    ):
+        return Category.PARTY
+    if re_or(
+        full_title,
+        "Visita guiada",
+        flags=re.I
+    ):
+        return Category.VISIT
     if isPresentacion and re_or(
         desc,
         "ensayo",
@@ -235,6 +264,7 @@ def _find_category(url: str, title: str, soup: Tag):
         r"La (pr[oó]xima )?(presentaci[oó]n|publicaci[óo]n) del libro",
         r"El libro re[uú]ne textos",
         r"publicaci[oó]n de su libro",
+        r"A partir del libro de",
         flags=re.I
     ):
         return find_book_category(full_title, desc, Category.LITERATURE)
@@ -243,9 +273,13 @@ def _find_category(url: str, title: str, soup: Tag):
         r"panel de conversaci[óo]n",
         r"En esta conferencia",
         r"En este seminario",
-        "el podcast de",
+        r"el podcast de",
+        r"la conferencia",
+        r"mesa de (debate|di[aá]logo)",
         r"la mesa de di[aá]logo abordar[aá]",
+        r"Una conversación entre",
         r"l[aox@]s ponentes (abordan|van)",
+        r"la conferencia de",
         ("programa", "modera"),
         flags=re.I
     ):
@@ -274,10 +308,11 @@ def _find_category(url: str, title: str, soup: Tag):
     return Category.UNKNOWN
 
 
-class CirculoBellasArtes:
+class CirculoBellasArtes(Base):
     URL_CINEMA = "https://www.circulobellasartes.com/ciclos-cine/peliculas/"
 
-    def __init__(self):
+    def __init__(self, cache: bool | str = True):
+        super().__init__(cache=cache)
         self.__w = Web()
         self.__w.s.headers.update({
             'Accept-Encoding': 'gzip, deflate'
@@ -300,9 +335,7 @@ class CirculoBellasArtes:
                 urls.add(a.attrs["href"])
         return tuple(sorted(urls))
 
-    @cached_property
-    @TupleCache("rec/circulo.json", builder=Event.build)
-    def events(self):
+    def _get_events(self):
         evs: set[Event] = set()
         for x in Getter(
             onread=rq_to_events
@@ -318,5 +351,7 @@ class CirculoBellasArtes:
 
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/ciruclobellasartes.log", log_level=(logging.DEBUG))
     c = CirculoBellasArtes()
-    c.events
+    c.get_events()

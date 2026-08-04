@@ -9,6 +9,7 @@ import re
 from datetime import datetime
 from core.util import re_or, KO_IMG
 from core.md import MD
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class CasaEncendidaException(Exception):
     pass
 
 
-class CasaEncendida:
+class CasaEncendida(Base):
     URL = "https://www.lacasaencendida.es/actividades?t[0]=activity_"
     ACTIVITY_OK = {
         2: Category.CINEMA,
@@ -32,7 +33,8 @@ class CasaEncendida:
         14: Category.ONLINE, # Online
     }
 
-    def __init__(self):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
         self.__w = Web()
         self.__w.s.headers.update({'Accept-Encoding': 'gzip, deflate'})
         self.__url_cat: dict[str, Category] = {}
@@ -80,16 +82,12 @@ class CasaEncendida:
             for a in links:
                 urls.add(a.attrs["href"])
 
-    @property
-    @TupleCache("rec/casaencendida.json", builder=Event.build)
-    def events(self):
-        logger.info("Casa Encendida: Buscando eventos")
+    def _get_events(self):
         events: Set[Event] = set()
         for url in self.get_links():
             ev = self.__url_to_event(url)
             if ev:
                 events.add(ev)
-        logger.info(f"Casa Encendida: Buscando eventos = {len(events)}")
         return tuple(sorted(events))
 
     def __url_to_event(self, url):
@@ -289,10 +287,18 @@ class CasaEncendida:
             if category in (Category.CONFERENCE, ):
                 return href, group
             if category == Category.MUSIC:
-                if re_or(group, "radio encendida", flags=re.I):
+                if re_or(
+                    group,
+                    "radio encendida",
+                    "reguet[oó]n",
+                    flags=re.I
+                ):
                     return href, group
-                if re_or(group, "reguet[oó]n", flags=re.I):
-                    return href, group
+        if category == Category.CINEMA:
+            desc = MD.convert(soup.select_one_txt("div.item-detail__info__content"))
+            minutes = tuple(map(int, re.findall(r"(\d+)[’']", desc)))
+            if len([i for i in minutes if i < 30]) > 1:
+                return None, "Cortometrajes"
         return None, None
 
     def __find_duration(self, info: List[Dict]):
@@ -322,4 +328,4 @@ class CasaEncendida:
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/casaencendida.log", log_level=(logging.DEBUG))
-    print(CasaEncendida().events)
+    print(CasaEncendida().get_events())

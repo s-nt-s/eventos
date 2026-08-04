@@ -122,7 +122,7 @@ class GancioPortal:
         tags: list[str] = list()
         for t in map(str.lower, e.get_list_or_empty('tags')):
             for x in map(str.strip, re.split(r"\s*#\s*", t)):
-                if x is not None and len(x) and x not in tags:
+                if len(x) and x not in tags:
                     tags.append(x)
 
         event = Event(

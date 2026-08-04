@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 import pytz
 from core.md import MD
+from portal.base import Base
 
 
 logger = logging.getLogger(__name__)
@@ -16,8 +17,10 @@ logger = logging.getLogger(__name__)
 RE_SUFIX = re.compile(r"\s*\(\s*(VOSE|DOBLADA AL ESPAÑOL)\s*\)$", re.IGNORECASE)
 NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
+
 def _clean_name(name: str):
     name = RE_SUFIX.sub("", name)
+    name = re.sub(r"\s+\(En diferido desde[^\(\)]+\)\s*$", "", name, flags=re.I)
     return name
 
 
@@ -38,23 +41,22 @@ def _get_date_time(p: Tag):
 
 def _find_place(p: Tag):
     rec = p.attrs["data-recinto"]
-    if rec == "Cine Embajadores":
+    if rec in ("Cine Embajadores", "Cines Embajadores"):
         return Places.CINE_EMBAJADORES.value
-    if rec == "Cine Embajadores Río":
+    if rec in ("Cine Embajadores Río", "Cines Embajadores Río"):
         return Places.CINE_EMBAJADORES_RIO.value
     logger.warning(f"Recinto desconocido: {rec}")
     return None
 
 
-class CineEmbajadores:
-    def __init__(self):
-        self.web = Web()
+class CineEmbajadores(Base):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
+        self.__web = Web(verify=False)
 
-    @property
-    @TupleCache("rec/cineembajadores.json", builder=Event.build)
-    def events(self):
+    def _get_events(self):
         events: set[Event] = set()
-        soup = self.web.get_soup("https://cinesembajadores.es/madrid/")
+        soup = self.__web.get_soup("https://cinesembajadores.es/madrid/")
         for div in soup.select("li.movie"):
             evs = self.__div_to_event(div)
             if evs is not None and len(evs):
@@ -108,9 +110,36 @@ class CineEmbajadores:
         name = get_text(a)
         if re_or(
             name,
+            r"Sesi[oó]n TETA",
+            flags=re.I
+        ):
+            return Category.NON_GENERAL_PUBLIC
+        if re_or(
+            name,
+            r"OPERA FESTIVAL",
+            r"Teatro alla Scala de Mil[aá]n",
+            flags=re.I
+        ):
+            return Category.THEATER
+        if re_or(
+            name,
+            r"Cl[aá]sicos al detalle",
+            flags=re.I
+        ):
+            return Category.WORKSHOP
+        if re_or(
+            name,
             r"German Film Fest",
             r"Cortometrajes?",
             r"Pel[ií]cula SORPRESA",
+            r"Cine a ciegas",
+            r"VOSE",
+            r"DOBLADA AL ESPAÑOL",
+            r"Cine con piano en directo",
+            r"Domingo de cl[aá]sicos",
+            r"Cuba vibra",
+            r"Espacio Queer",
+            r"festival de cine",
             flags=re.I
         ):
             return Category.CINEMA
@@ -120,10 +149,11 @@ class CineEmbajadores:
             flags=re.I
         ):
             return Category.MUSIC
-        for h in map(get_text, div.select("div.more h5")):
-            m = re.match(r"^\s*Reparto\s*:\s*.*?(Documental).*?$", h, re.IGNORECASE)
-            if m:
-                return Category.CINEMA
+        if next(self.__yield_field(
+            div,
+            re.compile(r"^\s*Reparto\s*:\s*.*?(Documental).*?$", re.I)
+        ), None):
+            return Category.CINEMA
         sinopsis = MD.convert(div.select_one("div.sinopsis"))
         if re_or(
             sinopsis,
@@ -131,6 +161,21 @@ class CineEmbajadores:
             flags=re.I
         ):
             return Category.CONFERENCE
+        if re_or(
+            sinopsis,
+            r"documental",
+            r"proyecci[óo]n",
+            r"cortometrajes",
+            flags=re.I
+        ):
+            return Category.CINEMA
+        if len(tuple(self.__yield_field(
+            div,
+            re.compile(r"^\s*(Reparto|Direcci[oó]n)\s*:\s*.+\s*$", re.I)
+        ))) > 1:
+            return Category.CINEMA
+        if get_text(div.select_one("div.info li.doblaje")):
+            return Category.CINEMA
         logger.critical(str(CategoryUnknown(url, name)))
         return Category.UNKNOWN
 
@@ -162,6 +207,12 @@ class CineEmbajadores:
             return 12
         if re_or(
             name,
+            r"Cl[aá]sicos al detalle",
+            flags=re.I
+        ):
+            return 10
+        if re_or(
+            name,
             r"OPERA FESTIVAL",
             r"Teatro alla Scala de Mil[aá]n",
             flags=re.I
@@ -176,14 +227,22 @@ class CineEmbajadores:
 
         return 7.5
 
-    def __find_director(self, div: Tag):
+    def __yield_field(self, div: Tag, rgx: re.Pattern):
         for h in map(get_text, div.select("div.more h5")):
-            m = re.match(r"^\s*Director\s*:\s*(.+)$", h, re.IGNORECASE)
+            m = rgx.match(h)
             if m:
-                directors: list[str] = []
-                for d in tuple(map(str.strip, re.split(r",\s+", m.group(1)))):
-                    if d and d not in directors:
-                        directors.append(d)
+                yield m
+
+    def __find_director(self, div: Tag):
+        for m in self.__yield_field(
+            div,
+            re.compile(r"^\s*Director\s*:\s*(.+)$", re.I)
+        ):
+            directors: list[str] = []
+            for d in tuple(map(str.strip, re.split(r",\s+", m.group(1)))):
+                if d and d not in directors:
+                    directors.append(d)
+            if len(directors):
                 return tuple(directors)
 
     def __find_place_session(self, div: Tag):
@@ -207,4 +266,4 @@ class CineEmbajadores:
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/cineembajadores.log", log_level=logging.INFO)
-    CineEmbajadores().events
+    CineEmbajadores().get_events()

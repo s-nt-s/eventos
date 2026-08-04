@@ -44,7 +44,8 @@ class DBlite:
             logger.info(f"Connecting to {self.__file}")
             self.__con = connect(
                 f"file:{self.__file}?mode=ro&immutable=1",
-                uri=True
+                uri=True,
+                check_same_thread=False
             )
         return self.__con
 

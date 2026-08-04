@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from core.event import Event, Category, Session
+from core.event import Event, Category, Session, Cinema
 from core.ics import SimpleIcsEvent
 from core.j2 import Jnj2, toTag, dom_simplify
 from datetime import datetime, timedelta, date
@@ -27,9 +27,11 @@ from core.dwn import DWN
 
 config_log("log/build_site.log")
 logger = logging.getLogger(__name__)
+if environ.get("PAGE_OUT") is None:
+    environ["PAGE_OUT"] = "out/"
 
 PAGE_URL = environ['PAGE_URL']
-OUT = "out/"
+OUT = environ["PAGE_OUT"]
 WHITE = (255, 255, 255)
 STR_TODAY = date.today().strftime("%Y-%m-%d")
 
@@ -226,6 +228,7 @@ def event_to_ics_description(e: Event, s: Session):
     url_shop = next(_iter_urls(
         re.compile(r"\btienda\.madrid-destino\.com/es/.+/\d+(/|$)", flags=re.I),
         "eventim-light.com",
+        "ticket.caixaforum.org",
         "entradas.aliro.academiadecine.com",
         "entradasfilmoteca.sacatuentrada.es",
         "espacio.fundaciontelefonica.com",
@@ -238,11 +241,14 @@ def event_to_ics_description(e: Event, s: Session):
         "tienda.madrid-destino.com",
         "tickets.caixaforum.org",
         "giglon.com",
+        "es.patronbase.com",
+        "casaasia.powerappsportals.com",
         re.compile(r"\blacasaencendida\.es/.*eventId=\d+", flags=re.I),
         "lacasaencendida.es",
         "teatromonumental.es",
         "tickets.lamariqueen.com",
         "reservaentradas.com",
+        "madrid.extranet-aec.com",
         re.compile(r"https?://madrid\.extranet-aec\.com/carts", flags=re.I),
         "eventbrite.es"
     ), None)
@@ -260,7 +266,7 @@ def event_to_ics_description(e: Event, s: Session):
     if url_shop is None:
         lines.append(f"{price} €")
 
-    PAPEL = "gestiona3.madrid.org"
+    PAPEL = ("gestiona3.madrid.org", "gestiona.comunidad.madrid")
     DIGITAL = "madrid.ebiblio.es"
     for u in _iter_urls(
         "filmaffinity.com",
@@ -272,7 +278,7 @@ def event_to_ics_description(e: Event, s: Session):
         "madrid.ebiblio.es",
     ):
         dom = get_domain(u)
-        if dom == PAPEL:
+        if dom in PAPEL:
             lines.append(f"Disponible en papel en {u}")
         elif dom == DIGITAL:
             lines.append(f"Disponible en digital en {u}")
@@ -292,19 +298,21 @@ def event_to_ics_description(e: Event, s: Session):
     return "\n\n".join(lines)
 
 
-def event_to_ics(now: datetime, e: Event, s: Session, img: MyImage):
+def event_to_ics(now: datetime, e: Event | Cinema, s: Session, img: MyImage):
     description = event_to_ics_description(e, s)
     dtstart = to_datetime(s.date)
     dtend = dtstart + timedelta(minutes=(s.duration or e.duration or 120))
-    url_img = e.img
-    if img:
-        url_img = img.url
+    #url_img = img.url if img else e.img
+    sumary = s.title or e.name
+    if isinstance(e, Cinema) and e.cycle is None and any((e.filmaffinity, e.imdb)):
+        if e.year and str(e.year) not in sumary:
+            sumary = f"{sumary} ({e.year})"
     return SimpleIcsEvent(
         uid=f"{e.id}_{s.id}",
         dtstamp=now,
         url=(s.url or e.url),
         categories=str(e.category),
-        summary=s.title or e.name,
+        summary=sumary,
         description=description,
         location=e.place.address,
         organizer=e.place.name,
@@ -348,6 +356,7 @@ def set_icons(html: str, **kwargs):
         dom = get_domain(href)
         dom = dom.rsplit(".", 1)[0]
         ico = {
+            "pianocitymadrid": "https://pianocitymadrid.es/wp-content/uploads/2024/05/cropped-PCM_LOGO_DEF-2-32x32.png",
             "autocines": "https://autocines.com/wp-content/uploads/2021/01/cropped-favicon-32x32-1-32x32.png",
             "filmaffinity": "https://www.filmaffinity.com/favicon.png",
             "atrapalo": "https://www.atrapalo.com/favicon.ico",
@@ -377,6 +386,7 @@ def set_icons(html: str, **kwargs):
             "teatromonumental": "https://www.teatromonumental.es/wp-content/uploads/fbrfg/favicon.svg",
             "gestiona3.madrid": "https://madrid.ebiblio.es/favicon/espa.ico",
             "madrid.ebiblio": "https://madrid.ebiblio.es/favicon/espa.ico",
+            "gestiona.comunidad": "https://gestiona.comunidad.madrid/favicon.ico",
             "lacasaencendida": "https://cdn.lacasaencendida.es/images/favicon/favicon.svg",
             "caixaforum": "https://sites.fundacionlacaixa.org/favicons/favicon.ico",
             "casademexico": "https://www.casademexico.es/wp-content/uploads/2025/09/cropped-favicon-fcdme-32x32.png",
@@ -387,6 +397,8 @@ def set_icons(html: str, **kwargs):
             "intermediae": "https://www.intermediae.es/themes/custom/intermediae_theme/favicon.ico",
             "serreria-belga": "https://www.serreria-belga.es/themes/custom/serreria_belga/favicon.ico",
         }.get(dom)
+        if re.search(r"/biblio_publicas/cgi-bin/abnetopac\?TITN=", href):
+            ico = "https://madrid.ebiblio.es/favicon/espa.ico"
         if ico is None:
             continue
         cls = dom.replace(".", "_")

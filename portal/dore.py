@@ -9,6 +9,8 @@ from core.util import to_uuid
 from datetime import date
 from core.md import MD
 from typing import NamedTuple, Optional
+from collections import defaultdict
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +39,20 @@ def to_title_year(t: str, y: int):
     return f"{t} ({y})"
 
 
-class Dore(Web):
+class Dore(Base):
     URL = "https://entradasfilmoteca.sacatuentrada.es/es/busqueda?precio_desde=0&precio_hasta=5&pagina="
     PRICE = 3
+
+    def __init__(self, cache: str|bool = True):
+        super().__init__(cache)
+        self.__w = Web()
 
     def __iter_divs(self):
         page = 0
         while True:
             page = page + 1
-            self.get(f"{Dore.URL}{page}")
-            divs = self.soup.select("#contenedor-productos div.productos > div")
+            self.__w.get(f"{Dore.URL}{page}")
+            divs = self.__w.soup.select("#contenedor-productos div.productos > div")
             if len(divs) == 0:
                 break
             for div in divs:
@@ -57,22 +63,17 @@ class Dore(Web):
                 if not div.find("span", string=re.compile(r"^\s*Agotado\s*$", flags=re.I)):
                     yield url_info, div
 
-    @property
-    @TupleCache("rec/dore.json", builder=Event.build)
-    def events(self):
-        logger.info("Dore: Buscando eventos")
+    def _get_events(self):
         events: set[Event] = set()
         for url_info, div in self.__iter_divs():
             events.add(self.__div_to_event(url_info, div))
         events = self.__clean_events(events)
-        logger.info(f"Dore: Buscando eventos = {len(events)}")
         return tuple(events)
 
     def __clean_events(self, all_events: set[Event]):
-        data: dict[str, set[Event]] = {}
+        data: dict[str, set[Event]] = defaultdict(set)
         for e in all_events:
-            if e.name not in data:
-                data[e.name] = set()
+            e = e.fix()
             data[e.name].add(e)
         vnts: set[Event] = set()
         for arr in map(sorted, data.values()):
@@ -105,32 +106,38 @@ class Dore(Web):
             d = re.sub(r"[\s,\.]+$", "", d)
             if d not in ("", "VV.AA") and d not in director:
                 director.append(d)
-        
+
         h2 = get_text(div.select_one("h2"))
         h2 = h2.rstrip(" .,")
-        for title, original, year in re.findall(r"([^\(\)]+)\(([^\(\)]+\s*,\s*)?((?:19|20)\d{2})\)", h2):
-            title = re.sub(r"^y?\s+", "", title.strip())
-            original = re.sub(r"^\s+|\s*,$", "", original.strip())
+
+        def _iter():
+            ok = False
+            for r in (
+                r"([^\(\)]+)\(([^\(\)]+\s*,\s*)?((?:19|20)\d{2})?\)",
+                r"([^\(\)]+) \(([^\(\)]+)\) \(((?:19|20)\d{2})?\)",
+            ):
+                for title, original, year in re.findall(r, h2):
+                    title = re.sub(r"^y?\s+", "", title.strip())
+                    original = re.sub(r"^\s+|\s*,$", "", original.strip())
+                    if len(title) == 0:
+                        continue
+                    ok = True
+                    yield title, original, int(year) if len(year) else None
+            if ok is False:
+                years = set(map(int, re.findall(r"[,\(]\s*((?:20|19)\d{2})\s*\)", h2)))
+                yield h2, None, years.pop() if years else None,
+
+        for title, original, year in _iter():
             m = Movie(
                 title=title,
                 original=original if original else None,
-                year=int(year),
+                year=year,
                 director=tuple(director)
             )
             if m not in movies:
                 movies.append(m)
 
-        if len(movies) == 0:
-            years = set(map(int, re.findall(r"[,\(]\s*((?:20|19)\d{2})\s*\)", h2)))
-            movies.append(Movie(
-                title=h2,
-                original=None,
-                year=years.pop() if years else None,
-                director=tuple(director)
-            ))
-
         return movies
-
 
     def __div_to_event(self, url: str, div: Tag):
         movies = self.__movies_from_div(div)
@@ -201,4 +208,4 @@ class Dore(Web):
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/dore.log", log_level=(logging.DEBUG))
-    print(Dore().events)
+    Dore().get_events()

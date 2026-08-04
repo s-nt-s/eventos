@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict, fields, replace
-from core.util import get_obj, plain_text, re_or, re_and
+from core.util import get_obj, plain_text, re_or, re_and, find_cp
 from core.util.strng import capitalize
 from urllib.parse import quote
 import logging
@@ -9,17 +9,6 @@ from core.zone import Zones
 from enum import Enum
 
 logger = logging.getLogger(__name__)
-
-
-def find_cp(s: str):
-    if s is None:
-        return None
-    cp: set[int] = set()
-    for c in map(int, re.findall(r"\b(28\d+)", s)):
-        if c <= 28999:
-            cp.add(c)
-    if len(cp) == 1:
-        return cp.pop()
 
 
 def safe_lt(a: str | None, b: str | None):
@@ -41,6 +30,12 @@ class Place:
     latlon: str = None
     zone: str = None
     map: str = None
+
+    def get_cp(self):
+        for s in (self.address, self.name):
+            cp = find_cp(s)
+            if cp is not None:
+                return cp
 
     def merge(self, **kwargs):
         return replace(self, **kwargs)
@@ -126,6 +121,8 @@ class Place:
             return self.zone
         name = plain_text(self.name) or ''
         addr = plain_text(self.address) or ''
+        if re_or(name, r"plaza de chamber[ií]", flags=re.I):
+            return "Alonso Martinez"
         if re_or(
             name,
             r"d?el retiro",
@@ -221,14 +218,26 @@ class Place:
             flags=re.I
         ):
             return Zones.ALCALA_DE_HENARES.value.name
-        cp = find_cp(self.address) or find_cp(self.name)
+        if re_or(
+            self.name,
+            r"^Plaza( de)? España$",
+            flags=re.I
+        ):
+            return "Plaza España"
+        cp = self.get_cp()
         zone = {
-            #
+            28012: Zones.LAVAPIES.value.name,
+            #28027: "Concepción",
+            28014: "Paseo del Prado",
+            28040: Zones.COMPLUTENSE.value.name,
+            28045: Zones.LEGAZPI.value.name,
+            28004: Zones.TRIBUNAL.value.name,
+            28025: Zones.CARABANCHEL.value.name,
         }.get(cp)
         if zone is not None:
             return zone
         if cp:
-            logger.debug(f"NOT FOUND cp={cp}")
+            logger.debug(f"NOT FOUND Zone for cp={cp}")
         return None
 
     def _fix_latlon(self):
@@ -240,8 +249,15 @@ class Place:
     def normalize(self):
         name = self.name or ''
         address = self.address or ''
+        name_address = f"{name} {address}".strip()
         if re.match(r"^Faro de (la )?Moncloa$", name, flags=re.I):
             return Places.FARO_MONCLOA.value
+        if re_or(
+            name,
+            "mk2 cine paz",
+            flags=re.I
+        ):
+            return Places.MK2_CINE_PAZ.value
         if re_or(
             name,
             r"^Conde ?Duque$",
@@ -279,14 +295,22 @@ class Place:
             return Places.CENTRO_CENTRO.value
         if re.search("cineteca", name, flags=re.I) and (self.latlon == Places.CINETECA.value.latlon or re_or(self.address, "Legazpi", flags=re.I)):
             return Places.CINETECA.value
+        if re.search("cineteca( de)? Madrid", name, flags=re.I):
+            return Places.CINETECA.value
         if re.search(r"\bESLA EKO\b", name, flags=re.I) or re_and(address, "[aá]nade,? 10", flags=re.I):
             return Places.EKO.value
         if re_or(
             name,
             r"FAL",
             r"Fundaci[óo]n Anselmo Lorenzo",
+            r"CNT Madrid en Madrid Destino",
             flags=re.I
-        ) and re_and(address, "Peñuelas", flags=re.I):
+        ) and re_or(
+            address,
+            r"Peñuelas",
+            r"CNT Madrid en Madrid Destino",
+            flags=re.I
+        ):
             return Places.FUNDACION_ALSELMO_LORENZO.value
         if re.search(r"auditorio francisca (martinez|Mtnez\.?) garrido", name, flags=re.I):
             return Places.AUDITORIO_FRANCISCA_MARTINEZ_GARRIDO.value
@@ -296,7 +320,7 @@ class Place:
             return Places.CSO_DISKORDIA.value
         if re.search(r"Sala Clamores", name, flags=re.I) and re.search(r"Alburquerque.*14", address, flags=re.I):
             return Places.SALA_CLAMORES.value
-        if re.search(r"casa del barrio.*carabanchel", name, flags=re.I):
+        if re.search(r"casa del barrio.*carabanchel", name_address, flags=re.I):
             return Places.CASA_DEL_BARRIO_CARABANCHEL.value
         if re.search(r"la an[oó]nima", name, flags=re.I) and re.search(r"Embajadores.*166", address, flags=re.I):
             return Places.LA_ANONIMA.value
@@ -315,6 +339,16 @@ class Place:
             flags=re.I
         ):
             return Places.ATENEO_MADRID.value
+        if re_or(
+            self.name,
+            "C'est la Vie",
+            flags=re.I
+        ) and re_and(
+            self.address,
+            "Cabeza,? 26",
+            flags=re.I
+        ):
+            return Places.TEATRO_C_EST_LA_VIE.value
         if re_and(self.name, "ateneo", "maliciosa", flags=re.I) and re_and(self.address, "peñuelas", flags=re.I):
             return Places.ATENEO_MALICIOSA.value
         if re_and(self.name, "espacio", flags=re.I) and re_and(self.address, "Sierra Carbonera.* 32", flags=re.I):
@@ -331,6 +365,8 @@ class Place:
             return Places.CSO_ROSA.value
         if re_and(self.address, r"CNT", "embajadores", flags=re.I):
             return Places.CNT_EMBAJADORES.value
+        if re_and(self.name, "museo", "thyssen", flags=re.I):
+            return Places.MUSEO_THYSSEN.value
         if re_and(self.name, "museo", "prado", flags=re.I):
             return Places.MUSEO_PRADO.value
         if re_and(self.name, "demo", "Swing", "Lab", flags=re.I) and re_and(self.address, "Magdalena", flags=re.I):
@@ -377,6 +413,12 @@ class Place:
             flags=re.I
         ):
             return Places.CIRCULO_BELLAS_ARTES.value
+        if re_or(
+            name,
+            "^casa( de)? m[eé]xico$",
+            flags=re.I
+        ):
+            return Places.CASA_MEXICO.value
         if re_or(
             name,
             "casa del lector",
@@ -489,6 +531,12 @@ class Place:
             return Places.OBSERVATORIO_SOSTENIBILIDAD.value
         if re_or(
             name,
+            "cine Dor[ée]",
+            flags=re.I
+        ):
+            return Places.DORE.value
+        if re_or(
+            name,
             "Daoiz y Velarde",
             flags=re.I
         ) and (not address or re_or(
@@ -525,6 +573,36 @@ class Place:
             return Places.LA_RIVIERA.value
         if re_or(
             name,
+            (r"biblioteca hist[óo]rica", "ucm"),
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "Noviciado",
+            flags=re.I
+        )):
+            return Places.BIBLIOTECA_HISTORICA.value
+        if re_or(
+            name,
+            r"sala (las )?(13|trece) rosas",
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            r"L[oó]pez de Vega 38",
+            flags=re.I
+        )):
+            return Places.CCOO.value
+        if re_or(
+            name,
+            r"casa asia",
+            flags=re.I
+        ) and (not address or re_or(
+            address,
+            "mayor",
+            flags=re.I
+        )):
+            return Places.CASA_ASIA.value
+        if re_or(
+            name,
             "Plaza Xos[ée] Tarr[íi]o",
             flags=re.I
         ):
@@ -555,8 +633,15 @@ class Place:
 
 
 class Places(Enum):
+    CINES_CALLAO = Place(
+        name="Cines Callao",
+        address="Pl. del Callao, 3, Centro, 28013 Madrid",
+        latlon="40.420152227657155,-3.7060860000000004",
+        zone='Sol',
+        map="https://maps.app.goo.gl/Mg2rbzdCmSWMQAcv9",
+    )
     CASA_MEXICO = Place(
-        name="Casa Mexico",
+        name="Casa México",
         address="C. de Alberto Aguilera, 20, Chamberí, 28015 Madrid",
         latlon="40.430223201367404,-3.709325557672713",
         zone='Moncloa',
@@ -568,6 +653,13 @@ class Places(Enum):
         latlon="40.427566448169316,-3.6939387798888634",
         zone='Alonso Martinez',
         map="https://maps.app.goo.gl/qV55n7KZ4fXNCg8dA",
+    )
+    MUSEO_THYSSEN = Place(
+        name="Museo Thyssen Bornemisza",
+        address="P.º del Prado, 8, Centro, 28014 Madrid",
+        latlon="40.41631015956411,-3.695021959912201",
+        zone='Paseo del Pardo',
+        map="https://maps.app.goo.gl/QzR7tKDsfNR6CeoE6",
     )
     MUSEO_PRADO = Place(
         name="Museo del Prado",
@@ -692,6 +784,12 @@ class Places(Enum):
         address="C. del Ánade, 10, Carabanchel, 28019 Madrid",
         latlon="40.391899629090574,-3.7310781522792906",
         map="https://maps.app.goo.gl/CkMnFa3ph4cNGDXs7"
+    )
+    TEATRO_C_EST_LA_VIE = Place(
+        name="C'Est la Vie",
+        address="C. de la Cabeza, 26, Centro, 28012 Madrid",
+        latlon="40.41196988717932, -3.7019254384563527",
+        map="https://maps.app.goo.gl/wiHxgoXvckrdqqn46"
     )
     FUNDACION_ALSELMO_LORENZO = Place(
         name="Fundación Anselmo Lorenzo",
@@ -1068,5 +1166,52 @@ class Places(Enum):
         address="C. de Ercilla, 53, Arganzuela, 28045 Madrid",
         latlon="40.40035861890966,-3.7005549269818605",
         map="https://maps.app.goo.gl/QMGzz8msyod1zFws6",
+        zone="Embajadores",
+    )
+    BIBLIOTECA_HISTORICA = Place(
+        name="UCM Biblioteca historíca",
+        address="C. del Noviciado, 3, Centro, 28015 Madrid",
+        latlon="40.42567421555243,-3.707855184654574",
+        map="https://maps.app.goo.gl/j4A2J4bjg5V9pT7r9",
+        zone="Plaza España"
+    )
+    CASA_ASIA = Place(
+        name="Casa Asia",
+        address="Palacio de Cañete, Calle Mayor, 69, Centro, 28013 Madrid",
+        latlon="40.41539166989173,-3.7111876355753055",
+        map="https://maps.app.goo.gl/kvnUx3DmiyFVxEEDA",
+        zone="Sol"
+    )
+    MK2_CINE_PAZ = Place(
+        name="MK2 cine Paz",
+        map="https://maps.app.goo.gl/iq6zrnvTNPkSfLHWA",
+        address="Calle de Fuencarral, 125, Chamberí, 28010 Madrid",
+        latlon="40.43097078426574,-3.7034094230177153",
+        zone="Tribunal"
+    )
+    YELMO_IDEAL = Place(
+        name="Yelmo Ideal",
+        map="https://maps.app.goo.gl/iFeMwTPkVTBkejms9",
+        address="Calle del Dr Cortezo, 6, Centro, 28012 Madrid",
+        latlon="40.41399410605028,-3.703789357721422",
+        zone="Sol"
+    )
+    CC_PACO_RABAL = Place(
+        name="Centro cultural Paco Rabal",
+        map="https://maps.app.goo.gl/t1j7bTVn51zUFkk49",
+        address="C. de Felipe de Diego, 13, Puente de Vallecas, 28018 Madrid",
+        latlon="40.380009618423806,-3.6606199401143384"
+    )
+    CCOO = Place(
+        name="CC.OO.",
+        map="https://maps.app.goo.gl/zH6KttgRKuEvtem97",
+        address="C. de Lope de Vega, 38, 5°, Centro, 28014 Madrid",
+        latlon="40.41377003143784,-3.6950476131448333"
+    )
+    ARTISTIC_METROPOL = Place(
+        name="Artistic metropol",
+        map="https://maps.app.goo.gl/7tfrXmkMYehtiRmM6",
+        address="C. de las Cigarreras, 6, Arganzuela, 28005 Madrid",
+        latlon="40.405025536050104,-3.707462528836356",
         zone="Embajadores",
     )

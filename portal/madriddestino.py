@@ -1,5 +1,5 @@
 from core.web import Driver, WEB, get_text, buildSoup
-from core.util import re_or, plain_text, get_obj, re_and, get_domain
+from core.util import re_or, plain_text, get_obj, get_domain
 from typing import Set, Dict
 from functools import cached_property, cache
 import logging
@@ -15,6 +15,7 @@ from collections import defaultdict
 from core.fetcher import Getter
 from aiohttp import ClientResponse
 from core.md import MD
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 S = requests.Session()
@@ -178,10 +179,11 @@ HEADERS = {
 }
 
 
-class MadridDestino:
+class MadridDestino(Base):
     URL = "https://tienda.madrid-destino.com/es"
 
-    def __init__(self):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
         self.__data_getter = Getter(
             onread=rq_to_data,
             headers=HEADERS
@@ -329,10 +331,7 @@ class MadridDestino:
     def mk_id(id: int) -> int:
         return f"md{id}"
 
-    @property
-    @TupleCache("rec/madriddestino.json", builder=Event.build)
-    def events(self):
-        logger.info("Madrid Destino: Buscando eventos")
+    def _get_events(self):
         events: Set[Event] = set()
         for e in self.data.state['events']:
             org = self.__find("organizations", e['organization_id'])
@@ -345,6 +344,7 @@ class MadridDestino:
             id = MadridDestino.mk_id(e['id'])
             more = info.get('webSource')
             durt = info.get('duration')
+            category = self.__find_category(url, id, e, info, more)
             ev = Event(
                 id=id,
                 url=url,
@@ -352,14 +352,14 @@ class MadridDestino:
                 img=e['featuredImage']['url'],
                 price=e['highestPrice'],
                 duration=durt if durt is not None else 60,
-                category=self.__find_category(url, id, e, info),
+                category=category,
                 place=self.__find_place(e),
                 sessions=self.__find_sessions(url, e, soup),
-                more=None if more in KO_MORE else more
+                more=None if more in KO_MORE else more,
+                cycle=self.__find_cycle(category, e, info)
             )
             ev = self.__complete(ev, info)
             events.add(ev)
-        logger.info(f"Madrid Destino: Buscando eventos {len(events)}")
         return tuple(sorted(events))
 
     def __complete(self, ev: Event, info: dict):
@@ -393,8 +393,8 @@ class MadridDestino:
                     continue
                 if re_or(
                     d,
-                    'Vari[oa].*director[eaox@]s?', 
-                    'Vari[oa].*autor[eaox@]s?', 
+                    'Vari[oa].*director[eaox@]s?',
+                    'Vari[oa].*autor[eaox@]s?',
                     flags=re.I
                 ):
                     isVarios = True
@@ -408,7 +408,7 @@ class MadridDestino:
             )
             minutes = tuple(map(int, re.findall(r"(\d+)['’]", desc or '')))
             shorts = tuple(i for i in minutes if i < 30)
-            if len(shorts)>2 or (len(shorts)>1 and (isVarios or not director)):
+            if len(shorts) > 2 or (len(shorts) > 1 and (isVarios or not director)):
                 ev = ev.merge(cycle="Cortometrajes")
         if not ev.director:
             director: list[str] = []
@@ -510,7 +510,25 @@ class MadridDestino:
                 return i
         logger.warning(str(FieldNotFound(f"{k}.id={id}", self.data.state[k])))
 
-    def __find_category(self, url: str, id: str, e: Dict, info: Dict):
+    def __find_cycle(self, category: Category, e: Dict, info: Dict):
+        psub = plain_text(e.get('subtitle')) or ''
+        pt = plain_text(e['title']) or ''
+        desc = info.get('description') or ''
+        if re_or(
+            f"{pt} {psub} {desc}",
+            r"Piano[\-\s]*City",
+            flags=re.I
+        ):
+            return "Piano City"
+        if category == Category.CINEMA and re_or(
+            f"{pt} {psub}",
+            r"CIMA en corto",
+            r"Cortometrajes de",
+            flags=re.I
+        ):
+            return "Cortometrajes"
+
+    def __find_category(self, url: str, id: str, e: Dict, info: Dict, more: str | None):
         cats: Set[str] = set()
         eventCategories = e.get('eventCategories') or []
         for c in self.data.state['categories']:
@@ -547,7 +565,12 @@ class MadridDestino:
             flags=re.I
         ):
             return Category.CHILDISH
-
+        if re_or(
+            pt,
+            r"taller(es)?.*? 1?\d [ay] 1?\d años?",
+            flags=re.I
+        ):
+            return Category.CHILDISH
         audience = plain_text(info.get('audience'))
         if not is_cine and re_or(
             audience,
@@ -574,6 +597,13 @@ class MadridDestino:
         ):
             return Category.YOUTH
 
+        if re_or(
+            e['title'],
+            r"Gala de clausura\b.*\bFCM-PNR",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+
         is_para_todos = audience is None or re_or(
             audience,
             "todos los publicos",
@@ -589,7 +619,7 @@ class MadridDestino:
             return Category.READING_CLUB
         if re_or(
             e['title'],
-            "^RUTA\s*/",
+            r"^RUTA\s*/",
             flags=re.I
         ):
             return Category.VISIT
@@ -599,12 +629,24 @@ class MadridDestino:
             flags=re.I
         ):
             return find_book_category(e['title'], desc, Category.LITERATURE)
-        
+
         if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", to_log=id, flags=re.I):
             return Category.VIEW_POINT
-        if re_or(pt, "taller infantil", "concierto matinal familiar", "canciones de cuna", to_log=id, flags=re.I):
-            return Category.CHILDISH
-        if re_and(pt, "Fanzine sonoro", ("familiar", "adolescente"), to_log=id, flags=re.I):
+        if re_or(
+            pt,
+            "taller infantil",
+            "concierto matinal familiar",
+            "canciones de cuna",
+            r"Dirigido a padres y alumnos",
+            ("Fanzine sonoro", ("familiar", "adolescente")),
+            to_log=id,
+            flags=re.I
+        ) or re_or(
+            desc,
+            r"para beb[eé]s y primera infancia",
+            r"para p[uú]blico infantil",
+            flags=re.I
+        ):
             return Category.CHILDISH
         if not is_cine and is_cat("en familia", "infantil"):
             return Category.CHILDISH
@@ -638,11 +680,11 @@ class MadridDestino:
 
         if is_cat("teatro", "teatro de objetos", "performance"):
             return Category.THEATER
-        if is_cat("conferencia"):
+        if is_cat("conferencia", "masterclass"):
             return Category.CONFERENCE
         if is_cat("música", "jazz", "arte sonoro"):
             return Category.MUSIC
-        if re_or(pt, 'musica', to_log=id):
+        if re_or(pt, 'musica', "concierto de cine", to_log=id):
             return Category.MUSIC
         if re_or(pt, "visitas", to_log=id):
             return Category.VISIT
@@ -653,7 +695,16 @@ class MadridDestino:
 
         if re_or(pt, "parking", to_log=id, flags=re.I):
             return Category.NO_EVENT
-        if re_or(pt, r"Charlas con altura", to_log=id, flags=re.I):
+        if re_or(
+            pt,
+            r"Charlas con altura",
+            r"^cima conversa",
+            r"^masterclass",
+            r"una conversacion con",
+            r"velada( sorpresa)? con",
+            to_log=id,
+            flags=re.I
+        ):
             return Category.CONFERENCE
         if re_or(psub, r"^Taller de", to_log=id, flags=re.I) or re_or(audience, "Taller", to_log=id, flags=re.I):
             return Category.WORKSHOP
@@ -665,14 +716,45 @@ class MadridDestino:
             return Category.EXPO
         if re_or(
             desc,
-            "para beb[eé]s y primera infancia",
+            "Un taller de creatividad",
             flags=re.I
         ):
-            return Category.CHILDISH
-        if re_or(desc, "Un taller de creatividad", flags=re.I):
             return Category.WORKSHOP
-        if re_or(desc, "Los Absurdos Teatro", "teatro de sombras", "Un taller de experimentaci[oó]n", "Un taller de reflexi[oó]n", ("[eE]n esta actividad exploraremos", "con diversos materiales"), flags=re.I):
+        if re_or(
+            pt,
+            r"^concierto de",
+            r"banda sinf[oó]nica",
+            r"orquesta y coro",
+            r"piano ?city",
+            to_log=id,
+            flags=re.I
+        ) or re_or(
+            psub,
+            r"el pianista",
+            flags=re.I
+        ) or re_or(
+            desc,
+            r"no es solo un concierto",
+            r"m[áa]s que un concierto",
+            flags=re.I
+        ):
+            return Category.MUSIC
+        if re_or(
+            desc,
+            "Los Absurdos Teatro",
+            "teatro de sombras",
+            "Un taller de experimentaci[oó]n",
+            "Un taller de reflexi[oó]n",
+            ("[eE]n esta actividad exploraremos", "con diversos materiales"),
+            flags=re.I
+        ):
             return Category.THEATER
+        if re_or(
+            desc,
+            "Mesa redonda",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
 
         if is_cat("pintura", "ilustración", "fotografía", "exposición"):
             for r in e.get('rooms', []):
@@ -683,6 +765,48 @@ class MadridDestino:
         if is_cat("audiovisual"):
             return Category.CINEMA
 
+        if get_domain(more) == "teatroespanol.es":
+            return Category.THEATER
+
+        if more and more.startswith("https://www.centrocentro.org/musica/"):
+            return Category.MUSIC
+        if more and more.startswith("https://www.cinetecamadrid.com/programacion/"):
+            soup = WEB.get_cached_soup(more)
+            fCat = get_text(soup.select_one("span.fCategory a[hreflang='es']"))
+            if re_or(
+                fCat,
+                r"RELATOS DEL RUIDO",
+                flags=re.I
+            ):
+                return Category.MUSIC
+            if re_or(
+                fCat,
+                r"ESTRENOS",
+                r"CINEZETA: J[OÓ]VENES PROGRAMANDO",
+                flags=re.I
+            ):
+                return Category.CINEMA
+            ciclo = get_text(soup.select_one("div.field-name-dynamic-token-fieldnode-ciclo-copia a"))
+            if re_or(
+                ciclo,
+                r"ECAM FORUM",
+                flags=re.I
+            ):
+                return Category.CONFERENCE
+            if re_or(
+                ciclo,
+                r"VERANO EN JAP[OÓ]N",
+                r"LA NOCHE Z",
+                r"RETROSPECTIVA MASAO ADACHI",
+                flags=re.I
+            ):
+                return Category.CINEMA
+            director = get_text(soup.select_one("div.field--name-field-director"))
+            year = get_text(soup.select_one("div.field--name-field-ano-filmacion"))
+            minutes = tuple(map(int, re.findall(r"(\d+)['’]", desc or '')))
+            if re_or(director, "vari[oa]s", flags=re.I) or (director and (year or len(minutes))):
+                return Category.CINEMA
+            return Category.CINEMA
         logger.critical(str(CategoryUnknown(url, f"{pt} - {psub} - {audience}: " + ", ".join(sorted(cats)))))
         return Category.UNKNOWN
 
@@ -690,5 +814,5 @@ class MadridDestino:
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/madriddestino.log", log_level=logging.INFO)
-    evs = MadridDestino(expand_max_price=10).events
+    evs = MadridDestino().get_events()
     #print(evs)

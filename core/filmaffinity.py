@@ -40,18 +40,16 @@ def _gap_year(y: int):
     return (None, y-1, y, y+1)
 
 
-def _is_match(titles: tuple[str, ...], year: int, y: int, *args):
-    if year not in _gap_year(y):
-        return False
+def _is_match(literals: tuple[str, ...], *args):
     rgs: list[re.Pattern] = []
     for a in args:
         if isinstance(a, re.Pattern):
             rgs.append(a)
             continue
-        if a in titles:
+        if a in literals:
             return True
     for rg in rgs:
-        for t in titles:
+        for t in literals:
             if rg.search(t):
                 return True
     return False
@@ -61,13 +59,12 @@ class FilmAffinityApi:
     ACTIVE = True
 
     @staticmethod
-    @cache
-    def search(year: int, *titles: str):
+    def fast_search(year: int, *titles: str):
         if not isinstance(year, int):
             year = None
         if len(titles) == 0:
             return None
-        for k, y, *tt in (
+        TITLES = (
             (132739, 2025, "Sorda"),
             (411856, 1963, "El verdugo"),
             (513636, 1962, "Matar a un ruiseñor"),
@@ -113,9 +110,75 @@ class FilmAffinityApi:
             (720686, 1932, "El Expreso de Shanghai"),
             (270791, 2025, "El secreto de Portera", "El secreto de Alberto Portera"),
             (701076, 2022, "La semilla"),
-        ):
-            if _is_match(titles, year, y, *tt):
+            (118850, 2026, "Home Stories"),
+            (983329, 2026, "No Mercy"),
+            (956467, 2026, "El sueño americano"),
+            #(227540, 2022, re.compile(r"\bAs Bestas\b")),
+            (842054, 1975, re.compile(r"\bJeanne Dielman\b.*\b(Bruxelles|Bruselas)\b")),
+            (932476, 1999, "Matrix"),
+            (764207, 2025, "Votemos"),
+            (540624, 2025, "El secreto del orfebre"),
+            (221256, 2024, "Por todo lo alto"),
+            (793818, 2024, "Marco"),
+            (386839, 2025, "El príncipe de Nanawa"),
+            (576456, 2014, "El recuerdo de Marnie"),
+            (249352, 2024, re.compile("La habitaci[oó]n de al lado", flags=re.I)),
+            (919132, 2024, "Mariposas Negras"),
+            (169592, 2025, re.compile(r"\bAs estaçoes\b")),
+            (170495, 2026, "Aminetu"),
+            (789723, 2026, "Backrooms", re.compile(r"Backrooms[\.:\s]*Liquidaci[oó]n total", flags=re.I)),
+            (158471, 2026, "Viva"),
+            (365421, 2025, re.compile(r"Flamingos\b.*\bLa vida despu[eé]s del meteorito")),
+            (571201, 2024, "Fanon"),
+            (144050, 2025, "En el camino"),
+            (822006, 2021, "Canta 2"),
+            (486640, 2018, "Bohemian Rhapsdy"),
+            (925667, 2025, "La copia perfecta"),
+            (753623, 2024, "Wicked"),
+            (665782, 2025, "A la cara"),
+            (689956, 2016, "La La Land"),
+            (336014, 2008, "Mamma Mía!"),
+            (255392, 2001, re.compile(r"Moul[ií]n Rouge")),
+            (584300, 2025, "Los domingos"),
+            (169465, 2025, "Incontrolable"),
+            (699169, 2025, "Los pecadores"),
+            (650623, 2026, "México 86"),
+            (445332, 2026, "Corredora"),
+            (501691, 2024, re.compile(r"Furiosa\b.*\bSaga Mad *Max", flags=re.I)),
+            (466193, 2025, "Mudanza"),
+            (982762, 1978, "Girlfriends"),
+            (632827, 2025, "Canciller, el templo del rock"),
+            (417915, 2025, "Cecilia Bartolomé: Tan lluny, tan prop"),
+            (614431, 2025, "Back in Time!"),
+            (508748, 2025, "Este cuerpo mío"),
+            (380603, 2026, "Herencia"),
+            (644313, 1974, "A Bigger Splash"),
+            (757742, 2001, "La ciénaga"),
+            (425836, 1977, "La piscina"),
+            (167195, 1969, "La piscina"),
+            (754641, 2025, "Omaha"),
+            (144113, 1988, "Akira"),
+            (352798, 2025, "El mensaje"),
+            (546833, 2026, "La Odisea"),
+            (841956, 2026, "Vaiana"),
+            (437038, 2026, "Spider-Man: Brand New Day"),
+            (136154, 2008, re.compile(r"ANTIFA[\:\.\-\s]+Cazadores de skins", flags=re.I)),
+        )
+        need_year: set[int] = {425836, 167195}
+        for k, y, *tt in TITLES:
+            if k in need_year and year is None:
+                continue
+            if year not in _gap_year(y):
+                continue
+            if _is_match(titles, *tt):
                 return k
+
+    @staticmethod
+    @cache
+    def search(year: int, *titles: str):
+        k = FilmAffinityApi.fast_search(year, *titles)
+        if k is not None:
+            return k
         if not FilmAffinityApi.ACTIVE:
             return None
         if len(titles) > 1 and year is None:

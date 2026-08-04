@@ -1,11 +1,12 @@
 from portal.universidad import Universidad
 from portal.eventim import Eventim
 from core.event import Event, Place
-from core.cache import TupleCache
 from core.util import re_or, get_domain, tp_join
 from core.zone import Zones
 from collections import defaultdict
+from portal.base import Base
 import re
+import logging
 
 
 dom_eventim = "eventim-light.com"
@@ -19,6 +20,8 @@ def parse_place(p: Place):
 
 
 def _parse_place(p: Place):
+    if p is None:
+        return None
     place_address = f"{p.name or ''} {p.address or ''}".strip()
     if re_or(
         p.name,
@@ -93,22 +96,50 @@ def _parse_place(p: Place):
             map="https://maps.app.goo.gl/6KXtAxzdQmRH2rXK8",
             zone=Zones.COMPLUTENSE.value.name
         )
+    if re_or(
+        place_address,
+        r"Facultad de medicina",
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Medicina",
+            address=p.address,
+            latlon='40.44405542393555,-3.7246850644281952',
+            map="https://maps.app.goo.gl/ahAcFcXXEfQVfM4fA",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        place_address,
+        r"Edificio de Estudiantes",
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Edificio de Estudiantes",
+            address=p.address,
+            latlon='40.443425981504866,-3.7281114355682696',
+            map="https://maps.app.goo.gl/aHGdJjgpsjohTVdn7",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        p.name,
+        r"Parque de El Retiro",
+    ):
+        return p.merge(name="Parque el Retiro")
 
 
-class Ucm:
-    def __init__(self):
+class Ucm(Base):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
         self.__uni = Universidad(
             "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
             verify_ssl=False,
         )
         self.__tim = Eventim("67349f8ab667c57a7581e251")
 
-    @property
-    @TupleCache("rec/ucm.json", builder=Event.build)
-    def events(self):
+    def _get_events(self):
         events: set[Event] = set()
         more_events: dict[str, set[Event]] = defaultdict(set)
-        for e in self.__uni.events:
+        for e in self.__uni.get_events():
             e = e.merge(
                 id=f"ucm{e.id}",
                 place=parse_place(e.place)
@@ -125,7 +156,7 @@ class Ucm:
                 events.add(e)
             for more in more_urls:
                 more_events[more].add(e)
-        for e in self.__tim.events:
+        for e in self.__tim.get_events():
             also_in: set[str] = set()
             for u in e.iter_urls():
                 for x in more_events.pop(u, set()):
@@ -158,4 +189,6 @@ class Ucm:
 
 
 if __name__ == "__main__":
-    Ucm().events
+    from core.log import config_log
+    config_log("log/ucm.log", log_level=(logging.DEBUG))
+    Ucm().get_events()

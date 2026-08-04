@@ -1,6 +1,6 @@
 from core.web import Web, get_text, Tag
 from functools import cached_property
-from core.cache import Cache, TupleCache
+from core.cache import Cache
 from urllib.parse import urlencode, urljoin
 from core.util import parse_obj, re_or
 from core.event import Event, Category, CategoryUnknown, Session, Place, Cinema
@@ -8,6 +8,7 @@ from core.md import MD
 import re
 from datetime import datetime
 import logging
+from portal.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,9 @@ def _clean_name(s: str):
     s = re_sp.sub(" ", s).strip()
     s = re.sub(r"^Preestreno\s*:\s*", "", s, flags=re.I)
     s = re.sub(r"\s*\-\s*\d+\s*h(\s*\d+m?)?$", "", s, flags=re.I)
-    s = re.sub(r"^CINE\s*//\s*Preestreno\s*:?\s*", "", s, flags=re.I)
+    sep = r"[I\/\|:\-\.,]"
+    s = re.sub(r"^CINE\s"+sep+r"*\s*Preestrenos?\s*"+sep+r"*\s*", "", s, flags=re.I)
+    s = re.sub(r"^CINE\s"+sep+r"+\s*", "", s, flags=re.I)
     if len(s) == 0:
         return None
     return s
@@ -99,7 +102,7 @@ def _re_parse(obj):
     return obj
 
 
-class InstitutoFrances:
+class InstitutoFrances(Base):
     ROOT = "https://madrid.extranet-aec.com/"
     SEARCH = "https://ifespagne.aec.app/api/public/core/v1/events/availableEventsToday"
     
@@ -114,10 +117,10 @@ class InstitutoFrances:
             "API_KEY": _find_var(soup, "aecExtranetWebAppsAPIKey")
         })
         return w
-    
+
     def __search(self, params: dict):
         return self.__w.json(InstitutoFrances.SEARCH+"?"+urlencode(params))
-    
+
     @Cache("rec/ifrances/items.json")
     def get_items(self):
         js:list[dict] = self.__search({
@@ -147,7 +150,7 @@ class InstitutoFrances:
                 del i['image_extension']
             arr.append(i)
         return arr
-    
+
     def __is_madrid(self, i: dict):
         cp = i.get("event_location_zipcode")
         if cp is not None and (cp // 1000) != 28:
@@ -168,11 +171,8 @@ class InstitutoFrances:
             ):
                 return False
         return True
-        
-    @cached_property
-    @TupleCache("rec/ifrances.json", builder=Event.build)
-    def events(self):
-        logger.info("Instituto francés: Buscando eventos")
+
+    def _get_events(self):
         evs: set[Event] = set()
         for i in self.get_items():
             name = _clean_name(i['product_name'])
@@ -198,7 +198,6 @@ class InstitutoFrances:
             )
             e = self.__complete(e, i) or e
             evs.add(e)
-        logger.info(f"Instituto francés: Buscando eventos = {len(evs)}")
         return tuple(sorted(evs))
 
     def __complete(self, e: Event, i: dict):
@@ -216,19 +215,24 @@ class InstitutoFrances:
                 if v:
                     return v
         d = tuple(
-            x for x in 
-            map(str.strip, re.split(r"\s*,\s*", _gField(r"DIRECCI[OÓ]N") or ''))
+            x for x in
+            map(str.strip, re.split(r"\s*,\s*", _gField(r"(?:DIRECCI[OÓ]N|Director)") or ''))
             if x
         )
-        t = _gField(r"T[ÍI]TULO ORIGINAL")
-        y: set[int] = set()
-        for x in map(int, re.findall(r"(\d+)\s*/", desc)):
-            if x > 1900 and x <= MAX_YEAR:
-                y.add(x)
+        t = _gField(r"(?:T[ÍI]TULO ORIGINAL|T[ií]tulo Original)")
+        yr = _gField(r"Año de Producci[oó]n")
+        if yr and yr.isdecimal():
+            yr = int(yr)
+        else:
+            y: set[int] = set()
+            for x in map(int, re.findall(r"(\d+)\s*/", desc)):
+                if x > 1900 and x <= MAX_YEAR:
+                    y.add(x)
+            yr = y.pop() if len(y) == 1 else None
         e = e.merge(
             director=d,
             aka=(e.name, t) if t else tuple(),
-            year=y.pop() if len(y) == 1 else None,
+            year=yr,
         )
         return e
 
@@ -285,6 +289,7 @@ class InstitutoFrances:
             if re_or(
                 n,
                 "cine",
+                "Preestreno",
                 flags=re.I
             ):
                 return Category.CINEMA
@@ -305,6 +310,7 @@ class InstitutoFrances:
                 "conferencia",
                 "mesa redonda",
                 "Tertulia",
+                r"Encuentro profesional",
                 flags=re.I
             ):
                 return Category.CONFERENCE
@@ -314,11 +320,16 @@ class InstitutoFrances:
                 flags=re.I
             ):
                 return Category.CONTEST
+            if re_or(
+                n,
+                "teatro",
+                flags=re.I
+            ):
+                return Category.THEATER
         logger.warning(str(CategoryUnknown(i['event_url'], name)))
         return Category.UNKNOWN
 
-
-    def __find_price(self, i:dict):
+    def __find_price(self, i: dict):
         prcs = _max(
             i,
             "product_price",
@@ -333,8 +344,10 @@ class InstitutoFrances:
 
         logger.warning(f"NOT FOUND price {i['event_url']}")
         return 0
-        
+
 
 if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/frances.log", log_level=logging.INFO)
     i = InstitutoFrances()
-    print(len(i.events))
+    print(len(i.get_events()))

@@ -74,16 +74,20 @@ class BookFinder:
 
     def __find(self, title: str, autor: str | None = None):
         for k, r in {
-            "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1517923": r"\bUn verano kurdo\b",
-            "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2254206": r"\bCuando el mundo duerme\b",
-            "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2205945": r"\bMuerte accidental de un anarquista\b",
-            "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2087546": r"\bLa mala costumbre\b",
-            "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=267016": r"\bEl anti-?Edipo\b",
-            "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1912979": r"\bTesto yonqui\b",
-            "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1608475": r"\bLa [eÉ]tica animal,? ¿?una cuesti[oó]n feminista\?",
+            "https://archive.org/details/por-que-he-robado": r"\bPor qu[ée] he robado\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=1843349": r"\bHomenaje a Cataluña\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=1747352": r"\bRealismo capitalista\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=1517923": r"\bUn verano kurdo\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=2254206": r"\bCuando el mundo duerme\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=2205945": r"\bMuerte accidental de un anarquista\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=2087546": r"\bLa mala costumbre\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=267016": r"\bEl anti-?Edipo\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=1912979": r"\bTesto yonqui\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=1608475": r"\bLa [eÉ]tica animal,? ¿?una cuesti[oó]n feminista\?",
             "https://madrid.ebiblio.es/resources/699f20282753bd15e883053d": r"\b(Redes vacías|Tecnología catastrófica y fin de la democracia)\b",
             "https://www.sigloxxieditores.com/libro/el-capital-obra-completa_17971/": r"\bEl Capital\b",
-            "https://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1926434": r"\bEl pueblo gitano contra el sistema mundo\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=1926434": r"\bEl pueblo gitano contra el sistema mundo\b",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=2007820": r"\bYo soy el monstruo que os habla\b",
         }.items():
             if _is(title, r):
                 return k
