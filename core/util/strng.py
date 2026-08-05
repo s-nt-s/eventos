@@ -37,6 +37,7 @@ _SPECIAL_WORDS = (
     "AI",
     "centro cultural",
     "XXX",
+    "XXIX",
     "VHZ",
     "XXV",
     "Quijote",
