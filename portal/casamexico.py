@@ -558,6 +558,12 @@ class CasaMexico(Base):
             flags=re.I
         ):
             return Category.CONFERENCE
+        if re_or(
+            i.name,
+            r"bailes? folcl[óo]ricos?",
+            flags=re.I
+        ):
+            return Category.DANCE
         for t, c in {
             "familia": Category.CHILDISH,
             "cine": Category.CINEMA,
