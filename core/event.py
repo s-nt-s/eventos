@@ -1229,6 +1229,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"[AÁ]ngel Garc[ií]a Galiano",
         r"Mar[ií]a Dueñas",
         r"Marta Galatas",
+        r"Manuel Juli[aá]",
         ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
         ("a trav[eé]s de estas ficciones", "literatura"),
         flags=re.I
