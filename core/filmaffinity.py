@@ -163,6 +163,7 @@ class FilmAffinityApi:
             (841956, 2026, "Vaiana"),
             (437038, 2026, "Spider-Man: Brand New Day"),
             (136154, 2008, re.compile(r"ANTIFA[\:\.\-\s]+Cazadores de skins", flags=re.I)),
+            (964408, 2026, "9 lunas"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:

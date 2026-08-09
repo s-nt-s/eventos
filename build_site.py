@@ -396,6 +396,7 @@ def set_icons(html: str, **kwargs):
             "eventbrite": "https://cdn.evbstatic.com/s3-build/perm_001/765d40/django/images/favicons/favicon-16x16.png",
             "intermediae": "https://www.intermediae.es/themes/custom/intermediae_theme/favicon.ico",
             "serreria-belga": "https://www.serreria-belga.es/themes/custom/serreria_belga/favicon.ico",
+            "docta.ucm": "https://docta.ucm.es/assets/dspace/images/favicons/favicon.ico",
         }.get(dom)
         if re.search(r"/biblio_publicas/cgi-bin/abnetopac\?TITN=", href):
             ico = "https://madrid.ebiblio.es/favicon/espa.ico"
