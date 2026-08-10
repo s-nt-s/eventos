@@ -455,7 +455,7 @@ class ReinaSofia(Base):
             return Category.VISIT
         if re_or(
             subtitle,
-            "Mediacij[oó]n en sala",
+            r"Mediaci[oó]n en sala",
             flags=re.I
         ):
             return Category.CONFERENCE
