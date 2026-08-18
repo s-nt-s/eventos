@@ -1195,6 +1195,8 @@ def find_book_category(name: str, description: str, default: Category):
         "Askarien",
         "premio planeta",
         "Confianza Agustina",
+        "Daniela Tarazona",
+        r"La invenci[oó]n de todas las cosas",
         flags=re.I
     ):
         return Category.NARRATIVE
