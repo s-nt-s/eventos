@@ -453,6 +453,12 @@ class ReinaSofia(Base):
             flags=re.I
         ):
             return Category.VISIT
+        if re_or(
+            subtitle,
+            r"Mediaci[oó]n en sala",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
         logger.critical(str(CategoryUnknown(i['url'], f"{subtitle} {txt}")))
         return Category.UNKNOWN
 
