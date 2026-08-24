@@ -1219,6 +1219,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"El retrato de Dorian Gray",
         r"libro de cuentos",
         r"y ahora novelista",
+        r"la novela entrelaza",
         r"transici[oó]n del periodismo a la ficci[oó]n",
         r"una de las novelas m[áa]s conocidas",
         r"sus mejores novelas",
