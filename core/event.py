@@ -1178,7 +1178,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"poemas in[eé]ditos",
         r"libros? de poes[ií]a",
         r"novela negra",
-        r"su nueva novela",
+        r"su (nueva|premiada) novela",
         r"una de las novelas\b.*\bm[aá]s le[ií]das",
         r"participaci[oó]n del poeta",
         r"recitar[aá]n poemas de",
