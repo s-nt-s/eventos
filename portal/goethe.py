@@ -400,6 +400,7 @@ class Goethe(Base):
             et,
             "concierto",
             "RAVE JAM",
+            r"Festival internacional de Piano",
             flags=re.I
         ):
             return Category.MUSIC
