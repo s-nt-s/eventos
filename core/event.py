@@ -1177,6 +1177,8 @@ def find_book_category(name: str, description: str, default: Category):
         r"presentan? este poemario de",
         r"poemas in[eé]ditos",
         r"libros? de poes[ií]a",
+        r"novela negra",
+        r"su (nueva|premiada) novela",
         r"una de las novelas\b.*\bm[aá]s le[ií]das",
         r"participaci[oó]n del poeta",
         r"recitar[aá]n poemas de",
@@ -1185,6 +1187,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"obra de poes[ií]a",
         r"[aá]lbum po[eé]tico",
         r"narrativa, poes[íi]a",
+        r"Premio Loewe de Poes[íi]a",
         flags=re.I
     ):
         return Category.POETRY
@@ -1216,6 +1219,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"El retrato de Dorian Gray",
         r"libro de cuentos",
         r"y ahora novelista",
+        r"la novela entrelaza",
         r"transici[oó]n del periodismo a la ficci[oó]n",
         r"una de las novelas m[áa]s conocidas",
         r"sus mejores novelas",
