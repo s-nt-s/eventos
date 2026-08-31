@@ -1195,6 +1195,7 @@ def find_book_category(name: str, description: str, default: Category):
         name,
         "Presentaci[óo]n de la novela",
         "Richard Turvey",
+        "Nelio Biedermann",
         "Askarien",
         "premio planeta",
         "Confianza Agustina",

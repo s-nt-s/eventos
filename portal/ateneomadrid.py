@@ -119,6 +119,8 @@ class AteneoMadrid(Base):
         return event
 
     def __find_cycle(self, name: str, e: IcsEventWrapper, category: Category):
+        if re.search(r"Suma Flamenca 20\d{2}", name):
+            return "Suma flamenca"
         m = re.search(r"\. Ciclo '([^'']+)'", name)
         if m:
             return m.group(1).strip()
