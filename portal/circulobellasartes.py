@@ -280,6 +280,7 @@ def _find_category(url: str, title: str, soup: Tag):
         r"Una conversación entre",
         r"l[aox@]s ponentes (abordan|van)",
         r"la conferencia de",
+        r"Con esta conversaci[oó]n",
         ("programa", "modera"),
         flags=re.I
     ):
