@@ -604,8 +604,8 @@ class MadConvoca(Base):
 
         if re_or(
             txt_desc,
-            "Hablaremos con .*? sobre su libro",
-            "presentamos el nuevo libro",
+            r"Hablaremos con .*? sobre su libro",
+            r"presentamos el (nuevo )?libro",
             flags=re.I,
             to_log=e.id
         ):
