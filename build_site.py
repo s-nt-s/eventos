@@ -23,6 +23,7 @@ from core.publish import PublishDB
 from core.web import WEB
 from typing import NamedTuple
 from core.dwn import DWN
+from enum import Enum
 
 
 config_log("log/build_site.log")
@@ -479,6 +480,18 @@ EventosRss(
     eventos=eventos
 ).save("eventos.rss")
 
-FM.dump(OUT+"eventos.json", eventos, compact=True)
+
+def _re_parse(obj):
+    if isinstance(obj, Enum):
+        return str(obj)
+
+
+FM.dump(
+    OUT+"eventos.json",
+    eventos,
+    compact=True,
+    re_parse=_re_parse
+)
+
 PUBLISHDB.dump()
 logger.info("Fin")
