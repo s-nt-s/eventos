@@ -154,9 +154,24 @@ class FileManager:
             except JSONDecodeError as e:
                 raise myex(e, str(file))
 
-    def dump_json(self, file, obj, *args, indent=2, compact=False, rm_key: tuple[str,...] = None, **kwargs):
+    def dump_json(
+        self,
+        file,
+        obj,
+        *args,
+        indent=2,
+        compact=False,
+        rm_key: tuple[str, ...] = None,
+        re_parse: Optional[Callable[[Any], Any]] = None,
+        **kwargs
+    ):
         with open(file, "w") as f:
-            json.dump(parse_obj(obj, compact, rm_key), f, *args, indent=indent, **kwargs)
+            json.dump(parse_obj(
+                obj,
+                compact=compact,
+                rm_key=rm_key,
+                re_parse=re_parse
+            ), f, *args, indent=indent, **kwargs)
 
     def load_html(self, file, *args, parser="lxml", **kwargs):
         with open(file, "r") as f:
