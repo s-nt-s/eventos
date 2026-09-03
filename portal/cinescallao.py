@@ -19,6 +19,7 @@ re_date = re.compile(
     r"^\s*Mi[eé]rcoles\s+(?P<day>\d{1,2})/(?P<month>\d{1,2})\s+(?P<times>\d{1,2}:\d{1,2}(?:[,\d\s:]*)?)\s*$",
     re.IGNORECASE
 )
+re_null = re.compile(r"^[\s\-\_]+$")
 
 # https://cinescallao.es/dia-del-espectador/
 def is_dia_del_espectador(d: date) -> bool:
@@ -106,7 +107,11 @@ class CinesCallao(Base):
                     date=d.strftime("%Y-%m-%d %H:%M"),
                     url=shop
                 ))
-            strong = tuple(div.select("div > p[style='text-align: center;'] > strong:last-of-type"))
+            strong = tuple((
+                tag for tag in
+                div.select("div > p[style='text-align: center;'] > strong:last-of-type")
+                if not re_null.match(tag.get_text())
+            ))
             c = Cinema(
                 id=to_uuid(ficha),
                 price=4.5,
