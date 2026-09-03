@@ -101,22 +101,21 @@ class CinesCallao(Base):
             )
             soup_ficha = self.__w.get_cached_soup(ficha)
             sessions: set[Session] = set()
-            for h, m in re.findall(r"(\d{2}):(\d{2})", m.group("times")):
-                d = d.replace(hour=int(h), minute=int(m))
+            for h, mm in re.findall(r"(\d{2}):(\d{2})", m.group("times")):
+                d = d.replace(hour=int(h), minute=int(mm))
                 sessions.add(Session(
                     date=d.strftime("%Y-%m-%d %H:%M"),
                     url=shop
                 ))
-            strong = tuple((
-                tag for tag in
-                div.select("div > p[style='text-align: center;'] > strong:last-of-type")
-                if not re_null.match(tag.get_text())
-            ))
+            for tag in div.select("strong"):
+                if re_null.match(tag.get_text()):
+                    tag.extract()
+            strong = div.select_one("div > p[style='text-align: center;'] > strong")
             c = Cinema(
                 id=to_uuid(ficha),
                 price=4.5,
                 duration=_get_int(soup_ficha, r"Duración: (\d+) min") or 60,
-                name=get_text(strong[-1]),
+                name=get_text(strong),
                 url=ficha,
                 img=get_attr(div.select_one("img"), "src"),
                 category=Category.CINEMA,
