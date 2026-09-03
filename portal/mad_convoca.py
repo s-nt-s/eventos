@@ -393,10 +393,10 @@ class MadConvoca(Base):
             r"Mesa informativa.* alquiler",
             r"recogida (de )?material",
             r"Cena vegana las Regañas",
+            r"Marcha Republicana",
             ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
             ("Grupo", "masculinidades",),
             ("Convocatoria", "Vivotecnia"),
-            r"Marcha Republicana",
             flags=re.I,
             to_log=e.id
         ):
@@ -614,6 +614,7 @@ class MadConvoca(Base):
             txt_desc,
             "proyectamos el documental",
             "Duraci[oó]n del documental",
+            "proyecci[oó]n de la pel[ií]cula",
             flags=re.I,
             to_log=e.id
         ):
