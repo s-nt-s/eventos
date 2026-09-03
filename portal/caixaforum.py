@@ -239,8 +239,10 @@ class CaixaForum(Base):
     def __find_session(self, event_url: str, ficha: Dict | None, info: Dict):
         sessions: Set[Session] = set()
         ss: List[Dict] = (ficha or {}).get('sessions', [])
+        noCapacity = False
         for s in ss:
-            if s.get('availableCapacity') == 0:
+            if s.get('availableCapacity') in (0, '0'):
+                noCapacity = True
                 continue
             h, mm = map(int, s["date"].split(":"))
             d, m, y = map(int, s["time"].split("/"))
@@ -248,7 +250,7 @@ class CaixaForum(Base):
                 url=s['url'],
                 date=f"{y}-{m:02d}-{d:02d} {h:02d}:{mm:02d}"
             ))
-        if sessions:
+        if sessions or noCapacity:
             return tuple(sorted(sessions))
         st: datetime = info.get("startDate")
         nd: datetime = info.get("endDate")
