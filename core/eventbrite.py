@@ -138,7 +138,7 @@ class Api:
                 if i is None:
                     continue
                 if i.price:
-                    price = max(price, i.price)
+                    price = max(price or 0, i.price or 0)
                 if i.img:
                     imgs.append(i.img)
                 if i.full:
@@ -148,7 +148,7 @@ class Api:
                 s for s in e.sessions if Api.get_id(s.url) not in full
             )
             e = e.merge(
-                price=max(price, e.price),
+                price=max(price or 0, e.price or 0),
                 img=e.img or get_main_value(imgs),
                 sessions=tp_ss
             )
