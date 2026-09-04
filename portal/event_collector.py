@@ -546,7 +546,7 @@ class EventCollector:
                 logger.debug(f"Descartada por place={e.place.name} {e.url}")
             return False
         max_price = self.get_max_price(e.category)
-        if e.price > max_price:
+        if e.price is not None and e.price > max_price:
             if to_log:
                 logger.debug(f"Descartada por price={e.price} {e.url or e.id}")
             return False
