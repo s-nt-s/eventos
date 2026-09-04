@@ -159,11 +159,17 @@ class FilmAffinityApi:
             (754641, 2025, "Omaha"),
             (144113, 1988, "Akira"),
             (352798, 2025, "El mensaje"),
-            (546833, 2026, "La Odisea"),
+            (546833, 2026, "La Odisea", "La odisea"),
             (841956, 2026, "Vaiana"),
             (437038, 2026, "Spider-Man: Brand New Day"),
             (136154, 2008, re.compile(r"ANTIFA[\:\.\-\s]+Cazadores de skins", flags=re.I)),
             (964408, 2026, "9 lunas"),
+            (872269, 2025, "Forastera"),
+            (268103, 2026, "Cronos"),
+            (832198, 2013, "Begin Again"),
+            (215793, 2026, "La constelación del perro"),
+            (113777, 2026, "Hermanos"),
+            (669035, 1986, "Terciopelo azul"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:
