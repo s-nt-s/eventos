@@ -111,11 +111,11 @@ class CineEmbajadores(Base):
                     ))
         return events
 
-    def __fix_price(self, price: float, dt: str):
+    def __fix_price(self, price: float, sdt: str):
         if price != CineEmbajadores.DEF_PRICE:
             return price
         dt = datetime(
-            *map(int, re.findall(r"\d+")),
+            *map(int, re.findall(r"\d+", sdt)),
             tzinfo=pytz.timezone('Europe/Madrid')
         )
         if dt.weekday() in (0, 2):
