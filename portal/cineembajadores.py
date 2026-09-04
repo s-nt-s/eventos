@@ -50,6 +50,8 @@ def _find_place(p: Tag):
 
 
 class CineEmbajadores(Base):
+    DEF_PRICE = 9.50
+    
     def __init__(self, cache: str | bool = True):
         super().__init__(cache=cache)
         self.__web = Web(verify=False)
@@ -98,11 +100,32 @@ class CineEmbajadores(Base):
         events: set[Event] = set()
         for place, sessions in place_session.items():
             if len(sessions):
-                events.add(template.merge(
-                    place=place,
-                    sessions=tuple(sorted(sessions))
-                ))
+                st = template.merge(place=place)
+                price_sessions: dict[float, set[Session]] = defaultdict(set)
+                for s in sessions:
+                    price_sessions[self.__fix_price(st.price, s.date)].add(s)
+                for price, pss in price_sessions.items():
+                    events.add(st.merge(
+                        price=price,
+                        sessions=tuple(sorted(pss))
+                    ))
         return events
+
+    def __fix_price(self, price: float, dt: str):
+        if price != CineEmbajadores.DEF_PRICE:
+            return price
+        dt = datetime(
+            *map(int, re.findall(r"\d+")),
+            tzinfo=pytz.timezone('Europe/Madrid')
+        )
+        if dt.weekday() in (0, 2):
+            return 5.9
+        if dt.weekday() in (1, 3):
+            return 7.5
+        if dt.hour <= 16:
+            return 7.5
+        
+        return price
 
     def __find_category(self, div: Tag):
         a = div.select_one("div.info h2 a")
@@ -201,20 +224,17 @@ class CineEmbajadores(Base):
             return 6
         if re_or(
             name,
+            r"Cl[aá]sicos al detalle",
             r"CINE CON PIANO EN DIRECTO",
+            r"\(Piano en directo\)",
             flags=re.I
         ):
             return 12
         if re_or(
             name,
-            r"Cl[aá]sicos al detalle",
-            flags=re.I
-        ):
-            return 10
-        if re_or(
-            name,
             r"OPERA FESTIVAL",
             r"Teatro alla Scala de Mil[aá]n",
+            r"[OÓ]h!pera Summer",
             flags=re.I
         ):
             return 9
@@ -224,8 +244,15 @@ class CineEmbajadores(Base):
             flags=re.I
         ):
             return 25
+        if re_or(
+            name,
+            r"^Domingo de cl[áa]sicos",
+            r"^Cine en Clave de Piano",
+            flags=re.I
+        ):
+            return 7.5
 
-        return 7.5
+        return CineEmbajadores.DEF_PRICE
 
     def __yield_field(self, div: Tag, rgx: re.Pattern):
         for h in map(get_text, div.select("div.more h5")):
