@@ -10,25 +10,8 @@
   "20260429160000Z-152879@eventos.uc3m.es": {"category": "CONFERENCE"},
   "20260429160000Z-152978@eventos.uc3m.es": {"category": "CONFERENCE"},
   "20260507160000Z-153659@eventos.uc3m.es": {"category": "CONFERENCE"},
-  "fm04885353-2929-5B9D-86B0-BB4F972D65B7": {"category": "CONFERENCE"},
-  "am62510-1788980400-1788980400@ateneodemadrid.com": {"category": "LITERATURE"},
   "B2A0F5EF-EAE0-55BB-9EC3-DFB64B91BC49": {"cycle": "Ramblas"},
   "D7E33971-D06D-5FCB-85CF-CF79C6334E1E": {"cycle": "Luz Madrid"},
-  "mcmc28053": {"category": "NARRATIVE"},
-  "gt27325421": {"category": "NARRATIVE"},
-  "gt27340659": {"filmaffinity": 661069},
-  "mcmc28052": {"category": "VISIT"},
-  "gt27334642": {"category": "PARTY"},
-  "mcmc28060": {
-    "name": "Un día más con vida",
-    "filmaffinity": 588749,
-    "imdb": "tt2967856"
-  },
-  "am62828-1789412400-1789412400@ateneodemadrid.com": {"more": "https://www.goodreads.com/book/show/252168844"},
-  "mcmc28040": {
-    "category": "LITERATURE",
-    "more": "https://traficantes.net/libros/contra-la-guerra-contra-la-paz"
-  },
   "ac667": {"filmaffinity": 611674},
   "ac668": {"filmaffinity": 739265},
   "ac670": {"filmaffinity": 399102},
@@ -109,6 +92,8 @@
   "am60789-1781809200-1781809200@ateneodemadrid.com": {"filmaffinity": 892054},
   "am62493-1789583400-1789583400@ateneodemadrid.com": {"category": "LITERATURE"},
   "am62507-1789581600-1789581600@ateneodemadrid.com": {"category": "LITERATURE"},
+  "am62510-1788980400-1788980400@ateneodemadrid.com": {"category": "LITERATURE"},
+  "am62828-1789412400-1789412400@ateneodemadrid.com": {"more": "https://www.goodreads.com/book/show/252168844"},
   "cbaA53B245B-D16A-5724-8860-AC4742D69B74": {"filmaffinity": 435198},
   "ce15333": {"price": 3},
   "ce15346": {"cycle": "Cortometrajes"},
@@ -118,18 +103,6 @@
   "ce15384": {"filmaffinity": 112826},
   "ce15388": {"filmaffinity": 124761},
   "ce15389": {"filmaffinity": 110692},
-  "mx5C0AE1E0-CDAB-51E6-9F34-EE0906E76CA7": {"filmaffinity": 385297},
-  "mx05DCD52A-FFE8-58F7-939F-02FBBEBBB7D2": {"filmaffinity": 278744},
-  "mxED2D9F9C-A199-51EB-BC9E-481D4775E77A": {"filmaffinity": 219319},
-  "mx6CC576D9-038A-5318-B8FF-0D70D682E4F3": {"filmaffinity": 773141},
-  "armo1A5DC95A-778D-50A3-8353-E2EE84EAC174": {
-    "name": "Enlorquecido: Solo el misterio nos hace vivir",
-    "filmaffinity": 780388
-  },
-  "gt27335307": {
-    "name": "La semilla",
-    "filmaffinity": 899398
-  },
   "ce15393": {"category": "CONFERENCE"},
   "ce15395": {"category": "CONFERENCE"},
   "ce15397": {"filmaffinity": 894138},
@@ -149,6 +122,7 @@
   "cf175205303": {"filmaffinity": 779034},
   "cf175352396": {"filmaffinity": 888904},
   "cf5501833": {"filmaffinity": 687189},
+  "fm04885353-2929-5B9D-86B0-BB4F972D65B7": {"category": "CONFERENCE"},
   "fm1DADBDEE-92F6-5B31-B767-E17FA8FB20E0": {"filmaffinity": 790301},
   "fm3C4725AC-9CB1-5357-B2F2-EB070447D591": {"filmaffinity": 317347},
   "fm52F2BCB3-8F40-517C-A734-E4BD505EACE5": {"filmaffinity": 154461},
@@ -164,10 +138,12 @@
   "gt27261103": {"filmaffinity": 117833},
   "gt27274933": {"filmaffinity": 701076},
   "gt27283241": {"category": "EXPO"},
+  "gt27325421": {"category": "NARRATIVE"},
+  "gt27334642": {"category": "PARTY"},
+  "gt27340659": {"filmaffinity": 661069},
   "if2498": {"filmaffinity": 738677},
   "if2573": {"filmaffinity": 724167},
   "if2578": {"filmaffinity": 925667},
-  "mcmc28077": {"category": "ACTIVISM"},
   "mc26569": {"category": "ACTIVISM"},
   "mc26583": {"filmaffinity": 152338},
   "mc26598": {"category": "CONFERENCE"},
@@ -236,6 +212,9 @@
   "mcmc27801": {"category": "CONFERENCE"},
   "mcmc27807": {"category": "NARRATIVE"},
   "mcmc27914": {"category": "ACTIVISM"},
+  "mcmc28052": {"category": "VISIT"},
+  "mcmc28053": {"category": "NARRATIVE"},
+  "mcmc28077": {"category": "ACTIVISM"},
   "md6225": {"img": "https://www.teatrocircoprice.es/sites/default/files/styles/activity_gallery/public/2026-01/HOP_736x530.jpg.webp"},
   "md6494": {"category": "CONFERENCE"},
   "md6519": {"filmaffinity": 330646},
@@ -323,10 +302,13 @@
   "md8173": {"cycle": "Cortometrajes"},
   "md8196": {"category": "CONFERENCE"},
   "ms44327b61da7cf910VgnVCM100000891ecb1aRCRD": {"category": "PUPPETRY"},
+  "mx05DCD52A-FFE8-58F7-939F-02FBBEBBB7D2": {"filmaffinity": 278744},
   "mx30A6CC86-7DCC-5B04-ACC7-0E7A1224A23D": {"category": "CONFERENCE"},
   "mx4360F770-7343-5EBC-92AE-46F68ACAD6C4": {"filmaffinity": 730126},
   "mx46E0BBBA-3270-5994-939C-8B052DAC4F3F": {"filmaffinity": 347632},
+  "mx5C0AE1E0-CDAB-51E6-9F34-EE0906E76CA7": {"filmaffinity": 385297},
   "mx6988FAE9-71A5-569B-890C-22DFF969DDD7": {"category": "SPAM"},
+  "mx6CC576D9-038A-5318-B8FF-0D70D682E4F3": {"filmaffinity": 773141},
   "mx706A3674-8EBE-5305-8372-7B5BCAB8E09E": {"filmaffinity": 711704},
   "mx71762C9A-1DD1-5DD7-A25F-A2165E879534": {"filmaffinity": 122104},
   "mx8BC74732-4F42-5BA2-94A7-C22D09D9AC44": {"filmaffinity": 637906},
@@ -337,6 +319,7 @@
   "mxC71FFBEB-0BC0-5162-B76E-524690365E61": {"filmaffinity": 961959},
   "mxDB76DBBC-9FAA-54D0-AC52-6E1A7012BC0A": {"category": "NO_EVENT"},
   "mxDF125737-1EA5-5E01-95C2-FA1927BB8CB9": {"category": "CONFERENCE"},
+  "mxED2D9F9C-A199-51EB-BC9E-481D4775E77A": {"filmaffinity": 219319},
   "mxFB56698D-F690-5299-8216-7AA1FAB719DD": {"filmaffinity": 581171},
   "rs39235": {"filmaffinity": 136625},
   "rs39238": {"imdb": "tt9353770"},
@@ -467,6 +450,10 @@
     "category": "CINEMA",
     "cycle": "Cortometrajes"
   },
+  "armo1A5DC95A-778D-50A3-8353-E2EE84EAC174": {
+    "name": "Enlorquecido: Solo el misterio nos hace vivir",
+    "filmaffinity": 780388
+  },
   "cas39475": {
     "name": "Muestra de cortometrajes asiáticos",
     "category": "CINEMA"
@@ -494,6 +481,10 @@
   "gt27247545": {
     "imdb": "tt37720830",
     "img": "https://m.media-amazon.com/images/M/MV5BYjMwMmE2ZmUtZDA3NC00MjI5LThiZDAtODBkZjhjZjgxY2VhXkEyXkFqcGc@._V1_FMjpg_UX768_.jpg"
+  },
+  "gt27335307": {
+    "name": "La semilla",
+    "filmaffinity": 899398
   },
   "mc26752": {
     "category": "PARTY",
@@ -587,6 +578,14 @@
       "Nora Twomey"
     ],
     "img": "https://pics.filmaffinity.com/the_breadwinner-717386349-large.jpg"
+  },
+  "mcmc28040": {
+    "category": "LITERATURE",
+    "more": "https://traficantes.net/libros/contra-la-guerra-contra-la-paz"
+  },
+  "mcmc28060": {
+    "name": "Un día más con vida",
+    "filmaffinity": 588749
   },
   "md7308": {
     "category": "CONFERENCE",
