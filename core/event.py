@@ -1200,6 +1200,7 @@ def find_book_category(name: str, description: str, default: Category):
         "premio planeta",
         "Confianza Agustina",
         "Daniela Tarazona",
+        r"Presentaci[oó]n (de )?La novela",
         r"La invenci[oó]n de todas las cosas",
         flags=re.I
     ):
@@ -1237,6 +1238,9 @@ def find_book_category(name: str, description: str, default: Category):
         r"Mar[ií]a Dueñas",
         r"Marta Galatas",
         r"Manuel Juli[aá]",
+        r"escritora? de novelas",
+        r"autora? de varias novelas",
+        r"autora? de obras de teatro",
         ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
         ("a trav[eé]s de estas ficciones", "literatura"),
         flags=re.I
