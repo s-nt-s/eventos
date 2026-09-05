@@ -349,7 +349,9 @@ class TeatroBarrio(Base):
             return Category.NO_EVENT
         if re_or(
             i.name,
-            "Presentaci[oó]n del doss?ier"
+            "Presentaci[oó]n del doss?ier",
+            "futurock",
+            flags=re.I
         ):
             return Category.CONFERENCE
         if re_or(
