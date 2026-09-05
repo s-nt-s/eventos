@@ -202,25 +202,21 @@ def _mk_re(s: str, flags: int = 0):
     return re.compile(reg, flags=flags)
 
 
-def re_or(s: str, *args: Union[str, Tuple[str]], to_log: str = None, flags=0):
+def re_or(s: str, *args: Union[str, Tuple[str]], flags=0):
     if s is None or len(s) == 0 or len(args) == 0:
         return None
     for r in args:
         if isinstance(r, tuple):
             b = re_and(s, *r, flags=flags)
             if b is not None:
-                if to_log:
-                    logger.debug(f"{to_log} cumple {b}")
                 return b
         else:
             if _mk_re(r, flags=flags).search(s):
-                if to_log:
-                    logger.debug(f"{to_log} cumple {r}")
                 return r
     return None
 
 
-def re_and(s: str, *args: Union[str, Tuple[str]], to_log: str = None, flags=0):
+def re_and(s: str, *args: Union[str, Tuple[str]], flags=0):
     if s is None or len(s) == 0 or len(args) == 0:
         return None
     arr = []
@@ -236,8 +232,6 @@ def re_and(s: str, *args: Union[str, Tuple[str]], to_log: str = None, flags=0):
             else:
                 return None
     txt = " AND ".join(arr)
-    if to_log:
-        logger.debug(f"{to_log} cumple {txt}")
     return txt
 
 

@@ -258,7 +258,6 @@ class AteneoMadrid(Base):
             r"(Gala|Acto) de entrega del? premios?",
             r"^Homenaje a",
             flags=re.I,
-            to_log=e.UID
         ):
             return Category.NO_EVENT
         if re_or(
@@ -287,7 +286,6 @@ class AteneoMadrid(Base):
             "presentaci[oó]n del?",
             ("libro", "novela"),
             flags=re.I,
-            to_log=e.UID
         ):
             return Category.LITERATURE
 

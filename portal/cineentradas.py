@@ -188,9 +188,9 @@ class CineEntradas(Base):
             cinema = self.info['urlSlug']
             name: str = i['movie']['title']
             id = f"ce{self.info['id']}_{i['movie']['id']}"
-            if re_or(name.lower(), "enclavedanza", to_log=id):
+            if re_or(name.lower(), "enclavedanza"):
                 category = Category.DANCE
-            elif re_and(name.lower(), "conciertos", ("territorios", "jazz", "duo", "trio", "charla"), to_log=id):
+            elif re_and(name.lower(), "conciertos", ("territorios", "jazz", "duo", "trio", "charla")):
                 category = Category.MUSIC
             root = f"https://cine.entradas.com/cine/{city}/{cinema}"
             e = Event(

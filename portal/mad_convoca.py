@@ -215,14 +215,12 @@ class MadConvoca(Base):
             ("Redes Libertarias", r"n[úu]mero", "revista"),
             r"Acto anual de gratitud a las socias y los socios",
             flags=re.I,
-            to_log=e.UID
         ):
             return Category.NO_EVENT
         if re_or(
             e.SUMMARY,
             r"Mesa ciudadana del [aá]rbol",
             flags=re.I,
-            to_log=e.UID
         ):
             return Category.ACTIVISM
         if re_and(
@@ -230,14 +228,12 @@ class MadConvoca(Base):
             "presentaci[oó]n del?",
             ("libro", "novela"),
             flags=re.I,
-            to_log=e.UID
         ):
             return Category.LITERATURE
         if re_or(
             e.SUMMARY,
             "exposici[oó]n(es)?",
             flags=re.I,
-            to_log=e.UID
         ):
             return Category.EXPO
         if re_or(
@@ -245,7 +241,6 @@ class MadConvoca(Base):
             "taller",
             "formaci[óo]n",
             flags=re.I,
-            to_log=e.UID
         ):
             return Category.WORKSHOP
         if re_or(
@@ -336,9 +331,9 @@ class MadConvoca(Base):
 
         def has_tag_or_title(*args):
             for t in tags:
-                if re_or(t, *args, flags=re.I, to_log=e.id):
+                if re_or(t, *args, flags=re.I):
                     return True
-            if re_or(name, *args, flags=re.I, to_log=e.id):
+            if re_or(name, *args, flags=re.I):
                 return True
             return False
 
@@ -381,7 +376,6 @@ class MadConvoca(Base):
             txt_desc,
             "Ven con tus peques",
             flags=re.I,
-            to_log=e.id
         ):
             return Category.CHILDISH
         if re_or(
@@ -398,7 +392,6 @@ class MadConvoca(Base):
             ("Grupo", "masculinidades",),
             ("Convocatoria", "Vivotecnia"),
             flags=re.I,
-            to_log=e.id
         ):
             return Category.ACTIVISM
 
@@ -427,10 +420,9 @@ class MadConvoca(Base):
             "^curso de",
             ("no", "compres", "cose"),
             flags=re.I,
-            to_log=e.id
         ):
             return Category.WORKSHOP
-        if re_or(name, "iniciaci[óo]n al",  flags=re.I, to_log=e.id) and has_tag("deporte", "gimnasia"):
+        if re_or(name, "iniciaci[óo]n al",  flags=re.I) and has_tag("deporte", "gimnasia"):
             return Category.WORKSHOP
         if has_tag_or_title("presentaci[óo]n de libro", "^libro$", "Fanzine"):
             return Category.LITERATURE
@@ -448,8 +440,7 @@ class MadConvoca(Base):
             name,
             "^concierto",
             "ANARKO-M[ÚU]SICA",
-            flags=re.I,
-            to_log=e.id
+            flags=re.I
         ):
             return Category.MUSIC
         if re_or(
@@ -465,10 +456,9 @@ class MadConvoca(Base):
             r"Verm[uú]",
             ("Software", ("Free", "libre"), ("day", "día")),
             flags=re.I,
-            to_log=e.id
         ):
             return Category.PARTY
-        if re_or(name, "bicicritica", to_log=e.id):
+        if re_or(name, "bicicritica", flags=re.I):
             return Category.SPORT
         if has_tag_or_title(
             "charlas?",
@@ -490,10 +480,9 @@ class MadConvoca(Base):
             "conoce tus derechos",
             r"Jornadas? por",
             flags=re.I,
-            to_log=e.id
         ):
             return Category.CONFERENCE
-        if re_or(name, "radio comunitaria", flags=re.I, to_log=e.id):
+        if re_or(name, "radio comunitaria", flags=re.I):
             return Category.WORKSHOP
         if has_tag_or_title("concierto", "swing") or has_tag("musica", "música"):
             return Category.MUSIC
@@ -545,10 +534,10 @@ class MadConvoca(Base):
             r"en este coloquio",
             r"Habr[aá] charla",
             flags=re.I,
-            to_log=e.id
+            
         ):
             return Category.CONFERENCE
-        if re_or(txt_desc, "m[uú]sica electr[óo]nica", flags=re.I, to_log=e.id):
+        if re_or(txt_desc, "m[uú]sica electr[óo]nica", flags=re.I):
             return Category.MUSIC
         if re_or(txt_desc, "hacer arte cutre"):
             return Category.WORKSHOP
@@ -557,13 +546,12 @@ class MadConvoca(Base):
             ("performance", "micr[óo]fono abierto", "DJ Set(lists?)?"),
             ("Karaoke", r"DJ Set(s|lists?)?"),
             ("pintxadas?", "elektronikas?"),
-            to_log=e.id,
             flags=re.I
         ):
             return Category.PARTY
-        if re_or(txt_desc, "comedia perform[aá]tica", flags=re.I, to_log=e.id):
+        if re_or(txt_desc, "comedia perform[aá]tica", flags=re.I):
             return Category.THEATER
-        if re_or(txt_desc, "taller", "Curso presencial", flags=re.I, to_log=e.id):
+        if re_or(txt_desc, "taller", "Curso presencial", flags=re.I):
             return Category.WORKSHOP
         if re_or(
             txt_desc,
@@ -584,7 +572,7 @@ class MadConvoca(Base):
         ):
             return Category.LITERATURE
 
-        if re_or(name, "Presentaci[óo]n del libro", to_log=e.id, flags=re.I):
+        if re_or(name, "Presentaci[óo]n del libro", flags=re.I):
             return Category.LITERATURE
 
         if has_tag("poesia"):
@@ -607,7 +595,6 @@ class MadConvoca(Base):
             r"Hablaremos con .*? sobre su libro",
             r"presentamos el (nuevo )?libro",
             flags=re.I,
-            to_log=e.id
         ):
             return Category.LITERATURE
         if re_or(
@@ -616,7 +603,6 @@ class MadConvoca(Base):
             "Duraci[oó]n del documental",
             "proyecci[oó]n de la pel[ií]cula",
             flags=re.I,
-            to_log=e.id
         ):
             return Category.CINEMA
         if re_and(
@@ -624,7 +610,6 @@ class MadConvoca(Base):
             "hablaremos sobre",
             "trae tu libreta",
             flags=re.I,
-            to_log=e.id
         ):
             return Category.WORKSHOP
         if re_or(
@@ -632,7 +617,6 @@ class MadConvoca(Base):
             "Tu nube seca mi río",
             ("jornadas?", "charlas?"),
             flags=re.I,
-            to_log=e.id
         ):
             return Category.CONFERENCE
         if has_tag("ecoaldea") and has_tag("encuentro"):

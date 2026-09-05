@@ -585,15 +585,13 @@ class MadridDestino(Base):
             r"A partir de \d+ meses",
             r"familiar desde \d años",
             r"^Niñ[oa]s y niñ[oa]s",
-            flags=re.I,
-            to_log=id
+            flags=re.I
         ):
             return Category.CHILDISH
         if not is_cine and re_or(
             audience,
             r"de [0-9][\-a\s]+1[0-8] años",
             r"solo si tienes entre 1[3-8] y 18 años",
-            to_log=id
         ):
             return Category.YOUTH
 
@@ -609,7 +607,6 @@ class MadridDestino(Base):
             "todos los publicos",
             "de 6 a 99 años",
             "no recomendada para menores de",
-            to_log=id
         )
 
         if re_or(
@@ -630,7 +627,7 @@ class MadridDestino(Base):
         ):
             return find_book_category(e['title'], desc, Category.LITERATURE)
 
-        if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", to_log=id, flags=re.I):
+        if re_or(pt, "Visitas Faro de Moncloa", r"Mirador Madrid[\s\-]+As[oó]mate a Madrid", flags=re.I):
             return Category.VIEW_POINT
         if re_or(
             pt,
@@ -639,7 +636,6 @@ class MadridDestino(Base):
             "canciones de cuna",
             r"Dirigido a padres y alumnos",
             ("Fanzine sonoro", ("familiar", "adolescente")),
-            to_log=id,
             flags=re.I
         ) or re_or(
             desc,
@@ -650,7 +646,7 @@ class MadridDestino(Base):
             return Category.CHILDISH
         if not is_cine and is_cat("en familia", "infantil"):
             return Category.CHILDISH
-        if re_or(pt, "sesion adolescente", to_log=id):
+        if re_or(pt, "sesion adolescente"):
             return Category.YOUTH
         if not is_para_todos and is_cat("mayores"):
             return Category.SENIORS
@@ -677,11 +673,10 @@ class MadridDestino(Base):
             "visitas dialogadas",
             "guided conversations",
             "el madrid de concha velasco",
-            to_log=id
         ):
             return Category.VISIT
 
-        if re_or(pt, "^taller", to_log=id):
+        if re_or(pt, "^taller"):
             return Category.WORKSHOP
 
         if is_cat("teatro", "teatro de objetos", "performance"):
@@ -690,16 +685,16 @@ class MadridDestino(Base):
             return Category.CONFERENCE
         if is_cat("música", "jazz", "arte sonoro"):
             return Category.MUSIC
-        if re_or(pt, 'musica', "concierto de cine", to_log=id):
+        if re_or(pt, 'musica', "concierto de cine"):
             return Category.MUSIC
-        if re_or(pt, "visitas", to_log=id):
+        if re_or(pt, "visitas"):
             return Category.VISIT
         if is_cat("letras"):
             return Category.CONFERENCE
         if is_cat("juvenil"):
             return Category.YOUTH
 
-        if re_or(pt, "parking", to_log=id, flags=re.I):
+        if re_or(pt, "parking", flags=re.I):
             return Category.NO_EVENT
         if re_or(
             pt,
@@ -708,11 +703,10 @@ class MadridDestino(Base):
             r"^masterclass",
             r"una conversacion con",
             r"velada( sorpresa)? con",
-            to_log=id,
             flags=re.I
         ):
             return Category.CONFERENCE
-        if re_or(psub, r"^Taller de", to_log=id, flags=re.I) or re_or(audience, "Taller", to_log=id, flags=re.I):
+        if re_or(psub, r"^Taller de", flags=re.I) or re_or(audience, "Taller", flags=re.I):
             return Category.WORKSHOP
         if re_or(psub, "Baychimo Teatro", flags=re.I):
             return Category.THEATER
@@ -732,7 +726,6 @@ class MadridDestino(Base):
             r"banda sinf[oó]nica",
             r"orquesta y coro",
             r"piano ?city",
-            to_log=id,
             flags=re.I
         ) or re_or(
             psub,
@@ -764,7 +757,7 @@ class MadridDestino(Base):
 
         if is_cat("pintura", "ilustración", "fotografía", "exposición"):
             for r in e.get('rooms', []):
-                if re_or(r.get('name'), 'Sal[oó]n de actos', flags=re.I, to_log=id):
+                if re_or(r.get('name'), 'Sal[oó]n de actos', flags=re.I):
                     return Category.CONFERENCE
             return Category.EXPO
 
