@@ -51,8 +51,7 @@ class SalaBerlanga(Base):
             price=SalaBerlanga.PRICE
         ).get_events()
 
-    @cached_property
-    def items(self):
+    def __get_activities(self):
         urls: dict[str, set[str]] = defaultdict(set)
         with Driver(browser="firefox", wait=15) as f:
             f.get(SalaBerlanga.HOME)
@@ -80,6 +79,15 @@ class SalaBerlanga(Base):
             f.wait_ready()
             actividades = get_text(f.get_soup().select_one("pre"))
         act = json.loads(actividades)
+        if not isinstance(act, list):
+            raise ValueError(f"Invalid JSON from {SalaBerlanga.ACTIVIDADES}")
+        if len(act) > 0 and not all(isinstance(t, dict) for t in act):
+            raise ValueError(f"Invalid JSON from {SalaBerlanga.ACTIVIDADES}")
+        return urls, act
+
+    @cached_property
+    def items(self):
+        urls, act = self.__get_activities()
         items: list[Item] = []
         for url, tags in urls.items():
             tags = tuple(t for t in tags if t is not None)
@@ -97,7 +105,7 @@ class SalaBerlanga(Base):
         #FM.dump("rec/salaberlanga/fichas.json", [i.inf for i in items])
         return tuple(items)
 
-    def __get_ficha(self, act: dict, url: str):
+    def __get_ficha(self, act: list, url: str):
         for a in act:
             if a['link'] == url:
                 return a

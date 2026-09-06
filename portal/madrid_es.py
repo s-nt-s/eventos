@@ -693,6 +693,13 @@ class MadridEs(Base):
             return Category.POETRY
         if re_or(
             i.title,
+            r"Presentaci[óo]n (de )?La novela",
+            flags=re.I
+        ):
+            return Category.NARRATIVE
+
+        if re_or(
+            i.title,
             r"Muestra de proyectos \d+",
             flags=re.I
         ):
