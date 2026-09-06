@@ -440,6 +440,7 @@ class MadConvoca(Base):
             name,
             "^concierto",
             "ANARKO-M[ÚU]SICA",
+            r"Jazz (4|for) a cause",
             flags=re.I
         ):
             return Category.MUSIC
