@@ -170,6 +170,7 @@ class FilmAffinityApi:
             (215793, 2026, "La constelación del perro"),
             (113777, 2026, "Hermanos"),
             (669035, 1986, "Terciopelo azul"),
+            (111829, 2025, "Nuestra tierra"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:

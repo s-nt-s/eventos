@@ -1188,6 +1188,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"[aá]lbum po[eé]tico",
         r"narrativa, poes[íi]a",
         r"Premio Loewe de Poes[íi]a",
+        r"Oficio de Babel",
         flags=re.I
     ):
         return Category.POETRY
