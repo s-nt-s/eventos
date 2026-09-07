@@ -445,7 +445,7 @@ for arr in CLSS.values():
         CLSS_COUNT[a] = CLSS_COUNT[a] + 1
 
 
-j = Jnj2("template/", OUT, favicon="🗓", post=set_icons)
+j = Jnj2("template/", OUT, favicon="📅", post=set_icons)
 j.create_script(
     "rec/info.js",
     SESIONES=sesiones,
