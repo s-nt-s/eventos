@@ -812,4 +812,3 @@ class EventCollector:
                 continue
             sessions.append(s)
         return e.merge(sessions=tuple(sessions))
-
