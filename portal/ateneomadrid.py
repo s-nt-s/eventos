@@ -348,7 +348,7 @@ class AteneoMadrid(Base):
         return Category.CONFERENCE
 
     def __find_place(self, e: IcsEventWrapper):
-        if e.LOCATION:
+        if e.LOCATION not in (None, "Madrid"):
             return Place(
                 name=e.LOCATION,
                 address=e.LOCATION
