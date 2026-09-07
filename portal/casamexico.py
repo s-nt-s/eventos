@@ -556,6 +556,7 @@ class CasaMexico(Base):
             r"encuentro de escritores",
             r"Mesa redonda",
             r"conversaci[oó]n con",
+            r"^Encuentro\s*\|.*",
             flags=re.I
         ):
             return Category.CONFERENCE
