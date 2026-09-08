@@ -198,7 +198,7 @@ class IcsEventWrapper:
     def __find_hours(self):
         txt = self.__get_text("SUMMARY") or ''
         hms: set[tuple[int, int]] = set()
-        for h, m in re.findall(r"\b([01]\d|2[0-4]):(\d[0-5]\d)\b", txt):
+        for h, m in re.findall(r"\b([01]\d|2[0-4]):(\d[0-5]\d)\s*h", txt):
             hms.add((int(h), int(m)))
         return tuple(sorted(hms))
     
