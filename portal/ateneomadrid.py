@@ -261,6 +261,12 @@ class AteneoMadrid(Base):
         ):
             return Category.NO_EVENT
         if re_or(
+            e.DESCRIPTION,
+            r"Ciclo de\s*Tauromaquia",
+            flags=re.I,
+        ):
+            return Category.NO_EVENT
+        if re_or(
             e.SUMMARY,
             "comunicaci[óo]n corporativa",
             r"(Cuarta|4[ºª\*\.]) Revoluci[oó]n Industrial",

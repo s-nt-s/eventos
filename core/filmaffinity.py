@@ -172,6 +172,7 @@ class FilmAffinityApi:
             (669035, 1986, "Terciopelo azul"),
             (111829, 2025, "Nuestra tierra"),
             (221866, 2026, "El nido"),
+            (417100, 2025, "Bad Apples"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:
