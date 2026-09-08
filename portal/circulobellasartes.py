@@ -125,9 +125,12 @@ async def soup_to_cinema(url: str, soup: Tag):
             v = v.lower()
         price = {
             "precio reducido": 5.50, #(18/5)
-            '': 8
-        }.get(v)
-        if re_or(v, r"acceso libre con invitaci[óo]n"):
+            None: 8
+        }.get(v, find_euros(v))
+        if re_or(
+            v,
+            r"(acceso|acceso|entrada) libre",
+        ):
             price = 0
         if price is None:
             logger.warning(f"NOT FOUND price={k}={v} {url}")
