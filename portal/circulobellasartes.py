@@ -125,10 +125,12 @@ async def soup_to_cinema(url: str, soup: Tag):
             v = v.lower()
         price = {
             "precio reducido": 5.50, #(18/5)
-            None: 8
+            '': 8
         }.get(v)
+        if re_or(v, r"acceso libre con invitaci[óo]n"):
+            price = 0
         if price is None:
-            logger.warning(f"NOT FOUND price={k} {url}")
+            logger.warning(f"NOT FOUND price={k}={v} {url}")
             continue
         ev: Cinema = price_event.get(price, template)
         d, m, h, mm = map(int, re.findall(r"\d+", k))
