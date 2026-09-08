@@ -1201,6 +1201,7 @@ def find_book_category(name: str, description: str, default: Category):
         "premio planeta",
         "Confianza Agustina",
         "Daniela Tarazona",
+        r"obras? fundamental(es)? de la narrativa",
         r"Presentaci[oó]n (de )?La novela",
         r"La invenci[oó]n de todas las cosas",
         flags=re.I

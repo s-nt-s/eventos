@@ -196,12 +196,12 @@ class IcsEventWrapper:
         return self.__get_text("SUMMARY", mandatory=True)
 
     def __find_hours(self):
-        txt = self.__get_text("SUMMARY") or ''
+        txt = self.__get_text("DESCRIPTION") or ''
         hms: set[tuple[int, int]] = set()
         for h, m in re.findall(r"\b([01]\d|2[0-4]):([0-5]\d)[\b|h]", txt):
             hms.add((int(h), int(m)))
         return tuple(sorted(hms))
-    
+
     @property
     def DTSTART(self) -> datetime:
         dt = self.__get_datetime("DTSTART", mandatory=True)
