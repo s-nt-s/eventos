@@ -214,6 +214,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         r"M[oó]stoles$",
         r"Rivas-Vaciamadrid",
         r"^Parco Sempione$",
+        r"(Firenze|Torino)$",
         flags=re.I
     ):
         return False
