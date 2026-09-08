@@ -209,6 +209,7 @@ class IcsEventWrapper:
             hm = self.__find_hours()
             if len(hm) in (1, 2):
                 dt = dt.replace(hour=hm[0][0], minute=hm[0][1])
+                logger.warning(f"FIX HOUR {dt:%Y-%m-%d %H:%M} {self.UID}")
         return dt
 
     @property
@@ -219,6 +220,7 @@ class IcsEventWrapper:
             hm = self.__find_hours()
             if len(hm) in (1, 2):
                 dt = st.replace(hour=hm[-1][0], minute=hm[-1][1])
+                logger.warning(f"FIX HOUR {dt:%Y-%m-%d %H:%M} {self.UID}")
         return dt
 
     @property
