@@ -195,17 +195,35 @@ class IcsEventWrapper:
     def SUMMARY(self) -> str:
         return self.__get_text("SUMMARY", mandatory=True)
 
+    def __find_hours(self):
+        txt = self.__get_text("SUMMARY") or ''
+        hms: set[tuple[int, int]] = set()
+        for h, m in re.findall(r"\b([01]\d|2[0-4]):(\d[0-5]\d)\b"):
+            hms.add((int(h), int(m))
+        return tuple(sorted(hms))
+    
     @property
     def DTSTART(self) -> datetime:
-        return self.__get_datetime("DTSTART", mandatory=True)
+        dt = self.__get_datetime("DTSTART", mandatory=True)
+        if dt.hour == 0 and dt.minute == 0 and self.__get_datetime("DTEND") in (None, dt):
+            hm = self.__find_hours()
+            if len(hm) in (1, 2):
+                dt = dt.replace(hour=hm[0][0], minute=hm[0][1])
+        return dt
+
+    @property
+    def DTEND(self):
+        st = dt = self.__get_datetime("DTSTART", mandatory=True)
+        dt = self.__get_datetime("DTEND")
+        if dt in (None, st) and st.hour == 0 and st.minute == 0:
+            hm = self.__find_hours()
+            if len(hm) in (1, 2):
+                dt = st.replace(hour=hm[-1][0], minute=hm[-1][1])
+        return dt
 
     @property
     def LOCATION(self):
         return self.__get_text("LOCATION")
-
-    @property
-    def DTEND(self):
-        return self.__get_datetime("DTEND")
 
     @property
     def CREATED(self):
