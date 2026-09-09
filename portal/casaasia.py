@@ -184,6 +184,12 @@ class CasaAsia(Base):
             flags=re.I
         ):
             return Category.THEATER
+        if re_or(
+            title,
+            "concierto",
+            flags=re.I
+        ):
+            return Category.MUSIC
         logger.critical(str(CategoryUnknown(a['link'], ", ".join(sorted(cats)))))
         return Category.UNKNOWN
 
