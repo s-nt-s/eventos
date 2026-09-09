@@ -1,6 +1,6 @@
 from core.gancio import GancioPortal, Event as GancioEvent
 from core.ics import IcsReader, IcsEventWrapper
-from core.event import Event, Place, Category, Session, CategoryUnknown
+from core.event import Event, Place, Category, Session, CategoryUnknown, find_book_category
 from core.util import plain_text, find_duplicates, re_or, re_and, get_domain, find_euros
 import re
 import logging
@@ -370,6 +370,7 @@ class MadConvoca(Base):
             r"Treque[\-\s]*Solidario",
             r"Proyecto Hebra",
             r"se buscan voluntari[aoxe@]s para",
+            r"Trueque Solidario de Ropa",
         ):
             return Category.ACTIVISM
         if re_or(
@@ -425,7 +426,7 @@ class MadConvoca(Base):
         if re_or(name, "iniciaci[óo]n al",  flags=re.I) and has_tag("deporte", "gimnasia"):
             return Category.WORKSHOP
         if has_tag_or_title("presentaci[óo]n de libro", "^libro$", "Fanzine"):
-            return Category.LITERATURE
+            return find_book_category(name, txt_desc, Category.LITERATURE)
         if has_tag_or_title("teatro", "micro abierto", "performance", "mikro abierto"):
             return Category.THEATER
         if has_tag_or_title(
@@ -435,7 +436,7 @@ class MadConvoca(Base):
             "grupodelectura",
             "bookelarre"
         ):
-            return Category.READING_CLUB
+            return find_book_category(name, txt_desc, Category.READING_CLUB)
         if has_tag("concierto") or re_or(
             name,
             "^concierto",
@@ -554,6 +555,7 @@ class MadConvoca(Base):
             return Category.THEATER
         if re_or(txt_desc, "taller", "Curso presencial", flags=re.I):
             return Category.WORKSHOP
+
         if re_or(
             txt_desc,
             "razonar en com[uú]n",
@@ -563,7 +565,7 @@ class MadConvoca(Base):
             r"leer un texto y razonar",
             flags=re.I
         ):
-            return Category.READING_CLUB
+            return find_book_category(name, txt_desc, Category.READING_CLUB)
 
         if isLibreria and re_or(
             name,
@@ -571,10 +573,10 @@ class MadConvoca(Base):
             "El libro analiza",
             flags=re.I
         ):
-            return Category.LITERATURE
+            return find_book_category(name, txt_desc, Category.LITERATURE)
 
         if re_or(name, "Presentaci[óo]n del libro", flags=re.I):
-            return Category.LITERATURE
+            return find_book_category(name, txt_desc, Category.LITERATURE)
 
         if has_tag("poesia"):
             return Category.POETRY
@@ -594,15 +596,16 @@ class MadConvoca(Base):
         if re_or(
             txt_desc,
             r"Hablaremos con .*? sobre su libro",
-            r"presentamos el (nuevo )?libro",
+            r"presentar?mos el (nuevo )?libro",
             flags=re.I,
         ):
-            return Category.LITERATURE
+            return find_book_category(name, txt_desc, Category.LITERATURE)
         if re_or(
             txt_desc,
-            "proyectamos el documental",
-            "Duraci[oó]n del documental",
-            "proyecci[oó]n de la pel[ií]cula",
+            r"proyectamos el documental",
+            r"Duraci[oó]n del documental",
+            r"proyecci[oó]n de la pel[ií]cula",
+            r"cine de animaci[oó]n",
             flags=re.I,
         ):
             return Category.CINEMA
@@ -632,7 +635,7 @@ class MadConvoca(Base):
         ):
             return Category.ACTIVISM
         if isLibreria:
-            return Category.LITERATURE
+            return find_book_category(name, txt_desc, Category.LITERATURE)
         if has_tag_or_title(
             "encuentros?"
         ):

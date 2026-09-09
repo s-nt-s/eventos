@@ -200,6 +200,7 @@ class Alcala(Base):
         if re_or(
             x.name,
             r"Jornada de puertas abiertas",
+            r"^Homenaje a la generaci[oó]n",
             flags=re.I
         ):
             return Category.NO_EVENT

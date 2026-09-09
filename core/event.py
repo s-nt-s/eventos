@@ -1189,6 +1189,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"narrativa, poes[íi]a",
         r"Premio Loewe de Poes[íi]a",
         r"Oficio de Babel",
+        r"Rainer Maria Rilke",
         flags=re.I
     ):
         return Category.POETRY
@@ -1204,6 +1205,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"obras? fundamental(es)? de la narrativa",
         r"Presentaci[oó]n (de )?La novela",
         r"La invenci[oó]n de todas las cosas",
+        r"La ciudad de los girasoles",
         flags=re.I
     ):
         return Category.NARRATIVE

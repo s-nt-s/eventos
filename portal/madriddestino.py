@@ -337,7 +337,7 @@ class MadridDestino(Base):
             org = self.__find("organizations", e['organization_id'])
             if org is None:
                 continue
-            logger.debug("event.id="+str(e['id']))
+            #logger.debug("event.id="+str(e['id']))
             info = self.data.info.get(e['id']) or {}
             soup = self.data.soup.get(e['id'])
             url = MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
@@ -545,19 +545,26 @@ class MadridDestino(Base):
 
         def is_cat(*args):
             ok = cats.intersection((plain_text(a).lower() for a in args))
-            if ok:
-                logger.debug(f"{id} cumple {', '.join(sorted(ok))}")
-                return True
+            return len(ok) > 0
 
-        is_cine = is_cat('cine')
         psub = plain_text(e.get('subtitle'))
         pt = plain_text(e['title'])
         desc = info.get('description') or ''
+
+        is_cine = is_cat('cine') or re_or(
+            psub,
+            r"proyecci[óo]n de cortometrajes?",
+            flags=re.I
+        )
+
         for k, v in {
             'ó': '&oacute;',
             'é': '&eacute;'
         }.items():
             desc = desc.replace(v, k)
+
+        if  "/espacio-abierto-quinta-de-los-molinos/" in url:
+            return Category.CHILDISH
 
         if re_or(
             psub,
@@ -590,8 +597,8 @@ class MadridDestino(Base):
             return Category.CHILDISH
         if not is_cine and re_or(
             audience,
-            r"de [0-9][\-a\s]+1[0-8] años",
-            r"solo si tienes entre 1[3-8] y 18 años",
+            r"(de|entre) [12]?\d[\-ay\s]+([12]?\d|30) años",
+            r"solo si tienes entre ?[12]?\d y ([12]?\d|30) años",
         ):
             return Category.YOUTH
 
@@ -670,6 +677,14 @@ class MadridDestino(Base):
 
         if re_or(
             pt,
+            "ballet del gran teatro",
+            r"NEON DANCE",
+            flags=re.I
+        ):
+            return Category.DANCE
+
+        if re_or(
+            pt,
             "visitas dialogadas",
             "guided conversations",
             "el madrid de concha velasco",
@@ -701,18 +716,37 @@ class MadridDestino(Base):
             r"Charlas con altura",
             r"^cima conversa",
             r"^masterclass",
-            r"una conversacion con",
-            r"velada( sorpresa)? con",
+            r"una conversacion (con|sobre)",
+            r"velada( sorpresa)? (con|sobre)",
+            flags=re.I
+        ) or re_or(
+            psub,
+            r"di[aá]logo con creadores foto-libros",
+            r"una conversaci[óo]n (con|sobre)",
             flags=re.I
         ):
             return Category.CONFERENCE
-        if re_or(psub, r"^Taller de", flags=re.I) or re_or(audience, "Taller", flags=re.I):
+        if re_or(
+            psub,
+            r"^(Un )?Taller (de|sobre|practico)",
+            flags=re.I
+        ) or re_or(audience, "Taller", flags=re.I):
             return Category.WORKSHOP
-        if re_or(psub, "Baychimo Teatro", flags=re.I):
+        if re_or(
+            psub,
+            "Baychimo Teatro",
+            "performance",
+            r"els joglars",
+            r"texto y direcci[óo]n de",
+            flags=re.I
+        ):
             return Category.THEATER
-        if re_or(psub, r"di[aá]logo con creadores foto-libros", flags=re.I):
-            return Category.CONFERENCE
-        if re_or(pt, "belen del ayuntamiento", flags=re.I):
+        if re_or(
+            pt,
+            "belen del ayuntamiento",
+            r"VORTEX\b.*\bEXPERIENCIAS? DE REALIDAD VIRTUAL",
+            flags=re.I
+        ):
             return Category.EXPO
         if re_or(
             desc,
@@ -722,14 +756,21 @@ class MadridDestino(Base):
             return Category.WORKSHOP
         if re_or(
             pt,
-            r"^concierto de",
+            r"conciertos? de",
             r"banda sinf[oó]nica",
             r"orquesta y coro",
             r"piano ?city",
+            ("concierto", r"l e v"),
             flags=re.I
         ) or re_or(
             psub,
             r"el pianista",
+            r"pop-folk-funk",
+            "jazzmadrid",
+            "inverfest",
+            "ibermusica",
+            "su nuevo disco",
+            "soundset",
             flags=re.I
         ) or re_or(
             desc,
@@ -746,11 +787,34 @@ class MadridDestino(Base):
             "Un taller de reflexi[oó]n",
             ("[eE]n esta actividad exploraremos", "con diversos materiales"),
             flags=re.I
+        ) or re_or(
+            psub,
+            r"teatro cl[áa]sico",
+            r"direcci[óo]n de escena",
+            r"direcci[oó]n escenica",
+            flags=re.I
         ):
             return Category.THEATER
         if re_or(
             desc,
-            "Mesa redonda",
+            r"Mesa redonda",
+            r"Presenta y modera",
+            r"Reflexionaremos sobre",
+            r"Catedr[aá]tic[ao] de la Universidad",
+            r"Profesora? Titular en",
+            r"Hablaremos sobre ella",
+            r"una conferencia sobre",
+            r"Vamos a hablar de",
+            r"En esta conversaci[oó]n contaremos",
+            r"doctora? en Biolog[ií]a por la Universidad",
+            r"divulgador(es)? cient[ií]ficos?",
+            r"investigadora? Cient[ií]fic[ao] en el Centro Nacional",
+            r"doctora? en Computaci[óo]n",
+            r"biólog[oa] y científic[oa]",
+            flags=re.I
+        ) or re_or(
+            psub,
+            r"conferencia escenica",
             flags=re.I
         ):
             return Category.CONFERENCE
@@ -764,50 +828,198 @@ class MadridDestino(Base):
         if is_cat("audiovisual"):
             return Category.CINEMA
 
-        if get_domain(more) == "teatroespanol.es":
-            return Category.THEATER
-
-        if more and more.startswith("https://www.centrocentro.org/musica/"):
-            return Category.MUSIC
-        if more and more.startswith("https://www.cinetecamadrid.com/programacion/"):
-            soup = WEB.get_cached_soup(more)
-            fCat = get_text(soup.select_one("span.fCategory a[hreflang='es']"))
-            if re_or(
-                fCat,
-                r"RELATOS DEL RUIDO",
-                flags=re.I
-            ):
-                return Category.MUSIC
-            if re_or(
-                fCat,
-                r"ESTRENOS",
-                r"CINEZETA: J[OÓ]VENES PROGRAMANDO",
-                flags=re.I
-            ):
-                return Category.CINEMA
-            ciclo = get_text(soup.select_one("div.field-name-dynamic-token-fieldnode-ciclo-copia a"))
-            if re_or(
-                ciclo,
-                r"ECAM FORUM",
-                flags=re.I
-            ):
-                return Category.CONFERENCE
-            if re_or(
-                ciclo,
-                r"VERANO EN JAP[OÓ]N",
-                r"LA NOCHE Z",
-                r"RETROSPECTIVA MASAO ADACHI",
-                flags=re.I
-            ):
-                return Category.CINEMA
-            director = get_text(soup.select_one("div.field--name-field-director"))
-            year = get_text(soup.select_one("div.field--name-field-ano-filmacion"))
-            minutes = tuple(map(int, re.findall(r"(\d+)['’]", desc or '')))
-            if re_or(director, "vari[oa]s", flags=re.I) or (director and (year or len(minutes))):
-                return Category.CINEMA
+        dom = get_domain(more)
+        if "/madrid-film-office/" in url or dom in ("madridfilmoffice.com", ):
             return Category.CINEMA
+        if dom in ("teatroespanol.es", "teatrofernangomez.es"):
+            return Category.THEATER
+        if dom in ("centrodanzamatadero.es", ):
+            return Category.DANCE
+        ct = self.__find_category_from_more(more, desc)
+        if ct is not None:
+            return ct
+
         logger.critical(str(CategoryUnknown(url, f"{pt} - {psub} - {audience}: " + ", ".join(sorted(cats)))))
         return Category.UNKNOWN
+
+    def __find_category_from_more(self, more: str, desc: str):
+        if more is None:
+            return None
+        if more.startswith("https://www.condeduquemadrid.es/actividades/"):
+            return Category.CONFERENCE
+        if more.startswith("https://www.cinetecamadrid.com/programacion/"):
+            return self.__find_cineteca_category(more, desc)
+        if more.startswith("https://www.nave10matadero.es/actividades/"):
+            return self.__find_nave10_category(more)
+        if more.startswith("https://www.teatrocircoprice.es/programacion/"):
+            return self.__find_price_category(more)
+        if more.startswith("https://www.centrocentro.org/"):
+            return self.__find_centro_category(more)
+
+    def __find_cineteca_category(self, more: str, desc: str):
+        soup = WEB.get_cached_soup(more)
+        fCat = get_text(soup.select_one("span.fCategory a[hreflang='es']"))
+        if re_or(
+            fCat,
+            r"RELATOS DEL RUIDO",
+            flags=re.I
+        ):
+            return Category.MUSIC
+        if re_or(
+            fCat,
+            r"ESTRENOS",
+            r"CINEZETA: J[OÓ]VENES PROGRAMANDO",
+            flags=re.I
+        ):
+            return Category.CINEMA
+        ciclo = get_text(soup.select_one("div.field-name-dynamic-token-fieldnode-ciclo-copia a"))
+        if re_or(
+            ciclo,
+            r"ECAM FORUM",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+        if re_or(
+            ciclo,
+            r"VERANO EN JAP[OÓ]N",
+            r"LA NOCHE Z",
+            r"RETROSPECTIVA MASAO ADACHI",
+            flags=re.I
+        ):
+            return Category.CINEMA
+        director = get_text(soup.select_one("div.field--name-field-director"))
+        year = get_text(soup.select_one("div.field--name-field-ano-filmacion"))
+        minutes = tuple(map(int, re.findall(r"(\d+)['’]", desc or '')))
+        if re_or(director, "vari[oa]s", flags=re.I) or (director and (year or len(minutes))):
+            return Category.CINEMA
+        return Category.CINEMA
+
+    def __find_nave10_category(self, url: str):
+        data = self.__get_nave10_categories()
+        cats = data.get(url)
+        if not cats:
+            return
+        if "música" in cats:
+            return Category.MUSIC
+        if "taller" in cats:
+            return Category.WORKSHOP
+        for c in cats:
+            if re_or(
+                c,
+                "teatro"
+            ):
+                return Category.THEATER
+            if re_or(
+                c,
+                "conferencia"
+            ):
+                return Category.CONFERENCE
+
+    @cache
+    def __get_nave10_categories(self):
+        data: dict[str, tuple[str, ...]] = {}
+        size = -1
+        page = -1
+        while len(data) > size:
+            size = len(data)
+            page += 1
+            soup = WEB.get_cached_soup(f"https://www.nave10matadero.es/programacion?page={page}")
+            for d in soup.select("div.views-row"):
+                a = d.select_one("a.field-group-link")
+                if a is None:
+                    continue
+                href = a.attrs.get("href")
+                if not href:
+                    continue
+                cats: list[str] = []
+                for c in map(get_text, d.select(".field--name-field-category .field__item")):
+                    if c is None:
+                        continue
+                    c = c.lower()
+                    if c not in cats:
+                        cats.append(c)
+                data[href] = tuple(cats)
+        return data
+
+    def __find_price_category(self, url: str):
+        data = self.__get_price_categories()
+        cats = data.get(url)
+        if not cats:
+            return
+        if "cine" in cats:
+            return Category.CINEMA
+        if "magia" in cats:
+            return Category.MAGIC
+        if "música" in cats:
+            return Category.MUSIC
+        if "circo" in cats:
+            return Category.CIRCUS
+        if "humor" in cats:
+            return Category.THEATER
+
+    @cache
+    def __get_price_categories(self):
+        tags: dict[str, str] = {}
+        soup = WEB.get_cached_soup("https://www.teatrocircoprice.es/programacion")
+        for tag in soup.select("select[name='field_tags'] option"):
+            k = tag.attrs.get("value")
+            v = get_text(tag)
+            if k and k.isdecimal() and v:
+                v = v.lower()
+                if v not in ("actividades", ):
+                    tags[k] = v
+        data: dict[str, list[str]] = defaultdict(set)
+        for k, v in tags.items():
+            soup = WEB.get_cached_soup(f"https://www.teatrocircoprice.es/programacion?field_tags={k}")
+            for a in soup.select("div.views-row h3 > a"):
+                href = a.attrs.get("href")
+                if not href:
+                    continue
+                data[href].add(v)
+        return {k: tuple(sorted(v)) for k, v in data.items() if v}
+
+    def __find_centro_category(self, url: str):
+        if url.startswith("https://www.centrocentro.org/musica/"):
+            return Category.MUSIC
+        if url.startswith("https://www.centrocentro.org/exposicion/"):
+            return Category.EXPO
+        data = self.__get_centro_categories()
+        cats = data.get(url)
+        if not cats:
+            return
+        if "exposición" in cats:
+            return Category.EXPO
+        if "música" in cats:
+            return Category.MUSIC
+        for c in cats:
+            if re_or(c, "taller(es)?"):
+                return Category.WORKSHOP
+
+    @cache
+    def __get_centro_categories(self):
+        data: dict[str, tuple[str, ...]] = {}
+        size = -1
+        page = -1
+        while len(data) > size:
+            size = len(data)
+            page += 1
+            soup = WEB.get_cached_soup(f"https://www.centrocentro.org/?page={page}")
+            for d in soup.select("div.views-row"):
+                a = d.select_one("h4.item_h a")
+                if a is None:
+                    continue
+                href = a.attrs.get("href")
+                if not href:
+                    continue
+                cats: list[str] = []
+                for c in map(get_text, d.select("div.group-categorias a, div.item_h a")):
+                    if c is None:
+                        continue
+                    c = c.lower()
+                    if c not in cats:
+                        cats.append(c)
+                data[href] = tuple(cats)
+        return data
 
 
 if __name__ == "__main__":

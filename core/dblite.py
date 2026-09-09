@@ -156,7 +156,8 @@ class DBlite:
     @cache
     def __search_movie_by_title(self, *titles: str, min_year=None, max_year=None, duration: int = None) -> tuple[tuple[str, ...], ...]:
         arr_titles = []
-        for t in map(str.strip, titles):
+        for t in titles:
+            t = (t or '').strip()
             if t and t not in arr_titles:
                 arr_titles.append(t)
         if len(arr_titles) == 0:
@@ -193,7 +194,7 @@ class DBlite:
     def __search_movie_by_director(self, *directors: str, min_year=None, max_year=None, duration: int = None) -> tuple[tuple[str, ...], ...]:
         arr_directors = []
         for d in directors:
-            d = d.strip()
+            d = (d or '').strip()
             if d and d not in arr_directors:
                 arr_directors.append(d)
         if len(arr_directors) == 0:

@@ -130,6 +130,7 @@ async def soup_to_cinema(url: str, soup: Tag):
         if re_or(
             v,
             r"(acceso|acceso|entrada) libre",
+            flags=re.I
         ):
             price = 0
         if price is None:
@@ -160,6 +161,14 @@ async def soup_to_event(url: str, soup: Tag):
     inf = dl_to_dict(*soup.select(".cba-events-details dl"))
     price = find_euros(inf.get("precio"))
     if price is None:
+        cats = "\n".join(get_text(x) or '' for x in  soup.select("div.fl-html .cba_single_cat"))
+        if re_or(
+            cats,
+            r"Proyecci[oó]n especial",
+            r"Pel[íi]culas",
+            flags=re.I
+        ):
+            return await soup_to_cinema(url, soup)
         logger.warning(f"NOT FOUND price {url}")
         return None
     fc = inf.get("fecha")
@@ -185,12 +194,12 @@ async def soup_to_event(url: str, soup: Tag):
         price=price,
         sessions=(Session(date=dt.strftime("%Y-%m-%d %H:%M")), ),
         duration=60,
-        category=_find_category(url, name, soup)
+        category=_find_category(url, name, soup, inf)
     )
     return ev
 
 
-def _find_category(url: str, title: str, soup: Tag):
+def _find_category(url: str, title: str, soup: Tag, inf: dict):
     cat = get_text(soup.select_one("span.cba_single_cat"))
     sub_title = get_text(soup.select_one("#fl-main-content div[data-post-id] h3"))
     full_title = f"{title or ''} {sub_title or ''}".strip()
@@ -310,6 +319,11 @@ def _find_category(url: str, title: str, soup: Tag):
         flags=re.I
     ):
         return Category.CONFERENCE
+    if re_or(
+        inf.get("organiza"),
+        "editorial"
+    ):
+        return find_book_category(full_title, desc, Category.LITERATURE)
     logger.critical(str(CategoryUnknown(url, "")))
     return Category.UNKNOWN
 

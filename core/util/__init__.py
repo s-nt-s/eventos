@@ -429,9 +429,13 @@ def find_euros(*prices: Union[str, None]) -> None | float | int:
         ):
             return 0
         eur: set[float] = set()
-        for s in re.findall(r"(\d[\d\.,]*)\s*(?:€|euros?)", prc, flags=re.I):
-            p = to_num(s)
-            eur.add(p)
+        for rg in (
+            r"(\d[\d\.,]*)\s*(?:€|euros?|eur\b)",
+            #r"(\d[\d\.,]*)\s*(?:eur)\b",
+        ):
+            for s in re.findall(rg, prc, flags=re.I):
+                p = to_num(s)
+                eur.add(p)
         if len(eur):
             return max(eur)
 
@@ -645,9 +649,13 @@ def parse_obj(
 
 def find_cp(s: str):
     cp: set[int] = set()
-    for c in map(int, re.findall(r"\d+", s or '')):
+    for s_c in re.findall(r"\d+", s or ''):
+        if len(s_c) != 5:
+            continue
+        c = int(s_c)
         if (c >= 28000 and c <= 28999) or c in (
             11403,
+            8241,
         ):
             cp.add(c)
     if len(cp) == 1:

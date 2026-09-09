@@ -79,6 +79,8 @@ KO_CP = (
     28027,
     # Barajas
     28042,
+    # Barcelona
+    8241,
 )
 
 

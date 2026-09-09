@@ -1,6 +1,6 @@
 from core.ics import IcsReader, IcsEventWrapper
 from functools import cached_property
-from core.event import Event, Place, Session, Category, CategoryUnknown
+from core.event import Event, Place, Session, Category, CategoryUnknown, find_book_category
 from core.place import Places
 from core.util import re_or, re_and, get_domain, clean_url
 import requests
@@ -467,6 +467,8 @@ class Universidad(Base):
             r"D[ií]a del Estudiante",
             r"PhDay",
             r"Pastoreo Urbano",
+            r"Bienvenida Universitaria",
+            r"para\b.*\bd?el estudiantado universitario",
             ("Carrera", "Psicolog[ií]a por la Salud"),
             flags=re.I
         ):
@@ -575,6 +577,8 @@ class Universidad(Base):
                 return Category.READING_CLUB
             if re_or(c, "Danza y baile", "Music, theatre and dance", flags=re.I):
                 return Category.DANCE
+            if re_or(c, "Club lectura", flags=re.I):
+                return find_book_category(e.SUMMARY, e.DESCRIPTION, Category.READING_CLUB)
         for m in menu:
             if re_or(m, "ponentes?", flags=re.I):
                 return Category.CONFERENCE

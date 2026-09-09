@@ -2,7 +2,7 @@ import re
 from functools import cache
 from unidecode import unidecode
 
-_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬📽 🌎🗣🎉🌍🍉🥾📚💥🌸💀]+"
+_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬📽 🌎🗣🎉🌍🍉🥾📚💥🌸💀👗👕🥾👠👜♻️]+"
 RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
 RE_DEDUP = re.compile(r"(!+|¡+|¿+|\?+)")
 
@@ -112,6 +112,7 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Festival de las ideas",
         r"Cineforum Ateneo",
         r"Voces del cine europeo contempor[aá]neo",
         r"Casa Asia en el Festival de las Ideas",
@@ -377,9 +378,10 @@ DIRECTORS = list(map(_escape, map(str.lower, [
 
 def _re_director(*directors):
     for d in directors:
-        d = _escape(d.lower())
-        if d not in DIRECTORS:
-            DIRECTORS.append(d)
+        if d is not None:
+            d = _escape(d.lower())
+            if d not in DIRECTORS:
+                DIRECTORS.append(d)
 
     dr = "|".join(DIRECTORS)
     return (

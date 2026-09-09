@@ -202,7 +202,7 @@ class IcsEventWrapper:
             hms.add((int(h), int(m)))
         return tuple(sorted(hms))
 
-    @property
+    @cached_property
     def DTSTART(self) -> datetime:
         dt = self.__get_datetime("DTSTART", mandatory=True)
         if dt.hour == 0 and dt.minute == 0 and self.__get_datetime("DTEND") in (None, dt):
@@ -212,7 +212,7 @@ class IcsEventWrapper:
                 logger.warning(f"FIX HOUR {dt:%Y-%m-%d %H:%M} {self.UID}")
         return dt
 
-    @property
+    @cached_property
     def DTEND(self):
         st = dt = self.__get_datetime("DTSTART", mandatory=True)
         dt = self.__get_datetime("DTEND")

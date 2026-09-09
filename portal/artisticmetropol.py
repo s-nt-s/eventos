@@ -62,6 +62,9 @@ class ArtisticMetropol(Base):
             if i.url:
                 urls_event[i.url].add(i)
         for u, shops in self.__get_shop.get(*urls_event.keys()).items():
+            if shops is None:
+                logger.warning(f"NOT FOUND shop in {u}")
+                continue
             for i in urls_event[u]:
                 for s in shops:
                     shop_event[s].add(i)

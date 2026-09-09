@@ -98,7 +98,7 @@ class Api:
     def __find_offers(self, obj: dict, url: str):
         offers: list[dict] = []
         arr = obj.get('offers')
-        if not isininstace(arr, list):
+        if not isinstance(arr, list):
             raise ValueError(f"offers not found in {url} {obj}")
         for o in arr:
             if o['availability'] != "SoldOut":

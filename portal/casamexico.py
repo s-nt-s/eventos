@@ -461,6 +461,7 @@ class CasaMexico(Base):
         if place in (
             "fundacion casa de mexico en españa",
             "salon de usos multiples",
+            "salon de usos multiples sum",
             "cine auditorio",
             "sala de juntas",
         ):
