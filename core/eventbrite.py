@@ -81,7 +81,7 @@ class Api:
         for url, o in self.__get(*ok_ids).items():
             if o is None:
                 continue
-            offers = self.__find_offers(o)
+            offers = self.__find_offers(o, url)
             i = Info(
                 id=int(url.rsplit("/")[-1]),
                 url=o['url'],
@@ -95,9 +95,12 @@ class Api:
             info.add(i)
         return tuple(sorted(info))
 
-    def __find_offers(self, obj: dict):
+    def __find_offers(self, obj: dict, url: str):
         offers: list[dict] = []
-        for o in obj['offers']:
+        arr = obj.get('offers')
+        if not isininstace(arr, list):
+            raise ValueError(f"offers not found in {url} {obj}")
+        for o in arr:
             if o['availability'] != "SoldOut":
                 offers.append(o)
         return tuple(offers)
