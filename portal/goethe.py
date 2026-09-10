@@ -146,7 +146,7 @@ class Goethe(Base):
         return r.json()
 
     @Cache("rec/goethe/items.json")
-    def get_items(self):
+    def get_items(self) -> list[dict]:
         obj = self.__search(
             {
                 "category_ID": "", #, "178926_178927_178937_178936_178935_178934_178933_178932_178931_178930_178929_178928_178938",
@@ -237,9 +237,9 @@ class Goethe(Base):
             )
             if (i.duration, e.duration) == (None, None):
                 logger.warning(f"NOT FOUND duration {e.url}")
-            if e.cycle is None and i.description and e.category == Category.CINEMA:
-                minutes = tuple(map(int, re.findall(r"(\d+)[’’]", i.description)))
-                shorts = tuple(i for i in minutes if i < 30)
+            #if e.cycle is None and i.description and e.category == Category.CINEMA:
+                #minutes = tuple(map(int, re.findall(r"(\d+)[’’]", i.description)))
+                #shorts = tuple(i for i in minutes if i < 30)
                 #if len(minutes) > 1 and re.search(r"Jan Soldat", i.description):
                 #    e = e.merge(cycle="Jan Soldat")
                 #elif len(shorts) > 1:
