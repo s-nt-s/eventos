@@ -407,6 +407,7 @@ class Goethe(Base):
         if re_or(
             et,
             "teatro",
+            "Performance",
             r"esc[eé]nicas?",
             "Lectura teatral",
             r"radioteatro",

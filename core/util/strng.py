@@ -373,6 +373,7 @@ DIRECTORS = list(map(_escape, map(str.lower, [
     'Yorgos Lanthimos',
     'Binka Zheliazkova',
     'Jacques Deray',
+    'Gabriel Azorín',
 ])))
 
 
