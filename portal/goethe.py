@@ -1,24 +1,36 @@
 from requests import Session as ReqSession
-from core.cache import Cache, TupleCache
+from core.cache import Cache
 from urllib.parse import urlencode
 from core.util import parse_obj, find_euros, re_or, clean_url
 import re
 from core.event import Event, Category, Cinema, CategoryUnknown, Session, Place, find_book_category
 from core.place import Places
-from functools import cached_property
 import logging
 from datetime import datetime
 from core.fetcher import Getter
+from functools import cached_property
 from aiohttp import ClientResponse
-from core.web import buildSoup, get_text, Tag
+from core.web import buildSoup, get_text, Tag, Web
 from typing import NamedTuple, Optional
 from unidecode import unidecode as ori_unidecode
 from core.md import MD
 from portal.base import Base
+import feedparser
 
 logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
 re_min = re.compile(r"(\d+)\s*(?:min|minutos?)\b")
+
+default_headers = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/131.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "es-ES,es;q=0.9",
+    "Referer": "https://www.goethe.de/ins/es/es/",
+}
 
 
 def unidecode(s: str):
@@ -44,6 +56,8 @@ class InfoSoup(NamedTuple):
 async def rq_to_info(r: ClientResponse):
     soup = buildSoup(str(r.url), await r.text())
     img = soup.select_one("div.container picture img.img-fluid")
+    with open("/tmp/goethe.html", "w", encoding="utf-8") as f:
+        f.write(str(soup))
     if img:
         img = img.attrs['src']
     duration = _find_duration(soup)
@@ -173,6 +187,45 @@ class Goethe(Base):
         )
         return obj
 
+    @cached_property
+    def rss(self):
+        return feedparser.parse("https://www.goethe.de/ins/es/es/rss/mad/ver.rss")
+
+    def __get_rss_item(self, iid: int) -> feedparser.util.FeedParserDict | None:
+        for i in self.rss.entries:
+            if i.guid and int(i.guid) == iid:
+                return i
+
+    def __get_img(self, iid: int) -> str | None:
+        i = self.__get_rss_item(iid)
+        if i is None:
+            return None
+        for enclosure in i.get("enclosures", []):
+            mime = enclosure.get("type", "")
+            if mime.startswith("image/"):
+                return enclosure.get("href")
+
+        for media in i.get("media_content", []):
+            url = media.get("url")
+            mime = media.get("type", "")
+
+            if url and (not mime or mime.startswith("image/")):
+                return url
+
+        for media in i.get("media_thumbnail", []):
+            url = media.get("url")
+
+            if url:
+                return url
+
+        soup = buildSoup(
+            "https://www.goethe.de/ins/es/es/sta/mad/ver.cfm",
+            i.description
+        )
+        img = soup.select_one("img")
+        if img:
+            return img.attrs['src']
+
     def _get_events(self):
         evs: set[Event] = set()
         for i in self.get_items():
@@ -204,7 +257,7 @@ class Goethe(Base):
                 id=f"gt{_id_}",
                 url=clean_url(url),
                 name=_clean_name(name),
-                img=None,
+                img=self.__get_img(_id_),
                 price=self.__find_price(url, i),
                 category=self.__find_category(url, i),
                 place=place,
@@ -221,6 +274,8 @@ class Goethe(Base):
                 )
             evs.add(e)
         url_info: dict[str, InfoSoup] = Getter(
+            headers=default_headers,
+            cookie_jar=self.__s.cookies,
             onread=rq_to_info,
             raise_for_status=False
         ).get(*(e.url for e in evs))
@@ -230,8 +285,11 @@ class Goethe(Base):
             if i is None or i.status_code == 404:
                 logger.critical(f"KO url {e.url}")
                 continue
+            if i.status_code == 403:
+                evs.add(e)
+                continue
             e = e.merge(
-                img=i.img,
+                img=i.img or e.img,
                 duration=max(i.duration or 0, e.duration or 0),
                 category=self.__improve_category(i, e)
             )
