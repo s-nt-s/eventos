@@ -257,6 +257,7 @@ class AteneoMadrid(Base):
             r"Gala de Esgrima",
             r"(Gala|Acto) de entrega del? premios?",
             r"^Homenaje a",
+            r"Ciclo de\s*Tauromaquia",
             flags=re.I,
         ):
             return Category.NO_EVENT
