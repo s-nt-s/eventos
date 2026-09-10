@@ -200,6 +200,7 @@ class Goethe(Base):
         i = self.__get_rss_item(iid)
         if i is None:
             return None
+
         for enclosure in i.get("enclosures", []):
             mime = enclosure.get("type", "")
             if mime.startswith("image/"):
