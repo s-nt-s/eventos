@@ -1246,6 +1246,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"escritora? de novelas",
         r"autora? de varias novelas",
         r"autora? de obras de teatro",
+        r"una novela encantadora",
         ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
         ("a trav[eé]s de estas ficciones", "literatura"),
         flags=re.I
