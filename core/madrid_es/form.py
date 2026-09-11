@@ -24,6 +24,12 @@ logger = logging.getLogger(__name__)
 re_sp = re.compile(r"\s+")
 
 
+class MadridEsIdsDuplicated(Exception):
+    def __init__(self, ids: Iterable[str]):
+        ids = tuple(sorted(ids))
+        super().__init__(f"ids duplicated: {', '.join(ids)}")
+
+
 def get_vgnextoid(url: str | Tag):
     if isinstance(url, Tag):
         url = url.attrs.get("href")
@@ -444,7 +450,7 @@ class FormSearch:
             dupes[e.vgnextoid] = dupes.get(e.vgnextoid, 0) + 1
         dupes = sorted(k for k, v in dupes.items() if v > 1)
         if dupes:
-            raise ValueError(f"ids duplicates: {', '.join(dupes)}")
+            raise MadridEsIdsDuplicated(dupes)
 
         self.__all = tuple(all_items)
         self.__free = _to_ids(free_items)

@@ -1,5 +1,6 @@
 from core.event import Event, Category, Cinema, Session
 from core.zone import Zones
+from core.madrid_es.form import MadridEsIdsDuplicated
 from portal.casaencendida import CasaEncendida
 from portal.casamexico import CasaMexico
 from portal.dore import Dore
@@ -95,7 +96,7 @@ def get_events(source: Base | Type[Base]):
     for c, e in {
         (SalaEquis, ReinaSofia): (ConnectTimeout,),
         (CasaMexico, ): (TimeoutError,),
-        (MadridEs, ): (ClientConnectionError, ),
+        (MadridEs, ): (ClientConnectionError, MadridEsIdsDuplicated),
         (FundacionMarch, ): (PermissionError, )
     }.items():
         if isinstance(source, c):
