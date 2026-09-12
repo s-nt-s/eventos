@@ -396,7 +396,7 @@ class MadConvoca(Base):
         ):
             return Category.ACTIVISM
 
-        if has_tag_or_title("kafeta", "GAME NIGHT", "Juegos de mesa", "fiest[oó]n"):
+        if has_tag_or_title("kafeta", "GAME NIGHT", "Juegos de mesa", r"fiest[oó]n", "pinchada"):
             return Category.PARTY
         if has_tag_or_title(
             "cine",
@@ -536,15 +536,15 @@ class MadConvoca(Base):
             r"en este coloquio",
             r"Habr[aá] charla",
             flags=re.I,
-            
         ):
             return Category.CONFERENCE
         if re_or(txt_desc, "m[uú]sica electr[óo]nica", flags=re.I):
             return Category.MUSIC
-        if re_or(txt_desc, "hacer arte cutre"):
+        if re_or(txt_desc, "hacer arte cutre", flags=re.I):
             return Category.WORKSHOP
         if re_or(
             txt_desc,
+            r"VEN A JUGAR",
             ("performance", "micr[óo]fono abierto", "DJ Set(lists?)?"),
             ("Karaoke", r"DJ Set(s|lists?)?"),
             ("pintxadas?", "elektronikas?"),
@@ -553,7 +553,7 @@ class MadConvoca(Base):
             return Category.PARTY
         if re_or(txt_desc, "comedia perform[aá]tica", flags=re.I):
             return Category.THEATER
-        if re_or(txt_desc, "taller", "Curso presencial", flags=re.I):
+        if re_or(txt_desc, "taller(es)?", "Curso presencial", flags=re.I):
             return Category.WORKSHOP
 
         if re_or(
