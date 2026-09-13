@@ -84,3 +84,14 @@ class Base:
                 self.__dump_cache(data)
                 return data
         return tuple()
+
+    def cache_get_events(self) -> tuple[Event, ...]:
+        if self.__cache is not None and self.__cache.is_relative_to(self.__out):
+            url = f"{self.__site}/{self.__cache.relative_to(self.__out)}"
+            data = safe_json(url)
+            if data is not None:
+                logger.info(f"Recuperando de la versión anterior {url}")
+                data = tuple(map(Event.build, data))
+                self.__dump_cache(data)
+                return data
+        return self.get_events()

@@ -93,6 +93,8 @@ def get_events(source: Base | Type[Base]):
         Base
     ):
         raise ValueError(str(type(source)))
+    if isinstance(source, MadridEs):
+        return source.cache_get_events()
     for c, e in {
         (SalaEquis, ReinaSofia): (ConnectTimeout,),
         (CasaMexico, ): (TimeoutError,),
