@@ -1278,6 +1278,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"Eduardo Aguirre",
         r"Fuencisla Casanova",
         r"Silvia Bara Bancel",
+        r"Teresa Mallada de Castro",
         flags=re.I
     ):
         return Category.SPAM

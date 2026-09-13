@@ -1,7 +1,6 @@
 from core.ics import IcsReader, IcsEventWrapper
 from core.event import Event, Place, Category, Session, CategoryUnknown, find_book_category
 from core.place import Places
-from functools import cached_property
 from core.util import plain_text, find_duplicates, re_or, re_and, find_euros
 from core.util.strng import normalize_quote
 import re
@@ -10,7 +9,6 @@ from typing import Callable
 from datetime import datetime
 from core.web import get_text, buildSoup
 from functools import cache
-from core.cache import TupleCache
 from portal.base import Base
 
 logger = logging.getLogger(__name__)
@@ -174,7 +172,8 @@ class AteneoMadrid(Base):
                     return Category.NARRATIVE
                 if re_or(
                     e.DESCRIPTION,
-                    "Secci[oó]n(es)? de Fotograf[ií]a",
+                    r"Secci[oó]n(es)? de Fotograf[ií]a",
+                    r"Espe Pons, autora",
                     flags=re.I
                 ):
                     return Category.PHOTO
@@ -221,6 +220,7 @@ class AteneoMadrid(Base):
                 r"Agrupaci[óo]n(es)? Agust[ií]n Argüelles",
                 r"Secci[oó]n(es)? de Arquitectura",
                 r"Secci[oó]n(es)? Africanista",
+                r"Álvar N[uú]ñez Cabeza de Vaca",
                 flags=re.I
             ):
                 return Category.OTHERS
