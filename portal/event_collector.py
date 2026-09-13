@@ -160,9 +160,8 @@ def isAlcalaOkDate(dt: datetime):
 
 
 def isOkDate(dt: datetime, delta: int = 0.5):
-    if not(dt.year == 2026 and dt.month == 8 and dt.day <= 9):
-        if ICS_BUSY and ICS_BUSY.is_in(dt):
-            return False
+    if ICS_BUSY and ICS_BUSY.is_in(dt):
+        return False
     if dt.date() in get_festivos(dt.year):
         return True
     min_hour = getMin(dt)
