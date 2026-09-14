@@ -197,12 +197,12 @@ class IcsEventWrapper:
 
     def get_full_description(self):
         lines: list[str] = []
-        if e.SUMMARY:
-            lines.append(f"Título: {e.SUMMARY}")
-        if e.CATEGORIES:
-            lines.append(f"Categorías: {', '.join(e.CATEGORIES)}")
-        if e.DESCRIPTION:
-            lines.append(f"Descripción {e.DESCRIPTION}")
+        if self.SUMMARY:
+            lines.append(f"Título: {self.SUMMARY}")
+        if self.CATEGORIES:
+            lines.append(f"Categorías: {', '.join(self.CATEGORIES)}")
+        if self.DESCRIPTION:
+            lines.append(f"Descripción {self.DESCRIPTION}")
         if len(lines) == 0:
             return None
         return "\n\n".join(lines)
