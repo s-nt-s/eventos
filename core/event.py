@@ -1207,6 +1207,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"Presentaci[oó]n (de )?La novela",
         r"La invenci[oó]n de todas las cosas",
         r"La ciudad de los girasoles",
+        r"Jorge Volpi",
         flags=re.I
     ):
         return Category.NARRATIVE
