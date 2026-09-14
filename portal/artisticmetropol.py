@@ -137,6 +137,12 @@ class ArtisticMetropol(Base):
                 ),
             ),
         )
+        if re_or(
+            e.SUMMARY,
+            "cortometrajes?",
+            flags=re.I
+        ):
+            event = event.merge(cycle="Cortometrajes")
         return event
 
     def __find_price(self, e: IcsEventWrapper):
@@ -165,6 +171,12 @@ class ArtisticMetropol(Base):
             year=_find_year(e.name),
             sessions=(),
         )
+        if re_or(
+            e.name,
+            "cortometrajes?",
+            flags=re.I
+        ):
+            event = event.merge(cycle="Cortometrajes")
         for dt in e.dates:
             prc = _min(*(s.price for s in dt.seats)) or e.price
             if prc is None:
