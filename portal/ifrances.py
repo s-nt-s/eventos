@@ -290,6 +290,7 @@ class InstitutoFrances(Base):
                 n,
                 "cine",
                 "Preestreno",
+                "Another Way Film Festival",
                 flags=re.I
             ):
                 return Category.CINEMA
