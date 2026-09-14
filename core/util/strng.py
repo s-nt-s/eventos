@@ -112,6 +112,8 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Cine",
+        r"Teatro",
         r"Festival de las ideas",
         r"Cineforum Ateneo",
         r"Voces del cine europeo contempor[aá]neo",
@@ -216,6 +218,7 @@ def _rm_prefix():
 def _rm_sufix():
     SEP = r"[–\-\.\|]"
     SUFIX_1 = "|".join([
+        r"Festival Cine por mujeres Madrid",
         r"\(\d+\) Cortometraje VENTA DE ENTRADAS",
         r"Fiesta de verano",
         r"Cl[aá]sicos a refugio",
