@@ -344,6 +344,8 @@ def _escape(s: str):
 
 
 DIRECTORS = list(map(_escape, map(str.lower, [
+    'Mélisa Godet',
+    'Joséphine Japy',
     'Mia Maariel Meyer',
     'James Ward Byrkit',
     'Angela Schanelec',
