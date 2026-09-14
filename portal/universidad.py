@@ -547,15 +547,33 @@ class Universidad(Base):
             flags=re.I
         ):
             return Category.CONFERENCE
+
         categories = (info.get_categories() if info else None) or tuple()
-        menu = (info.get_menu() if info else None) or tuple()
+
+        def has_cat(*args):
+            for c in categories:
+                if re_or(c, *args, flags=re.I):
+                    return True
+            return False
+
+        if has_cat(
+            r"Investigaci[oó]n doctoral",
+            "Veterinaria",
+        ):
+            return Category.NO_EVENT
+        if has_cat(
+            "crossfit",
+            "Deporte profesional"
+        ):
+            return Category.SPORT
+        if has_cat(
+            "Club lectura"
+        ):
+            return find_book_category(e.SUMMARY, e.DESCRIPTION, Category.READING_CLUB)
+                
         for c in categories:
-            if re_or(c, "Investigaci[oó]n doctoral", flags=re.I):
-                return Category.NO_EVENT
             if re_or(c, "teatro", flags=re.I):
                 return Category.THEATER
-            if re_or(c, "crossfit", "Deporte profesional", flags=re.I):
-                return Category.SPORT
             if re_or(
                 c,
                 r"divulgaci[oó]n",
@@ -573,12 +591,10 @@ class Universidad(Base):
                 flags=re.I
             ):
                 return Category.CINEMA
-            if re_or(c, "Club de lectura", flags=re.I):
-                return Category.READING_CLUB
             if re_or(c, "Danza y baile", "Music, theatre and dance", flags=re.I):
                 return Category.DANCE
-            if re_or(c, "Club lectura", flags=re.I):
-                return find_book_category(e.SUMMARY, e.DESCRIPTION, Category.READING_CLUB)
+
+        menu = (info.get_menu() if info else None) or tuple()
         for m in menu:
             if re_or(m, "ponentes?", flags=re.I):
                 return Category.CONFERENCE
