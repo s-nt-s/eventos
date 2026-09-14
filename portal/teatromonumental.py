@@ -7,7 +7,6 @@ from types import MappingProxyType
 from core.util import to_uuid, get_query, re_or
 import re
 import logging
-from core.cache import TupleCache
 from portal.base import Base
 
 logger = logging.getLogger(__name__)

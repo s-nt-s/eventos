@@ -1,5 +1,5 @@
 from core.web import get_text, WebException, MyTag, Web
-from core.cache import TupleCache, HashCache
+from core.cache import HashCache
 from typing import Set, Dict, Union, List, Tuple
 import logging
 from core.event import Event, Session, Category, FieldNotFound, CategoryUnknown

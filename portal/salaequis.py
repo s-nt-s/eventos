@@ -2,7 +2,6 @@ from core.web import Web, get_text
 from functools import cache
 from bs4 import Tag
 from typing import Set, Dict, List
-from core.cache import TupleCache
 import logging
 from core.event import Event, Session, Category, FieldNotFound
 from core.place import Places
@@ -10,7 +9,6 @@ import re
 from core.util import plain_text, re_or
 from portal.kinetike import KineTike
 from core.md import MD
-from requests.exceptions import ConnectTimeout
 from portal.base import Base
 
 

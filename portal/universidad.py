@@ -417,7 +417,8 @@ class Universidad(Base):
                         url=info.get_shop() if info else None,
                     ),
                 ),
-                more=self.__get_more(link, e.SUMMARY)
+                more=self.__get_more(link, e.SUMMARY),
+                description=e.get_full_description()
             )
             events.add(event)
         evs = tuple(sorted(events))

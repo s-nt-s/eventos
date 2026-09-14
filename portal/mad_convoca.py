@@ -186,6 +186,7 @@ class MadConvoca(Base):
                     date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
                 ),
             ),
+            description=e.get_full_description()
         )
         return event
 

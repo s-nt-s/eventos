@@ -1,7 +1,6 @@
 from core.web import get_text, MyTag, Web
 from typing import Set, Dict, List, Optional
 from functools import cache
-from core.cache import TupleCache
 import logging
 from core.event import Event, Session, Category, CategoryUnknown, find_book_category
 from core.place import Places

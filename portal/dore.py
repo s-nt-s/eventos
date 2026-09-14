@@ -1,5 +1,4 @@
 from core.web import Web, get_text
-from core.cache import TupleCache
 import logging
 from core.event import Event, Cinema, Session, Category
 from core.place import Places

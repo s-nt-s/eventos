@@ -1,7 +1,6 @@
 from core.web import Web, Tag, get_text
 from core.place import Places, Place
 from core.event import Event, CategoryUnknown, Category, Session
-from core.cache import TupleCache
 from core.util import to_uuid, re_or
 from collections import defaultdict
 import re
