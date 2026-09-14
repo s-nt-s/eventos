@@ -173,6 +173,7 @@ class FilmAffinityApi:
             (111829, 2025, "Nuestra tierra"),
             (221866, 2026, "El nido"),
             (417100, 2025, "Bad Apples"),
+            (455824, 1957, "La patrulla de la muerte"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:

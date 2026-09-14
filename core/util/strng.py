@@ -216,6 +216,7 @@ def _rm_prefix():
 def _rm_sufix():
     SEP = r"[–\-\.\|]"
     SUFIX_1 = "|".join([
+        r"\(\d+\) Cortometraje VENTA DE ENTRADAS",
         r"Fiesta de verano",
         r"Cl[aá]sicos a refugio",
         r"Muestra '?Raquel P[eé]rez Formaci[oó]n Actoral'?",

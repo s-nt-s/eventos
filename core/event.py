@@ -702,12 +702,14 @@ class Event:
             title = f_info.url_title.get(s_url)
             if title == name:
                 title = None
-            sessions.append(Session(
+            s = Session(
                 date=d,
                 url=s_url,
                 title=title,
-                full=f_d.full
-            ))
+                full=f_d.full,
+                description="\n\n".join(f_d.descriptions) if f_d.descriptions else None
+            )
+            sessions.append(s)
         ss_url = set(s.url for s in sessions if s.url is not None)
         if len(sessions) > 1 and len(ss_url) == 1:
             s_url = ss_url.pop()
@@ -742,6 +744,10 @@ class Event:
                 id = ids.pop()
             else:
                 id = to_uuid("".join(sorted(ids)))
+        e_description = "\n\n".join(f_info.descriptions) if f_info.descriptions else None
+        if e_description is None and len(sessions) == 1 and sessions[0].description:
+            e_description = sessions[0].description
+            sessions[0] = sessions[0]._replace(description=None)
         e = evs[0].merge(
             id=id,
             url=url,
@@ -753,7 +759,10 @@ class Event:
             category=category,
             sessions=tuple(sessions),
             price=max(f_info.prices),
-        ).fix_type()
+            description=e_description,
+        )
+
+        e = e.fix_type()
         if isinstance(e, Cinema):
             e = e.merge(
                 director=get_main_value(f_info.director),
@@ -1047,6 +1056,7 @@ class FusionSession(NamedTuple):
     url_event: tuple[str]
     url_session: tuple[str]
     full: bool
+    descriptions: list[str]
 
 
 class FusionInfo(NamedTuple):
@@ -1065,6 +1075,7 @@ class FusionInfo(NamedTuple):
     director: list[tuple[str, ...]]
     imdb: list[str]
     filmaffinity: list[str]
+    descriptions: list[str]
 
 
 def _get_info_fusion(evs: tuple[Event, ...]):
@@ -1073,6 +1084,7 @@ def _get_info_fusion(evs: tuple[Event, ...]):
             arr.append(v)
     s_event_url: dict[str, list[str]] = defaultdict(list)
     s_sessi_url: dict[str, list[str]] = defaultdict(list)
+    s_description: dict[str, list[str]] = defaultdict(list)
     date_with_url: Set[str] = set()
     date_full: Set[str] = set()
     url_title: dict[str, str] = dict()
@@ -1089,6 +1101,7 @@ def _get_info_fusion(evs: tuple[Event, ...]):
     directors: list[tuple[str, ...]] = []
     imdb: list[str] = []
     filmaffinity: list[str] = []
+    descriptions: list[str] = []
     for e in evs:
         if isinstance(e, Cinema):
             _add(years, e.year)
@@ -1103,11 +1116,14 @@ def _get_info_fusion(evs: tuple[Event, ...]):
         _add(imgs, e.img)
         _add(prices, e.price)
         _add(seen_in, e.url)
+        _add(descriptions, e.description)
         for u in e.also_in:
             _add(seen_in, u)
         if e.name and e.url and e.url not in url_title:
             url_title[e.url] = e.name
         for s in e.sessions:
+            if s.description and s.description not in s_description[s.date]:
+                s_description[s.date].append(s.description)
             if s.title and s.url and s.url not in url_title:
                 url_title[s.url] = s.title
             if s.url is not None:
@@ -1136,6 +1152,7 @@ def _get_info_fusion(evs: tuple[Event, ...]):
         sessions[d] = FusionSession(
             url_event=tuple(s_event_url.get(d, [])),
             url_session=tuple(s_sessi_url.get(d, [])),
+            descriptions=tuple(s_description.get(d, [])),
             full=d in date_full
         )
     return FusionInfo(
@@ -1153,7 +1170,8 @@ def _get_info_fusion(evs: tuple[Event, ...]):
         year=years,
         director=directors,
         imdb=imdb,
-        filmaffinity=filmaffinity
+        filmaffinity=filmaffinity,
+        descriptions=descriptions
     )
 
 

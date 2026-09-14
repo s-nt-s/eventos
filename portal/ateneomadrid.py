@@ -112,7 +112,8 @@ class AteneoMadrid(Base):
                     date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
                 ),
             ),
-            cycle=self.__find_cycle(name, e, category)
+            cycle=self.__find_cycle(name, e, category),
+            description=e.get_full_description()
         )
         return event
 

@@ -195,6 +195,18 @@ class IcsEventWrapper:
     def SUMMARY(self) -> str:
         return self.__get_text("SUMMARY", mandatory=True)
 
+    def get_full_description(self):
+        lines: list[str] = []
+        if e.SUMMARY:
+            lines.append(f"Título: {e.SUMMARY}")
+        if e.CATEGORIES:
+            lines.append(f"Categorías: {', '.join(e.CATEGORIES)}")
+        if e.DESCRIPTION:
+            lines.append(f"Descripción {e.DESCRIPTION}")
+        if len(lines) == 0:
+            return None
+        return "\n\n".join(lines)
+
     def __find_hours(self):
         txt = self.__get_text("DESCRIPTION") or ''
         hms: set[tuple[int, int]] = set()
