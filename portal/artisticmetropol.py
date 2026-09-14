@@ -15,7 +15,7 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 re_sp = re.compile(r"\s+")
-re_tail = r"\s+\((\d{4})\)\s*(?:\s*(?:Doblada al español|[vose\.]+|venta de entradas))*\s*$"
+re_tail = r"\s+\((\d{4})\)\s*(?:\s*(?:Doblada al español|[vose\.]+|(?:Cortometraje )?venta de entradas))*\s*$"
 re_name = re.compile(r"^Sala \d+[\.:\s]*|"+re_tail, flags=re.I)
 re_year = re.compile(re_tail, flags=re.I)
 
