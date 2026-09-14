@@ -13,6 +13,7 @@ from urllib.parse import urlparse, parse_qs, parse_qsl, urlsplit, urlencode, url
 from functools import cache
 import requests
 from datetime import date
+from enum import Enum
 import holidays
 
 from typing import Any
@@ -609,6 +610,8 @@ def parse_obj(
         rm_key = tuple()
     if getattr(obj, "_asdict", None) is not None:
         obj = obj._asdict()
+    if isinstance(obj, Enum):
+        return obj.name
     if isinstance(obj, MappingProxyType):
         obj = dict(obj)
     if is_dataclass(obj):

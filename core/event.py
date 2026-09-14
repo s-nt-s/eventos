@@ -210,6 +210,13 @@ class Category(IntEnum):
             return "maternidad"
         return self.name
 
+    @classmethod
+    def from_str(cls, x: str):
+        for c in cls:
+            if c.name == x:
+                return c
+        raise ValueError(x)
+
     def __lt__(self, other):
         if self == Category.UNKNOWN:
             return False
@@ -224,6 +231,7 @@ class Session(NamedTuple):
     title: Optional[str] = None
     full: Optional[bool] = None
     duration: Optional[int] = None
+    description: Optional[str] = None
 
     def merge(self, **kwargs):
         return self._replace(**kwargs)
@@ -327,6 +335,7 @@ class Event:
     sessions: Tuple[Session, ...] = tuple()
     cycle: Optional[str] = None
     more: Optional[str] = None
+    description: Optional[str] = None
 
     def __lt__(self, other):
         if not isinstance(other, Event):
@@ -529,6 +538,8 @@ class Event:
             return None
         if isinstance(obj['category'], int):
             obj['category'] = Category(obj['category'])
+        if isinstance(obj['category'], str):
+            obj['category'] = Category.from_str(obj['category'])
         if isinstance(obj['place'], dict):
             obj['place'] = Place.build(obj['place'])
         if isinstance(obj['sessions'], (list, tuple)) and len(obj['sessions']) > 0 and isinstance(obj['sessions'][0], dict):

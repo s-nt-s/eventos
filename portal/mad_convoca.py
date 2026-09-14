@@ -631,6 +631,7 @@ class MadConvoca(Base):
             r"MANIFESTACI[óO]N",
             r"CONCENTRACI[oÓ]N",
             r"crear un grupo de trabajo",
+            r"No a La Tala",
             flags=re.I
         ):
             return Category.ACTIVISM
