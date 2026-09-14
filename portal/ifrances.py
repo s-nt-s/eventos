@@ -35,6 +35,7 @@ def _clean_name(s: str):
     sep = r"[I\/\|:\-\.,]"
     s = re.sub(r"^CINE\s"+sep+r"*\s*Preestrenos?\s*"+sep+r"*\s*", "", s, flags=re.I)
     s = re.sub(r"^CINE\s"+sep+r"+\s*", "", s, flags=re.I)
+    s = re.sub(r"^CINE\s+L\s+'*", "'", s, flags=re.I)
     if len(s) == 0:
         return None
     return s

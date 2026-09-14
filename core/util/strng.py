@@ -262,7 +262,6 @@ def _rm_sufix():
 def _rm_quote():
     NQ = r"[^"+_QT+"]"
     PREFIX = "|".join([
-        r"Cine L",
         r"CLUB DE LECTUR[aⒶ] del Ateneo\.?",
         r"Cine[\-\s*]*f[oó]rum del Ateneo[\s\.\-]*Proyecci[óo]n de",
         r"Representaci[oó]n teatral",
