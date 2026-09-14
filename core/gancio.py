@@ -10,6 +10,7 @@ from core.dictwraper import DictWrapper
 from typing import NamedTuple, Callable
 from core.fetcher import Getter
 from aiohttp import ClientResponse
+from core.md import MD
 
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,19 @@ class Event(NamedTuple):
     media: tuple[str, ...] = tuple()
     links: tuple[str, ...] = tuple()
     tags: tuple[str, ...] = tuple()
+
+    def get_full_description(self):
+        lines: list[str] = []
+        if self.title:
+            lines.append(f"Título {self.title}")
+        desc = MD.convert(self.description)
+        if desc:
+            lines.append(f"Descripción:\n{desc}")
+        if self.tags:
+            lines.append(f"Tags: {', '.join(self.tags)}")
+        if len(lines) == 0:
+            return None
+        return "\n\n".join(lines)
 
 
 async def rq_to_desc(r: ClientResponse):
@@ -170,7 +184,7 @@ class GancioPortal:
         url_desc: dict[str, str] = self.__getter.get(*(e.url for e in all_events if e.description is None))
         for ev in tuple(all_events):
             desc = url_desc.get(ev.url)
-            if ev.description is None and desc is not None:
+            if ev.description in (None, "") and desc is not None:
                 all_events.discard(ev)
                 all_events.add(ev._replace(description=desc))
         return tuple(all_events)

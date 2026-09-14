@@ -7,7 +7,6 @@ from core.util import plain_text, re_or, re_and, get_domain, find_euros, KO_MORE
 from core.util import tp_join
 from arrow import Arrow
 import logging
-from core.cache import TupleCache
 from functools import cached_property, cache
 from datetime import datetime, date
 import pytz

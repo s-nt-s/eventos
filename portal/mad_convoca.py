@@ -135,7 +135,8 @@ class MadConvoca(Base):
             duration=e.duration,
             sessions=tuple(Session(date=s) for s in e.sessions),
             place=place,
-            more=e.links[0] if e.links else None
+            more=e.links[0] if e.links else None,
+            description=e.get_full_description()
         )
         event = self.__fix_gancio(e, event) or event
         return event
