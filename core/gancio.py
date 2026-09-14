@@ -44,11 +44,11 @@ class Event(NamedTuple):
         lines: list[str] = []
         if self.title:
             lines.append(f"Título {self.title}")
+        if self.tags:
+            lines.append(f"Tags: {', '.join(self.tags)}")
         desc = MD.convert(self.description)
         if desc:
             lines.append(f"Descripción:\n{desc}")
-        if self.tags:
-            lines.append(f"Tags: {', '.join(self.tags)}")
         if len(lines) == 0:
             return None
         return "\n\n".join(lines)
