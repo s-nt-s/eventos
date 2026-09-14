@@ -1082,6 +1082,20 @@ def _get_info_fusion(evs: tuple[Event, ...]):
     def _add(arr: list, v, avoid=(None, )):
         if v not in avoid:
             arr.append(v)
+
+    def _add_like(arr: list[str], v: str, avoid=(None, )):
+        if v in avoid:
+            return
+        lw = v.lower()
+        lwarr = tuple(map(str.lower, arr))
+        for i, x in enumerate(lwarr):
+            if x == lw or lw in x:
+                return
+            if x in lw:
+                arr[i] = v
+                return
+        arr.append(v)
+
     s_event_url: dict[str, list[str]] = defaultdict(list)
     s_sessi_url: dict[str, list[str]] = defaultdict(list)
     s_description: dict[str, list[str]] = defaultdict(list)
@@ -1116,14 +1130,14 @@ def _get_info_fusion(evs: tuple[Event, ...]):
         _add(imgs, e.img)
         _add(prices, e.price)
         _add(seen_in, e.url)
-        _add(descriptions, e.description)
+        _add_like(descriptions, e.description)
         for u in e.also_in:
             _add(seen_in, u)
         if e.name and e.url and e.url not in url_title:
             url_title[e.url] = e.name
         for s in e.sessions:
             if s.description and s.description not in s_description[s.date]:
-                s_description[s.date].append(s.description)
+                _add_like(s_description[s.date], s.description)
             if s.title and s.url and s.url not in url_title:
                 url_title[s.url] = s.title
             if s.url is not None:
