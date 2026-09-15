@@ -582,6 +582,7 @@ class Universidad(Base):
                 "docencia",
                 "congreso",
                 "conferencia",
+                "encuentros?",
                 flags=re.I
             ):
                 return Category.CONFERENCE
