@@ -144,9 +144,12 @@ class TeatroMonumental(Base):
                 if i.full:
                     continue
             prices.update(get_nums(info.get("precio desde")))
+            s_url = a.attrs.get("href")
+            if not s_url or s_url.startswith("#"):
+                s_url = None
             sessions.add(Session(
                 date="{2:04}-{1:02}-{0:02} {3:02}:{4:02}".format(*dmy, *hm),
-                url=a.attrs.get("href"),
+                url=s_url,
             ))
         price = max(prices) if len(prices) > 0 else None
         return price, tuple(sorted(sessions))
