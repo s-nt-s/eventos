@@ -347,17 +347,21 @@ class IcsReader:
         return False
 
     def __from_ical(self, url: str):
+        page_of = re.sub(r"/p%c3%a1gina/\d+/", "/", url)
+        is_page = page_of != url and page_of in self.__urls
         r = self.__s.get(url, timeout=10, verify=self.__verify_ssl)
         try:
             r.raise_for_status()
         except Exception as e:
             logger.critical(f"Calendario status_code={r.status_code} {url} {e}", exc_info=True)
         if r.text is None:
-            logger.warning(f"Calendario vació {url}")
+            if not is_page:
+                logger.warning(f"Calendario vació {url}")
             return None
         text = r.text.strip()
         if len(text) == 0:
-            logger.warning(f"Calendario vació {url}")
+            if is_page:
+                logger.warning(f"Calendario vació {url}")
             return None
         try:
             return Calendar.from_ical(text)
