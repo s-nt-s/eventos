@@ -53,7 +53,7 @@ def dom_simplify(s: str):
         return None
     s = re.sub(r"[\-_\.]+", "_", s).lower()
     s = unidecode(s)
-    if s[0].isdecimal():
+    if s and s[0].isdecimal():
         s = '_' + s
     return s
 
