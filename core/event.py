@@ -18,6 +18,7 @@ from core.util.strng import clean_name, find_director
 from collections import defaultdict
 from core.place import Place
 from core.filmaffinity import FilmAffinityApi
+from requests.exceptions import ConnectionError
 import pytz
 
 T = TypeVar("T")
@@ -65,9 +66,13 @@ def safe_expand_url(url: str):
         new_dom = {
             "forms.gle": "docs.google.com",
         }.get(dom, dom)
-        WEB.get(url)
-        if isinstance(WEB.url, str) and get_domain(WEB.url) == new_dom:
-            return WEB.url
+        try:
+            WEB.get(url)
+            if isinstance(WEB.url, str) and get_domain(WEB.url) == new_dom:
+                return WEB.url
+        except ConnectionError:
+            logger.warning(f"FAIL safe_expand_url({url})")
+            pass
     return url
 
 
