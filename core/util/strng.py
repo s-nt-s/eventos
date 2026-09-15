@@ -383,6 +383,7 @@ DIRECTORS = list(map(_escape, map(str.lower, [
     'Gabriel Azorín',
     'Lucía Seles',
     'Sergio Pinilla',
+    'Nikita Lavretski'
 ])))
 
 
