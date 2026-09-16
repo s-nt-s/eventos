@@ -174,7 +174,7 @@ class MadConvoca(Base):
                 return ev
 
         if re_or(e.title, r"A la fresca en la Atenea", flags=re.I):
-            text = re.sub(r"a la fresca", "", text, flags=re.I)
+            text = re.sub(r"a la fresca( en la Atenea)?", "", text, flags=re.I)
             drs = find_all_directors(text)
             if len(drs) > 0:
                 name = _search(r"\n[A-Z\s]{6,}\n", text)
