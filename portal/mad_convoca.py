@@ -25,6 +25,14 @@ def clean_name(name: str):
     return name
 
 
+def _search(rg: str, text: str):
+    m = re.search(rg, text, flags=re.I)
+    if m:
+        x = m.group(0).strip()
+        if len(x) > 0:
+            return x
+
+
 class MadConvoca(Base):
     def __init__(
         self,
@@ -169,14 +177,13 @@ class MadConvoca(Base):
             text = re.sub(r"a la fresca", "", e.description, flags=re.I)
             drs = find_all_directors(text)
             if len(drs) > 0:
+                name = _search(r"\n[A-Z\s]{6,}\n", text)
                 ev = ev.merge(
                     category=Category.CINEMA
                 ).fix_type().merge(
-                    director=drs
+                    director=drs,
+                    name=name.capitalize() if name else e.name
                 )
-                m = re.search(r"[A-Z\s]{6,}", text)
-                if m:
-                    ev = ev.merge(name=m.group(0).capitalize())
                 return ev
 
     def __ics_to_event(self, e: IcsEventWrapper):
