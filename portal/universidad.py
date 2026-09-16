@@ -451,6 +451,7 @@ class Universidad(Base):
     def __find_category(self, link: str, e: IcsEventWrapper) -> Category:
         if re_or(
             e.SUMMARY,
+            r" \(Online\)$",
             r"^Graduaci[oó]n(es)? de",
             r"M[aá]ster de",
             r"Actividad formativa de Doctorado",

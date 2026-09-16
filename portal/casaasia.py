@@ -1,6 +1,6 @@
 from core.web import Web
 from core.cache import Cache
-from core.event import Event, Category, CategoryUnknown, Session
+from core.event import Event, Category, CategoryUnknown, Session, find_book_category
 from core.place import Places, Place
 import json
 import logging
@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import pytz
 from portal.base import Base
+from core.md import MD
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,7 @@ class CasaAsia(Base):
             price=find_euros(a['acf']['precio']),
             sessions=sessions,
             duration=duration,
+            description=MD.convert(a['content']['rendered'])
         )
         return e
 
@@ -169,6 +171,14 @@ class CasaAsia(Base):
         return tuple()
 
     def __find_category(self, a: dict):
+        title = a['title']['rendered']
+        if re_or(
+            title,
+            "club de lectura",
+            flags=re.I
+        ):
+            desc = MD.convert(a['content']['rendered'])
+            return find_book_category(title, desc, Category.READING_CLUB)
         cats = a['class_list']
         for k, v in {
             "formato-actividad-conferencias": Category.CONFERENCE,
@@ -177,7 +187,6 @@ class CasaAsia(Base):
         }.items():
             if k in cats:
                 return v
-        title = a['title']['rendered']
         if re_or(
             title,
             "obra de teatro",
