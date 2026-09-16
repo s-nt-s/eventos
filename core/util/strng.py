@@ -412,9 +412,9 @@ def find_director(name: str, *directors: str):
     return None, None
 
 
-def find_all_directors(txt: str):
+def find_all_directors(txt: str) -> tuple[str, ...]:
     if not txt:
         return tuple()
     dr = "|".join(DIRECTORS)
     re_dr = re.compile(r"\b("+dr+r")\b", flags=re.I)
-    return tuple(sorted(set(m.group(1) for m in re_dr.finditer(txt))))
+    return tuple(sorted(set(re_dr.findall(txt))))
