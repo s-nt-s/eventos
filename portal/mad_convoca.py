@@ -97,24 +97,6 @@ class MadConvoca(Base):
         rt = tuple(sorted(e.merge(id=f"mc{e.id}") for e in ok_events))
         return rt
 
-    def __complete(self, e: Event):
-        if re_or(
-            e.name,
-            "A la fresca en la Atenea",
-            flags=re.I
-        ):
-            drs = find_all_directors(e.description)
-            if len(drs) > 0:
-                drs = tuple(sorted(set(drs + e.director)))
-                e: Cinema = e.merge(category=Category.CINEMA).fix_type()
-                e = e.merge(
-                    director=drs
-                )
-                m = re.search(r"[A-Z\s]{6,}", re.sub(r"a la fresca", "",e.description, flags=re.I))
-                if m:
-                    e = e.merge(name=m.group(0).capitalize())
-        return e
-
     def __is_ko_place(self, url: str, place: Place):
         if place is None:
             return True
@@ -162,8 +144,10 @@ class MadConvoca(Base):
         return event
 
     def __fix_gancio(self, e: GancioEvent, ev: Event):
-        if e.description and re_or(e.title, r"Cinef[óo]rum de la Rosa", flags=re.I):
-            text = MD.convert(e.description)
+        if not e.description:
+            return
+        text = MD.convert(e.description)
+        if re_or(e.title, r"Cinef[óo]rum de la Rosa", flags=re.I):
             text = re.sub(r"\s*Cinef[óo]rum de la Rosa\s*", "\n", text, flags=re.I).strip()
             m = re.search(
                 r"([^\.\(\)]+?) \((\d{4})\),? (?:una pel[ií]cula de|dir.?) ([^\.\(\)]+)",
@@ -179,6 +163,20 @@ class MadConvoca(Base):
                     year=int(year),
                     director=(dr, )
                 )
+                return ev
+
+        if re_or(e.title, r"A la fresca en la Atenea", flags=re.I):
+            text = re.sub(r"a la fresca", "", e.description, flags=re.I)
+            drs = find_all_directors(text)
+            if len(drs) > 0:
+                ev = ev.merge(
+                    category=Category.CINEMA
+                ).fix_type().merge(
+                    director=drs
+                )
+                m = re.search(r"[A-Z\s]{6,}", text)
+                if m:
+                    ev = ev.merge(name=m.group(0).capitalize())
                 return ev
 
     def __ics_to_event(self, e: IcsEventWrapper):

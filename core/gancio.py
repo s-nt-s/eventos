@@ -121,7 +121,6 @@ class GancioPortal:
         if len(sessions) == 0:
             return None
 
-        url = self.__root+'/event/'+e.get_str("slug")
         links: list[str] = []
         for m in p.get_list_or_empty('online_locations'):
             if re.match(r"^https?://\S+$", m or '') and m not in links:
@@ -139,6 +138,7 @@ class GancioPortal:
                 if len(x) and x not in tags:
                     tags.append(x)
 
+        url = self.__root+'/event/'+e.get_str("slug")
         event = Event(
             url=url,
             id=e.get_int('id'),
