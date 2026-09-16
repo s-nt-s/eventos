@@ -88,7 +88,7 @@ class CasaAsia(Base):
             price=find_euros(a['acf']['precio']),
             sessions=sessions,
             duration=duration,
-            description=MD.convert(a['content']['rendered'])
+            description=self.__find_description(a)
         )
         return e
 
@@ -169,6 +169,19 @@ class CasaAsia(Base):
                 d1 = d1 + timedelta(days=1)
             return tuple(ss)
         return tuple()
+
+    def __find_description(self, a: dict):
+        lines: list[str] = []
+        title = a['title']['rendered']
+        desc = MD.convert(a['content']['rendered'])
+        cats = a['class_list']
+        if title:
+            lines.append(f"Título: {title}")
+        if cats:
+            lines.append(f"Categorías: {', '.join(sorted(cats))}")
+        if desc:
+            lines.append(f"Descripción:\n{desc}")
+        return "\n".join(lines)
 
     def __find_category(self, a: dict):
         title = a['title']['rendered']
