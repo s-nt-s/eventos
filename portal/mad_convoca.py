@@ -1,7 +1,8 @@
 from core.gancio import GancioPortal, Event as GancioEvent
 from core.ics import IcsReader, IcsEventWrapper
-from core.event import Event, Place, Category, Session, CategoryUnknown, find_book_category
+from core.event import Cinema, Event, Place, Category, Session, CategoryUnknown, find_book_category
 from core.util import plain_text, find_duplicates, re_or, re_and, get_domain, find_euros
+from core.util.strng import find_all_directors
 import re
 import logging
 from typing import Callable
@@ -90,10 +91,29 @@ class MadConvoca(Base):
             for e in evs:
                 ok_events.remove(e)
             e = Event.fusion(*evs)
+            e = self.__complete(e)
             ok_events.add(e)
 
         rt = tuple(sorted(e.merge(id=f"mc{e.id}") for e in ok_events))
         return rt
+
+    def __complete(self, e: Event):
+        if re_or(
+            e.name,
+            "A la fresca en la Atenea",
+            flags=re.I
+        ):
+            drs = find_all_directors(e.description)
+            if len(drs) > 0:
+                drs = tuple(sorted(set(drs + e.director)))
+                e: Cinema = e.merge(category=Category.CINEMA).fix_type()
+                e = e.merge(
+                    director=drs
+                )
+                m = re.search(r"[A-Z\s]{6,}", e.description)
+                if m:
+                    e = e.merge(name=m.group(0).capitalize())
+        return e
 
     def __is_ko_place(self, url: str, place: Place):
         if place is None:

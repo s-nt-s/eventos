@@ -383,7 +383,8 @@ DIRECTORS = list(map(_escape, map(str.lower, [
     'Gabriel Azorín',
     'Lucía Seles',
     'Sergio Pinilla',
-    'Nikita Lavretski'
+    'Nikita Lavretski',
+    "Richar Linklater",
 ])))
 
 
@@ -409,3 +410,11 @@ def find_director(name: str, *directors: str):
         if m:
             return m.group('director'), m.group('title')
     return None, None
+
+
+def find_all_directors(txt: str):
+    if not txt:
+        return tuple()
+    dr = "|".join(DIRECTORS)
+    re_dr = re.compile(r"\b("+dr+r")\b", flags=re.I)
+    return tuple(sorted(set(m.group(1) for m in re_dr.finditer(txt))))
