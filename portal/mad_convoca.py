@@ -110,7 +110,7 @@ class MadConvoca(Base):
                 e = e.merge(
                     director=drs
                 )
-                m = re.search(r"[A-Z\s]{6,}", e.description)
+                m = re.search(r"[A-Z\s]{6,}", re.sub(r"a la fresca", "",e.description, flags=re.I))
                 if m:
                     e = e.merge(name=m.group(0).capitalize())
         return e
