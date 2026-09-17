@@ -215,6 +215,8 @@ class FundacionMarch(Base):
         }.get(cat)
         if val:
             return val
+        if "/concierto/" in url:
+            return Category.MUSIC
         logger.critical(str(CategoryUnknown(url, cat)))
         return Category.UNKNOWN
 

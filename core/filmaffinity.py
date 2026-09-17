@@ -175,6 +175,7 @@ class FilmAffinityApi:
             (417100, 2025, "Bad Apples"),
             (455824, 1957, "La patrulla de la muerte"),
             (905325, 2026, "La casa de las mujeres"),
+            (287878, 1981, "Función de noche"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:

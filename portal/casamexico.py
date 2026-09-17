@@ -579,6 +579,7 @@ class CasaMexico(Base):
         if re_or(
             i.name,
             "Sesiones sonoras",
+            "Flamenco",
             flags=re.I
         ):
             return Category.MUSIC
