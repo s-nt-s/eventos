@@ -364,7 +364,12 @@ class MadConvoca(Base):
                 return True
             return False
 
-        if isLibreria and re_or(name, "poes[íi]as?", flags=re.I):
+        if isLibreria and re_or(
+            name,
+            "poes[íi]as?",
+            "Pelear desde el verso",
+            flags=re.I
+        ):
             return Category.POETRY
         if re_or(
             txt_desc,
