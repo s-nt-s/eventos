@@ -176,6 +176,8 @@ class FilmAffinityApi:
             (455824, 1957, "La patrulla de la muerte"),
             (905325, 2026, "La casa de las mujeres"),
             (287878, 1981, "Función de noche"),
+            (210575, 2003, "La ciudad del arco iris"),
+            (287641, 2017, "Ruibal, por libre"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:

@@ -46,6 +46,7 @@ _SPECIAL_WORDS = (
     "Carmen Rojas",
     "Shakespeare",
     "Finzi Pasca",
+    "Frankenstein",
     "O'Donnell",
     "XIII",
     "XXI",
