@@ -7,7 +7,7 @@ from types import MappingProxyType
 from core.event import Event, Category, CategoryUnknown, Session, Cinema
 from core.place import Places
 from functools import cached_property
-from core.web import buildSoup, get_text
+from core.web import buildSoup, get_text, default_headers
 import re
 import logging
 from core.fetcher import Getter
@@ -16,10 +16,13 @@ from datetime import datetime
 from core.md import MD
 from portal.base import Base
 from bs4 import Tag
+from json.decoder import JSONDecodeError
 
 
 logger = logging.getLogger(__name__)
 TOP_YEAR = datetime.now().year + 1
+re_sp = re.compile(r"\s+")
+
 
 class InfoSoup(NamedTuple):
     capacity: Optional[str] = None
@@ -174,13 +177,25 @@ class ReinaSofia(Base):
     def __init__(self, cache: str | bool = True):
         super().__init__(cache=cache)
         self.__s = ReqSession()
-        self.__size = 100
+        self.__s.headers = default_headers
+        self.__size = 50
+
+    def __get_json(self, url: str):
+        r = self.__s.get(url)
+        try:
+            return r.json()
+        except JSONDecodeError:
+            text = re_sp.sub(" ", r.text).strip()
+            if len(text) == 0:
+                logger.critical(f"NOT JSON (empty) {url}")
+            else:
+                logger.critical(f"NOT JSON ([{text}[:10]]) {url}")
+            raise
 
     @cached_property
     @TupleCache("rec/reinasofia/index.json", builder=Index.build)
     def _index(self):
-        r = self.__s.get(f"{ReinaSofia.SEARCH}&pageSize={self.__size}")
-        js = r.json()
+        js = self.__get_json(f"{ReinaSofia.SEARCH}&pageSize={self.__size}")
         arr: list[dict] = []
         categories: dict[int, str] = {}
         urls: dict[str, int] = {}
