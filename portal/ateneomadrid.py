@@ -84,13 +84,14 @@ class AteneoMadrid(Base):
     def __ics_to_event(self, e: IcsEventWrapper):
         if e.SUMMARY is None:
             return
-        if re.match(r"^\s*CANCELADO[\. ].*", e.SUMMARY):
-            return
-        if e.DESCRIPTION in (
-            "El contenido esta protegido.",
-            "CANCELADO",
-        ):
-            return None
+        for x in (e.SUMMARY, e.DESCRIPTION):
+            if re_or(
+                x,
+                "^CANCELADO\b",
+                "^ENTRADAS AGOTADAS\b",
+                "^El contenido esta protegido\b",
+            ):
+                return None
         place = self.__find_place(e)
         if place is None:
             return
