@@ -546,7 +546,7 @@ class CasaMexico(Base):
             i.name,
             "Presentaci[oó]n del? libro",
             flags=re.I
-        ) or "literature" in i.tags:
+        ) or "literatura" in i.tags:
             return find_book_category(i.name, i.description, Category.LITERATURE)
         if re_or(
             i.name,
