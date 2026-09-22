@@ -25,11 +25,11 @@ def _match_title_author(text: str, *rgx: str):
         ):
             continue
         if re.search(
-            (at or ''),
             r'\beditorial\b',
+            (at or ''),
             flags=re.I
         ):
-            at=None
+            at = None
         return {
             'title': tt,
             'author': at
