@@ -424,7 +424,8 @@ class CasaMexico(Base):
                 duration=duration,
                 sessions=sessions,
                 place=self.__find_place(i),
-                cycle=cycle
+                cycle=cycle,
+                description=i.description
             )
             if e.category == Category.CINEMA and (i.director or i.year):
                 e = e.fix_type().merge(
@@ -545,7 +546,7 @@ class CasaMexico(Base):
             i.name,
             "Presentaci[oó]n del? libro",
             flags=re.I
-        ):
+        ) or "literature" in i.tags:
             return find_book_category(i.name, i.description, Category.LITERATURE)
         if re_or(
             i.name,
@@ -572,7 +573,7 @@ class CasaMexico(Base):
             "cine": Category.CINEMA,
             "música": Category.MUSIC,
             "teatro": Category.THEATER,
-            "talleres": Category.WORKSHOP
+            "talleres": Category.WORKSHOP,
         }.items():
             if t in i.tags:
                 return c

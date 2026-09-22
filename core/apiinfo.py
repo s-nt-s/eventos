@@ -1,10 +1,11 @@
 import requests
 from os import environ
 from core.event import Event, Cinema, Category
-from core.util import parse_obj, get_obj
+from core.util import parse_obj, get_obj, iter_chunk
 import json
 import logging
 from typing import NamedTuple
+from core.filemanager import FM
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ class Info(NamedTuple):
     musica: bool
     poesia: bool
     taller: bool
+    presentacion: bool
 
     @classmethod
     def build(cls, *args, **kwargs):
@@ -60,39 +62,41 @@ class ApiInfo:
             return info
         ids = set((e.id for e in events))
         logger.info(f"Obteniendo información de {len(events)} eventos")
-        payload = json.dumps(
-            parse_obj(events, compact=True),
-            ensure_ascii=False,
-            indent=0,
-            separators=(',', ':')
-        )
-        try:
-            r = self.__s.get(
-                self.__root,
-                params={"ask": payload}
+        for evs in iter_chunk(50, events):
+            payload = json.dumps(
+                parse_obj(evs, compact=True),
+                ensure_ascii=False,
+                indent=0,
+                separators=(',', ':')
             )
-            data = r.json()
-            if not isinstance(data, dict):
-                logger.critical(f"response is not a dict ({type(data)})")
-                return info
-            rpl = data.get("reply")
-            error = data.get("error")
-            if error or not isinstance(rpl, list):
-                logger.critical(f"response error {data}")
-                return info
-            for i in rpl:
-                if not isinstance(i, dict) or i.get("id") is None:
+            try:
+                r = self.__s.post(
+                    self.__root,
+                    json={"ask": payload}
+                )
+                data = r.json()
+                if not isinstance(data, dict):
+                    logger.critical(f"response is not a dict ({type(data)})")
+                    return info
+                rpl = data.get("reply")
+                error = data.get("error")
+                if error or not isinstance(rpl, list):
                     logger.critical(f"response error {data}")
-                    return None
-                if i['id'] not in ids:
-                    continue
-                d = Info.build(i)
-                if d:
-                    info[i['id']] = d
-        except Exception as e:
-            logger.critical(str(e))
+                    return info
+                for i in rpl:
+                    if not isinstance(i, dict) or i.get("id") is None:
+                        logger.critical(f"response error {data}")
+                        return None
+                    if i['id'] not in ids:
+                        continue
+                    d = Info.build(i)
+                    if d:
+                        info[i['id']] = d
+            except Exception as e:
+                logger.critical(str(e))
+        FM.dump("/tmp/a.json", info)
         logger.info(f"Información de {len(info)} eventos recuperada con éxito")
-        return data
+        return info
 
     def complete(self, *events: Event | Cinema):
         done: set[Event | Cinema] = set()
@@ -100,9 +104,9 @@ class ApiInfo:
         for e in events:
             if e.category in (
                 Category.UNKNOWN,
-                Category.LITERATURE,
-                Category.CONFERENCE,
-                Category.READING_CLUB
+                #Category.LITERATURE,
+                #Category.CONFERENCE,
+                #Category.READING_CLUB
             ):
                 need_info.append(e)
                 continue
@@ -143,12 +147,16 @@ class ApiInfo:
             return Category.WORKSHOP
         if i.teatro:
             return Category.THEATER
+        if e.category == Category.UNKNOWN:
+            if i.presentacion:
+                return Category.CONFERENCE
+            if i.fiesta:
+                return Category.PARTY
 
 
 if __name__ == "__main__":
     from core.log import config_log
     config_log("log/apiinfo.log", log_level=logging.INFO)
-    from core.filemanager import FM
     evs: list[Event | Cinema] = []
     for i in FM.load("out/eventos.json"):
         e = Event.build(i, fill_with_none=True)

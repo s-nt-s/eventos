@@ -332,7 +332,7 @@ class CaixaForum(Base):
             return Category.CINEMA
         if re_or(cat, "taller", "curso", "espacio educativo"):
             return Category.WORKSHOP
-        if re_or(cat, "encuentro", "conferencia", "debate", "tertulia", "jornada", r"di[áa]logo"):
+        if re_or(cat, "encuentro", "conferencia", "debate", "tertulia", "jornada", r"di[áa]logo", "mesa redonda"):
             return Category.CONFERENCE
         #if re_or(cat, "otros formatos"):  # , "espacio de mediacion", "espectaculo"):
         #    return Category.OTHERS
@@ -351,6 +351,8 @@ class CaixaForum(Base):
             return Category.DANCE
         if re_or(txt_des, "cine", "cine-?f[óo]rum", "cine-?club", flags=re.I):
             return Category.CINEMA
+        if re_or(txt_des, "la compañ[ií]a .* lleva a escena", flags=re.I):
+            return Category.THEATER
         href = div.select_one_attr("div.card-viewmore a", "href", if_none="silent")
         plain_href = plain_text(href).lower()
         if re_or(plain_href, "circo"):
@@ -359,7 +361,7 @@ class CaixaForum(Base):
             return Category.DANCE
         if re_or(plain_href, "cine", "cineforum", "cineclub"):
             return Category.CINEMA
-        logger.critical(str(CategoryUnknown(div.url, f"{txt} {txt_tit} {txt_des} {href}")))
+        logger.critical(str(CategoryUnknown(div.url, f"{txt} [{cat}] {txt_tit} {txt_des} {href}")))
         return Category.UNKNOWN
 
 
