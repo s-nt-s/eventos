@@ -1,3 +1,4 @@
+notas.txt
 *.sqlite
 /rec/*
 out/*
@@ -5,6 +6,7 @@ out/*
 out/rec/info.js
 myenv
 core/reinasofia.py
+fix/event.json.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -142,9 +144,6 @@ venv.bak/
 
 # Rope project settings
 .ropeproject
-
-# mkdocs documentation
-/site
 
 # mypy
 .mypy_cache/

@@ -1,0 +1,247 @@
+from core.web import buildSoup
+from bs4 import Tag
+import re
+import cloudscraper
+import logging
+from urllib.parse import quote
+from functools import cache
+
+
+logger = logging.getLogger(__name__)
+
+re_sp = re.compile(r"\s+")
+
+FM_SCRAPER = cloudscraper.create_scraper()
+
+
+class FilmAffinityError(ValueError):
+    pass
+
+
+def _get_soup(url: str):
+    soup = buildSoup(url, FM_SCRAPER.get(url).text)
+    title_none = "not title found"
+    txt = get_text(soup.select_one("title")) or title_none
+    if txt.lower() in (title_none, "too many request", ):
+        raise FilmAffinityError(txt)
+    return soup
+
+
+def get_text(n: Tag | None) -> str | None:
+    if not isinstance(n, Tag):
+        return None
+    txt = re_sp.sub(" ", n.get_text()).strip()
+    if len(txt) == 0:
+        return None
+    return txt
+
+
+def _gap_year(y: int):
+    return (None, y-1, y, y+1)
+
+
+def _is_match(literals: tuple[str, ...], *args):
+    rgs: list[re.Pattern] = []
+    for a in args:
+        if isinstance(a, re.Pattern):
+            rgs.append(a)
+            continue
+        if a in literals:
+            return True
+    for rg in rgs:
+        for t in literals:
+            if rg.search(t):
+                return True
+    return False
+
+
+class FilmAffinityApi:
+    ACTIVE = True
+
+    @staticmethod
+    def fast_search(year: int, *titles: str):
+        if not isinstance(year, int):
+            year = None
+        if len(titles) == 0:
+            return None
+        TITLES = (
+            (132739, 2025, "Sorda"),
+            (411856, 1963, "El verdugo"),
+            (513636, 1962, "Matar a un ruiseñor"),
+            (126406, 2024, "Una cabeza en la pared"),
+            (999902, 1996, "El perro del hortelano"),
+            (963150, 2025, "La furia"),
+            (957271, 2025, "Decorado"),
+            (309861, 2025, "La cena"),
+            (206795, 2005, "Last Days"),
+            (252377, 1977, "Informe general"),
+            (684913, 2015, "Informe general II. El nuevo rapto de Europa"),
+            (985323, 2010, "Seguir siendo"),
+            (778097, 1975, "Welfare"),
+            (207758, 2019, "Ema"),
+            (235758, 2025, "Karla"),
+            (397329, 2025, "El canto de las manos"),
+            (295517, 2025, "La lucha"),
+            (435198, 2026, "Tres mujeres"),
+            (154374, 2025, "La buena hija"),
+            (502795, 2024, "La semilla de la higuera sagrada"),
+            (968717, 2025, "Mit hasan in gaza"),
+            (435869, 1953, "Bienvenido Mr. Marshall"),
+            (669924, 1927, "El gato y el canario"),
+            (591219, 2026, "El canto de las mariposas"),
+            (963958, 2024, "Jugar con fuego"),
+            (750980, 2024, "On falling"),
+            (821116, 2025, "Madrid, ext"),
+            (795317, 2017, "La familia"),
+            (304206, 2025, "Océano con David Attenborough"),
+            (392601, 2026, "Crías"),
+            (922810, 2024, re.compile(r"Como agua para chocolate\b.*(temporada|[Ee]pisodio)")),
+            (588169, 2025, re.compile(r"Cometierra\b.*(temporada|[Ee]pisodio)")),
+            (122104, 2024, "La cocina"),
+            (493116, 2026, "Yo no moriré de amor"),
+            (920164, 1937, "Stella Dallas"),
+            (265442, 2024, "Los Cayucos de Kayar"),
+            (394043, 2024, "Disonancia"),
+            (616533, 2025, "Refugiados climáticos: un desafío global"),
+            (130415, 2015, "Escalera arriba"),
+            (496314, 2026, re.compile(r"\bIván & Hadoum\b")),
+            (502671, 2026, "Dos días"),
+            (224463, 1933, "Tú eres mío"),
+            (720686, 1932, "El Expreso de Shanghai"),
+            (270791, 2025, "El secreto de Portera", "El secreto de Alberto Portera"),
+            (701076, 2022, "La semilla"),
+            (118850, 2026, "Home Stories"),
+            (983329, 2026, "No Mercy"),
+            (956467, 2026, "El sueño americano"),
+            #(227540, 2022, re.compile(r"\bAs Bestas\b")),
+            (842054, 1975, re.compile(r"\bJeanne Dielman\b.*\b(Bruxelles|Bruselas)\b")),
+            (932476, 1999, "Matrix"),
+            (764207, 2025, "Votemos"),
+            (540624, 2025, "El secreto del orfebre"),
+            (221256, 2024, "Por todo lo alto"),
+            (793818, 2024, "Marco"),
+            (386839, 2025, "El príncipe de Nanawa"),
+            (576456, 2014, "El recuerdo de Marnie"),
+            (249352, 2024, re.compile("La habitaci[oó]n de al lado", flags=re.I)),
+            (919132, 2024, "Mariposas Negras"),
+            (169592, 2025, re.compile(r"\bAs estaçoes\b")),
+            (170495, 2026, "Aminetu"),
+            (789723, 2026, "Backrooms", re.compile(r"Backrooms[\.:\s]*Liquidaci[oó]n total", flags=re.I)),
+            (158471, 2026, "Viva"),
+            (365421, 2025, re.compile(r"Flamingos\b.*\bLa vida despu[eé]s del meteorito")),
+            (571201, 2024, "Fanon"),
+            (144050, 2025, "En el camino"),
+            (822006, 2021, "Canta 2"),
+            (486640, 2018, "Bohemian Rhapsdy"),
+            (925667, 2025, "La copia perfecta"),
+            (753623, 2024, "Wicked"),
+            (665782, 2025, "A la cara"),
+            (689956, 2016, "La La Land"),
+            (336014, 2008, "Mamma Mía!"),
+            (255392, 2001, re.compile(r"Moul[ií]n Rouge")),
+            (584300, 2025, "Los domingos"),
+            (169465, 2025, "Incontrolable"),
+            (699169, 2025, "Los pecadores"),
+            (650623, 2026, "México 86"),
+            (445332, 2026, "Corredora"),
+            (501691, 2024, re.compile(r"Furiosa\b.*\bSaga Mad *Max", flags=re.I)),
+            (466193, 2025, "Mudanza"),
+            (982762, 1978, "Girlfriends"),
+            (632827, 2025, "Canciller, el templo del rock"),
+            (417915, 2025, "Cecilia Bartolomé: Tan lluny, tan prop"),
+            (614431, 2025, "Back in Time!"),
+            (508748, 2025, "Este cuerpo mío"),
+            (380603, 2026, "Herencia"),
+            (644313, 1974, "A Bigger Splash"),
+            (757742, 2001, "La ciénaga"),
+            (425836, 1977, "La piscina"),
+            (167195, 1969, "La piscina"),
+            (754641, 2025, "Omaha"),
+            (144113, 1988, "Akira"),
+            (352798, 2025, "El mensaje"),
+            (546833, 2026, "La Odisea", "La odisea"),
+            (841956, 2026, "Vaiana"),
+            (437038, 2026, "Spider-Man: Brand New Day"),
+            (136154, 2008, re.compile(r"ANTIFA[\:\.\-\s]+Cazadores de skins", flags=re.I)),
+            (964408, 2026, "9 lunas"),
+            (872269, 2025, "Forastera"),
+            (268103, 2026, "Cronos"),
+            (832198, 2013, "Begin Again"),
+            (215793, 2026, "La constelación del perro"),
+            (113777, 2026, "Hermanos"),
+            (669035, 1986, "Terciopelo azul"),
+            (111829, 2025, "Nuestra tierra"),
+            (221866, 2026, "El nido"),
+            (417100, 2025, "Bad Apples"),
+            (455824, 1957, "La patrulla de la muerte"),
+            (905325, 2026, "La casa de las mujeres"),
+            (287878, 1981, "Función de noche"),
+            (210575, 2003, "La ciudad del arco iris"),
+            (287641, 2017, "Ruibal, por libre"),
+        )
+        need_year: set[int] = {425836, 167195}
+        for k, y, *tt in TITLES:
+            if k in need_year and year is None:
+                continue
+            if year not in _gap_year(y):
+                continue
+            if _is_match(titles, *tt):
+                return k
+
+    @staticmethod
+    @cache
+    def search(year: int, *titles: str):
+        k = FilmAffinityApi.fast_search(year, *titles)
+        if k is not None:
+            return k
+        if not FilmAffinityApi.ACTIVE:
+            return None
+        if len(titles) > 1 and year is None:
+            return None
+        try:
+            ids: set[int] = set()
+            for title in titles:
+                url = "https://www.filmaffinity.com/es/search.php?stype=title&em=1&stext="+quote(title)
+                soup = _get_soup(url)
+                link = soup.select_one('link[rel="alternate"][hreflang="es"][href]')
+                _id_ = FilmAffinityApi.__extract_id_from_link(link)
+                if _id_:
+                    if year is None and len(titles) == 1:
+                        logger.debug(f"FilmAffinityApi.search = {_id_} = {titles[0]}")
+                        return _id_
+                    yr = FilmAffinityApi.__get_year(soup)
+                    if yr == year:
+                        ids.add(_id_)
+                for div in soup.select("div.searchres div.card-body"):
+                    span = get_text(div.select_one("span.mc-year"))
+                    if span is None or int(span) != year:
+                        continue
+                    link = div.select_one("a[href]")
+                    _id_ = FilmAffinityApi.__extract_id_from_link(link)
+                    if _id_:
+                        ids.add(_id_)
+            logger.debug(f"FilmAffinityApi.search = {tuple(sorted(ids))} = {year} + {titles}")
+            if len(ids) == 1:
+                return ids.pop()
+        except FilmAffinityError as e:
+            logger.critical(f"Error fetching film {year} {titles}: {e}")
+            FilmAffinityApi.ACTIVE = False
+            return None
+
+    @staticmethod
+    def __get_year(soup: Tag) -> str:
+        y = get_text(soup.select_one("dd[itemprop='datePublished'], span[itemprop='datePublished']"))
+        if y and y.isdecimal():
+            return int(y)
+
+    @staticmethod
+    def __extract_id_from_link(a: Tag):
+        if a is None:
+            return None
+        href = a.attrs.get("href")
+        if not isinstance(href, str):
+            return None
+        m = re.search(r"/film(\d+)\.html$", href)
+        if m is None:
+            return None
+        return int(m.group(1))

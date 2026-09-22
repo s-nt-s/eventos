@@ -14,9 +14,8 @@
       }
     </style>
   </noscript>
-  <script src="{{PAGE_URL}}/rec/hacks.js" type="text/javascript"></script>
+  <!--script src="{{PAGE_URL}}/rec/dev.js" type="text/javascript"></script-->
   <script src="{{PAGE_URL}}/rec/info.js" type="text/javascript"></script>
-  <script src="{{PAGE_URL}}/rec/img.js" type="text/javascript"></script>
   <script src="{{PAGE_URL}}/rec/main.js" type="text/javascript"></script>
   <style id="jscss"></style>
 </head>
@@ -34,35 +33,55 @@
         <option value="novedad" data-txt="Novedades">Novedades ({{clss_count['novedad']}})</option>
         <optgroup label="Categoría">
           {% for c, num in categorias.items()|sort %}
-          <option value="{{c | simplify }}" data-txt="{{(c|string).title()}}">{{(c|string).title()}} ({{num}})</option>
+          <option value="{{c | simplify }}" data-txt="{{(c|string).capitalize()}}">{{(c|string).capitalize()}} ({{num}})</option>
+          {% endfor %}
+        </optgroup>
+        <optgroup label="Zona">
+          {% for c, num in zones.items() %}
+          <option value="{{c | simplify }}" data-txt="{{(c)}}">{{(c)}} ({{num}})</option>
           {% endfor %}
         </optgroup>
         <optgroup label="Lugar">
-          {% for c, num in lugares.items()|sort %}
+          {% for c, num in places.items()|sort %}
           <option value="{{c | simplify }}" data-txt="{{(c)}}">{{(c)}} ({{num}})</option>
+          {% endfor %}
+        </optgroup>
+        <optgroup label="Precio">
+          {% for x, num in precios.items()|sort %}
+          <option value="e{{x}}" data-txt="{{(x)}} €">{{(x)}} € ({{num}})</option>
+          {% endfor %}
+        </optgroup>
+        <optgroup label="Hora">
+          {% for x, num in horas.items()|sort %}
+          <option value="h{{x | replace(':', '')}}" data-txt="{{(x)}}">{{(x)}} ({{num}})</option>
+          {% endfor %}
+        </optgroup>
+        <optgroup label="URL">
+          {% for c, num in domains.items()|sort %}
+          <option value="{{c | dom_simplify }}" data-txt="{{(c)}}">{{(c)}} ({{num}})</option>
           {% endfor %}
         </optgroup>
       </select>
     </p>
     {% for (img, e) in eventos %}
-    <div id="{{e.id}}" class="evento {{e.category | simplify}} {{e.place.get_alias() | simplify}} {{ clss[e.id]|join(' ') }}" data-publish="{{e.publish}}">
+    <div id="{{e.id}}" class="evento {{e.category | simplify}} {{(e.place.zone or null_zone) | simplify}} {{e.place.name | simplify}} {{ clss[e.id]|join(' ') }}" data-publish="{{e.publish}}">
       <div class="img" {%if img.background%} style="--back: rgb{{img.background}}" {%endif%}>
         {% if img %}
         <div><img src="{{img.url}}" alt="{{e.titulo}}" class="cartel {{img.orientation}}" loading="lazy" /></div>
-        <a class="zoom" href="{{img.origin.url}}" title="Ver cartel original">🔍</a>
+        <a class="zoom" href="{{img.source | escape}}" title="Ver cartel original">🔍</a>
         {%else %}
         <div class="noimg"></div>
         {% endif %}
-        <span class="categoria">{% if e.more %}<a class="more" href="{{e.more}}">🔗</a> {% endif %}{{(e.category|string).title()}}</span>
-        <a class="lugar" href="{{e.place.url}}">{{e.place.name}}</a>
+        <span class="categoria">{% if e.more %}<a class="more" href="{{e.more | escape}}">🔗</a> {% endif %}{{(e.category|string).capitalize()}}</span>
+        <a class="lugar" href="{{e.place.url | escape}}"{%if e.place.address%} title="{%if e.place.zone%}[{{e.place.zone}}] {%endif%}{{e.place.address}}"{%endif%}>{{e.place.name}}</a>
       </div>
       <div class="info">
         <p class="titulo">
           <span class="precio" title="{{e.price | twoDec}}€">{{e.price | round | int}}€</span>
           {% if e.url %}
-          <a href="{{e.url}}">{{e.title}}</a>{% for u in e.also_in %} <small>[<a href="{{u}}">+{{loop.index}}</a>]</small>{% endfor %}
+          <a href="{{e.url | escape}}">{{e.name}}</a>{% for u in e.also_in %} <small>[<a href="{{u | escape}}">+{{loop.index}}</a>]</small>{% endfor %}
           {% else %}
-          {{e.title}}
+          {{e.name}}
           {% endif %}
         </p>
       </div>
@@ -70,13 +89,13 @@
       <ol class="sesiones">
         {% for dia, sesiones in e.dates %}
         <li data-start="{{sesiones[0].date}}" data-end="{{sesiones[-1].date}}">
-          <pre>{{dia.strip()}}</pre>:{% for s in sesiones %}
+          <pre title="{{sesiones[0].date[:10]}}">{{dia.strip()}}</pre>:{% for s in sesiones %}
           {% if s.url %}
-          <a href="{{s.url}}">{{s.hour}}</a>
+          <a href="{{s.url | escape}}" {%if s.title %}title="{{s.title}}"{%endif%}>{{s.hour}}</a>
           {% else %}
           {{s.hour}}
           {% endif %}
-          <a href="{{PAGE_URL}}/cal/{{session_ics[e.id+s.id]}}.ics" title="Añade a tu calendario" class="ico">🗓</a>
+          <a href="{{PAGE_URL}}/cal/{{session_ics[e.id+s.id]}}.ics" title="Añade a tu calendario" class="ico">📅</a>
           {% endfor %}
         </li>
         {% endfor %}

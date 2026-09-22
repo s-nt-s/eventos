@@ -1,0 +1,194 @@
+from portal.universidad import Universidad
+from portal.eventim import Eventim
+from core.event import Event, Place
+from core.util import re_or, get_domain, tp_join
+from core.zone import Zones
+from collections import defaultdict
+from portal.base import Base
+import re
+import logging
+
+
+dom_eventim = "eventim-light.com"
+
+
+def parse_place(p: Place):
+    if p is None:
+        return None
+    p = _parse_place(p) or p
+    return p.normalize()
+
+
+def _parse_place(p: Place):
+    if p is None:
+        return None
+    place_address = f"{p.name or ''} {p.address or ''}".strip()
+    if re_or(
+        p.name,
+        ("Facultad", "Bellas Artes"),
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Bellas artes",
+            address=p.address,
+            map="https://maps.app.goo.gl/GtpqE4qjc6L7Emsw5",
+            latlon="40.43953915583213,-3.7330606614535937",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        p.name,
+        ("Facultad", "Matemáticas"),
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Matemáticas",
+            address=p.address,
+            map="https://maps.app.goo.gl/b87tstQr6M5aRtdJ7",
+            latlon="40.449769018450226,-3.725813888434875",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        p.name,
+        ("Facultad", "Educación"),
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Educación",
+            address=p.address,
+            latlon="40.451000941293515,-3.7177499307621042",
+            map="https://maps.app.goo.gl/wfrrsQfadSR3NX7a8",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        p.name,
+        ("Deportivo", "Zona Sur"),
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Deportivo sur",
+            address=p.address,
+            latlon="40.438861452263204,-3.7310277461082375",
+            map="https://maps.app.goo.gl/c7b7pQQb1nH1sQ968",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        p.name,
+        ("Centro", "Arte Complutense"),
+        "c arte c",
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Centro de Arte",
+            address=p.address,
+            latlon='40.44047337583415,-3.7290323134909302',
+            map="https://maps.app.goo.gl/2P7np7abqA1hTbBj8",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        place_address,
+        r"Facultad(es)? de (Filosof[ií]a|Filolog[ií]a)",
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Filología y Filosofía",
+            address=p.address,
+            latlon='40.44896524689359,-3.730427327696498',
+            map="https://maps.app.goo.gl/6KXtAxzdQmRH2rXK8",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        place_address,
+        r"Facultad de medicina",
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Medicina",
+            address=p.address,
+            latlon='40.44405542393555,-3.7246850644281952',
+            map="https://maps.app.goo.gl/ahAcFcXXEfQVfM4fA",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        place_address,
+        r"Edificio de Estudiantes",
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Edificio de Estudiantes",
+            address=p.address,
+            latlon='40.443425981504866,-3.7281114355682696',
+            map="https://maps.app.goo.gl/aHGdJjgpsjohTVdn7",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        p.name,
+        r"Parque de El Retiro",
+    ):
+        return p.merge(name="Parque el Retiro")
+
+
+class Ucm(Base):
+    def __init__(self, cache: str | bool = True):
+        super().__init__(cache=cache)
+        self.__uni = Universidad(
+            "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
+            verify_ssl=False,
+        )
+        self.__tim = Eventim("67349f8ab667c57a7581e251")
+
+    def _get_events(self):
+        events: set[Event] = set()
+        more_events: dict[str, set[Event]] = defaultdict(set)
+        for e in self.__uni.get_events():
+            e = e.merge(
+                id=f"ucm{e.id}",
+                place=parse_place(e.place)
+            )
+            more_urls: set[str] = set()
+            more_urls.add(e.more or e._fix_more())
+            if len(e.sessions) == 1:
+                if e.sessions[0].url == "https://www.ucm.es/cultura/entradas":
+                    # ya aparecerá en  self.__tim.events
+                    continue
+                more_urls.add(e.sessions[0].url)
+            more_urls.discard(None)
+            if len(more_urls)==0:
+                events.add(e)
+            for more in more_urls:
+                more_events[more].add(e)
+        for e in self.__tim.get_events():
+            also_in: set[str] = set()
+            for u in e.iter_urls():
+                for x in more_events.pop(u, set()):
+                    if x.url:
+                        also_in.add(x.url)
+            e = e.merge(
+                id=f"ucm{e.id}",
+                place=parse_place(e.place),
+                also_in=tp_join(e.also_in, sorted(also_in))
+            )
+            events.add(e)
+        for evs in more_events.values():
+            events.update(evs)
+
+        for e in list(events):
+            events.remove(e)
+            ss = tuple(s for s in e.sessions if not s.full)
+            if len(ss) == 1 and get_domain(ss[0].url) == dom_eventim and get_domain(e.url) in (None, dom_eventim):
+                e = e.merge(
+                    url=ss[0].url,
+                    sessions=(
+                        ss[0]._replace(url=None),
+                    )
+                )
+            elif e.sessions != ss:
+                e = e.merge(sessions=ss)
+            if e.sessions:
+                events.add(e)
+        return tuple(sorted(events))
+
+
+if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/ucm.log", log_level=(logging.DEBUG))
+    Ucm().get_events()

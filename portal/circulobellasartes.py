@@ -1,0 +1,402 @@
+from core.web import Web, get_text, buildSoup, Tag
+from functools import cached_property
+from core.event import Event, Cinema, Category, Session, CategoryUnknown, find_book_category
+from core.place import Places
+from core.util import plain_text, to_uuid, find_euros, re_or
+import re
+from datetime import date, datetime
+from core.fetcher import Getter
+from aiohttp import ClientResponse
+from core.md import MD
+import logging
+from portal.base import Base
+
+logger = logging.getLogger(__name__)
+
+re_date = re.compile(r"^\d{1,2}[/\.]\d{1,2}[/\.]20\d{2}$")
+TODAY = date.today()
+
+
+def _det_date(s: str):
+    if s is None:
+        return None
+    if not re_date.match(s):
+        return None
+    d, m, y = tuple(map(int, re.findall(r"\d+", s)))
+    return date(y, m, d)
+
+
+async def rq_to_events(r: ClientResponse):
+    url = str(r.url)
+    soup = buildSoup(url, await r.text())
+    if url.startswith(CirculoBellasArtes.URL_CINEMA):
+        return await soup_to_cinema(url, soup)
+    return await soup_to_event(url, soup)
+
+
+def dl_to_dict(*dls: Tag):
+    info: dict[str, str | None] = {}
+    for dl in dls:
+        for dt, dd in zip(dl.select("dt"), dl.select("dd")):
+            k = plain_text(get_text(dt))
+            if k is None:
+                continue
+            k = k.lower()
+            v = get_text(dd)
+            if k in info and info[k] != v:
+                raise ValueError()
+            info[k] = v
+    return info
+
+
+def table_to_dict(table: Tag):
+    info: dict[str, str | None] = {}
+    if not table:
+        return info
+    for tr in table.select("tr"):
+        tds = tuple(map(get_text, tr.select("td")))
+        if len(tds) != 2:
+            continue
+        k = plain_text(tds[0])
+        if k is None:
+            continue
+        k = k.lower()
+        v = tds[1]
+        if k in ("duration", ) and v is not None:
+            m = re.match(r"^(\d+)h\s+(\d+)min$", v, flags=re.I)
+            if m is None:
+                raise ValueError(f"?duración={v}?")
+            v = int(m.group(1))*60 + int(m.group(1))
+        if k in info and info[k] != v:
+            raise ValueError()
+        info[k] = v
+    return info
+
+
+def _find_img(soup: Tag):
+    for n in soup.select(",".join((
+        'div.fl-col-small div.fl-photo[role="figure"] img.entered[data-src]',
+        'div.fl-col-small div.fl-photo[role="figure"] div.fl-photo-content > img.fl-photo-img[data-src]'
+    ))):
+        img = n.attrs.get("data-src")
+        if img:
+            return img
+    for n in soup.select('meta[property="og:image"][content]'):
+        img = n.attrs.get("content")
+        if img:
+            return img
+    return None
+
+
+async def soup_to_cinema(url: str, soup: Tag):
+    if soup.find(string=re.compile(r"^\s*Este\s+evento\s+ha\s+finalizado\s*$")):
+        return None
+    h1 = soup.select_one("div[data-post-id] h1")
+    h3 = h1
+    while h3 and h3.name != "h3":
+        h3 = h3.find_parent("div")
+        aux = h3.select_one("h3")
+        if aux:
+            h3 = aux
+    inf = table_to_dict(soup.select_one("table.cba_tabla_ficha"))
+    year = inf.get("año")
+    if year is not None and year.isdigit():
+        year = int(year)
+    else:
+        year = None
+    template = Cinema(
+        id="cba"+to_uuid(url),
+        url=url,
+        name=get_text(h1),
+        director=(inf.get("direccion") or get_text(h3),),
+        year=year,
+        place=Places.CIRCULO_BELLAS_ARTES.value,
+        category=Category.CINEMA,
+        sessions=tuple(),
+        duration=inf.get("duration"),
+        img=_find_img(soup),
+        price=None,
+    )
+    price_event: dict[float, Cinema] = {}
+    sessions = table_to_dict(soup.select_one("table.cba_tabla_sesiones"))
+    for k, v in sessions.items():
+        v = plain_text(v)
+        if v:
+            v = v.lower()
+        price = {
+            "precio reducido": 5.50, #(18/5)
+            None: 8
+        }.get(v, find_euros(v))
+        if re_or(
+            v,
+            r"(acceso|acceso|entrada) libre",
+            flags=re.I
+        ):
+            price = 0
+        if price is None:
+            logger.warning(f"NOT FOUND price={k}={v} {url}")
+            continue
+        ev: Cinema = price_event.get(price, template)
+        d, m, h, mm = map(int, re.findall(r"\d+", k))
+        dt = datetime(TODAY.year, m, d, h, mm)
+        if TODAY.month == 1 and dt.month == (11, 12):
+            dt = dt.replace(year=TODAY.year-1)
+        elif TODAY.month == 12 and dt.month in (1, 2):
+            dt = dt.replace(year=TODAY.year+1)
+        if dt.date() >= TODAY:
+            ev_se = set(ev.sessions)
+            ev_se.add(Session(
+                date=dt.strftime("%Y-%m-%d %H:%M")
+            ))
+            price_event[price] = ev.merge(
+                price=price,
+                sessions=tuple(sorted(ev_se))
+            )
+    return tuple(price_event.values())
+
+
+async def soup_to_event(url: str, soup: Tag):
+    if soup.find(string=re.compile(r"^\s*Invitaciones\s+agotadas\s*$")):
+        return None
+    inf = dl_to_dict(*soup.select(".cba-events-details dl"))
+    price = find_euros(inf.get("precio"))
+    if price is None:
+        cats = "\n".join(get_text(x) or '' for x in  soup.select("div.fl-html .cba_single_cat"))
+        if re_or(
+            cats,
+            r"Proyecci[oó]n especial",
+            r"Pel[íi]culas",
+            flags=re.I
+        ):
+            return await soup_to_cinema(url, soup)
+        logger.warning(f"NOT FOUND price {url}")
+        return None
+    fc = inf.get("fecha")
+    hr = inf.get("horario")
+    if None in (fc, hr):
+        logger.warning(f"NOT FOUND fecha/horario {url}")
+        return None
+    dt_int = list(map(int, re.findall(r"\d+", f"{fc} {hr}")))
+    if len(dt_int) == 4:
+        dt_int.append(0)
+    if len(dt_int) != 5:
+        logger.warning(f"NOT FOUND fecha/horario {url}")
+        return None
+    d, m, y, h, mm = dt_int
+    dt = datetime(y, m, d, h, mm)
+    name = get_text(soup.select_one("div[data-post-id] h1"))
+    ev = Event(
+        id="cba"+to_uuid(url),
+        img=_find_img(soup),
+        url=url,
+        name=name,
+        place=Places.CIRCULO_BELLAS_ARTES.value,
+        price=price,
+        sessions=(Session(date=dt.strftime("%Y-%m-%d %H:%M")), ),
+        duration=60,
+        category=_find_category(url, name, soup, inf),
+        description=_find_desription(soup, inf)
+    )
+    return ev
+
+
+def _find_desription(soup: Tag, inf: dict):
+    lines: list[str] = []
+    name = get_text(soup.select_one("div[data-post-id] h1"))
+    cat = get_text(soup.select_one("span.cba_single_cat"))
+    sub_title = get_text(soup.select_one("#fl-main-content div[data-post-id] h3"))
+    desc = MD.convert(soup.select_one(
+        'div:has(+ footer) div.fl-col:not(.fl-col-small) div.fl-module-rich-text[data-node]'
+    ))
+    org = inf.get("organiza")
+    if name:
+        lines.append(f"Título: {name}")
+    if sub_title:
+        lines.append(f"Subtítulo {sub_title}")
+    if org:
+        lines.append(f"Organiza: {org}")
+    if cat:
+        lines.append(f"Sección: {cat}")
+    if desc:
+        lines.append(f"Descripción:\n{desc}")
+    txt = "\n".join(lines)
+    if len(txt):
+        return txt
+
+
+def _find_category(url: str, title: str, soup: Tag, inf: dict):
+    cat = get_text(soup.select_one("span.cba_single_cat"))
+    sub_title = get_text(soup.select_one("#fl-main-content div[data-post-id] h3"))
+    full_title = f"{title or ''} {sub_title or ''}".strip()
+    desc = MD.convert(soup.select_one(
+        'div:has(+ footer) div.fl-col:not(.fl-col-small) div.fl-module-rich-text[data-node]'
+    ))
+    isPresentacion = re_or(full_title, "presentaci[oó]n", flags=re.I) or re.search(r"^Presentamos\b", desc or '')
+    if re_or(
+        cat,
+        "cursos",
+        "talleres",
+        flags=re.I
+    ):
+        return Category.WORKSHOP
+    if re_or(
+        full_title,
+        r"Presentaci[oó]n de la obra po[eé]tica",
+        flags=re.I
+    ):
+        return Category.POETRY
+    if re_or(
+        full_title,
+        r"Presentaci[óo]n del libro",
+        r"Presentaci[oó]n de la revista",
+        r"Presentación del cat[aá]logo",
+        flags=re.I
+    ):
+        return find_book_category(full_title, desc, Category.LITERATURE)
+    if re_or(
+        full_title,
+        r"Mesa Redonda",
+        r"Conferencias?",
+        r"Conversaci[oó]n entre",
+        r"P[oó]dcast",
+        r"Ficciones Pol[ií]ticas",
+        flags=re.I
+    ):
+        return Category.CONFERENCE
+    if re_or(
+        full_title,
+        "Jugar para encontrarse",
+        r"Tranjis Games",
+        flags=re.I
+    ):
+        return Category.PARTY
+    if re_or(
+        full_title,
+        "Visita guiada",
+        flags=re.I
+    ):
+        return Category.VISIT
+    if isPresentacion and re_or(
+        desc,
+        "ensayo",
+        "novela",
+        "libro",
+        flags=re.I
+    ):
+        return find_book_category(full_title, desc, Category.LITERATURE)
+    if re_or(
+        desc,
+        "Beethoven crepuscular",
+        "concierto",
+        r"m[úu]sicos\b.*\bse reunir[aá]n",
+        flags=re.I
+    ):
+        return Category.MUSIC
+    if re_or(
+        desc,
+        "proyecci[óo]n del documental",
+        flags=re.I
+    ):
+        return Category.CINEMA
+    if re_or(
+        desc,
+        r"La (pr[oó]xima )?(presentaci[oó]n|publicaci[óo]n) del libro",
+        r"El libro re[uú]ne textos",
+        r"publicaci[oó]n de su libro",
+        r"A partir del libro de",
+        flags=re.I
+    ):
+        return find_book_category(full_title, desc, Category.LITERATURE)
+    if re_or(
+        desc,
+        r"panel de conversaci[óo]n",
+        r"En esta conferencia",
+        r"En este seminario",
+        r"el podcast de",
+        r"la conferencia",
+        r"mesa de (debate|di[aá]logo)",
+        r"la mesa de di[aá]logo abordar[aá]",
+        r"Una conversación entre",
+        r"l[aox@]s ponentes (abordan|van)",
+        r"la conferencia de",
+        r"Con esta conversaci[oó]n",
+        ("programa", "modera"),
+        flags=re.I
+    ):
+        return Category.CONFERENCE
+    if re_or(
+        desc,
+        r"versi[oó]n mon[oó]logo que",
+        r"conferencia dramatizada",
+        r"los actores\b.*\brecitar[aá]n fragmentos",
+        flags=re.I
+    ):
+        return Category.THEATER
+    if re_or(
+        desc,
+        r"lectura( nocturna)? de poemas",
+        flags=re.I
+    ):
+        return Category.POETRY
+    if re_or(
+        desc,
+        "esta presentaci[oó]n",
+        flags=re.I
+    ):
+        return Category.CONFERENCE
+    if re_or(
+        inf.get("organiza"),
+        "editorial"
+    ):
+        return find_book_category(full_title, desc, Category.LITERATURE)
+    logger.critical(str(CategoryUnknown(url, "")))
+    return Category.UNKNOWN
+
+
+class CirculoBellasArtes(Base):
+    URL_CINEMA = "https://www.circulobellasartes.com/ciclos-cine/peliculas/"
+
+    def __init__(self, cache: bool | str = True):
+        super().__init__(cache=cache)
+        self.__w = Web()
+        self.__w.s.headers.update({
+            'Accept-Encoding': 'gzip, deflate'
+        })
+
+    @cached_property
+    def urls(self):
+        urls: set[str] = set()
+        soup = self.__w.get("https://www.circulobellasartes.com/cine-estudio/")
+        for a in soup.select("a[href]"):
+            url = a.attrs["href"]
+            if url.startswith(CirculoBellasArtes.URL_CINEMA):
+                urls.add(url)
+        soup = self.__w.get("https://www.circulobellasartes.com/agenda/")
+        for p in soup.select("p.carousel-item-fecha"):
+            dt = _det_date(get_text(p))
+            if dt and dt >= TODAY:
+                div = p.find_parent("div")
+                a = div.select_one("a")
+                urls.add(a.attrs["href"])
+        return tuple(sorted(urls))
+
+    def _get_events(self):
+        evs: set[Event] = set()
+        for x in Getter(
+            onread=rq_to_events
+        ).get(*self.urls).values():
+            if x is None:
+                continue
+            if isinstance(x, (Event, Cinema)):
+                evs.add(x)
+                continue
+            for i in x:
+                evs.add(i)
+        return tuple(sorted(evs))
+
+
+if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/ciruclobellasartes.log", log_level=(logging.DEBUG))
+    c = CirculoBellasArtes()
+    c.get_events()

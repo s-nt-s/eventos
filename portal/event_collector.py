@@ -1,0 +1,827 @@
+from core.event import Event, Category, Cinema, Session
+from core.zone import Zones
+from core.madrid_es.form import MadridEsIdsDuplicated
+from portal.casaencendida import CasaEncendida
+from portal.casamexico import CasaMexico
+from portal.dore import Dore
+from portal.madriddestino import MadridDestino
+from portal.salaberlanga import SalaBerlanga
+from portal.salaequis import SalaEquis
+from portal.casaamerica import CasaAmerica
+from portal.academiacine import AcademiaCine
+from portal.caixaforum import CaixaForum
+from portal.madrid_es import MadridEs
+from portal.telefonica import Telefonica
+from portal.teatromonumental import TeatroMonumental
+from portal.mad_convoca import MadConvoca
+from portal.universidad import Universidades
+from portal.ateneomadrid import AteneoMadrid
+from portal.circulobellasartes import CirculoBellasArtes
+from portal.teatrobarrio import TeatroBarrio
+from portal.cineembajadores import CineEmbajadores
+from portal.artisticmetropol import ArtisticMetropol
+from portal.cinescallao import CinesCallao
+from portal.alcala import Alcala
+from portal.casaasia import CasaAsia
+from portal.goethe import Goethe
+from portal.ifrances import InstitutoFrances
+from portal.eventim import Eventim
+from datetime import datetime, date
+from core.util import find_cp, round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
+from core.publish import PublishDB
+import logging
+from typing import Tuple
+from core.cache import TupleCache
+import re
+import pytz
+from collections import defaultdict
+from core.wiki import WIKI
+from core.filmaffinity import FilmAffinityApi
+from functools import cache
+from core.zone import Circles
+from core.place import Place, Places
+from portal.fundacionmarch import FundacionMarch
+from concurrent.futures import ThreadPoolExecutor
+from portal.reinasofia import ReinaSofia
+from portal.ucm import Ucm
+from core.eventbrite import Api as EventBriteApi
+from os import environ
+from core.ics import IcsReader
+from portal.base import Base
+from requests.exceptions import ConnectTimeout
+from typing import Type
+from asyncio import TimeoutError
+from aiohttp.client_exceptions import ClientConnectionError
+from core.apiinfo import ApiInfo
+
+logger = logging.getLogger(__name__)
+
+
+def safe_load_ics(name: str):
+    return IcsReader.safe_load(environ.get(name), name=name)
+
+
+ICS_BUSY = safe_load_ics("ICS_BUSY")
+ICS_BUSY_VILLAVERDE = safe_load_ics("ICS_BUSY_VILLAVERDE")
+ICS_BUSY_ALCALA = safe_load_ics("ICS_BUSY_ALCALA")
+KO_CP = (
+    11403,
+    28018,
+    28029,
+    28033,
+    28223,
+    28300,
+    28931,
+    28040,
+    28039,
+    28035,
+    28023,
+    28020,
+    28011,
+    28027,
+    # Barajas
+    28042,
+    # Barcelona
+    8241,
+    # Rascafría
+    28740
+)
+
+
+def get_events(source: Base | Type[Base]):
+    if isinstance(source, type) and issubclass(source, Base):
+        source = source()
+    if not isinstance(
+        source,
+        Base
+    ):
+        raise ValueError(str(type(source)))
+    if isinstance(source, MadridEs):
+        return source.cache_get_events()
+    for c, e in {
+        (SalaEquis, ReinaSofia): (ConnectTimeout,),
+        (CasaMexico, ): (TimeoutError,),
+        (MadridEs, ): (ClientConnectionError, MadridEsIdsDuplicated),
+        (FundacionMarch, ): (PermissionError, )
+    }.items():
+        if isinstance(source, c):
+            return source.safe_get_events(*e)
+    return source.get_events()
+
+
+def run_parallel(*sources):
+    with ThreadPoolExecutor() as executor:
+        results = executor.map(get_events, sources)
+    arr: list[Event] = []
+    for r in results:
+        arr.extend(r)
+    return tuple(arr)
+
+
+def gNow():
+    return datetime.now(tz=pytz.timezone('Europe/Madrid'))
+
+
+def getMin(dt: date | datetime) -> int:
+    if isinstance(dt, datetime):
+        dt = dt.date()
+    if dt in (
+        date(2026,  3, 31),
+    ):
+        return 15.5
+    if dt in (
+        date(2026,  3, 19),
+        date(2026,  4, 23),
+        date(2026,  5, 21),
+        date(2026,  9, 17),
+        date(2026, 10, 22),
+        date(2026, 11, 19),
+    ):
+        return 18
+    weekday = dt.weekday()
+    return [
+        18.5,
+        17,
+        15.5,
+        15.5,
+        15.5,
+        0,
+        0
+    ][weekday]
+
+
+def isAlcalaOkDate(dt: datetime):
+    if ICS_BUSY_ALCALA and ICS_BUSY_ALCALA.is_in(dt):
+        return False
+    wd = dt.weekday()
+    min_hour = max(
+        getMin(dt) + 1,
+        18.50 if wd in (1, 2) else 18
+    )
+    return not isWorkingHours(
+        dt,
+        min_hour=min_hour
+    )
+
+
+def isOkDate(dt: datetime, delta: int = 0.5):
+    if ICS_BUSY and ICS_BUSY.is_in(dt):
+        return False
+    if dt.date() in get_festivos(dt.year):
+        return True
+    min_hour = getMin(dt)
+    if min_hour > 0:
+        min_hour = min_hour + delta
+    return not isWorkingHours(dt, min_hour=min_hour)
+
+
+def isOkDateVillaverde(dt: datetime):
+    if ICS_BUSY_VILLAVERDE and ICS_BUSY_VILLAVERDE.is_in(dt):
+        return False
+    if dt.date() in get_festivos(dt.year):
+        return True
+    if not isOkDate(dt):
+        return False
+    min_hour = 18
+    if dt.weekday() == 4:
+        min_hour = 16.5
+    return not isWorkingHours(dt, min_hour=min_hour)
+
+
+@cache
+def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
+    latlon = None
+    name = None
+    if isinstance(p, Place):
+        if p.get_cp() in KO_CP:
+            return False
+        name = p.name
+        address = p.address
+        if p.latlon:
+            latlon = map(float, p.latlon.split(","))
+    elif isinstance(p, str):
+        name = p
+    elif isinstance(p, tuple) and len(p) == 2:
+        latlon = p
+    if find_cp(address) in KO_CP:
+        return False
+
+    if re_or(
+        address,
+        r"Milano$",
+        r"Italy$",
+        r"Hortaleza$",
+        r"avenida de Betanzos",
+        r"Aranjuez,? Madrid",
+        r"San Lorenzo (de El|del) Escorial",
+        r"Legan[eé]s",
+        # Vicálvaro
+        r"Vic[aá]lvaro",
+        r", Barcelona(, \d+)$",
+        r"M[oó]stoles$",
+        r"Rivas-Vaciamadrid",
+        r"^Parco Sempione$",
+        r"(Firenze|Torino)$",
+        r"Manzanares el Real$",
+        flags=re.I
+    ):
+        return False
+    if all(x is None for x in (latlon, name)):
+        return True
+    if name:
+        if re_or(
+            name,
+            r"Collado Villalba",
+            "campus somosaguas",
+            "San Lorenzo de Escorial",
+            "Fuenlabrada",
+            "Museo L[aá]zaro Galdiano",
+            # Aranjuez
+            "Campus( de)? Aranjuez",
+            # Mostoles
+            "Campus( de)? M[oó]stoles",
+            "COAJ",
+            "Centro cultural Maestro Alonso",
+            "centro juvenil",
+            "Centro cultural Lope de Vega",
+            "Espacio Abierto Quinta de los Molinos",
+            "Parroquia Nuestra Señora de Guadalupe",
+            ("La Pedriza", "Manzanares"),
+            "AV La Vecinal del Barrio Bilbao y Pueblo Nuevo",
+            'Quinta de la Fuente del Berro',
+            'Espacio de igualdad María Telo',
+            # Collado Villaba
+            'CSO La Tejedora',
+            # Colón
+            'Centro cultural Emilia Pardo Bazán',
+            # Carabanchel
+            'Espacio de igualdad María de Maeztu',
+            'Espacio de igualdad Lourdes Hernández',
+            # Vallecas
+            'Mercado Numancia',
+            '^El espacio$',
+            'Centro cultural Las Californias',
+            'Centro cultural Alberto Sánchez',
+            'Biblioteca Miguel Delibes',
+            'Biblioteca Pública Miguel Hernández',
+            # Villaverde
+            'Espacio de igualdad Clara Campoamor',
+            # Usera
+            ("centro", 'Maris Stella'),
+            # Manuel Becerra
+            ('Centro', 'Rafael Altamira'),
+            ('Centro', 'Buenavista'),
+            # Urgel
+            ('Centro', 'Fernando Lázaro Carreter'),
+            # Getafe
+            ('Edificio Concepción Arenal', 'Getafe'),
+            # El pozo
+            ("palomeras bajas", "felipe( de)? diego"),
+            # Pacifico
+            ("Espacio de igualdad", "Elena Arnedo Soriano"),
+            # Colmenar Viejo
+            'Colmenar Viejo',
+            # Lucero
+            'CCM Lucero',
+            # Laguna
+            ("Asociacion Vecinal", "Fraternidad de los Carmenes"),
+            # Ciudad Lineal
+            "Parque (de )?Arriaga",
+            flags=re.I
+        ):
+            logger.debug(f"Lugar descartado por name={name}")
+            return False
+    if latlon is None:
+        return True
+    lat, lon = latlon
+    kms: list[float] = []
+    for c in Circles:
+        kms.append(c.value.get_km(lat, lon))
+        if kms[-1] <= c.value.kms:
+            return True
+    k = round(min(kms))
+    logger.debug(f"Lugar descartado {k}km {p.name} {p.url}")
+    return False
+
+
+def isKoEvent(e: Event):
+    if e.place == Places.TEATRO_PRICE.value:
+        if re_or(e.name, r'hop!?', flags=re.I):
+            return True
+    if e.place == Places.CAIXA_FORUM.value:
+        if re_or(e.name, "Conoce CaixaForum", "Descubre el jardín vertical", flags=re.I):
+            return True
+    if re_or(e.place.zone, "alcal[aá]( de)? henares", flags=re.I):
+        if re_and(e.name, r"cu[ée]ntame", r"experiencia", flags=re.I):
+            return True
+    if re_or(
+        e.place.name,
+        "Centro cultural Oporto",
+        "Centro cultural Galileo",
+        "Centro cultural Clara del Rey",
+        "Centro cultural Casa de Vacas",
+        "Biblioteca Mario Vargas Llosa",
+        "Biblioteca La Chata",
+        'Biblioteca Francisco Umbral',
+        'Biblioteca Eugenio Trías',
+        'Biblioteca Benito Pérez Galdós',
+        'Biblioteca Ana María Matute',
+        flags=re.I
+    ):
+        if e.price == 0 and e.category in (
+            Category.THEATER,
+            Category.VISIT,
+            Category.LITERATURE
+        ):
+            return True
+    if re_or(
+        e.name,
+        "Aprende Chotis",
+        "tributo a Carmen Sevilla",
+        r"Lectura en español y en ingl[eé]s",
+        r"aniversario de (los )?(EE\.?UU|USA|estados unidos)",
+        r"Visita dialogada Matadero",
+        r"ven a bailar\b.*TabacaleraSwing",
+        flags=re.I
+    ):
+        return True
+    if e.place.zone == Zones.ALCALA_DE_HENARES.value.name:
+        if e.category == Category.WORKSHOP and len(e.sessions)>1:
+            return True
+        if re_or(e.name, r"Repair\s*Caf[eé]", flags=re.I):
+            return True
+    if e.place == Places.ATENEO_MADRID.value and e.category == Category.CONFERENCE:
+        if re_or(
+            e.name,
+            r"farmacia",
+            r"perspectiva iberoamericana",
+            r"Contar Madrid",
+            r"psico-?an[aá]lisis",
+            r"Camino de Santiago",
+            r"Encuentro de Coros",
+            r"arte contempor[aá]neo",
+            r"homenaje",
+            r"aniversario",
+            "don quijote",
+            flags=re.I
+        ):
+            return True
+    if e.place.zone == Zones.VILLAVERDE_BAJO.value.name:
+        if e.category == Category.WORKSHOP and re_or(
+            e.name,
+            r"canto",
+            r"duelo",
+            flags=re.I
+        ):
+            return True
+        if e.category in (Category.WORKSHOP, Category.MUSIC, Category.DANCE) and re_or(
+            e.name,
+            r"Cumbia",
+            r"Sevillanas",
+            flags=re.I
+        ):
+            return True
+    return False
+
+
+def find_filmaffinity_if_needed(imdb_film: dict[str, int], e: Cinema):
+    if not isinstance(e, Cinema):
+        return None
+    if isinstance(e.filmaffinity, int):
+        return None
+    _id_ = imdb_film.get(e.imdb)
+    if isinstance(_id_, int):
+        return _id_
+    if isinstance(e.cycle, str):
+        return None
+    for y, tt in e.iter_year_title():
+        _id_ = FilmAffinityApi.search(y, *tt)
+        if isinstance(_id_, int):
+            return _id_
+
+
+class EventCollector:
+    def __init__(
+        self,
+        max_price: dict[Category, float],
+        max_sessions: int,
+        publish: PublishDB,
+        categories: Tuple[Category, ...],
+    ):
+        self.__eventbrite = EventBriteApi()
+        self.__max_price = max_price
+        self.__max_max_price = max(self.__max_price.values())
+        self.__max_sessions = max_sessions
+        self.__categories = categories
+        self.__publish = publish
+        self.__madrid_destino = MadridDestino()
+        self.__avoid_categories = tuple(set({
+            Category.CHILDISH,
+            Category.SENIORS,
+            Category.ORGANIZATIONS,
+            Category.NON_GENERAL_PUBLIC,
+            Category.MARGINALIZED,
+            Category.ONLINE,
+            Category.SPAM,
+            Category.PUPPETRY,
+            Category.EXPO,
+            Category.YOUTH,
+            Category.CONTEST,
+            Category.SPORT,
+            Category.POETRY,
+            Category.HIKING,
+            Category.VIEW_POINT,
+            Category.NO_EVENT,
+            Category.MATERNITY,
+            Category.INSTITUTIONAL_POLICY,
+        }).difference(self.__categories))
+
+    @TupleCache("rec/events.json", builder=Event.build)
+    def __get_events(self,):
+        logger.info("Recuperar eventos")
+        store_events = run_parallel(
+            self.__madrid_destino,
+            TeatroMonumental,
+            CirculoBellasArtes,
+            ReinaSofia,
+        )
+        shop_urls: set[str] = set()
+        places_with_store: set[Place] = set()
+        for e in store_events:
+            for s in e.sessions:
+                if s.url:
+                    shop_urls.add(s.url)
+            if e.place:
+                places_with_store.add(e.place)
+        places_with_store.update((
+            Places.TEATRO_MONUMENTAL.value,
+        ))
+        eventos = \
+            store_events + \
+            run_parallel(
+                CineEmbajadores,
+                Eventim("69ef5f152a2031003e75fe62"),
+                MadridEs(
+                    isOkDate={
+                        "villaverde": isOkDateVillaverde,
+                        None: isOkDate
+                    },
+                    places_with_store=tuple(sorted(places_with_store)),
+                    max_price=self.__max_max_price,
+                    avoid_categories=self.__avoid_categories,
+                    isOkPlace=isOkPlace,
+                    districts=(
+                        "arganzuela",
+                        "centro",
+                        "moncloa",
+                        "chamber[ií]",
+                        "retiro",
+                        "salamanca",
+                        "villaverde",
+                        "carabanchel",
+                    )
+                ),
+                ArtisticMetropol,
+                CinesCallao,
+                AteneoMadrid(
+                    isOkDate=isOkDate,
+                ),
+                FundacionMarch,
+                Ucm,
+                CasaAsia,
+                Universidades(
+                    "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
+                    "https://eventos.uam.es/ics/location/espana/lo-1.ics",
+                    "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
+                    "https://eventos.uah.es/ics/location/espana/lo-1.ics",
+                    verify_ssl=False,
+                    isOkPlace=isOkPlace,
+                    isOkDate=isOkDate,
+                    max_price=self.__max_max_price
+                ),
+                Goethe(
+                    max_price=self.__max_max_price,
+                    skip_store=tuple(sorted(shop_urls)),
+                ),
+                InstitutoFrances,
+                AcademiaCine,
+            ) + \
+            run_parallel(
+                Alcala(
+                    isOkDate=isAlcalaOkDate
+                ),
+                MadConvoca(
+                    isOkDate=isOkDate,
+                ),
+                TeatroBarrio(
+                    max_price=self.__max_max_price
+                ),
+                CasaAmerica,
+                Telefonica,
+                Dore,
+                CasaEncendida,
+                SalaBerlanga,
+                SalaEquis(),
+                CaixaForum,
+                CasaMexico,
+            )
+        logger.info(f"{len(eventos)} recuperados")
+        eventos = tuple(filter(self.__filter, eventos))
+        eventos = self.__madrid_destino.fix_sessions(eventos)
+        eventos = self.__eventbrite.fix_events(eventos)
+        eventos = tuple(filter(self.__filter, eventos))
+        logger.info(f"{len(eventos)} pasan 1º filtro")
+
+        arr: list[Event | Cinema] = list()
+        done: set[Event] = set()
+        for e in eventos:
+            e = e.fix_type()
+            if e not in done:
+                done.add(e)
+                if self.__filter(e):
+                    arr.append(e)
+        logger.info(f"{len(arr)} pasan 2º filtro")
+        apiInfo = ApiInfo.build("API_INFO_KEY", "API_INFO_URL")
+        if apiInfo:
+            arr = [e for e in apiInfo.complete(*arr) if self.__filter(e)]
+            logger.info(f"{len(arr)} pasan 3º filtro")
+        return tuple(arr)
+
+    @cache
+    def get_max_price(self, category: Category) -> float:
+        if category in self.__max_price:
+            return self.__max_price[category]
+        return max(self.__max_price.values())
+
+    def __filter(self, e: Event, to_log=True):
+        if isKoEvent(e):
+            return False
+        if not isOkPlace(e.place.name, e.place.address):
+            if to_log:
+                logger.debug(f"Descartada por place={e.place.name} {e.url}")
+            return False
+        max_price = self.get_max_price(e.category)
+        if e.price is not None and e.price > max_price:
+            if to_log:
+                logger.debug(f"Descartada por price={e.price} {e.url or e.id}")
+            return False
+        if e.category not in self.__categories:
+            if to_log:
+                logger.debug(f"Descartada por category={e.category.name} {e.url or e.id}")
+            return False
+
+        #if "madrid.es" in map(get_domain, e.iter_urls()):
+        #    if e.place.name in (
+        #        "Faro de Moncloa"
+        #    ):
+        #        # Ya registrado en madrid-destino
+        #        return False
+
+        e.remove_old_sessions(gNow())
+        e.remove_ko_sessions(isOkDate=isOkDate, to_log=to_log)
+
+        count_session = len(e.sessions)
+        if count_session == 0:
+            if to_log:
+                logger.debug(f"Descartada por 0 sesiones {e.url or e.id}")
+            return False
+        if count_session > self.__max_sessions:
+            if to_log:
+                logger.warning(f"Tiene {count_session} sesiones {e.url or e.id}")
+            return False
+        return True
+
+    def get_events(self):
+        aux = self.__get_events()
+        aux = self.__dedup(aux)
+        aux = self.__check_sessions(aux)
+        aux = self.__complete_filmaffinity(aux)
+        aux = self.__complete_url(aux)
+
+        events: list[Event | Cinema] = []
+        for e in filter(self.__filter, aux):
+            events.append(e.merge(publish=self.__publish.get(e)))
+
+        events = sorted(
+            events,
+            key=lambda e: (
+                min(s.date for s in e.sessions),
+                len(e.sessions),
+                e.duration or 0,
+                e.name or '',
+                e.url or ''
+            )
+        )
+        return tuple(events)
+
+    def __dedup(self, events: Tuple[Event, ...]):
+        url_cat: dict[str, set[Category]] = defaultdict(set)
+        mad_more_cat: dict[str, set[Category]] = defaultdict(set)
+        ok_events = set(events)
+        for e in ok_events:
+            if e.category not in (None, Category.UNKNOWN) and e.url and get_domain(e.url) != "madrid.es":
+                url_cat[e.url].add(e.category)
+        for e in list(ok_events):
+            if "madrid.es" in (get_domain(e.url), get_domain(e.more)):
+                cat = get_main_value(url_cat.get(e.more, set()).union(url_cat.get(e.url, set())))
+                if cat not in (None, Category.UNKNOWN, e.category):
+                    logger.debug(f"[{e.id}] FIX: category={cat} <- {e.category}")
+                    ok_events.remove(e)
+                    ok_events.add(e.merge(category=cat).fix_type())
+                elif e.category:
+                    if e.more:
+                        mad_more_cat[e.more].add(e.category)
+                    if e.url:
+                        mad_more_cat[e.url].add(e.category)
+        ids = set(e.id for e in ok_events)
+        for e in set(self.__madrid_destino.get_events()):
+            if not self.__filter(e, to_log=False) and e.id not in ids:
+                cat = get_main_value(mad_more_cat.get(e.url))
+                if cat not in (None, e.category):
+                    logger.debug(f"[{e.id}] FIX: category={cat} <- {e.category}")
+                    e = e.merge(category=cat).fix_type().fix()
+                    if self.__filter(e, to_log=False):
+                        ok_events.add(e)
+
+        ok_events = self.__dedup_fusion(ok_events)
+
+        return tuple(e.fix_type().fix() for e in ok_events)
+
+    def __dedup_fusion(self, ok_events: set[Event]):
+        def _mk_key_piano_city(e: Event):
+            re_pianio = re.compile(r"\bPiano[\-\s]*city", flags=re.I)
+            if not any((
+                re_pianio.search(e.cycle or ''),
+                re_pianio.search(e.name or ''),
+                re_pianio.search(" ".join(e.iter_urls())),
+            )):
+                return None
+            return (e.category, e.place, e.price)
+
+        for evs in find_duplicates(
+            ok_events,
+            _mk_key_piano_city
+        ):
+            for e in evs:
+                ok_events.remove(e)
+
+            e = Event.fusion(
+                *evs,
+                more="https://pianocitymadrid.es/",
+                name="Piano City"
+            )
+            ok_events.add(e)
+
+        def _mk_key_cycle(e: Event | Cinema):
+            if not e.cycle:
+                return None
+            urls: set[str] = set()
+            for s in e.sessions:
+                if s.url and get_domain(s.url) != "madrid.es":
+                    urls.add(s.url)
+            if len(e.sessions) == 1 or len(urls) == 0:
+                return (e.cycle, e.category, e.place, round_to_even(e.price))
+
+        for evs in find_duplicates(
+            ok_events,
+            _mk_key_cycle
+        ):
+            for e in evs:
+                ok_events.remove(e)
+            e = Event.fusion(
+                *evs,
+                name=evs[0].cycle,
+            )
+            st_more = set(x.more for x in evs if x.more)
+            st_url = set(x.url for x in evs if x.url)
+            if all(s.url for s in e.sessions):
+                e = e.merge(url=None, more=None)
+            if len(st_url) == 1 and e.url is None:
+                e = e.merge(url=st_url.pop())
+            if len(st_more) == 1 and e.url is None:
+                e = e.merge(url=st_more.pop())
+            if len(st_more) == 1 and e.more is None:
+                e = e.merge(more=st_more.pop())
+            ok_events.add(e)
+
+        def _mk_place_name(e: Event | Cinema):
+            name = re.sub(r"[:'',\.«»]", "", e.name).lower()
+            k = (e.place, e.category, name, e.price) #, tuple((s.date for s in e.sessions)))
+            return k
+
+        for evs in find_duplicates(
+            ok_events,
+            _mk_place_name
+        ):
+            for e in evs:
+                ok_events.remove(e)
+            e = Event.fusion(*evs)
+            ok_events.add(e)
+
+        for re_url in (
+            re.compile(r"^https://www\.condeduquemadrid\.es/actividades/\S+$"),
+            re.compile(r"^https://www\.teatroespanol.es/\S+$"),
+            re.compile(r"^https://21distritos\.es/evento/\S+$"),
+            re.compile(r"^https://tienda\.madrid-destino\.com/es/\S+$"),
+            re.compile(r"^https://www\.teatrocircoprice\.es/programacion/\S+$"),
+            re.compile(r"^https://www\.centrocentro\.org/\S+$"),
+            re.compile(r"^https://ateneodemadrid\.com/evento/\S+$"),
+            re.compile(r"^https://www\.eventim-light\.com/es/a/[a-z0-9]+/e/[a-z0-9]+$"),
+            re.compile(r"^https://www\.reservaentradas\.com/entrada/madrid/[^/]+/[^/]+/\d+/$")
+        ):
+            def _mk_url(e: Event | Cinema):
+                for u in e.iter_urls():
+                    if re_url.match(u):
+                        return (u, e.place, e.price)
+
+            for evs in find_duplicates(
+                ok_events,
+                _mk_url
+            ):
+                for e in evs:
+                    ok_events.remove(e)
+                e = Event.fusion(*evs)
+                ok_events.add(e)
+
+        def _mk_filmaffinity(e: Event | Cinema):
+            if e.category != Category.CINEMA:
+                return None
+            e = e.fix_type().fix()
+            if isinstance(e, Cinema) and e.filmaffinity is not None:
+                k = (e.place, e.category, e.name, e.filmaffinity)
+                return k
+
+        for evs in find_duplicates(
+            ok_events,
+            _mk_filmaffinity
+        ):
+            for e in evs:
+                ok_events.remove(e)
+            e = Event.fusion(*evs)
+            ok_events.add(e)
+
+        def _mk_film(e: Event | Cinema):
+            if e.category != Category.CINEMA:
+                return None
+            k = (e.place, e.category, e.name)
+            return k
+
+        for evs in find_duplicates(
+            ok_events,
+            _mk_film
+        ):
+            for e in evs:
+                ok_events.remove(e)
+            e = Event.fusion(*evs)
+            ok_events.add(e)
+
+        return ok_events
+
+    def __complete_filmaffinity(self, events: Tuple[Event | Cinema, ...]):
+        arr1 = list(events)
+        imdb: set[str] = set()
+        for e in arr1:
+            if isinstance(e, Cinema) and e.imdb and e.filmaffinity is None:
+                imdb.add(e.imdb)
+        imdb_film = WIKI.get_filmaffinity(*imdb)
+        for i, e in enumerate(arr1):
+            filmaffinity = find_filmaffinity_if_needed(imdb_film, e)
+            if filmaffinity:
+                logger.debug(f"FIND FilmAffinity: {filmaffinity}")
+                arr1[i] = e.merge(filmaffinity=filmaffinity).fix()
+
+        return tuple(arr1)
+
+    def __complete_url(self, events: Tuple[Event | Cinema, ...]):
+        arr1 = list(events)
+        for i, e in enumerate(arr1):
+            while e.also_in and None in (e.url, e.more):
+                new_also = e.also_in[1:]
+                if e.url is None:
+                    e = e.merge(url=e.also_in[0], also_in=new_also)
+                elif e.more is None:
+                    e = e.merge(more=e.also_in[0], also_in=new_also)
+            arr1[i] = e
+        return tuple(arr1)
+
+    def __check_sessions(self, events: Tuple[Event | Cinema, ...]):
+        aux = map(self.__check_sessions_of_event, events)
+        return tuple(filter(self.__filter, aux))
+
+    def __check_sessions_of_event(self, e: Event | Cinema):
+        sessions = list(e.sessions)
+        s_doms: set[str] = set(map(get_domain, (s.url for s in e.sessions)))
+        ok_doms = tuple(sorted(s_doms.difference((
+            None,
+            "madrid.es"
+        ))))
+        main_doms = ok_doms in (
+            ("tienda.madrid-destino.com", ),
+        )
+
+        sessions: list[Session] = []
+        for s in e.sessions:
+            if main_doms and get_domain(s.url) not in ok_doms:
+                continue
+            sessions.append(s)
+        return e.merge(sessions=tuple(sessions))

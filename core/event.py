@@ -1,35 +1,79 @@
 from dataclasses import dataclass, asdict, fields, replace, is_dataclass
-from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set
-from core.util import get_obj, plain_text, getKm, get_domain, get_img_src, re_or, get_main_value
-from core.util.madrides import find_more_url as find_more_url_madrides
-from core.util.madriddestino import find_more_url as find_more_url_madriddestino
-from urllib.parse import quote
+from typing import NamedTuple, Tuple, Dict, List, Union, Any, Optional, Set, Callable
+from core.util import get_obj, plain_text, get_domain, get_img_src, re_or, re_and, get_main_value
 from enum import IntEnum
 from functools import cached_property
-from urllib.parse import quote_plus
 import re
 from datetime import date, datetime
-from core.web import Web, get_text, Driver
+from core.web import WEB
 from core.filemanager import FM
 import logging
 from functools import cache
-from .util import to_uuid
-from selenium.webdriver.common.by import By
+from core.util import to_uuid, isWorkingHours
 from core.dblite import DB
 from typing import TypeVar, Type
+from core.book import BF
+from core.util import my_filter
+from core.util.strng import clean_name, find_director
+from collections import defaultdict
+from core.place import Place
+from core.filmaffinity import FilmAffinityApi
+from requests.exceptions import ConnectionError
+import pytz
 
 T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 
-NOW = date.today().strftime("%Y-%m-%d")
-FIX_EVENT: Dict[str, Dict[str, Any]] = FM.load("fix/event.json")
+DT_NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
+TODAY = DT_NOW.today()
+NOW = DT_NOW.strftime("%Y-%m-%d")
+
+
+def _get_fix_event():
+    fix_event: Dict[str, Dict[str, Any]] = FM.load("fix/event.json")
+    for k, v in list(fix_event.items()):
+        if not isinstance(v, dict):
+            continue
+        for kk, vv in list(v.items()):
+            if isinstance(vv, list):
+                v[kk] = tuple(vv)
+        if set(v.keys()).intersection({"filmaffinity", "imdb"}):
+            if "category" not in v:
+                v["category"] = "CINEMA"
+        fix_event[k] = v
+    return fix_event
+
+
+FIX_EVENT: Dict[str, Dict[str, Any]] = _get_fix_event()
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
 re_filmaffinity = re.compile(r"https://www.filmaffinity.com/es/film\d+.html")
 
-WEB = Web()
+
+@cache
+def safe_expand_url(url: str):
+    if not isinstance(url, str):
+        return url
+    if re_or(
+        url,
+        r"^https?://\S+/node/\d+$",
+        r"^https?://21distritos\.es/.*\bp=\d+.*$",
+        r"^https://forms.gle/\w+$",
+    ):
+        dom = get_domain(url)
+        new_dom = {
+            "forms.gle": "docs.google.com",
+        }.get(dom, dom)
+        try:
+            WEB.get(url)
+            if isinstance(WEB.url, str) and get_domain(WEB.url) == new_dom:
+                return WEB.url
+        except ConnectionError:
+            logger.warning(f"FAIL safe_expand_url({url})")
+            pass
+    return url
 
 
 def new_dataclass(cls: Type[T], obj: dict) -> T:
@@ -38,17 +82,6 @@ def new_dataclass(cls: Type[T], obj: dict) -> T:
     ks = tuple(f.name for f in fields(cls))
     obj = {k: v for k, v in obj.items() if k in ks}
     return cls(**obj)
-
-
-@cache
-def get_festivos(year: int):
-    dates: set[str] = set()
-    soup = WEB.get_cached_soup(f"https://www.calendarioslaborales.com/calendario-laboral-madrid-{year}.htm")
-    for month, div in enumerate(soup.select("#wrapIntoMeses div.mes")):
-        for day in map(get_text, div.select("td[class^='cajaFestivo']")):
-            dt = date(year, month+1, int(day))
-            dates.add(dt)
-    return tuple(sorted(dates))
 
 
 class FieldNotFound(Exception):
@@ -83,7 +116,7 @@ class Category(IntEnum):
     CONFERENCE = 9
     VISIT = 10
     CHILDISH = 11 # infantil
-    #OTHERS = 12
+    OTHERS = 12
     YOUTH = 14
     READING_CLUB = 15
     CONTEST = 16
@@ -92,15 +125,28 @@ class Category(IntEnum):
     ACTIVISM = 19
     SENIORS = 20
     ORGANIZATIONS = 21
-    MARGINNALIZED = 22
+    MARGINALIZED = 22
     NON_GENERAL_PUBLIC = 23
     ONLINE = 24
     HIKING = 35 # senderismo
     MAGIC = 36
+    VIEW_POINT = 37
+    NO_EVENT = 38
+    PARTY = 39
+    LITERATURE = 40
+    MATERNITY = 41
+    INSTITUTIONAL_POLICY = 42
+    DUPE = 43
+    NARRATIVE = 44
+    ENTERPRISE = 45
+    RELIGION = 46
+    PHOTO = 47
+    PICTURE = 48
+    FULL = 49
+    HISTORY = 50
+    TRIBUTE = 51
 
     def __str__(self):
-        #if self == Category.OTHERS:
-        #    return "otros"
         if self == Category.UNKNOWN:
             return "otros"
         if self == Category.CINEMA:
@@ -128,7 +174,7 @@ class Category(IntEnum):
         if self == Category.YOUTH:
             return "juventud"
         if self == Category.READING_CLUB:
-            return "club lectura"
+            return "club de lectura"
         if self == Category.CONTEST:
             return "concurso"
         if self == Category.SPORT:
@@ -141,7 +187,7 @@ class Category(IntEnum):
             return "mayores"
         if self == Category.ORGANIZATIONS:
             return "organizaciones"
-        if self == Category.MARGINNALIZED:
+        if self == Category.MARGINALIZED:
             return "marginados"
         if self == Category.NON_GENERAL_PUBLIC:
             return "público no general"
@@ -153,7 +199,28 @@ class Category(IntEnum):
             return "spam"
         if self == Category.MAGIC:
             return "magia"
-        raise ValueError(self.value)
+        if self == Category.LITERATURE:
+            return "literatura"
+        if self == Category.NO_EVENT:
+            return "no-evento"
+        if self == Category.VIEW_POINT:
+            return "punto de interés"
+        if self == Category.INSTITUTIONAL_POLICY:
+            return "política instucional"
+        if self == Category.PARTY:
+            return "fiesta"
+        if self == Category.DUPE:
+            return "duplicada"
+        if self == Category.MATERNITY:
+            return "maternidad"
+        return self.name
+
+    @classmethod
+    def from_str(cls, x: str):
+        for c in cls:
+            if c.name == x:
+                return c
+        raise ValueError(x)
 
     def __lt__(self, other):
         if self == Category.UNKNOWN:
@@ -164,8 +231,12 @@ class Category(IntEnum):
 
 
 class Session(NamedTuple):
+    date: str
     url: Optional[str] = None
-    date: str = None
+    title: Optional[str] = None
+    full: Optional[bool] = None
+    duration: Optional[int] = None
+    description: Optional[str] = None
 
     def merge(self, **kwargs):
         return self._replace(**kwargs)
@@ -175,7 +246,22 @@ class Session(NamedTuple):
         obj = get_obj(*args, **kwargs)
         if obj is None:
             return None
+        obj['url'] = safe_expand_url(obj.get('url'))
         return Session(**obj)
+
+    @staticmethod
+    def parse_list(obj) -> Optional[Tuple['Session', ...]]:
+        if obj is None:
+            return None
+        if not isinstance(obj, (list, tuple)):
+            raise ValueError(obj)
+        if len(obj) == 0:
+            return tuple()
+        if isinstance(obj[0], Session):
+            return tuple(obj)
+        if isinstance(obj[0], dict):
+            return tuple(map(Session.build, obj))
+        raise ValueError(obj)
 
     @property
     def hour(self):
@@ -193,126 +279,17 @@ class Session(NamedTuple):
         if self.date is None:
             return False
         dt = self.get_date()
-        hm = dt.hour + (dt.minute/100)
-        if hm == 0 or hm > 15:
-            return False
-        if dt.weekday() in (5, 6):
-            return False
-        if dt.date() in get_festivos(dt.year):
-            return False
-        return True
+        return isWorkingHours(dt)
 
     def get_date(self):
         dt_int = tuple(map(int, re.split(r"\D+", self.date)))
         return datetime(*dt_int)
 
 
-class Place(NamedTuple):
-    name: str
-    address: str
-    latlon: str = None
-
-    @staticmethod
-    def build(*args, **kwargs):
-        obj = get_obj(*args, **kwargs)
-        if obj is None:
-            return None
-        return Place(**obj)
-
-    @property
-    def url(self):
-        if self.latlon is not None:
-            return "https://www.google.com/maps?q=" + self.latlon
-        if self.address is None:
-            return "#"
-        if re.match(r"^[\d\.,]+$", self.address):
-            return "https://www.google.com/maps?q=" + self.address
-        return "https://www.google.com/maps/place/" + quote(self.address)
-
-    def getKmFrom(self, lat: float, lon: float):
-        if self.latlon is None:
-            return None
-        lt, ln = map(float, self.latlon.split(","))
-        return getKm(lt, ln, lat, lon)
-
-    def get_alias(self):
-        name = plain_text(self.name)
-        if re_or(name, r"d?el retiro", ("biblioteca", "eugenio trias")):
-            return "El Retiro"
-        if re_or(name, "matadero", "cineteca"):
-            return "Matadero"
-        return self.name
-
-
-def unquote(s: str):
-    quotes = ("'", '"')
-    bak = ''
-    while bak != s:
-        bak = str(s)
-        for q in quotes:
-            s = re.sub(rf'^{q}([^{q}]+: {q}[^{q}]+{q})$', r"\1", s)
-        if len(s) > 2 and s[0] == s[-1] and s[0] in quotes:
-            s = s[1:-1]
-        if len(s) > 2 and s[0] in quotes and s[0] not in s[1:]:
-            s = s[1:]
-        if len(s) > 2 and s[-1] in quotes and s[-1] not in s[:-1]:
-            s = s[:-1]
-        s = s.strip()
-    return s
-
-
-def _clean_name(name: str, place: str):
-    if name is None:
-        return None
-    place = plain_text((place or "").lower())
-    bak = ['']
-    while bak[-1] != name:
-        bak.append(str(name))
-        if "'" not in name:
-            name = re.sub(r'["`´”“]', "'", name)
-        for k, v in {
-            "A.I At War": "A.I. At War",
-            "AI At War": "A.I. At War",
-            "El sorprendente Dr.Clitterhouse": "El sorprendente Dr. Clitterhouse",
-            "El sorprendente Dr.Clitterhousem": "El sorprendente Dr. Clitterhouse",
-            "LOS EXILIDOS ROMÁNTICOS": "Los exiliados románticos"
-        }.items():
-            name = re.sub(r"^\s*"+(r"\s+".join(map(re.escape, re.split("\s+", k))))+r"\s*$", v, name, flags=re.IGNORECASE)
-        name = re.sub(r"Matadero (Madrid )?Centro de Creación Contemporánea", "Matadero", name, flags=re.IGNORECASE)
-        name = re.sub(r"\s*\(Ídem\)\s*$", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"\.\s*(conferencia)\s*$", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"Visita a la exposición '([^']+)'\. .*", r"\1", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(lectura dramatizada|presentación del libro|Cinefórum[^:]*|^Madrid, plató de cine)\s*[\.:]\s+", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(conferencia|visita[^'\"]*)[\s:]+(['\"])", r"\2", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(conferencia|concierto|espect[aá]culo|proyección( película)?)\s*[\-:\.]\s*", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(conferencia)\s*", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"^visita (comentada|guiada)(:| -)\s+", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"^Proyección del documental:\s+", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(Cine .*)?Proyección de (['\"])", r"\2", name, flags=re.IGNORECASE)
-        name = re.sub(r"^Cineclub con .* '([^']+)'.*", r"\1", name, flags=re.IGNORECASE)
-        name = re.sub(r"\s*-\s*(moncloa|arganzuela|retiro|chamberi)\s*$", "", name, flags=re.IGNORECASE)
-        name = re.sub(r"^(Exposición|Danza|Música):? ([\"'`])(.+)\2$", r"\3", name, flags=re.IGNORECASE)
-        name = re.sub(r"Red de Escuelas Municipales del Ayuntamiento de Madrid", "red de Escuelas", name, flags=re.IGNORECASE)
-        name = re.sub(r".*Ciclo de conferencias de la Sociedad Española de Retórica': (['\"])", r"\1", name, flags=re.IGNORECASE)
-        name = re.sub(r"\s*-\s*$", "", name)
-        name = re.sub(r"Asociación (de )?Jubilados( (del )?Ayuntamiento( de Madrid)?)?", "asociación de jubilados", name, flags=re.I)
-        name = re.sub(r"^Proyección de la película '([^']+)'", r"\1", name, flags=re.I)
-        name = re.sub(r"^(Obra de teatro|Noches? de Clásicos?|21 Distritos)\s*[:\-]\s*", r"", name, flags=re.I)
-        name = re.sub(r"Piano City (Madrid *'?\d+|Madrid|'?\d+)", r"Piano City", name, flags=re.I)
-        name = re.sub(r"CinePlaza:.*?> (Proyección|Cine)[^:]*:\s+", "", name, flags=re.I)
-        #name = re.sub(r".*\bFCM\b.*\bSECCI[OÓ]N\b.*\bCORTOMETRAJES\b.*", "Festival de cine de Madrid: Cortometrajes", name, flags=re.I)
-        #name = re.sub(r"^Sesión de cortometrajes \d+$", "Cortometrajes", name, flags=re.I)
-        name = unquote(name.strip(". "))
-        if len(name) < 2:
-            name = bak[-1]
-    name = unquote(name)
-    w1 = name[0]
-    if w1.isalpha():
-        name = w1.upper()+name[1:]
-    return name
-
-
 KO_IMG = (
+    'https://cdn.lacasaencendida.es/storage/40902/conversions/QBjURc0yKs3fbh9cx3B8Gy88rFTwAx-metaQ29tcHJlbmRlciA1LmpwZw==--detail.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Agata/Eventos/ficheros/D%C3%ADadeEuropa_Cartel%20peliculas.png',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Bohemios/ficheros/D%C3%ADadeEuropa_Cartel%20peliculas%20.png',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/MadridPlat%C3%B3Cine_260.png',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Infantiles_Juveniles/Cine/ficheros/2504_CineForumPerezGaldos_260x260.jpg',
@@ -328,29 +305,24 @@ KO_IMG = (
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/Cine_260x260.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20JUNIO/CineVeranoRetiro25-001.jpg',
     'https://entradasfilmoteca.gob.es//Contenido/ImagenesEspectaculos/00_5077/Jazz%20On%20A%20Summer',
+    'https://www.madrid.es/UnidadesDescentralizadas/MuseosMunicipales/DepartamentoExposiciones/Actividades/Ciclo%20Cine%20Una%20tarde%20con%20%20Marilyn/Cartel%20Marilyn%20jpg.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20ENERO/18%20enero%20%20CONCIERTO%20Ra%C3%ADzes-001.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/EntidadesYOrganismos/CulturaYOcio/InstalacionesCulturales/CentrosCulturalesMunicipales/CCVillaverde/Ficheros/CentroSocioCult.jpg',
+    'https://cdn.tenemosplan.com/tenemosplan/default_image.jpg',
+    'https://www.goethe.de/resources/files/jpg1436/clad-event-02-1000x1000-formatkey-jpg-w320r.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20JULIO/Rififi-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20JULIO/September5-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20JULIO/Como_entrenar_tuDragon-001.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Salamanca/Actividades/ficheros/CineV/0108Sirat.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/Forajidos-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/Mickey17-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/LiloYStich-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/Sed_de_mal-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/Furiosa_MadMax-001.jpg',
+    'https://www.madrid.es/UnidadesDescentralizadas/DistritoRetiro/FICHEROS/FICHEROS%20ACTIVIDADES%20AGOSTO/Futbolisimos2-001.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Salamanca/Actividades/ficheros/CineV/2208Incontrolable.jpg',
+    'https://www.madrid.es/UnidadWeb/UGBBDD/Actividades/Distritos/Salamanca/Actividades/ficheros/CineV/2908Domingos.jpg',
 )
-
-
-@cache
-def find_filmaffinity(title: str):
-    title = re.sub(r"\s*\+\s*Coloquio\s*$", "", title, flags=re.IGNORECASE)
-    title = re.sub(r"\s*,\s+de\s+[A-ZÁÉÍÓÚÑÜ]+.*$", "", title)
-    find_url = "https://www.filmaffinity.com/es/search.php?stext="+quote_plus(title)
-    WEB.get(find_url)
-    url, soup = WEB.url, WEB.soup
-    if WEB.response.status_code == 403:
-        with Driver(browser="firefox", wait=5) as f:
-            f.get(find_url)
-            f.safe_wait("div.mc-title a", by=By.CSS_SELECTOR)
-            f.wait_ready()
-            url = f.current_url
-            soup = f.get_soup()
-    if re_filmaffinity.match(url):
-        return url
-    lwtitle = title.lower()
-    for a in soup.select("div.mc-title a"):
-        if get_text(a).lower() == lwtitle:
-            return a.attrs["href"]
 
 
 @dataclass(frozen=True)
@@ -364,17 +336,22 @@ class Event:
     duration: int
     publish: str = NOW
     img: Optional[str] = None
-    also_in: Tuple[str] = tuple()
-    sessions: Tuple[Session] = tuple()
+    also_in: Tuple[str, ...] = tuple()
+    sessions: Tuple[Session, ...] = tuple()
     cycle: Optional[str] = None
-    more: str = None
+    more: Optional[str] = None
+    description: Optional[str] = None
 
     def __lt__(self, other):
         if not isinstance(other, Event):
             return NotImplemented
         flds = fields(Event)
         a = asdict(self)
+        a['place'] = self.place
+        a['sessions'] = self.sessions
         b = asdict(other)
+        b['place'] = other.place
+        b['sessions'] = other.sessions
         tp_a = tuple(a[f.name] for f in flds)
         tp_b = tuple(b[f.name] for f in flds)
         return tp_a < tp_b
@@ -385,47 +362,129 @@ class Event:
         return new_dataclass(Event, self._asdict())
 
     def __post_init__(self):
-        new_name = _clean_name(self.name, self.place.name)
+        plc = self.place
+        if isinstance(plc, dict):
+            plc = Place.build(plc)
+        if isinstance(plc, Place):
+            plc = plc.normalize()
+        object.__setattr__(self, 'place', plc)
+        new_name = clean_name(self.name)
         if new_name != self.name:
-            logger.debug(f"FIX: {new_name} <- {self.name}")
+            logger.debug(f"[{self.id}].__post_init__ name={new_name} <- {self.name}")
             object.__setattr__(self, 'name', new_name)
         fix_event = FIX_EVENT.get(self.id, {})
         for f in fields(self):
-            v = fix_event.get(f.name) or getattr(self, f.name, None)
+            old_val = getattr(self, f.name, None)
+            v = fix_event.get(f.name) or old_val
+            if f.name == "sessions":
+                v = Session.parse_list(v)
+            if f.name == "place" and isinstance(v, dict):
+                v = Place(**v).normalize()
             if isinstance(v, list):
                 v = tuple(v)
-            elif isinstance(v, str) and len(v) == 0:
-                v = None
-            object.__setattr__(self, f.name, v)
+            elif isinstance(v, str):
+                v = v.strip()
+                if len(v) == 0:
+                    v = None
+            if f.name == "more" and v == self.url:
+                continue
+            if f.name == "url" and v == self.more:
+                continue
+            if f.name == "category" and isinstance(v, str):
+                v = Category[v]
+            if f.name == "price" and isinstance(v, float) and int(v) == v:
+                v = int(v)
+            if v != old_val or (type(v) is not type(old_val)):
+                if v != old_val:
+                    logger.debug(f"[{self.id}].__post_init__ {f.name}={v} <- {old_val}")
+                object.__setattr__(self, f.name, v)
 
     def fix(self, **kwargs):
         for k, v in kwargs.items():
             if v is not None:
                 object.__setattr__(self, k, v)
-        for f in fields(self):
-            self._fix_field(f.name)
-        if self.url is None and get_domain(self.more) == "madrid.es":
-            object.__setattr__(self, "url", self.more)
-            object.__setattr__(self, "more", None)
+        self.__fix()
+        nil = []
+        if self.name is None:
+            nil.append("name")
+        if nil:
+            raise ValueError(f"[{self.id}] Missing required fields: {', '.join(nil)}")
         return self
 
+    def __fix(self):
+        MAIN_DOM = ("condeduquemadrid.es", "teatroespanol.es")
+        doit = True
+        while doit:
+            doit = False
+            for f in fields(self):
+                if self._fix_field(f.name):
+                    doit = True
+            if self.url is not None and self.url == self.more:
+                logger.debug(f"[{self.id}].__fix: more=None <- more=url={self.url}")
+                object.__setattr__(self, "more", None)
+                doit = True
+            if self.url is None and get_domain(self.more) in (MAIN_DOM+("madrid.es", )):
+                logger.debug(f"[{self.id}].__fix: more=None url={self.more}")
+                object.__setattr__(self, "url", self.more)
+                object.__setattr__(self, "more", None)
+                doit = True
+            if get_domain(self.url) in ("madrid.es", ) and get_domain(self.more) in MAIN_DOM:
+                logger.debug(f"[{self.id}].__fix: more={self.url} url={self.more}")
+                a, b = self.more, self.url
+                object.__setattr__(self, "url", a)
+                object.__setattr__(self, "more", b)
+                doit = True
+            also_in = tuple(u for u in self.also_in if u not in (None, self.url, self.more))
+            if also_in != self.also_in:
+                object.__setattr__(self, "also_in", also_in)
+                doit = True
+            s_changed = False
+            sessions = list(self.sessions)
+            for i, s in enumerate(sessions):
+                s_id = f"{self.id}_{s.date}"
+                url = FIX_EVENT.get(s_id)
+                if url is not None and s.url is None:
+                    logger.debug(f"[{self.id}].__fix: sessions {s_id} url = {url}")
+                    sessions[i] = s.merge(url=url)
+                    s_changed = True
+            if s_changed:
+                object.__setattr__(self, "sessions", tuple(sessions))
+                doit = True
+
     def _fix_field(self, name: str, fnc=None):
+        isUrl = name in ('more', 'url')
         fix_event = FIX_EVENT.get(self.id, {})
         old_val = getattr(self, name, None)
+        fix_val = None
         if name in fix_event:
             fix_val = fix_event[name]
         else:
             if fnc is None:
                 fnc = getattr(self, f'_fix_{name}', None)
-            if fnc is None or not callable(fnc):
-                return
-            fix_val = fnc()
-        if fix_val == old_val:
-            return
+            if fnc is not None and callable(fnc):
+                fix_val = fnc()
+            elif not isUrl:
+                return False
+        if isUrl:
+            fix_val = safe_expand_url(fix_val or old_val)
+        if name == "sessions":
+            fix_val = Session.parse_list(fix_val)
         if name == "category" and isinstance(fix_val, str):
             fix_val = Category[fix_val]
-        logger.debug(f"FIX: {name} {fix_val} <- {old_val}")
+        if name == "place" and isinstance(fix_val, dict):
+            fix_val = Place(**fix_val).normalize()
+        if fix_val == old_val:
+            return False
+        if name == "more" and fix_val == self.url:
+            return False
+        if name == "url" and fix_val == self.more:
+            return False
+        if fix_val == fix_event.get(name):
+            logger.debug(f"FIX_EVENT: {name}={fix_val} <- {old_val}")
+        else:
+            logger.debug(f"FIX._fix_field: {name}={fix_val} <- {old_val}")
         object.__setattr__(self, name, fix_val)
+        return True
 
     def __get_urls(self):
         arr: List[str] = [None, ]
@@ -446,13 +505,13 @@ class Event:
         if self.more and self.more not in urls:
             yield self.more
 
-    def _fix_name(self):
-        if self.name is not None:
-            return self.name
-        if get_domain(self.url) == "madrid.es":
-            title = get_text(WEB.get_cached_soup(self.url).select_one("title"))
-            if title and " - " in title:
-                return _clean_name(title.split(" - ")[0].strip(), self.place.name)
+    @cached_property
+    def sites(self):
+        dom: list[str] = [None]
+        for d in map(get_domain, self.iter_urls()):
+            if d not in dom:
+                dom.append(d)
+        return tuple(dom[1:])
 
     def _fix_img(self):
         ko = (None, '') + KO_IMG
@@ -464,47 +523,28 @@ class Event:
                 return src
 
     def _fix_category(self):
-        dom = get_domain(self.url)
-        if self.category == Category.CHILDISH or dom != "madrid.es":
+        if self.category == Category.CHILDISH:
             return self.category
-        soup = WEB.get_cached_soup(self.url)
-        for txt in map(plain_text, soup.select("div.tramites-content div.tiny-text")):
-            if txt is None:
-                continue
-            if re_or(
-                txt,
-                "actividad dirigida a familias",
-                "para que menores y mayores aprendan",
-                "teatro infantil",
-                "concierto familiar",
-                "relatos en familia",
-                r"musical? infantil",
-                r"actividad (diseñada )?para familias"
-            ):
-                return Category.CHILDISH
+        if self.category == Category.CONFERENCE and get_domain(self.more) == "goodreads.com":
+            return Category.LITERATURE
         return self.category
 
     def _get_img_from_url(self, url: str):
         if url is None:
             return None
-        dom = get_domain(url)
-        if dom == "madrid.es":
-            soup = WEB.get_cached_soup(url)
-            nodes = soup.select("div.image-content img, div.tramites-content div.tiny-text img, div.detalle img")
-            for src in map(get_img_src, nodes):
-                if src:
-                    return src
 
     def merge(self, **kwargs):
         return replace(self, **kwargs)
 
     @staticmethod
-    def build(*args, **kwargs):
+    def build(*args, fill_with_none=False, **kwargs):
         obj = get_obj(*args, **kwargs)
         if obj is None:
             return None
         if isinstance(obj['category'], int):
             obj['category'] = Category(obj['category'])
+        if isinstance(obj['category'], str):
+            obj['category'] = Category.from_str(obj['category'])
         if isinstance(obj['place'], dict):
             obj['place'] = Place.build(obj['place'])
         if isinstance(obj['sessions'], (list, tuple)) and len(obj['sessions']) > 0 and isinstance(obj['sessions'][0], dict):
@@ -512,35 +552,25 @@ class Event:
         for k, v in list(obj.items()):
             if isinstance(v, list):
                 obj[k] = tuple(v)
+        if fill_with_none:
+            for f in fields(Event):
+                if f.name not in obj:
+                    obj[f.name] = None
         if obj["category"] == Category.CINEMA:
+            if fill_with_none:
+                for f in fields(Cinema):
+                    if f.name not in obj:
+                        obj[f.name] = None
             return new_dataclass(Cinema, obj)
         return new_dataclass(Event, obj)
-
-    @cached_property
-    def title(self):
-        txt = str(self.name)
-        if txt == txt.upper():
-            txt = txt.title()
-        if txt[0]+txt[-1] == "«»":
-            _txt = txt[1:-1]
-            if "«" not in _txt and "»" not in _txt:
-                txt = _txt
-        return txt
 
     def _fix_more(self):
         if self.more:
             return self.more
-        urls = self.__get_urls()
-        for url in urls:
-            dom = get_domain(url)
-            if dom == "tienda.madrid-destino.com":
-                href = find_more_url_madriddestino(url)
-                if href and href not in urls:
-                    return href
-            if dom == "madrid.es":
-                href = find_more_url_madrides(url)
-                if href and href not in urls:
-                    return href
+        if self.category in (Category.LITERATURE, Category.READING_CLUB):
+            url = BF.find(self.name)
+            if url:
+                return url
 
     @property
     def dates(self):
@@ -579,15 +609,32 @@ class Event:
         sessions = tuple(filter(lambda s: s.date >= now, self.sessions))
         object.__setattr__(self, 'sessions', sessions)
 
-    def remove_working_sessions(self):
+    def remove_working_sessions(self, to_log: bool = True):
         sessions = []
         w = 'LMXJVSD'
         for s in self.sessions:
             if s.isWorkingHours():
                 d = s.get_date()
-                logger.debug(f"Sesion {s.date} {w[d.weekday()]} eliminada por estar en horario de trabajo")
+                if to_log:
+                    logger.debug(f"[{self.id}] Sesión {s.date} {w[d.weekday()]} eliminada por estar en horario de trabajo. {s.url or self.url}")
                 continue
             sessions.append(s)
+        object.__setattr__(self, 'sessions', tuple(sessions))
+
+    def remove_ko_sessions(
+        self,
+        isOkDate: Callable[[datetime], bool],
+        to_log: bool = True
+    ):
+        sessions = []
+        w = 'LMXJVSD'
+        for s in self.sessions:
+            d = s.get_date()
+            if isOkDate(d):
+                sessions.append(s)
+                continue
+            if to_log:
+                logger.debug(f"[{self.id}] Sesión {s.date} {w[d.weekday()]} eliminada por estar fuera de horario. {s.url or self.url}")
         object.__setattr__(self, 'sessions', tuple(sessions))
 
     def isSimilar(self, e: "Event"):
@@ -609,56 +656,213 @@ class Event:
         return asdict(self)
 
     @staticmethod
-    def fusion(*events: "Event", firstEventUrl: bool = False):
-        if len(events) == 0:
+    def fusionIfSimilar(
+        all_events: tuple["Event", ...],
+        keys: tuple[str, ...]
+    ) -> tuple["Event", ...]:
+        if len(all_events) == 0:
+            return tuple()
+
+        empty = {k: None for k in list(all_events)[0]._asdict().keys()}
+
+        mrg_events: set[Event] = set()
+        ko_events: list[Event] = sorted(all_events)
+
+        while ko_events:
+            e = ko_events[0]
+            obj = {k: v for k, v in e._asdict().items() if k in keys}
+            k: Event = Event.build({
+                **empty,
+                **obj
+            })
+            ok, ko_events = my_filter(ko_events, lambda x: x.isSimilar(k))
+            if len(ok):
+                mrg_events.add(Event.fusion(*ok))
+            else:
+                logger.warning(f"fusionIfSimilar: resutado inesperado {e} ~ {k}")
+                ko_events = [x for x in ko_events if x != e]
+                mrg_events.add(e)
+        return tuple(sorted(mrg_events))
+
+    @staticmethod
+    def fusion(
+        *evs: "Event",
+        name: str = None,
+        id: str = None,
+        url: str = None,
+        more: str = None,
+        also_in: tuple[str, ...] = None
+    ):
+        if len(evs) == 0:
             raise ValueError("len(events)==0")
-        if len(events) == 1:
-            return events[0]
-        logger.debug("Fusión: " + " + ".join(map(lambda e: f"{e.id} {e.duration}", events)))
-        sessions: Set[Session] = set()
-        sessions_with_url: Set[Session] = set()
-        categories: List[Category] = []
-        durations: List[float] = []
-        imgs: List[str] = []
-        seen_in: Set[str] = set()
-        for e in events:
-            if e.category not in (None, Category.UNKNOWN):
-                categories.append(e.category)
-            if e.duration is not None:
-                durations.append(e.duration)
-            if e.img is not None:
-                imgs.append(e.img)
-            for s in e.sessions:
-                sessions.add(s)
-                if firstEventUrl:
-                    s = s._replace(url=e.url or s.url)
-                else:
-                    s = s._replace(url=s.url or e.url)
-                sessions_with_url.add(s)
-            seen_in.add(e.url)
-            for u in e.also_in:
-                seen_in.add(u)
-        seen_in = tuple(sorted((u for u in seen_in if u is not None)))
-        url = seen_in[0]
-        also_in = seen_in[1:]
-        if len(sessions) > 1:
-            sessions = sessions_with_url
-            url = None
-            also_in = tuple()
-        return events[0].merge(
+        if len(evs) == 1:
+            return evs[0]
+        logger.debug("Fusión: " + " + ".join(map(lambda e: e.id, evs)))
+        logger.debug("Fusión: " + " + ".join(map(str, evs)))
+        f_info = _get_info_fusion(evs)
+        if len(set(f_info.names)) == 1:
+            name = f_info.names[0]
+        elif name is None:
+            name = get_main_value(f_info.names)
+        sessions: list[Session] = []
+        for d in f_info.dates:
+            f_d = f_info.sessions[d]
+            s_url = get_main_value(
+                [u for u in f_d.url_session if u != url]
+            ) or get_main_value(
+                [u for u in f_d.url_event if u != url]
+            )
+            title = f_info.url_title.get(s_url)
+            if title == name:
+                title = None
+            s = Session(
+                date=d,
+                url=s_url,
+                title=title,
+                full=f_d.full,
+                description="\n\n".join(f_d.descriptions) if f_d.descriptions else None
+            )
+            sessions.append(s)
+        ss_url = set(s.url for s in sessions if s.url is not None)
+        if len(sessions) > 1 and len(ss_url) == 1:
+            s_url = ss_url.pop()
+            if url is None:
+                url = s_url
+            if s_url == url:
+                sessions = [s._replace(title=None, url=None) for s in sessions]
+        if url is None:
+            url = get_main_value(u for u in f_info.seen_in if u not in ss_url)
+
+        category = get_main_value(f_info.categories, default=Category.UNKNOWN)
+        no_more = more is None and category in (Category.CINEMA, )
+        st_more = set(f_info.mores)
+        if more is None:
+            if len(st_more) == 1:
+                more = st_more.pop()
+                no_more = False
+            elif not no_more:
+                more = get_main_value(f_info.mores)
+        if also_in is None:
+            st_also_in = set(f_info.seen_in)
+            st_also_in.discard(url)
+            st_also_in.discard(more)
+            for s in sessions:
+                st_also_in.discard(s.url)
+            if more is None and len(st_also_in) == 1 and not no_more:
+                more = st_also_in.pop()
+            also_in = tuple(sorted(st_also_in))
+        if id is None:
+            ids = set(e.id for e in evs)
+            if len(ids) == 1:
+                id = ids.pop()
+            else:
+                id = to_uuid("".join(sorted(ids)))
+        e_description = "\n\n".join(f_info.descriptions) if f_info.descriptions else None
+        if e_description is None and len(sessions) == 1 and sessions[0].description:
+            e_description = sessions[0].description
+            sessions[0] = sessions[0]._replace(description=None)
+        e = evs[0].merge(
+            id=id,
             url=url,
+            more=more,
+            name=name,
             also_in=also_in,
-            duration=get_main_value(durations),
-            img=get_main_value(imgs),
-            category=get_main_value(categories, default=Category.UNKNOWN),
-            sessions=tuple(sorted(sessions, key=lambda s: (s.date, s.url))),
+            duration=get_main_value(f_info.durations),
+            img=get_main_value(f_info.imgs),
+            category=category,
+            sessions=tuple(sessions),
+            price=max(f_info.prices),
+            description=e_description,
         )
-    
+
+        e = e.fix_type()
+        if isinstance(e, Cinema):
+            e = e.merge(
+                director=get_main_value(f_info.director),
+                year=get_main_value(f_info.year),
+                imdb=get_main_value(f_info.imdb),
+                filmaffinity=get_main_value(f_info.filmaffinity)
+            )
+        e = e.fix()
+        logger.debug(f"=== {e}")
+        return e
+
     def _fix_cycle(self):
         if self.cycle:
             return self.cycle
-        if re.search(r"^Derechos [dD]igitales: ", self.name):
+        urls = set(self.iter_urls())
+        name = self.name or ''
+        if re.search(r"Festival Centro al comp[áa]s", name, flags=re.I):
+            return "Festival Centro al compás"
+        if re.search(r"Festival L[ií]rica al margen", name, flags=re.I):
+            return "Festival Lírica al margen"
+        if re.search(r"Charlas de astronomía para profanos", name):
+            return "Charlas de astronomía para profanos"
+        if re.search(r"^Derechos [dD]igitales: ", name):
             return "Derechos digitales"
+        if re.search(r"^Nuevos [Ii]maginarios: ", name):
+            return "Nuevos imaginarios"
+        if re.search(r"^Los artesanos de la tumba", name):
+            return "Los artesanos de la tumba"
+        if re.search(r"^las mujeres escritoras de", name, flags=re.I):
+            return "Las mujeres escritoras de…"
+        if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
+            return "Teatro en la Berlanga"
+        if self.category == Category.DANCE and self.place.name == "Sala Berlanga":
+            return "Bailar en la Berlanga"
+        #if re.search(r"\s*\-\s*Teatro en la [Bb]erlanga$", name):
+        #    return "Teatro en la Berlanga"
+        m = re.match(r"^(Interautor 20\d+)\b.*", name)
+        if m:
+            #if self.category == Category.THEATER and self.place.name == "Sala Berlanga":
+            #    return "Teatro en la Berlanga"
+            return m.group(1)
+        if self.category == Category.CINEMA and self.place.name == "Cineteca":
+            if re.search(r"^(Esc[áa]ner|Mrgente|Sesi[oó]n) \d+$", name, flags=re.I) or re.search("Stop Motion exquisito|Alzo mi voz.*realidades animadas", name, flags=re.I):
+                return "Cortometrajes"
+        if self.category == Category.CINEMA:
+            if re.search(r"SGAE en corto", name, flags=re.I):
+                return "Cortometrajes"
+        if re.search(r"cat[áa]logo.*Madrid entre libros", self.name, flags=re.I):
+            return "Madrid entre libros"
+        if self.category == Category.VISIT and re_and(self.name, "ruta", "retiro", flags=re.I):
+            return "Rutas por el Retiro"
+        if self.category == Category.CONFERENCE:
+            if re_or(self.name, "Ciclo conferencias Maqueta León Gil de Palacio", flags=re.I):
+                return "Maqueta León Gil de Palacio"
+        if urls.intersection({"https://pianocitymadrid.es/", }) or re_or(self.name, "piano ?city", flags=re.I):
+            return "Piano City"
+        if urls.intersection((
+            "https://www.centrocentro.org/musica/limo-2026",
+            "https://www.centrocentro.org/musica/kali-malone",
+            "https://www.centrocentro.org/musica/arianna-casellas-y-kaue",
+            "https://www.centrocentro.org/musica/ustad-noor-bakhsh",
+            "https://www.centrocentro.org/musica/lucrecia-dalt",
+            "https://www.centrocentro.org/musica/senyawa",
+            "https://www.centrocentro.org/musica/lise-barkas"
+        )):
+            return "Musica corriente"
+        if urls.intersection((
+            "https://www.centrocentro.org/musica/vang-VIII-musicas-en-vanguardia",
+            "https://www.centrocentro.org/musica/jurg-frey-y-phill-niblock-cuartetos-de-cuerda",
+            "https://www.centrocentro.org/musica/vacio-musica-de-ustvolskaya-y-feldman-en-dialogo-con-musica-barroca",
+            "https://www.centrocentro.org/musica/maryanne-amacher-plaything"
+        )):
+            return "Música de vanguardía"
+        if urls.intersection((
+            "https://www.centrocentro.org/musica/sinetiq-2026",
+            "https://www.centrocentro.org/musica/raul-rodriguez-3f-power-trio",
+            "https://www.centrocentro.org/musica/zaruk-iris-azquinecer-rainer-seiferth",
+            "https://www.centrocentro.org/musica/antonio-serrano-kaele-jimenez",
+            "https://www.centrocentro.org/musica/javier-ruibal",
+            "https://www.centrocentro.org/musica/maria-toro-en-cuarteto",
+            "https://www.centrocentro.org/musica/feten-feten"
+        )):
+            return "Música sin etiquetas"
+        if urls.intersection((
+            "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-sobre-historia-con-Miguel-Arenas/?vgnextfmt=default&vgnextoid=c649606fb4e49910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
+        )):
+            return "Conferencias sobre historia"
         return None
 
 
@@ -667,62 +871,172 @@ class Cinema(Event):
     year: int = None
     director: tuple[str, ...] = tuple()
     aka: tuple[str, ...] = tuple()
-    imdb: str = None
-    filmaffinity: int = None
+    imdb: Optional[str] = None
+    filmaffinity: Optional[int] = None
 
     def fix(self, **kwargs):
         self._fix_field('cycle')
-        self._fix_field('imdb', self.__find_imdb)
+        self._fix_name_director()
+        self._fix_name_year()
         self._fix_field('filmaffinity')
+        self._fix_field('imdb', self.__find_imdb)
+        if self.imdb is not None and self.filmaffinity is None:
+            self._fix_field('imdb', self.__find_imdb)
         super().fix(**kwargs)
         return self
 
-    def get_full_aka(self):
-        aka = [self.name]
-        for t in (self.aka or []):
-            if t not in aka:
-                aka.append(t)
-        m = re.match(r"^([^\(\)]+) \(([^\(\)\d]+)\)$", self.name)
-        if m:
-            for t in m.groups():
-                if t not in aka:
-                    aka.append(t)
-        return tuple(aka)
+    def _fix_name_director(self):
+        old_dir = self.director or tuple()
+        director, title = find_director(self.name, *old_dir)
+        if director is None and title is None:
+            return
+        if director not in old_dir and title != self.name:
+            new_name = clean_name(title)
+            logger.debug(f"[{self.id}].__fix_name_director: director={director} name={new_name} <- {self.name}")
+            object.__setattr__(self, "director", (director, ))
+            object.__setattr__(self, "name", new_name)
+            return
+        if director in old_dir and title != self.name:
+            new_name = clean_name(title)
+            logger.debug(f"[{self.id}].__fix_name_director: name={new_name} <- {self.name}")
+            object.__setattr__(self, "name", new_name)
+            return
+        if director not in old_dir and title == self.name:
+            logger.debug(f"[{self.id}].__fix_name_director: director={director} <- {self.director}")
+            object.__setattr__(self, "director", (director, ))
+            return
+
+    def _fix_name_year(self):
+        years = tuple(i for i in map(int, re.findall(r"\d+", self.name)) if i>1900 and i<=TODAY.year+1)
+        if len(years) > 1:
+            return
+        for r in (
+            r"^\s*(?P<title>.*?)\s*\(\s*(?P<year>\d+)\s*\)\s*$",
+            r"^\s*(?:Reposici[oó]n[\s:]*)[\"'](?P<title>.+?)[\"'] \(\D*(?P<year>\d+)\)\s*$",
+        ):
+            m = re.match(r, self.name, re.I)
+            if m is None:
+                continue
+            year = int(m.group('year'))
+            if year > 1900 and year <= (TODAY.year + 1) and self.year in (None, year):
+                new_name = clean_name(m.group('title').strip())
+                logger.debug(f"[{self.id}]._fix_name_year: year={year} name={new_name} <- {self.name}")
+                object.__setattr__(self, "year", year)
+                object.__setattr__(self, "name", new_name)
+                return
+
+    def _fix_director(self):
+        if self.director or not self.imdb:
+            return self.director
+        return DB.to_tuple("select distinct p.name from PERSON p join DIRECTOR d on d.person = p.id where d.movie = ?", self.imdb)
+
+    def _fix_year(self):
+        if self.year or not self.imdb:
+            return self.year
+        return DB.one("select year from MOVIE where id = ?", self.imdb)
+
+    def iter_year_title(self):
+        y_t: dict[int | None, list[str]] = {}
+        def _add(y: int | None, t: str):
+            arr = y_t.get(y, [])
+            if t and t not in arr:
+                arr.append(t)
+                y_t[y] = arr
+        if self.imdb:
+            db_year = DB.one("select year from MOVIE where id = ?", self.imdb) or self.year
+            db_title = DB.to_tuple("select title from TITLE where movie = ?", self.imdb)
+            for t in db_title:
+                _add(db_year, t)
+        else:
+            aka = self.aka if self.aka else [self.name]
+            for a in aka:
+                m = re.match(r"^([^\(\)]+)\s+\(((?:19|20)\d{2})\)$", a)
+                if m:
+                    t, y = map(str.strip, m.groups())
+                    _add(int(y), t)
+                else:
+                    _add(self.year, a)
+        for y, tt in y_t.items():
+            yield y, tuple(tt)
 
     def __find_imdb(self):
+        fix = FIX_EVENT.get(self.id, {})
+        if "imdb" in fix:
+            return fix["imdb"]
         if isinstance(self.cycle, str):
             return None
-        for t in self.get_full_aka():
+        if self.imdb:
+            return self.imdb
+        if self.filmaffinity:
+            _id_ = DB.one("select movie from EXTRA where filmaffinity = ?", self.filmaffinity)
+            if _id_:
+                return _id_
+        ids: set[str] = set()
+        for y, tt in self.iter_year_title():
             imdb = DB.search_imdb_id(
-                t,
-                year=self.year,
+                *tt,
+                year=y,
                 director=self.director,
                 duration=self.duration
             )
             if imdb:
-                return imdb
+                ids.add(imdb)
+        if len(ids) == 0:
+            return None
+        if len(ids) == 1:
+            return ids.pop()
+        _id_: str = DB.one(
+            '''
+                select id from MOVIE
+                where id in (%s)
+                ORDER BY
+                    duration IS NULL ASC,
+                    duration DESC,
+                    id ASC
+            ''' % ", ".join(['?']*len(ids)),
+            *sorted(ids)
+        )
+        return _id_
 
     def _fix_filmaffinity(self) -> int:
-        if self.filmaffinity is not None or self.imdb is None:
+        fix = FIX_EVENT.get(self.id, {})
+        if "filmaffinity" in fix:
+            return fix["filmaffinity"]
+        if self.filmaffinity is not None:
             return self.filmaffinity
-        return DB.one("select filmaffinity from EXTRA where movie = ?", self.imdb)
+        if self.year and self.name:
+            _id_ = FilmAffinityApi.fast_search(self.year, self.name)
+            if _id_:
+                return _id_
+        if self.imdb is not None:
+            _id_ = DB.one("select filmaffinity from EXTRA where movie = ?", self.imdb)
+            if _id_:
+                return _id_
 
     def _fix_cycle(self):
         if isinstance(self.cycle, str):
             return self.cycle
         if re.search(r"\b(cortometrajes?)\b", self.name, flags=re.I):
             return "Cortometrajes"
+        if re.search(r"\bCortos (nacionales|internacionales|disidentes)\b", self.name, flags=re.I):
+            return "Cortometrajes"
         if re.search(r"Juventud líquida.*Sesión \d+", self.name, flags=re.I):
             return "Juventud líquida"
+        if re.search(r"Futuros raros.*Sesión \d+", self.name, flags=re.I):
+            return "Futuros raros"
+
         return super()._fix_cycle()
 
     def _fix_more(self):
-        if self.more:
-            return self.more
+        fix_more = FIX_EVENT.get(self.id, {}).get("more")
+        if fix_more not in (None, self.url):
+            return fix_more
         if self.filmaffinity:
             return f"https://www.filmaffinity.com/es/film{self.filmaffinity}.html"
         if self.imdb:
             return f"https://www.imdb.com/es-es/title/{self.imdb}"
+        if self.more:
+            return self.more
         return super()._fix_more()
 
     def _fix_duration(self):
@@ -749,3 +1063,302 @@ class Cinema(Event):
             img = get_img_src(soup.select_one("div.ipc-media img"))
             if img:
                 return img
+
+
+class FusionSession(NamedTuple):
+    url_event: tuple[str]
+    url_session: tuple[str]
+    full: bool
+    descriptions: list[str]
+
+
+class FusionInfo(NamedTuple):
+    urls: list[str]
+    names: list[str]
+    url_title: dict[str, str]
+    categories: list[Category]
+    durations: list[float]
+    imgs: list[str]
+    mores: list[str]
+    seen_in: list[str]
+    sessions: dict[str, FusionSession]
+    prices: list[float]
+    dates: tuple[str, ...]
+    year: list[int]
+    director: list[tuple[str, ...]]
+    imdb: list[str]
+    filmaffinity: list[str]
+    descriptions: list[str]
+
+
+def _get_info_fusion(evs: tuple[Event, ...]):
+    def _add(arr: list, v, avoid=(None, )):
+        if v not in avoid:
+            arr.append(v)
+
+    def _add_like(arr: list[str], v: str, avoid=(None, )):
+        if v in avoid:
+            return
+        lw = v.lower()
+        lwarr = tuple(map(str.lower, arr))
+        for i, x in enumerate(lwarr):
+            if x == lw or lw in x:
+                return
+            if x in lw:
+                arr[i] = v
+                return
+        arr.append(v)
+
+    s_event_url: dict[str, list[str]] = defaultdict(list)
+    s_sessi_url: dict[str, list[str]] = defaultdict(list)
+    s_description: dict[str, list[str]] = defaultdict(list)
+    date_with_url: Set[str] = set()
+    date_full: Set[str] = set()
+    url_title: dict[str, str] = dict()
+    names: list[str] = []
+    categories: List[Category] = []
+    durations: List[float] = []
+    imgs: List[str] = []
+    urls: List[str] = []
+    mores: List[str] = []
+    seen_in: list[str] = []
+    s_dates: set[str] = set()
+    prices: list[float] = []
+    years: list[int] = []
+    directors: list[tuple[str, ...]] = []
+    imdb: list[str] = []
+    filmaffinity: list[str] = []
+    descriptions: list[str] = []
+    for e in evs:
+        if isinstance(e, Cinema):
+            _add(years, e.year)
+            _add(directors, e.director)
+            _add(imdb, e.imdb)
+            _add(filmaffinity, e.filmaffinity)
+        _add(urls, e.url)
+        _add(names, e.name)
+        _add(categories, e.category, avoid=(None, Category.UNKNOWN))
+        _add(mores, e.more)
+        _add(durations, e.duration)
+        _add(imgs, e.img)
+        _add(prices, e.price)
+        _add(seen_in, e.url)
+        _add_like(descriptions, e.description)
+        for u in e.also_in:
+            _add(seen_in, u)
+        if e.name and e.url and e.url not in url_title:
+            url_title[e.url] = e.name
+        for s in e.sessions:
+            if s.description and s.description not in s_description[s.date]:
+                _add_like(s_description[s.date], s.description)
+            if s.title and s.url and s.url not in url_title:
+                url_title[s.url] = s.title
+            if s.url is not None:
+                date_with_url.add(s.date)
+    for e in evs:
+        for s in e.sessions:
+            if s.url is None and s.date in date_with_url:
+                continue
+            s_dates.add(s.date)
+            if s.full is True:
+                date_full.add(s.date)
+            if e.url:
+                s_event_url[s.date].append(e.url)
+            if s.url:
+                s_sessi_url[s.date].append(s.url)
+
+    for e in evs:
+        if e.name:
+            for s in e.sessions:
+                if s.url and s.url not in url_title:
+                    url_title[s.url] = e.name
+
+    ts_dates = tuple(sorted(s_dates))
+    sessions: dict[str, FusionSession] = {}
+    for d in ts_dates:
+        sessions[d] = FusionSession(
+            url_event=tuple(s_event_url.get(d, [])),
+            url_session=tuple(s_sessi_url.get(d, [])),
+            descriptions=tuple(s_description.get(d, [])),
+            full=d in date_full
+        )
+    return FusionInfo(
+        urls=urls,
+        names=names,
+        url_title=url_title,
+        categories=categories,
+        durations=durations,
+        imgs=imgs,
+        mores=mores,
+        seen_in=seen_in,
+        sessions=sessions,
+        prices=prices,
+        dates=ts_dates,
+        year=years,
+        director=directors,
+        imdb=imdb,
+        filmaffinity=filmaffinity,
+        descriptions=descriptions
+    )
+
+
+def find_book_category(name: str, description: str, default: Category):
+    txt = f"{name or ''}\n{description or ''}".strip()
+    if re_or(
+        txt,
+        r"novelas? gr[aá]ficas?",
+        r"comics?",
+        r"tebeos?",
+        r"Fanzines?",
+        flags=re.I
+    ):
+        return default
+    if re_or(
+        name,
+        r"Antolog[ií]a po[ée]tica",
+        r"por (el|la) poeta",
+        r"Obra Po[eé]tica",
+        r"Presentaci[oó]n (del|de los) poemarios?",
+        r"Edmond Jab[eèé]s",
+        r"Defender el [AÁ]lamo",
+        flags=re.I
+    ):
+        return Category.POETRY
+    if re_or(
+        description,
+        r"En estos versos el autor",
+        r"Presentaci[oó]n del poemario",
+        r"recital de poes[íi]a",
+        r"presenta su poemario",
+        r"presentan? este poemario de",
+        r"poemas in[eé]ditos",
+        r"libros? de poes[ií]a",
+        r"novela negra",
+        r"su (nueva|premiada) novela",
+        r"una de las novelas\b.*\bm[aá]s le[ií]das",
+        r"participaci[oó]n del poeta",
+        r"recitar[aá]n poemas de",
+        r"el poemario publicado",
+        r"Este poemario (explora|presenta)",
+        r"obra de poes[ií]a",
+        r"[aá]lbum po[eé]tico",
+        r"narrativa, poes[íi]a",
+        r"Premio Loewe de Poes[íi]a",
+        r"Oficio de Babel",
+        r"Rainer Maria Rilke",
+        r"Premio Loewe de Poes[ií]a",
+        flags=re.I
+    ):
+        return Category.POETRY
+    if re_or(
+        name,
+        "Presentaci[óo]n de la novela",
+        "Richard Turvey",
+        "Nelio Biedermann",
+        "Askarien",
+        "premio planeta",
+        "Confianza Agustina",
+        "Daniela Tarazona",
+        r"obras? fundamental(es)? de la narrativa",
+        r"Presentaci[oó]n (de )?La novela",
+        r"La invenci[oó]n de todas las cosas",
+        r"La ciudad de los girasoles",
+        r"Jorge Volpi",
+        flags=re.I
+    ):
+        return Category.NARRATIVE
+    if re_or(
+        description,
+        r"la novela ganadora",
+        r"una novela quinqui",
+        r"colecci[oó]n de microrrelatos",
+        r"(La|Esta) novela (relata|retrata|presenta|publicada)",
+        r"(La|Esta) (nueva|[uú]ltima) novela del?",
+        r"(La|Esta) novela es la cr[oó]nica",
+        r"A partir de ese momento comienza una aventura",
+        r"Presentaci[oó]n de esta novela",
+        r"una novela (de aventuras|sobre|breve)",
+        r"novela (hist[oó]rica|de ficci[oó]n)",
+        r"su ([uú]litma|primera) novela",
+        r"Presentaci[oó]n de la novela",
+        r"El retrato de Dorian Gray",
+        r"libro de cuentos",
+        r"y ahora novelista",
+        r"la novela entrelaza",
+        r"transici[oó]n del periodismo a la ficci[oó]n",
+        r"una de las novelas m[áa]s conocidas",
+        r"sus mejores novelas",
+        r"libros? de relatos",
+        r"ejercicio de imaginaci[oó]n hist[óo]rica para construir",
+        r"es una novela",
+        r"Qu[eé] ocurrir[ií]a si un día secuestraran tus sueños",
+        r"relato de ficci[oó]n",
+        r"libro de microrrelatos",
+        r"novela sobre",
+        r"toca dram[oó]n",
+        r"la aclamada novela de",
+        r"[AÁ]ngel Garc[ií]a Galiano",
+        r"Mar[ií]a Dueñas",
+        r"Marta Galatas",
+        r"Manuel Juli[aá]",
+        r"escritora? de novelas",
+        r"autora? de varias novelas",
+        r"autora? de obras de teatro",
+        r"una novela encantadora",
+        r"con la novela",
+        ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
+        ("a trav[eé]s de estas ficciones", "literatura"),
+        flags=re.I
+    ):
+        return Category.NARRATIVE
+    if re_or(
+        txt,
+        r"Leopoldo L[oó]pez Gil",
+        r"Andr[ée]s Trapiello",
+        r"Pablo Díaz Esp[ií]",
+        r"María Zaplana Barcel[óo]",
+        r"Roc[ií]o Albert",
+        r"[aÁ]lvaro Fischer",
+        r"Cayetana [aÁ]lvarez de Toledo",
+        r"Jos[eé] Luis Cordeiro",
+        r"Jos[eé] Ortiz[\s\-]+Echagüe",
+        r"Maristela Berm[uú]dez",
+        r"Programaci[óo]n Neuroling[uü][ií]stica",
+        r"Juan Jos[eé] Tamayo",
+        r"OIKOS",
+        r"Foro Espa[ñn]a C[ií]vica",
+        r"Mar[ií]a Mart[ií]n D[ií]ez de Balde[oó]n",
+        r"Fernando J[aá]uregui",
+        r"Felipe Gonz[aá]lez",
+        r"Ketty Garat",
+        r"Raad Salam Naaman",
+        r"Ana Palacio",
+        r"Eduardo Aguirre",
+        r"Fuencisla Casanova",
+        r"Silvia Bara Bancel",
+        r"Teresa Mallada de Castro",
+        flags=re.I
+    ):
+        return Category.SPAM
+
+    if re_or(
+        txt,
+        r"narrativas fotogr[aá]ficas y ensayos visuales",
+        flags=re.I
+    ):
+        return Category.PHOTO
+
+    if not re_or(
+        txt,
+        r"colonialismo",
+        r"critica",
+        r"reparaci[óo]n",
+        flags=re.I
+    ):
+        if re_or(
+            txt,
+            "Expedici[oó]n Elcano",
+            flags=re.I,
+        ):
+            return Category.HISTORY
+    return default

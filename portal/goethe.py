@@ -1,0 +1,530 @@
+from requests import Session as ReqSession
+from core.cache import Cache
+from urllib.parse import urlencode
+from core.util import parse_obj, find_euros, re_or, clean_url
+import re
+from core.event import Event, Category, Cinema, CategoryUnknown, Session, Place, find_book_category
+from core.place import Places
+import logging
+from datetime import datetime
+from core.fetcher import Getter
+from functools import cached_property
+from aiohttp import ClientResponse
+from core.web import buildSoup, get_text, Tag, Web
+from typing import NamedTuple, Optional
+from unidecode import unidecode as ori_unidecode
+from core.md import MD
+from portal.base import Base
+import feedparser
+
+logger = logging.getLogger(__name__)
+re_sp = re.compile(r"\s+")
+re_min = re.compile(r"(\d+)\s*(?:min|minutos?)\b")
+
+default_headers = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/131.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "es-ES,es;q=0.9",
+    "Referer": "https://www.goethe.de/ins/es/es/",
+}
+
+
+def unidecode(s: str):
+    if s is None:
+        return None
+    fake_n = "%%---###"
+    s = re.sub(r"ñ", fake_n, s.lower())
+    s = ori_unidecode(s)
+    s = re.sub(fake_n, "ñ", s)
+    s = re_sp.sub(" ", s).strip()
+    if len(s) == 0:
+        return None
+    return s
+
+
+class InfoSoup(NamedTuple):
+    img: Optional[str] = None
+    duration: Optional[int] = None
+    description: Optional[str] = None
+    status_code: Optional[int] = None
+
+
+async def rq_to_info(r: ClientResponse):
+    soup = buildSoup(str(r.url), await r.text())
+    img = soup.select_one("div.container picture img.img-fluid")
+    with open("/tmp/goethe.html", "w", encoding="utf-8") as f:
+        f.write(str(soup))
+    if img:
+        img = img.attrs['src']
+    duration = _find_duration(soup)
+    desc = MD.convert(soup.select_one("div.event-calendar-infotext-container"))
+    return InfoSoup(
+        status_code=r.status,
+        img=img,
+        duration=duration,
+        description=desc
+    )
+
+
+def _find_duration(soup: Tag):
+    for p in map(get_text, soup.select("div.event-calendar-date p")):
+        m = re.search(r"(\d+):(\d+)\s*[-\+]\s*(\d+):(\d+)", p or "")
+        if m:
+            h1, m1, h2, m2 = map(int, m.groups())
+            return ((h2*60)+m2)-((h1*60)+m1)
+
+    duration = None
+    for li in map(get_text, soup.select("ul.event-calendar-fact-list li")):
+        for d in map(int, re_min.findall(li or "")):
+            duration = (duration or 0) + d
+    if duration is not None:
+        return duration
+
+
+def _clean_name(name: str):
+    if name is None:
+        return None
+    name = re.sub(
+        r"^(CINE CLUB GOETHE[\s\|]*|SESI[ÓO]N \d\s+-\s+)",
+        "",
+        name,
+        flags=re.I
+    )
+    name = name.strip()
+    if len(name) == 0:
+        return None
+    return name
+
+
+def _re_parse(obj):
+    if not isinstance(obj, dict):
+        return obj
+    for k in (
+        "date_start_Date",
+        "timezone_gmt",
+        "category_id"
+    ):
+        v = obj.get(k)
+        if isinstance(v, str):
+            obj[k] = int(v)
+    for k in (
+        "time_start_txt",
+        "time_end_txt",
+
+    ):
+        v = obj.get(k)
+        if isinstance(v, str):
+            obj[k] = re.sub(r"\s+(h|&#104;)$", "", v)
+    for k, v in {
+        "country_IDtxt": "España",
+        "event_city": "Madrid",
+        "is_online": 0
+    }.items():
+        val = obj.get(k)
+        if val not in (None, v):
+            raise ValueError(f"¿{k}={v}?")
+        if val == v:
+            del obj[k]
+    return obj
+
+
+def _to_date(f: str, h: str):
+    if f is None:
+        return None
+    if h is None:
+        h = "00:00"
+    return datetime(*map(int, re.findall(r"\d+", f"{f} {h}")))
+
+
+class Goethe(Base):
+    SEARCH = "https://www.goethe.de/rest/objeventcalendarRedesign/events/fetchEvents"
+
+    def __init__(self, max_price: int = None, skip_store: tuple[str, ...] = None, cache: str|bool = True):
+        super().__init__(cache=cache)
+        self.__s = ReqSession()
+        self.__max_price = max_price
+        self.__skip_store = skip_store or tuple()
+
+    def __search(self, params: dict, filterData: dict):
+        params = urlencode({
+            "langId": 4,
+            "viewMode": -1,
+            "configData": params,
+            "filterData": filterData
+        })
+        r = self.__s.get(Goethe.SEARCH+"?"+params)
+        return r.json()
+
+    @Cache("rec/goethe/items.json")
+    def get_items(self) -> list[dict]:
+        obj = self.__search(
+            {
+                "category_ID": "", #, "178926_178927_178937_178936_178935_178934_178933_178932_178931_178930_178929_178928_178938",
+                "elementsperpage": 100,
+                "frontendfilter": "adress_IDtxt,category_IDtxt,date_range",
+                "headline": "Calendario",
+                "outputtype": "standardkalender",
+                "institute_ID": 375,
+                "week_day_start": 1,
+                "timezone": 29
+            },
+            {
+                "start": 0,
+                "excluded_objectIds": [], #27189962, 27195189, 27229838],
+                "count_records_per_filter": True,
+                "mapped_data": True,
+                "adress_IDtxt": ["Madrid"]
+            }
+        )
+        obj = parse_obj(
+            obj['eventItems'],
+            compact=True,
+            re_parse=_re_parse
+        )
+        return obj
+
+    @cached_property
+    def rss(self):
+        return feedparser.parse("https://www.goethe.de/ins/es/es/rss/mad/ver.rss")
+
+    def __get_rss_item(self, iid: int) -> feedparser.util.FeedParserDict | None:
+        for i in self.rss.entries:
+            if i.guid and int(i.guid) == iid:
+                return i
+
+    def __get_description(self, iid: int, i: dict) -> str | None:
+        r = self.__get_rss_item(iid)
+        if r is None:
+            return None
+        lines: list[str] = []
+        cats: list[str] = []
+        for cat in i.get("secondary_categories", []):
+            c = cat['category_text']
+            if c and c not in cats:
+                cats.append(c)
+        name = i['headline']
+        sub = i['subheadline']
+        md = MD.convert(buildSoup(
+            "https://www.goethe.de/ins/es/es/sta/mad/ver.cfm",
+            r.description
+        ))
+        if name:
+            lines.append(f"Título: {name}")
+        if sub:
+            lines.append(f"Subtitulo: {name}")
+        if cats:
+            lines.append(f"Categorías: {', '.join(cats)}")
+        if md:
+            lines.append(f"Descripción:\n{md}")
+        if lines:
+            return "\n".join(lines)
+
+    def __get_img(self, iid: int) -> str | None:
+        i = self.__get_rss_item(iid)
+        if i is None:
+            return None
+
+        for enclosure in i.get("enclosures", []):
+            mime = enclosure.get("type", "")
+            if mime.startswith("image/"):
+                return enclosure.get("href")
+
+        for media in i.get("media_content", []):
+            url = media.get("url")
+            mime = media.get("type", "")
+
+            if url and (not mime or mime.startswith("image/")):
+                return url
+
+        for media in i.get("media_thumbnail", []):
+            url = media.get("url")
+
+            if url:
+                return url
+
+        soup = buildSoup(
+            "https://www.goethe.de/ins/es/es/sta/mad/ver.cfm",
+            i.description
+        )
+        img = soup.select_one("img")
+        if img:
+            return img.attrs['src']
+
+    def _get_events(self):
+        evs: set[Event] = set()
+        for i in self.get_items():
+            _id_ = i['object_id']
+            url = f"https://www.goethe.de/ins/es/es/sta/mad/ver.cfm?event_id={_id_}"
+            name = i['headline']
+            if re_or(
+                name,
+                "entradas agotadas",
+                flags=re.I
+            ):
+                continue
+            lang = unidecode(i.get('language'))
+            if lang and not re.search(r"\bespañol\b", lang):
+                logger.warning(f"Descartado por lang={lang} {url}")
+                continue
+            place = self.__find_place(url, i)
+            if place is None:
+                logger.critical(f"Descartado por place=None {url}")
+                continue
+            price = self.__find_price(url, i)
+            if self.__max_price is not None and self.__max_price < price:
+                logger.debug(f"Descartado por price={price} {url}")
+                continue
+            sessions, duration = self.__find_session_duration(url, i)
+            if len(sessions) == 0:
+                continue
+            e = Event(
+                id=f"gt{_id_}",
+                url=clean_url(url),
+                name=_clean_name(name),
+                img=self.__get_img(_id_),
+                price=self.__find_price(url, i),
+                category=self.__find_category(url, i),
+                place=place,
+                duration=duration,
+                sessions=sessions,
+                description=self.__get_description(_id_, i),
+                cycle=None
+            )
+            e = e.fix_type()
+            if isinstance(e, Cinema):
+                d, y = self.__find_year_director(i)
+                e = e.merge(
+                    director=(d, ) if d else None,
+                    year=y
+                )
+            evs.add(e)
+        url_info: dict[str, InfoSoup] = Getter(
+            headers=default_headers,
+            cookie_jar=self.__s.cookies,
+            onread=rq_to_info,
+            raise_for_status=False
+        ).get(*(e.url for e in evs))
+        for e in list(evs):
+            evs.remove(e)
+            i = url_info.get(e.url)
+            if i is None or i.status_code == 404:
+                logger.critical(f"KO url {e.url}")
+                continue
+            if i.status_code == 403:
+                evs.add(e)
+                continue
+            e = e.merge(
+                img=i.img or e.img,
+                duration=max(i.duration or 0, e.duration or 0),
+                category=self.__improve_category(i, e)
+            )
+            if (i.duration, e.duration) == (None, None):
+                logger.warning(f"NOT FOUND duration {e.url}")
+            #if e.cycle is None and i.description and e.category == Category.CINEMA:
+                #minutes = tuple(map(int, re.findall(r"(\d+)[’’]", i.description)))
+                #shorts = tuple(i for i in minutes if i < 30)
+                #if len(minutes) > 1 and re.search(r"Jan Soldat", i.description):
+                #    e = e.merge(cycle="Jan Soldat")
+                #elif len(shorts) > 1:
+                #    e = e.merge(cycle="Cortometrajes")
+            evs.add(e)
+        return tuple(sorted(evs))
+
+    def __improve_category(self, i: InfoSoup, e: Event):
+        if e.category in (
+            Category.LITERATURE,
+            Category.READING_CLUB,
+            Category.CONFERENCE
+        ):
+            return find_book_category(e.name, i.description, e.category)
+        #if e.category == Category.UNKNOWN:
+        #    logger.critical(str(CategoryUnknown(e.url, None)))
+        return e.category
+
+    def __find_session_duration(self, url: str, i: dict):
+        duration = None
+        a = _to_date(i['date_start_ical'], i.get('time_start_txt'))
+        z = _to_date(i.get('date_end_ical'), i.get('time_end_txt'))
+        sl = i['subheadline']
+        for d in map(int, re_min.findall(sl)):
+            duration = (duration or 0) + d
+        if duration is None and z:
+            duration = (z-a).total_seconds() // 60
+        rl = i.get("registration_link_url")
+        if rl and not re.match(r"^https?://.*", rl, flags=re.I):
+            rl = None
+        url = clean_url(rl)
+        s = Session(
+            date=a.strftime("%Y-%m-%d %H:%M"),
+            url=url
+        )
+        if s.url:
+            for u in self.__skip_store:
+                if u.startswith(s.url):
+                    logger.debug(f"Descartada sesion={s.url} en {url}")
+                    return tuple(), duration
+        return (s, ), duration
+
+    def __find_place(self, url: str, i: dict):
+        lc = i['location_IDtxt']
+        if lc is None:
+            return None
+        if re_or(
+            lc,
+            "Goethe-Institut",
+            flags=re.I
+        ):
+            return Places.GOETHE.value
+        if re_or(
+            lc,
+            "Teatro Cuarta Pared",
+            flags=re.I
+        ):
+            return Places.CUARTA_PARED.value
+        if re_or(
+            lc,
+            "Valle-Incl[aá]n",
+            flags=re.I
+        ):
+            return Places.VALLE_INCLAN.value
+        if re_or(
+            lc,
+            "mariqueen",
+            flags=re.I
+        ):
+            return Places.MARIQUEEN.value
+        if re_or(
+            lc,
+            "r[eé]plika",
+            flags=re.I
+        ):
+            return Places.REPLIKA.value
+        if re_or(
+            lc,
+            "cine dor[eé]",
+            flags=re.I
+        ):
+            return Places.DORE.value
+        if re_or(
+            lc,
+            "Casa del Lector",
+            flags=re.I
+        ):
+            return Places.CASA_DEL_LECTOR.value
+
+        if re_or(
+            lc,
+            ("Intermediae", "Matadero"),
+            flags=re.I
+        ):
+            return Places.MATADERO.value
+        logger.warning(f"NOT FOUND place {lc} in {url}")
+        return Place(
+            address=lc,
+            name=lc
+        )
+
+    def __find_price(self, url: str, i: dict):
+        price = i.get("price")
+        prc = find_euros(price)
+        if prc is not None:
+            return prc
+        logger.critical(f"NOT FOUND price {price} {url}")
+        return 0
+
+    def __find_year_director(self, i: dict):
+        subheadline = re_sp.sub(" ", i.get('subheadline') or "").strip()
+        match = re.match(r"^([^\|]+) \| ((?:20|19)\d{2}) \|", subheadline)
+        if match:
+            return match.group(1), int(match.group(2))
+        return None, None
+
+    def __find_category(self, url: str, i: dict):
+        et = i['event_type']
+        if re_or(
+            et,
+            "Encuentro literario",
+            flags=re.I
+        ):
+            return Category.LITERATURE
+        if re_or(
+            et,
+            "Debate",
+            "conferencia",
+            r"presentaci[oó]n",
+            "Seminario",
+            "Mesa redonda",
+            r"Encuentro con la editora",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+        if re_or(
+            et,
+            "club de lectura",
+            flags=re.I
+        ):
+            return Category.READING_CLUB
+        if re_or(
+            et,
+            "formación",
+            "Ponencia y taller",
+            flags=re.I
+        ):
+            return Category.WORKSHOP
+        if re_or(
+            et,
+            "proyecci[oó]n(es)?",
+            "Pel[ií]culas?",
+            "(pre-?)?Estreno",
+            flags=re.I
+        ):
+            return Category.CINEMA
+        if re_or(
+            et,
+            "concierto",
+            "RAVE JAM",
+            r"Festival internacional de Piano",
+            flags=re.I
+        ):
+            return Category.MUSIC
+        if re_or(
+            et,
+            "teatro",
+            "Performance",
+            r"esc[eé]nicas?",
+            "Lectura teatral",
+            r"radioteatro",
+            flags=re.I
+        ):
+            return Category.THEATER
+        if re_or(
+            et,
+            r"Exposici[oó]n",
+            flags=re.I
+        ):
+            return Category.EXPO
+        if re_or(
+            et,
+            r"fiesta",
+            flags=re.I
+        ):
+            return Category.PARTY
+        if re_or(
+            i['subheadline'],
+            r'Exposici[óo]nes?',
+            flags=re.I
+        ):
+            return Category.EXPO
+        logger.warning(str(CategoryUnknown(url, et)))
+        return Category.UNKNOWN
+
+
+if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/goethe.log", log_level=logging.INFO)
+    g = Goethe(max_price=10)
+    print(len(g.get_events()))

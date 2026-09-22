@@ -1,0 +1,725 @@
+from core.ics import IcsReader, IcsEventWrapper
+from functools import cached_property
+from core.event import Event, Place, Session, Category, CategoryUnknown, find_book_category
+from core.place import Places
+from core.util import re_or, re_and, get_domain, clean_url
+import requests
+import re
+from bs4 import BeautifulSoup, Tag
+from collections import defaultdict
+from types import MappingProxyType
+from functools import cache
+from core.web import buildSoup, get_text
+import feedparser
+import logging
+from typing import Callable
+from requests import Session as ReqSession
+from bs4 import XMLParsedAsHTMLWarning
+from core.util import find_euros, get_obj
+from core.cache import HashTupleCache, myhash
+from datetime import datetime
+import pytz
+import urllib3
+import warnings
+import json
+from typing import NamedTuple, Optional
+from core.md import MD
+from portal.base import Base
+
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+
+urllib3.disable_warnings()
+logger = logging.getLogger(__name__)
+re_sp = re.compile(r"\s+")
+
+NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
+
+
+class Info(NamedTuple):
+    url: str
+    ldj: dict
+    sym: dict
+    pog: dict
+    description: Optional[str] = None
+
+    def get_shop(self):
+        ok: set[str] = set()
+        aux: set[str] = set()
+        ko: set[str] = set()
+        for shop in map(str.strip, self.__iter_shop()):
+            if re.match(r"https?://eventos\..+?/event_detail/\d+/tickets\.html", shop):
+                continue
+            if not re.search(r"^https?://", shop):
+                ko.add(shop)
+                continue
+            if get_domain(shop) in (
+                "eventim-light.com",
+                "cultura.uc3m.es",
+                "tienda.madrid-destino.com",
+                "rockthesport.com",
+            ):
+                ok.add(shop)
+                continue
+            aux.add(shop)
+        if len(ok) == 0:
+            ok = aux
+        else:
+            ko.update(aux)
+        for k in sorted(ko):
+            logger.warning(f"SHOP unknown {k}")
+        if len(ok) == 0:
+            return None
+        if len(ok) == 1:
+            return ok.pop()
+        for k in sorted(ok):
+            logger.warning(f"SHOP ambiguous {k}")
+
+    def __iter_shop(self):
+        def _fix(s: str):
+            if s is None:
+                return None
+            s = s.strip()
+            if s in ("", "#"):
+                return None
+            for k, v in {
+                "httpstiendamadrid-destinocomesdaoiz-y-velarde": "https://tienda.madrid-destino.com/es/daoiz-y-velarde/",
+                "httpsculturauc3meseventos": "https://cultura.uc3m.es/eventos/",
+            }.items():
+                if s.startswith(k):
+                    return v + s[len(k):]
+            return s
+
+        arr: list[str] = []
+        if self.sym is not None:
+            arr.append(self.sym.get("short_url"))
+            b = buildSoup(self.url, self.sym.get("enrolment_button"))
+            if b:
+                for a in b.select("a[href]"):
+                    arr.append(a.attrs["href"])
+        for shop in map(_fix, arr):
+            if shop:
+                yield shop
+
+    def get_img(self):
+        if self.pog:
+            img = self.pog.get('image')
+            if img:
+                return img
+        if self.description:
+            descNone = buildSoup(self.url, self.description)
+            img = descNone.select_one("img[src]")
+            if img:
+                return img.attrs["src"]
+
+    def get_price(self):
+        if self.ldj:
+            offers = self.ldj.get('offers')
+            if isinstance(offers, list) and len(offers) > 0:
+                prices: set[float] = set()
+                for o in offers:
+                    prices.add(float(o['price']))
+                if len(prices):
+                    return max(prices)
+
+    def get_categories(self):
+        val: set[str] = set()
+        if isinstance(self.sym, dict):
+            arr = []
+            for k in ('categories', 'tags'):
+                v = self.sym.get(k)
+                if isinstance(v, list):
+                    arr.extend(v)
+            for c in arr:
+                if isinstance(c, dict):
+                    v = c.get("name")
+                    if isinstance(v, str):
+                        v = re_sp.sub(" ", v).strip()
+                        if len(v):
+                            val.add(v)
+        if val:
+            return tuple(val)
+
+    def get_menu(self):
+        if self.sym is None:
+            return tuple()
+        mn = self.sym.get("menu")
+        if isinstance(mn, dict):
+            mn = list(mn.values())
+        if not isinstance(mn, list):
+            return tuple()
+        menu: list[str] = []
+        for m in mn:
+            lb = re_sp.sub(" ", (m.get('label') or '')).strip().lower()
+            if lb and lb not in menu:
+                menu.append(lb)
+        return tuple(menu)
+
+    @staticmethod
+    def build(*args, **kwargs):
+        obj = get_obj(*args, **kwargs)
+        if obj is None:
+            return None
+        return Info(**obj)
+
+
+def load_kml_soup(url: str, verify_ssl=True):
+    r = requests.get(url, verify=verify_ssl)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.content, "xml")
+    return soup
+
+
+def clean_place_name(name: str, domain: str) -> str:
+    if name is None:
+        return None
+    name = re_sp.sub(" ", name).strip()
+    if len(name) == 0:
+        return None
+    if re_and(name, ("URJC", "Juan Carlos"), "Quintana", flags=re.I):
+        return "URJC Quintana"
+    if re_and(name, "Quintana,? 21", flags=re.I):
+        return "URJC Quintana"
+    if re_and(name, "Carlos III", "Puerta (de )?Toledo", flags=re.I):
+        return "UC3 Puerta Toledo"
+    if domain and "uc3m" in domain and (
+        re_and(name, ("ronda", "puerta"), "toledo", "28005", flags=re.I) or
+        re_and(name, "campus", ("ronda", "puerta"), "toledo", flags=re.I)
+    ):
+        return "UC3 Puerta Toledo"
+    if re_and(name, "ateneo (de )?Madrid", flags=re.I):
+        return "Ateneo Madrid"
+    if re_and(name, "colegio", "san pedro", "san pablo", flags=re.I):
+        return "Colegio San Pedro y San Pablo"
+    if re_and(name, "Ciencias de la Informaci[oó]n", "Complutense", flags=re.I):
+        return "UCM Ciencias de la información"
+    if re_and(
+        name,
+        "metro tribunal",
+        flags=re.I
+    ):
+        return "Metro Tribunal"
+    if domain and "ucm" in domain and re_or(name, r"facultad\b.*\bqu[ií]micas?", flags=re.I):
+        return "UCM Química"
+    if domain and "uc3m" in domain and re_or(
+        name,
+        r"Residencia de estudiantes",
+        flags=re.I
+    ):
+        return "UC3M Residencia de estudiantes"
+    return name
+
+
+def _get_ldj(soup: Tag):
+    slc = "script[type='application/ld+json']"
+    txt = get_text(soup.select_one(slc))
+    if txt is None:
+        return None
+    ldj = json.loads(txt)
+    if ldj is None:
+        return None
+    if not isinstance(ldj, dict):
+        raise ValueError(f"{slc} = {txt}")
+    return ldj
+
+
+def _get_sym(soup: Tag):
+    for script in map(get_text, soup.select("script")):
+        m = re.match(
+            re.escape("var SYM = $.extend(SYM || {}, {data:") + r"(.+)}\);.*",
+            script or ""
+        )
+        if m:
+            txt = m.group(1)
+            sym = json.loads(txt)
+            if sym is None:
+                continue
+            if not isinstance(sym, dict):
+                raise ValueError(f"SYM = {txt}")
+            return sym
+
+
+def _get_pog(soup: Tag):
+    pog = {}
+    for k in ('image', ):
+        og_node = soup.select_one(f"meta[property='og:{k}']")
+        if og_node:
+            v = og_node.get("content")
+            if v:
+                v = re_sp.sub(r" ", v).strip()
+                if len(v):
+                    pog[k] = v
+    return pog
+
+
+class Universidad(Base):
+    def __init__(
+        self,
+        ics: str,
+        verify_ssl=True,
+        isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
+        isOkDate: Callable[[datetime], bool] = None,
+        max_price: Optional[float] = None,
+        cache: bool | str = True
+    ):
+        if cache is True:
+            cache = f"events/{self.__class__.__name__}_{myhash(ics)}_max_price={max_price}.json"
+        super().__init__(cache=cache)
+        self.__verify_ssl = verify_ssl
+        self.__max_price = max_price
+        self.__ics_url = ics
+        self.__isOkPlace = isOkPlace or (lambda *_: True)
+        self.__ics = IcsReader(
+            ics,
+            verify_ssl=verify_ssl,
+            isOkDate=isOkDate
+        )
+        self.__kml_url = re.sub(
+            r"/ics/location/(.+)/(.+)\.ics$",
+            r"/kml/get/\2.kml",
+            ics
+        )
+        self.__rss_url = ics.replace("/ics/", "/rss/").replace(".ics", ".rss")
+        self.__verify_ssl = verify_ssl
+        self.__s = ReqSession()
+
+    @cached_property
+    def __rss(self):
+        return feedparser.parse(self.__rss_url)
+
+    @cached_property
+    def __kml_soup(self):
+        return load_kml_soup(self.__kml_url, verify_ssl=self.__verify_ssl)
+
+    @cache
+    def __get(self, url: str):
+        r = self.__s.get(url, verify=self.__verify_ssl)
+        r.raise_for_status()
+        return buildSoup(url, r.content)
+
+    @HashTupleCache("rec/universidad/{}.json", builder=Info.build)
+    def __get_info(self, url: str):
+        soup = self.__get(url)
+        ldj = _get_ldj(soup)
+        sym = _get_sym(soup)
+        pog = _get_pog(soup)
+        description = (sym or {}).get("description")
+        if description is None:
+            descNone = soup.select_one(".ag_description, #description-container")
+            if descNone:
+                description = str(descNone)
+        return Info(
+            url=url,
+            ldj=ldj,
+            sym=sym,
+            pog=pog,
+            description=description
+        )
+
+    def __find_description(self, url: str, name: str) -> str:
+        for i in self.__rss.entries:
+            if i.link in (url, url + ".html"):
+                return i.description
+        for p in self.__kml_soup.select("Placemark:has(name):has(description)"):
+            n = p.find("name").text.strip()
+            if n != name:
+                continue
+            c = p.find("description").text.strip()
+            if len(c) == 0:
+                return c
+        info = self.__get_info(url)
+        if info:
+            return info.description
+
+    @cache
+    def __get_description(self, url: str, name: str) -> str:
+        html = self.__find_description(url, name)
+        return MD.convert(html)
+
+    @cache
+    def __get_more(self, url: str, name: str) -> str:
+        html = self.__find_description(url, name)
+        if html is None:
+            return None
+        soup = buildSoup(url, html)
+        a = soup.find("a", string=re.compile(r".*m[áa]s informaci[óo]n.*", flags=re.I))
+        if a:
+            href = a.attrs.get("href")
+            if re.match(r"^https?://\S+$", href or '', flags=re.I):
+                return href
+
+    @cache
+    def __find_coordinates(self, name: str):
+        if name is None or len(name.strip()) == 0:
+            return None
+        coord: set[tuple[float, float]] = set()
+        for p in self.__kml_soup.select("Placemark:has(name):has(coordinates)"):
+            n = p.find("name").text.strip()
+            if n != name:
+                continue
+            c = p.find("coordinates").text.strip()
+            if len(c) == 0:
+                continue
+            lon, lat = tuple(map(float, c.split(",")))[:2]
+            lat = round(lat, 6)
+            lon = round(lon, 6)
+            coord.add((lat, lon))
+        if len(coord) == 1:
+            lat, lon = coord.pop()
+            return f"{lat},{lon}"
+
+    @cache
+    def __get_locations(self):
+        loc: dict[str, set[str]] = defaultdict(set)
+        for e in self.__ics.events:
+            latlon = self.__find_coordinates(e.SUMMARY)
+            if latlon and e.LOCATION:
+                loc[e.LOCATION].add(latlon)
+        rt: dict[str, str] = {}
+        for k, v in loc.items():
+            if len(v) == 1:
+                rt[k] = v.pop()
+        return MappingProxyType(rt)
+
+    def _get_events(self):
+        events: set[Event] = set()
+        for e in self.__ics.events:
+            if e.DTSTART <= NOW:
+                continue
+            link = self.__find_url(e)
+            place = self.__find_place(e, link)
+            if place is None:
+                continue
+            place = place.normalize()
+            if not self.__isOkPlace(place):
+                continue
+            if link is None:
+                logger.warning(f"Evento sin URL {e}")
+                continue
+            price = self.__find_price(link, e)
+            if None not in (self.__max_price, price) and price > self.__max_price:
+                continue
+            category = self.__find_category(link, e)
+            img = self.__find_img(link, e)
+            info = self.__get_info(link)
+            event = Event(
+                id=e.UID,
+                url=clean_url(link),
+                name=e.SUMMARY,
+                duration=e.duration or 60,
+                img=img,
+                price=price,
+                #publish=e.str_publish,
+                category=category,
+                place=place,
+                sessions=(
+                    Session(
+                        date=e.DTSTART.strftime("%Y-%m-%d %H:%M"),
+                        url=info.get_shop() if info else None,
+                    ),
+                ),
+                more=self.__get_more(link, e.SUMMARY),
+                description=e.get_full_description()
+            )
+            events.add(event)
+        evs = tuple(sorted(events))
+        return evs
+
+    def __find_place(self, e: IcsEventWrapper, url: str):
+        description = self.__get_description(url, e.SUMMARY)
+        if re_or(
+            description,
+            r"Centro Cultural Dao[íi]z y Velarde",
+            flags=re.I
+        ):
+            return Places.CC_DAOIZ_VALVERDE.value
+        if not e.LOCATION:
+            return None
+        if re_and(e.LOCATION, "ateneo (de )?Madrid", flags=re.I):
+            return Places.ATENEO_MADRID.value
+        latlon = self.__find_coordinates(e.SUMMARY)
+        if latlon is None:
+            loc_latlon = self.__get_locations()
+            latlon = loc_latlon.get(e.LOCATION)
+        dom = get_domain(url)
+        p = Place(
+            name=clean_place_name(e.LOCATION, dom),
+            address=e.LOCATION,
+            latlon=latlon
+        )
+        return p
+
+    def __find_category(self, link: str, e: IcsEventWrapper) -> Category:
+        if re_or(
+            e.SUMMARY,
+            r" \(Online\)$",
+            r"^Graduaci[oó]n(es)? de",
+            r"M[aá]ster de",
+            r"Actividad formativa de Doctorado",
+            r"pr[aá]cticas y empleo",
+            r"Encuentro AlumniUAH",
+            r"Abogac[íi]a de los negocios",
+            r"Universidad Emprendedora",
+            r"International Symposium",
+            r"Presentaci[óo]n del nuevo Dec[aá]logo",
+            r"Elecciones Junta",
+            r"Bridge the Digital Divide",
+            r"gesti[oó]n de riesgos.*nbq",
+            r"Encuentro.* nuevas? promoci[óo]n(es)?",
+            r"MINDSET EJECUTIVO",
+            r"D[ií]a del Estudiante",
+            r"PhDay",
+            r"Pastoreo Urbano",
+            r"Bienvenida Universitaria",
+            r"para\b.*\bd?el estudiantado universitario",
+            ("Carrera", "Psicolog[ií]a por la Salud"),
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+        description = self.__get_description(link, e.SUMMARY)
+        if re_or(
+            description,
+            r"M[aá]ster de",
+            r"Actividad abierta a la comunidad universitaria",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+        info = self.__get_info(link)
+        enrolment_button = MD.convert(info.sym.get("enrolment_button") if info and info.sym else None)
+        if re_or(
+            enrolment_button,
+            r"La inscripci[oó]n ha finalizado",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+        if re_or(
+            description,
+            r"Actividad para alumnos[^\.]*? (ESO|Primaria)",
+            flags=re.I
+        ):
+            return Category.CHILDISH
+        if re_or(
+            e.SUMMARY,
+            r"UN REGRESO DE CINE",
+            r"Cine foro",
+            r"cinef[oó]rum",
+            r"Muestra( Internacional)? de Cine",
+            flags=re.I
+        ):
+            return Category.CINEMA
+        if re_or(
+            e.SUMMARY,
+            "Presentaci[óo]n de la asociaci[óo]n",
+            "coloquio",
+            "Simposio",
+            "seminario",
+            "mesa redonda",
+            "^Conferencia",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+        if re_or(
+            e.SUMMARY,
+            "Presentaci[óo]n del libro",
+            r"Ediciones Complutense",
+            flags=re.I
+        ):
+            return Category.LITERATURE
+        if re_or(
+            e.SUMMARY,
+            "^taller",
+            "Hackathon",
+            flags=re.I
+        ):
+            return Category.WORKSHOP
+        if re_or(
+            description,
+            "obra esc[eé]nica",
+            "conferencia teatralizada",
+            "Grupo de Teatro",
+            flags=re.I
+        ):
+            return Category.THEATER
+        if re_or(
+            description,
+            r"Encuentro con",
+            r"ponentes",
+            r"coloquio posterior",
+            r"seminario",
+            r"conferencias?",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+
+        categories = (info.get_categories() if info else None) or tuple()
+
+        def has_cat(*args):
+            for c in categories:
+                if re_or(c, *args, flags=re.I):
+                    return True
+            return False
+
+        if has_cat(
+            r"Investigaci[oó]n doctoral",
+            "Veterinaria",
+        ):
+            return Category.NO_EVENT
+        if has_cat(
+            "crossfit",
+            "Deporte profesional"
+        ):
+            return Category.SPORT
+        if has_cat(
+            "Club lectura"
+        ):
+            return find_book_category(e.SUMMARY, e.DESCRIPTION, Category.READING_CLUB)
+        if has_cat(
+            r"exposici[oó]n"
+        ):
+            return Category.EXPO
+        for c in categories:
+            if re_or(c, "teatro", flags=re.I):
+                return Category.THEATER
+            if re_or(
+                c,
+                r"divulgaci[oó]n",
+                r"Conversaci[óo]n(es)?",
+                "docencia",
+                "congreso",
+                "conferencia",
+                "encuentros?",
+                flags=re.I
+            ):
+                return Category.CONFERENCE
+            if re_or(
+                c,
+                r"Producci[oó]n audiovisual",
+                r"Audiovisual production",
+                flags=re.I
+            ):
+                return Category.CINEMA
+            if re_or(c, "Danza y baile", "Music, theatre and dance", flags=re.I):
+                return Category.DANCE
+
+        menu = (info.get_menu() if info else None) or tuple()
+        for m in menu:
+            if re_or(m, "ponentes?", flags=re.I):
+                return Category.CONFERENCE
+
+        if re_or(
+            e.SUMMARY,
+            "charla historiogr[aá]fica",
+            "conservatorio",
+            "Encuentro con",
+            "Jornadas?( Universitaria)? (sobre|de)",
+            "congreso",
+            r"Conferencia",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+        if re_or(
+            e.SUMMARY,
+            "tour",
+            flags=re.I
+        ):
+            return Category.VISIT
+        if re_or(
+            description,
+            r"congreso",
+            r"Ponentes",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+        if re_or(
+            description,
+            r"(visita|Ruta) guiada",
+            flags=re.I
+        ):
+            return Category.VISIT
+        if re_or(
+            description,
+            ("marketing", "empresarial"),
+            r"Seminar ONSITE",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+        if re_or(
+            e.LOCATION,
+            "y online",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
+        logger.critical(str(CategoryUnknown(link, f"categories={categories} {e}")))
+        return Category.UNKNOWN
+
+    def __find_url(self, e: IcsEventWrapper):
+        for url in (e.URL, e.DESCRIPTION):
+            if isinstance(url, str) and url.startswith("http"):
+                return url
+
+    def __find_img(self, link: str, e: IcsEventWrapper):
+        for img in (e.ATTACH,):
+            if isinstance(img, str) and img.startswith("http"):
+                return img
+        info = self.__get_info(link)
+        if info:
+            return info.get_img()
+
+    def __find_price(self, link: str, e: IcsEventWrapper) -> float | int:
+        description = self.__get_description(link, e.SUMMARY)
+        prc = find_euros(description)
+        if prc is not None:
+            return prc
+        info = self.__get_info(link)
+        if info:
+            prc = info.get_price()
+            if prc is not None:
+                return prc
+        return 0
+
+
+class Universidades(Base):
+    def __init__(
+        self,
+        *urls: str,
+        verify_ssl=True,
+        isOkPlace: Callable[[Place | tuple[float, float] | str], bool] = None,
+        isOkDate: Callable[[datetime], bool] = None,
+        max_price: Optional[float] = None
+    ):
+        super().__init__(cache=False)
+        self.__urls = urls
+        self.__verify_ssl = verify_ssl
+        self.__isOkPlace = isOkPlace
+        self.__isOkDate = isOkDate
+        self.__max_price = max_price
+
+    def _get_events(self):
+        events: set[Event] = set()
+        for url in self.__urls:
+            events.update(Universidad(
+                url,
+                verify_ssl=self.__verify_ssl,
+                isOkPlace=self.__isOkPlace,
+                isOkDate=self.__isOkDate,
+                max_price=self.__max_price
+            ).get_events())
+        evs = tuple(sorted(events))
+        return evs
+
+
+if __name__ == "__main__":
+    from core.log import config_log
+    config_log("log/universidades.log", log_level=(logging.DEBUG))
+    # https://eventos.uc3m.es/kml.html
+    # https://eventos.ucm.es/kml.html
+    # https://eventos.uam.es/kml.html
+    # https://eventos.urjc.es/kml.html
+    evs = Universidades(
+        "https://eventos.uc3m.es/ics/location/espana/lo-1.ics",
+        "https://eventos.ucm.es/ics/location/espana/lo-1.ics",
+        "https://eventos.uam.es/ics/location/espana/lo-1.ics",
+        "https://eventos.urjc.es/ics/location/espana/lo-1.ics",
+        "https://eventos.uah.es/ics/location/espana/lo-1.ics",
+        max_price=10,
+        verify_ssl=False,
+    ).get_events()

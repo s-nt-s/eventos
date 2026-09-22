@@ -1,0 +1,421 @@
+import re
+from functools import cache
+from unidecode import unidecode
+
+_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬📽 🌎🗣🎉🌍🍉🥾📚💥🌸💀👗👕🥾👠👜♻️💚]+"
+RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
+RE_DEDUP = re.compile(r"(!+|¡+|¿+|\?+)")
+
+_QUOTES = (
+    '""',
+    "''",
+    '`´',
+    '‘’',
+    '“”',
+    '«»'
+)
+_QT = "".join(_QUOTES)
+
+_SPECIAL_WORDS = (
+    "María la Rica",
+    "Carmen",
+    "Sevilla",
+    "Cervantes",
+    "Alcalá",
+    "Henares",
+    "Antezana",
+    "Santiago",
+    "Complutense",
+    "Mononoke",
+    "IV",
+    "BSMM",
+    "Paco de Lucía",
+    "AWWZ",
+    "CSO",
+    "EKO",
+    "IA",
+    "AI",
+    "centro cultural",
+    "XXX",
+    "XXIX",
+    "VHZ",
+    "XXV",
+    "Quijote",
+    "Sara Torres",
+    "Karelis Zambrano",
+    "Carmen Rojas",
+    "Shakespeare",
+    "Finzi Pasca",
+    "Frankenstein",
+    "O'Donnell",
+    "XIII",
+    "XXI",
+    "III",
+    "EE.UU",
+)
+
+_RG_SPECIAL_WORDS = re.compile(
+    r"\b(" + "|".join(map(re.escape, _SPECIAL_WORDS)) + r")\b",
+    re.I
+)
+_RE_SPECIAL_WORDS = {x.lower(): x for x in _SPECIAL_WORDS}
+
+
+def capitalize(name: str):
+    if name is None or len(name) == 0:
+        return name
+
+    if name == name.upper():
+        name = name.capitalize()
+
+    name = _RG_SPECIAL_WORDS.sub(
+        lambda m: _RE_SPECIAL_WORDS[m.group(0).lower()],
+        name
+    )
+    i = 0
+    while i < len(name) and name[i] in ("¡¿'"):
+        i = i + 1
+    if i < len(name) and name[i].isalpha():
+        name = name[:i] + name[i].upper() + name[i+1:]
+
+    return name
+
+
+def normalize_quote(s: str):
+    if s is None or len(s) == 0:
+        return s
+
+    bak = ''
+    s = s.strip()
+    while len(s) and bak != s:
+        bak = str(s)
+        for q in _QUOTES:
+            if s.count(q) == 1:
+                s = s.replace(q, "")
+            if len(s) >= 2 and (s[0]+s[-1]) == q:
+                s = s[1:-1]
+            if len(s) >= 2:
+                count = sum(map(s.count, set(q)))
+                if count == 1:
+                    if s[0] in q:
+                        s = s[1:].strip()
+                    elif s[-1] in q:
+                        s = s[:-1].strip()
+        s = s.strip()
+        if "'" not in s:
+            s = re.sub(r'['+_QT+']', "'", s)
+    return s
+
+
+@cache
+def _rm_prefix():
+    SP = r":\-\.\|/;–\-"
+    SEP = r"["+SP+r"]"
+    TAIL_NO_SEP = r"\b[^"+SP+"]*?"
+    PREFIX_1 = r"|".join([
+        r"Confesiones Confusas",
+        r"Cine",
+        r"Teatro",
+        r"Festival de las ideas",
+        r"Cineforum Ateneo",
+        r"Voces del cine europeo contempor[aá]neo",
+        r"Casa Asia en el Festival de las Ideas",
+        r"Casa (de )?M[eé]xico",
+        r"Mercado Guzm[aá]n el Bueno",
+        r"Encuentro art[ií]stico",
+        r"Festival de f[ií]n de curso",
+        r"Akelarre Digital",
+        r"Cine Foro BAUM",
+        r"Programa de cine",
+        r"FIVER FESTIVAL",
+        r"Encuentros? Nodo Madrid [–\-,] redACTS",
+        r"D[ií]a Europeo de la M[úu]sica",
+        r"Sesiones especiales",
+        r"Estrenos documentales",
+        r"Retrospectiva"+TAIL_NO_SEP,
+        r"FILMADRID",
+        r"Estrenos de ficci[oó]n",
+        r"CinePlaza: Superestrellas \d+",
+        r"Festival fin de curso",
+        r"Akelarre Relacional",
+        r"Documenta Madrid",
+        r"Pre[\-\s]*Estreno Cortometraje",
+        r"Danza contemporánea en la biblioteca",
+        r"Camino'escena",
+        r"Comedia",
+        r"Ediciones Complutense",
+        r"FRANCIA EST[AÁ] EN PANTALLA",
+        r"Bis de junio \([A-Z]+\)\s*",
+        r"Reposici[oó]n",
+        r"Domingo de cl[aá]sicos",
+        r"Cl[aá]sicos al detalle",
+        r"Cuba Vibra",
+        r"Espacio Queer",
+        r"\d+ German Film Fest Madrid",
+        r"GERMAN FILM FEST( MADRID Focus Goethe( Institut)?)?",
+        r"Ciclo de Cine Ecofeminista",
+        r"Medialab",
+        r"Intermediae",
+        r"Centro de Residencias Artísticas",
+        r"Sesi[óo]n de (clausura|inauguraci[oó]n)",
+        r"DEMM\d+\.? Conciertos (lunes|martes|mi[ée]rcoles|jueves|viernes|s[aá]bado|domingo) \d+ de \w+",
+        r"Cinef[oó]rum con"+TAIL_NO_SEP,
+        r"Cinef[oó]rum rebelde",
+        r"PSICOLOG[IÍ]A EN EL ATENEO",
+        r"Documental",
+        r"Mesa redonda",
+        r"Concierto de piano",
+        r"Tardes romanas"+TAIL_NO_SEP,
+        r"Club de lectura"+TAIL_NO_SEP,
+        r"Anarkademia",
+        r"Cine\s*Club\s*Goethe",
+        r"(?:Ob?ra de |Representaci[óo]n de )?[tT]eatro(?: para adultos| Comedia Sat[ií]rica)?",
+        r"Colecci[óo]n\.? Arte contempor[aá]neo",
+        r"Celebra\d+",
+        r"Cap[ií]tulo XXX",
+        r"CIMA (?:proyecta|Conversa)",
+        r"(?:Grupo|Club) de lectur[Ⓐa]",
+        r"Charla",
+        r"Concierto",
+        r"Ciclo de conferencias?",
+        r"Magia",
+        r"Cine",
+        r"M[uú]sica",
+        r"Semana de la Ciencia \d+",
+        r"Charlas con altura",
+        r"Pel[íi]cula",
+        r"Visita(?: a la exposici[oó]n| comentada| guiada)?",
+        r"Lectura dramatizada",
+        r"Presentaci[oó]n(?: del| de los)? libros?",
+        r"Cinef[oó]rum(?:(?: de)? (?:Isabel S[aá]nchez|Esqueria))?",
+        r"Madrid, plató de cine",
+        r"Conferencia(?: y audiovisual)?",
+        r"Proyecci[oó]n(?:(?: del)? documental|(?: de la) pel[ií]cula)?",
+        r"Exposici[oó]n",
+        r"Danza",
+        r"Noches? de Cl[aá]sicos?",
+        r"21 Distritos",
+        r"Representaci[óo]n teatral",
+        r"Taller",
+        r"Conversaciones WAIQ",
+        r"Muestra Teatral",
+        r"Espect[aá]culo de Danza",
+        r"Taller de Danza",
+        r"TALLER DE FORMACI[OÓ]N LIBERTARIA, ANARKADEMIA, \d+.? EDICI[OÓ]N",
+    ])
+    PREFIX_2 = r"|".join({
+        r"POM Condeduque [\d\-]+",
+    })
+    PREFIX_3 = r"|".join({
+        r".*CinePlaza:.*?> (?:Proyección|Cine)[^:]*:",
+    })
+    re_1 = r"(?:(?:"+PREFIX_1+r")\s*"+SEP+r"+)"
+    re_2 = r"(?:(?:"+PREFIX_2+r")\s*"+SEP+r"*)"
+    re_3 = r"(?:"+PREFIX_3+r")"
+    rm_prefix = re.compile("^(?:" + re_1 + r"|" + re_2 + r"|" + re_3 + r")\s*", flags=re.I)
+    return rm_prefix
+
+
+@cache
+def _rm_sufix():
+    SEP = r"[–\-\.\|]"
+    SUFIX_1 = "|".join([
+        r"Festival Cine por mujeres Madrid",
+        r"Fiesta de verano",
+        r"Cl[aá]sicos a refugio",
+        r"Muestra '?Raquel P[eé]rez Formaci[oó]n Actoral'?",
+        r"[OÓ]h!pera Summer \d+",
+        r"(?:Sede:? )?(?:Cine Estudio CBA|Sala Berlanga|centro cultural Paco Rabal|Sala Equis|Academia de Cine|Cine Dor[ée]|Yelmo Ideal)",
+        r"(?:Sede:? )?Fundación Casa de M[eé]xico(?: en España)",
+        r"(?:Actividades )?(?:viernes|s[aá]bado|domingo) (?:tarde|mañana)",
+        r"Las tertulias de Eirene Editorial",
+        r"Visita a la colecci[oó]n del Museo",
+        r"CSO? La Cheli",
+        r"Rebeli[oó]n o Extinci[oó]n",
+        r"Moncloa(?:[ \-\.]+Aravaca)?",
+        r"Villaverde",
+        r"Centro",
+        r"en el Espacio de Igualdad Lourdes Hernández",
+        r"Encuentro con el p[uú]blico",
+        r"[IÍ]dem",
+        r"conferencia",
+        r"Arganzuela",
+        r"Retiro",
+        r"Chamberi",
+        r"Salamanca",
+        r"D[ií]a Internacional del Teatro",
+        r"Lectura dramatizada",
+        r"Biblioteca Ana Mar[ií]a Matute",
+        r"III Edici[oó]n",
+        r"\d+ de abril",
+        r"\d+ª Muestra de Cine Lésbico",
+    ])
+    SUFIX_2 = "|".join([
+        r"en el Espacio de Igualdad Lourdes Hernández",
+    ])
+    re_1 = r"(?:" + SEP+r"+\s*(?:"+SUFIX_1+r"))"
+    re_2 = r"(?:" + SEP+r"*\s*(?:"+SUFIX_2+r"))"
+    re_3 = r"(?:" + SEP+r")"
+    rm_sufix = re.compile(r"\s*(?:" + re_1 + r"|" + re_2 + r"|" + re_3+ r"+)\s*$", flags=re.I)
+    return rm_sufix
+
+
+@cache
+def _rm_quote():
+    NQ = r"[^"+_QT+"]"
+    PREFIX = "|".join([
+        r"20\d{2}/20\d{2}",
+        r"CLUB DE LECTUR[aⒶ] del Ateneo\.?",
+        r"Cine[\-\s*]*f[oó]rum del Ateneo[\s\.\-]*Proyecci[óo]n de",
+        r"Representaci[oó]n teatral",
+        r"Presentación del informe",
+        r"Grupo de lectura",
+        r"Muestra de teatro del colectivo de la Rosa",
+        r"Presentaci[oó]n del libro",
+        r"Cinef[oó]rum Isabel S[aá]nchez",
+        r"Concierto(?: de)?",
+        r"Cineclub(?: con)?",
+        r"Proyección(?: de)?",
+        r"Ciclo de conferencias de la Sociedad Española de Ret[oó]rica'?",
+        r"Proyecci[óo]n y coloquio",
+        r"Estreno del largometraje documental",
+        r"Taller(?: de)?",
+        r"Conferencias?",
+        r"Documental",
+        r"Jornadas",
+        r"club de lectura",
+        r"Mesa redonda",
+    ])
+    re_3 = r"(?:"+PREFIX+r")"
+    re_prefix = re.compile(r"^"+re_3+NQ+r"*(["+_QT+r"])", flags=re.I)
+    return re_prefix
+
+
+@cache
+def _sub_1():
+    R = "|".join([
+        r"(Matadero) (?:Madrid )?Centro de Creaci[oó]n Contempor[aá]nea",
+        r"(Red de Escuelas) Municipales del Ayuntamiento de Madrid",
+        r"(Piano City) (?:Madrid *'?\d+|Madrid|'?\d+)"
+        r"(Asociación de Jubilados) (?:del )?Ayuntamiento(?: de Madrid)?",
+        r"(¿|¡|«|“|‘|`|\(|\[)\s+",
+        r"\s+(\?|\!|»|”|’|´|\)|\]|\.|,|;|:)",
+    ])
+    re_1 = re.compile(R, flags=re.I)
+    return re_1
+
+
+def clean_name(name: str):
+    if name is None:
+        return None
+    if not isinstance(name, str):
+        raise ValueError(f"name must be a str, but is a {type(name)}: {name}")
+    if re.search(r"Visitas? dialogadas? Matadero", name):
+        return "Visita dialogada Matadero"
+
+    bak = []
+
+    name = re.sub(r"&quot;", '"', name)
+    while len(name) >= 2 and name not in bak:
+        bak.append(str(name))
+        name = RE_DEDUP.sub(lambda m: m.group(0)[0], name)
+        name = RE_TRIM.sub("", name)
+        name = normalize_quote(name)
+        name = re.sub(r"\.\.\.\s*", "… ", name).strip()
+        name = re.sub(r"[–—]+", "-", name).strip()
+        name = _rm_prefix().sub("", name)
+        name = _rm_sufix().sub("", name)
+        name = _rm_quote().sub(r"\1", name)
+        name = _sub_1().sub(lambda m: next(g for g in m.groups() if g is not None), name)
+        name = capitalize(name)
+
+    if bak and len(name) < 2:
+        name = bak[-1]
+    if name and name[0].isalpha():
+        name = name[0].upper()+name[1:]
+    return name
+
+
+def _escape(s: str):
+    r = re.escape(s)
+    r = re.sub(
+        "[áéíóúÁÉÍÚÓ]",
+        lambda x: f"[{x.group()}{unidecode(x.group())}]",
+        r
+    )
+    return r
+
+
+DIRECTORS = list(map(_escape, map(str.lower, [
+    'Mélisa Godet',
+    'Joséphine Japy',
+    'Mia Maariel Meyer',
+    'James Ward Byrkit',
+    'Angela Schanelec',
+    'Jessica Palud',
+    'Stephen Daldry',
+    'Mike Nichols',
+    'Woody Allen',
+    'Avelina Prat',
+    'Albert Serra',
+    'Jim Jarmusch',
+    'Soraya González Guerrero',
+    'Nuria Frigola Torrent',
+    "François-Xavier Tregan",
+    "Raquel Larrosa",
+    "Rodrigo García",
+    "Álvaro Hernández Blanco",
+    "Robert Rodríguez",
+    "Joann Sfar",
+    'Jean-Claude Flamand-Barny',
+    'Sébastien Lifshitz',
+    'Gilles Perret',
+    'Stéphane Demoustier',
+    'Sophie Deraspe',
+    'Stefan Liberski',
+    'Mehdi Idir y Grand Corps Malade',
+    'Jean-Paul Salomé',
+    'Sol Iglesias',
+    'Jack Hazan',
+    'Lucrecia Martel',
+    'Yorgos Lanthimos',
+    'Binka Zheliazkova',
+    'Jacques Deray',
+    'Gabriel Azorín',
+    'Lucía Seles',
+    'Sergio Pinilla',
+    'Nikita Lavretski',
+    "Richar Linklater",
+])))
+
+
+def _re_director(*directors):
+    for d in directors:
+        if d is not None:
+            d = _escape(d.lower())
+            if d not in DIRECTORS:
+                DIRECTORS.append(d)
+
+    dr = "|".join(DIRECTORS)
+    return (
+        re.compile(r"^\s*(?P<director>"+dr+r")\s*[\-\.]+\s*(?P<title>.+)\s*$", flags=re.I),
+        re.compile(r"^'\s*(?P<title>.+?)\s*'\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I),
+        re.compile(r"^«\s*(?P<title>.+?)\s*»\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I),
+        re.compile(r"^(?P<title>.+?)\s*,?\s*\bde\s+(?P<director>"+dr+r")\s*$", flags=re.I)
+    )
+
+
+def find_director(name: str, *directors: str):
+    for r in _re_director(*directors):
+        m = r.match(name)
+        if m:
+            return m.group('director'), m.group('title')
+    return None, None
+
+
+def find_all_directors(txt: str) -> tuple[str, ...]:
+    if not txt:
+        return tuple()
+    dr = "|".join(DIRECTORS)
+    re_dr = re.compile(r"\b("+dr+r")\b", flags=re.I)
+    return tuple(sorted(set(re_dr.findall(txt))))

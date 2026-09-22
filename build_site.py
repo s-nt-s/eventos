@@ -1,26 +1,16 @@
 #!/usr/bin/env python3
 
-from core.event import Event, Category, Session, Place, Cinema
-from core.ics import IcsEvent
-from core.casaencendida import CasaEncendida
-from core.dore import Dore
-from core.madriddestino import MadridDestino
-from core.salaberlanga import SalaBerlanga
-from core.salaequis import SalaEquis
-from core.casaamerica import CasaAmerica
-from core.academiacine import AcademiaCine
-from core.caixaforum import CaixaForum
-from core.madrides import MadridEs
-from core.telefonica import Telefonica
-from core.j2 import Jnj2, toTag
-from datetime import datetime, timedelta
+from core.event import Event, Category, Session, Cinema
+from core.ics import SimpleIcsEvent
+from core.j2 import Jnj2, toTag, dom_simplify
+from datetime import datetime, timedelta, date
 from core.log import config_log
 from core.img import MyImage
-from core.util import dict_add, get_domain, to_datetime, uniq, to_uuid
+from core.util import dict_add, get_domain, to_datetime, uniq
 import logging
 from os import environ
 from os.path import isfile
-from typing import Dict, Set, Tuple, List
+from typing import Tuple, Dict, Set
 from core.filemanager import FM
 import math
 import bs4
@@ -28,27 +18,105 @@ import re
 import pytz
 from core.rss import EventosRss
 from collections import defaultdict
+from portal.event_collector import EventCollector
+from core.publish import PublishDB
+from core.web import WEB
+from typing import NamedTuple
+from core.dwn import DWN
+from enum import Enum
 
-import argparse
-
-parser = argparse.ArgumentParser(description='Lista eventos')
-parser.add_argument('--precio', type=int, help="Precio máximo", default=5)
-
-args = parser.parse_args()
-PAGE_URL = environ['PAGE_URL']
-OUT = "out/"
 
 config_log("log/build_site.log")
 logger = logging.getLogger(__name__)
-white = (255, 255, 255)
-NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
-PUBLISH: dict[str, str] = FM.load(OUT+"publish.json")
+if environ.get("PAGE_OUT") is None:
+    environ["PAGE_OUT"] = "out/"
+
+PAGE_URL = environ['PAGE_URL']
+OUT = environ["PAGE_OUT"]
+WHITE = (255, 255, 255)
+STR_TODAY = date.today().strftime("%Y-%m-%d")
+
+
+PUBLISHDB = PublishDB(
+    name="publish.txt",
+    local=OUT,
+    remote=PAGE_URL
+)
+
+CLSS = defaultdict(list)
+CLSS_COUNT = defaultdict(int)
+
+EC = EventCollector(
+    max_price={
+        Category.CINEMA: 6,
+        Category.OTHERS: 10,
+    },
+    max_sessions=15,
+    publish=PUBLISHDB,
+    categories=(
+        Category.CINEMA,
+        Category.MUSIC,
+        Category.THEATER,
+        Category.DANCE,
+        Category.CONFERENCE,
+        Category.VISIT,
+        Category.MAGIC,
+        Category.UNKNOWN,
+        Category.LITERATURE,
+        Category.WORKSHOP,
+        Category.PARTY,
+        Category.READING_CLUB,
+    )
+)
+
+
+class FakeImg(NamedTuple):
+    url: str
+    background: tuple[int, int, int]
+    orientation: str
+    source: str
+
+
+def get_current_img(*urls: str):
+    url_img: dict[str, FakeImg] = {}
+    soup = WEB.safe_get_cached_soup(PAGE_URL+"/")
+    if soup is None:
+        return url_img
+    for i in soup.select("div.img"):
+        background = tuple(map(
+            int,
+            re.findall(r"\d+", i.attrs.get("style", ""))
+        ))
+        if len(background) != 3:
+            continue
+        zoom = i.select_one("a.zoom")
+        img = i.select_one("img.cartel")
+        if None in (zoom, img):
+            continue
+        cls = set(img.attrs["class"]).intersection({
+            "portrait", "landscape"
+        })
+        if len(cls) != 1:
+            continue
+        i = FakeImg(
+            orientation=cls.pop(),
+            background=background,
+            url=img.attrs["src"],
+            source=zoom.attrs["href"],
+        )
+        if i.source in urls:
+            url_img[i.source] = i
+    ok = DWN.dwn(OUT+"img/", *(i.url for i in url_img.values()))
+    for k, i in list(url_img.items()):
+        if i.url not in ok:
+            del url_img[k]
+    return url_img
 
 
 def distance_to_white(*color) -> Tuple[int]:
     arr = []
     for c in color:
-        d = math.sqrt(sum([(c1 - c2) ** 2 for c1, c2 in zip(c, white)]))
+        d = math.sqrt(sum([(c1 - c2) ** 2 for c1, c2 in zip(c, WHITE)]))
         arr.append(d)
     return tuple(arr)
 
@@ -78,7 +146,12 @@ def add_image(e: Event):
         return (None, e)
     local = f"img/{e.id}.jpg"
     file = OUT+local
-    im = MyImage.get(e.img)
+    im = URL_IMG.get(e.img)
+    if isinstance(im, FakeImg):
+        logger.debug(f"Se reutiliza la imagen {im.url}")
+        return (im, e)
+    if im is None:
+        im = MyImage.get(e.img)
     if isfile(file):
         lc = MyImage(file, parent=im, background=im.background)
     else:
@@ -97,170 +170,180 @@ def add_image(e: Event):
     return (lc, e)
 
 
-OK_CAT = (
-    Category.CINEMA,
-    Category.MUSIC,
-    Category.THEATER,
-    Category.DANCE,
-    Category.CONFERENCE,
-    Category.VISIT,
-    Category.MAGIC,
-    Category.UNKNOWN,
-)
+eventos = EC.get_events()
 
-
-def myfilter(e: Event):
-    if e.place.name in (
-        "Espacio Abierto Quinta de los Molinos",
-    ):
-        return False
-    if e.price > args.precio:
-        return False
-    if e.category not in OK_CAT:
-        return False
-
-    e.remove_old_sessions(NOW)
-    e.remove_working_sessions()
-
-    if len(e.sessions) == 0:
-        return False
-    return True
-
-
-def isMadridMusic(e: Event):
-    if get_domain(e.url) != "madrid.es" or e.category not in (Category.MUSIC, ):
-        return False
-    if get_domain(e.more) != "madrid.es":
-        return False
-    return True
-
-
-def sorted_and_fix(eventos: List[Event]):
-    def _iter_fix(eventos: List[Event]):
-        done: set[Event] = set()
-        for e in eventos:
-            e = e.fix_type()
-            e = e.fix(publish=PUBLISH.get(e.id))
-            if e not in done:
-                done.add(e)
-                if myfilter(e):
-                    PUBLISH[e.id] = e.publish
-                    yield e
-    ok_events: Set[Event] = set()
-    data: Dict[Tuple[str, Place]] = defaultdict(set)
-    for e in _iter_fix(eventos):
-        if not isMadridMusic(e):
-            ok_events.add(e)
-            continue
-        data[(e.more, e.place)].add(e)
-
-    for (more, place), evs in data.items():
-        if len(evs) == 1:
-            ok_events = ok_events.union(evs)
-            continue
-        _id_ = MadridEs.get_id(more)
-        e = Event.fusion(*evs, firstEventUrl=False).merge(
-            name=None,
-            id=_id_,
-            url=more,
-        ).fix(publish=PUBLISH.get(_id_))
-        ok_events.add(e)
-    data: Dict[Tuple[Place, int], Set[Event]] = defaultdict(set)
-    for e in tuple(ok_events):
-        if len(e.sessions) == 1 and e.cycle:
-            data[(e.cycle, e.place, e.price)].add(e)
-            ok_events.remove(e)
-    for (cycle, _, _), evs in data.items():
-        if len(evs) == 1:
-            ok_events.add(evs.pop())
-            continue
-        _id_ = to_uuid("".join(e.id for e in evs))
-        e = Event.fusion(*evs, firstEventUrl=True).merge(
-            name=cycle,
-            cycle=cycle,
-            id=_id_,
-            url=None,
-            more=None
-        ).fix(publish=PUBLISH.get(_id_))
-        ok_events.add(e)
-    arr1 = sorted(
-        ok_events,
-        key=lambda e: (min(s.date for s in e.sessions), e.name, e.url)
-    )
-    return tuple(arr1)
-
-#    MadridEs().events + \
-
-
-logger.info("Recuperar eventos")
-eventos = \
-    Dore().events + \
-    MadridDestino().events + \
-    CasaEncendida().events + \
-    SalaBerlanga().events + \
-    SalaEquis().events + \
-    CasaAmerica().events + \
-    AcademiaCine().events + \
-    CaixaForum().events + \
-    Telefonica().events
-logger.info(f"{len(eventos)} recuperados")
-
-eventos = tuple(filter(myfilter, eventos))
-eventos = sorted_and_fix(eventos)
-
-logger.info(f"{len(eventos)} filtrados")
-
+null_zone = "Otra"
 sesiones: Dict[str, Set[int]] = {}
 sin_sesiones: Set[int] = set()
 categorias: Dict[Category, int] = {}
-lugares: Dict[str, int] = {}
+zones: Dict[str, int] = {}
+places: Dict[str, int] = {}
+domains: Dict[str, int] = {}
+precios: Dict[int, int] = {}
+horas: Dict[str, int] = {}
 
 for e in eventos:
+    price = int(round(e.price))
     categorias[e.category] = categorias.get(e.category, 0) + 1
-    lugares[e.place.get_alias()] = lugares.get(e.place.get_alias(), 0) + 1
+    zones[e.place.zone or null_zone] = zones.get(e.place.zone or null_zone, 0) + 1
+    places[e.place.name] = places.get(e.place.name, 0) + 1
+    precios[price] = precios.get(price, 0) + 1
+    CLSS[e.id].append(f"e{price}")
+    for d in set(map(get_domain, e.iter_urls())):
+        if d is not None:
+            domains[d] = domains.get(d, 0) + 1
+            CLSS[e.id].append(dom_simplify(d))
     if len(e.sessions) == 0:
         sin_sesiones.add(e.id)
         continue
     for f in e.sessions:
-        f = f.date.split()[0]
+        f, h = f.date.split()
         dict_add(sesiones, f, e.id)
+        ch = 'h'+h.replace(":", "")
+        if ch not in CLSS[e.id]:
+            horas[h] = horas.get(h, 0) + 1
+            CLSS[e.id].append(ch)
+
+zones = dict(sorted(zones.items(), key=lambda kv: (int(kv[0] == null_zone), kv)))
 
 
-def event_to_ics(e: Event, s: Session):
+def event_to_ics_description(e: Event, s: Session):
+    urls = list(uniq(e.url, *e.also_in, s.url, e.more))
+
+    def _iter_urls(*searchs: str | re.Pattern):
+        for srch in searchs:
+            for i in range(len(urls)-1, -1, -1):
+                u = urls[i]
+                if isinstance(srch, str):
+                    if get_domain(u) == srch:
+                        del urls[i]
+                        yield u
+                elif isinstance(srch, re.Pattern):
+                    if srch.search(u):
+                        del urls[i]
+                        yield u
+
+    lines: list[str] = []
     price = str(int(e.price)) if int(e.price) == e.price else f"{e.price:.2f}"
-    description = (f'{price} €\n\n' + "\n\n".join(
-        uniq(e.url, *e.also_in, s.url, e.more)
-    )).strip()
+
+    url_shop = next(_iter_urls(
+        re.compile(r"\btienda\.madrid-destino\.com/es/.+/\d+(/|$)", flags=re.I),
+        "eventim-light.com",
+        "ticket.caixaforum.org",
+        "entradas.aliro.academiadecine.com",
+        "entradasfilmoteca.sacatuentrada.es",
+        "espacio.fundaciontelefonica.com",
+        "teatromonumental.entradas.com",
+        "cine.entradas.com",
+        "entradas.museoreinasofia.es",
+        "entradasfilmoteca.sacatuentrada.es",
+        "kinetike.com",
+        "march.es",
+        "tienda.madrid-destino.com",
+        "tickets.caixaforum.org",
+        "giglon.com",
+        "es.patronbase.com",
+        "casaasia.powerappsportals.com",
+        re.compile(r"\blacasaencendida\.es/.*eventId=\d+", flags=re.I),
+        "lacasaencendida.es",
+        "teatromonumental.es",
+        "tickets.lamariqueen.com",
+        "reservaentradas.com",
+        "madrid.extranet-aec.com",
+        re.compile(r"https?://madrid\.extranet-aec\.com/carts", flags=re.I),
+        "eventbrite.es"
+    ), None)
+    if url_shop is None and e.price > 0:
+        url_shop = next(_iter_urls(
+            "culturalcala.es",
+            "centrocentro.org",
+            "condeduquemadrid.es",
+            "cinetecamadrid.com",
+            "mataderomadrid.org",
+            "teatrocircoprice.es",
+            "teatroespanol.es"
+        ), None)
+
+    if url_shop is None:
+        lines.append(f"{price} €")
+
+    PAPEL = ("gestiona3.madrid.org", "gestiona.comunidad.madrid")
+    DIGITAL = "madrid.ebiblio.es"
+    for u in _iter_urls(
+        "filmaffinity.com",
+        "imdb.com",
+        "goodreads.com",
+        re.compile(r"^https?://[a-z]+\.wikipedia\.org/", flags=re.I),
+        "wikipedia.org",
+        "gestiona3.madrid.org",
+        "madrid.ebiblio.es",
+    ):
+        dom = get_domain(u)
+        if dom in PAPEL:
+            lines.append(f"Disponible en papel en {u}")
+        elif dom == DIGITAL:
+            lines.append(f"Disponible en digital en {u}")
+        else:
+            lines.append(u)
+
+    if url_shop is not None:
+        #d_shop = get_domain(url_shop)
+        if e.price == 0:
+            lines.append(f"Gratis con reserva en {url_shop}")
+        else:
+            lines.append(f"{price} € en {url_shop}")
+
+    for u in urls:
+        lines.append(u)
+
+    return "\n\n".join(lines)
+
+
+def event_to_ics(now: datetime, e: Event | Cinema, s: Session, img: MyImage):
+    description = event_to_ics_description(e, s)
     dtstart = to_datetime(s.date)
-    dtend = dtstart + timedelta(minutes=(e.duration or 120))
-    return IcsEvent(
+    dtend = dtstart + timedelta(minutes=(s.duration or e.duration or 120))
+    #url_img = img.url if img else e.img
+    sumary = s.title or e.name
+    if isinstance(e, Cinema) and e.cycle is None and any((e.filmaffinity, e.imdb)):
+        if e.year and str(e.year) not in sumary:
+            sumary = f"{sumary} ({e.year})"
+    return SimpleIcsEvent(
         uid=f"{e.id}_{s.id}",
-        dtstamp=NOW,
+        dtstamp=now,
         url=(s.url or e.url),
         categories=str(e.category),
-        summary=e.title,
+        summary=sumary,
         description=description,
         location=e.place.address,
         organizer=e.place.name,
         dtstart=dtstart,
-        dtend=dtend
+        dtend=dtend,
+        #img=url_img
     )
 
 
+logger.info("Añadiendo imágenes")
+URL_IMG: dict[str, FakeImg|MyImage] = {}
+imgs = set(e.img for e in eventos if e.img)
+URL_IMG.update(get_current_img(*imgs))
+URL_IMG.update(MyImage.get_all(*(e.img for e in eventos if e.img and e.img not in URL_IMG)))
+img_eventos = tuple(map(add_image, eventos))
+
+NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
+STR_TODAY = NOW.strftime("%Y-%m-%d")
 logger.info("Añadiendo ics")
 session_ics: Dict[str, str] = dict()
 icsevents = []
-for e in eventos:
+for img, e in img_eventos:
     for s in e.sessions:
-        ics = event_to_ics(e, s)
+        ics = event_to_ics(NOW, e, s, img)
         uid = ics.uid.lower()
         session_ics[e.id+s.id] = uid
         ics.dumpme(f"out/cal/{uid}.ics")
         icsevents.append(ics)
-IcsEvent.dump("out/eventos.ics", *icsevents)
+SimpleIcsEvent.dump("out/eventos.ics", *icsevents)
 
-logger.info("Añadiendo imágenes")
-img_eventos = tuple(map(add_image, eventos))
 
 logger.info("Creando web")
 
@@ -274,6 +357,7 @@ def set_icons(html: str, **kwargs):
         dom = get_domain(href)
         dom = dom.rsplit(".", 1)[0]
         ico = {
+            "pianocitymadrid": "https://pianocitymadrid.es/wp-content/uploads/2024/05/cropped-PCM_LOGO_DEF-2-32x32.png",
             "autocines": "https://autocines.com/wp-content/uploads/2021/01/cropped-favicon-32x32-1-32x32.png",
             "filmaffinity": "https://www.filmaffinity.com/favicon.png",
             "atrapalo": "https://www.atrapalo.com/favicon.ico",
@@ -287,37 +371,81 @@ def set_icons(html: str, **kwargs):
             "salaberlanga": "https://salaberlanga.com/wp-content/uploads/2023/09/cropped-cropped-favicon-berlanga-bn-300x300-1-32x32.png",
             "cinetecamadrid": "https://www.cinetecamadrid.com/themes/custom/cineteca_theme/favicon.ico",
             "imdb": "https://m.media-amazon.com/images/G/01/imdb/images-ANDW73HA/favicon_desktop_32x32._CB1582158068_.png",
-            "teatroreal": "https://www.teatroreal.es/themes/custom/teatro_real/favicon.ico"
+            "teatroreal": "https://www.teatroreal.es/themes/custom/teatro_real/favicon.ico",
+            "semanacienciamadrid": "https://www.semanacienciamadrid.org/themes/custom/bs5fmmd/favicon.ico",
+            "condeduquemadrid": "https://www.condeduquemadrid.es/themes/custom/condebase_theme/icon_app/favicon-16x16.png",
+            "docs.google": "https://ssl.gstatic.com/docs/spreadsheets/forms/favicon_qp2.png",
+            "drive.google": "https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png",
+            "forms.office": "https://cdn.forms.office.net/images/favicon.ico",
+            "goodreads": "https://www.goodreads.com/favicon.ico",
+            "teatroespanol": "https://www.teatroespanol.es/themes/custom/teatroespanol_v2/favicon.ico",
+            "wikipedia": "https://es.wikipedia.org/static/favicon/wikipedia.ico",
+            "mataderomadrid": "https://www.mataderomadrid.org/themes/custom/new_matadero/favicon.ico",
+            "centrocentro": "https://www.centrocentro.org/sites/default/files/favicon_1.ico",
+            "casalector.fundaciongsr": "https://casalector.fundaciongsr.org/wp-content/uploads/2017/09/apple-touch-icon-72x72.png",
+            "teatrocircoprice": "https://www.teatrocircoprice.es/themes/custom/circoprice_theme/favicon.ico",
+            "teatromonumental": "https://www.teatromonumental.es/wp-content/uploads/fbrfg/favicon.svg",
+            "gestiona3.madrid": "https://madrid.ebiblio.es/favicon/espa.ico",
+            "madrid.ebiblio": "https://madrid.ebiblio.es/favicon/espa.ico",
+            "gestiona.comunidad": "https://gestiona.comunidad.madrid/favicon.ico",
+            "lacasaencendida": "https://cdn.lacasaencendida.es/images/favicon/favicon.svg",
+            "caixaforum": "https://sites.fundacionlacaixa.org/favicons/favicon.ico",
+            "casademexico": "https://www.casademexico.es/wp-content/uploads/2025/09/cropped-favicon-fcdme-32x32.png",
+            "intermediae": "https://www.intermediae.es/themes/custom/intermediae_theme/favicon.ico",
+            "medialab-matadero": "https://www.medialab-matadero.es/themes/custom/medialab_theme/favicon.ico",
+            "youtube": "https://www.youtube.com/s/desktop/1afc1cab/img/favicon.ico",
+            "eventbrite": "https://cdn.evbstatic.com/s3-build/perm_001/765d40/django/images/favicons/favicon-16x16.png",
+            "intermediae": "https://www.intermediae.es/themes/custom/intermediae_theme/favicon.ico",
+            "serreria-belga": "https://www.serreria-belga.es/themes/custom/serreria_belga/favicon.ico",
+            "docta.ucm": "https://docta.ucm.es/assets/dspace/images/favicons/favicon.ico",
         }.get(dom)
+        if re.search(r"/biblio_publicas/cgi-bin/abnetopac\?TITN=", href):
+            ico = "https://madrid.ebiblio.es/favicon/espa.ico"
         if ico is None:
             continue
+        cls = dom.replace(".", "_")
         a.string = ""
-        a.append(toTag(f'<img src="{ico}" class="ico" alt="{txt}"/>'))
+        a.append(toTag(f'<img src="{ico}" class="ico {cls}" alt="{txt}"/>'))
         tit = {
             "filmaffinity": "Ver en Filmaffinity",
             "atrapalo": "Buscar en Atrapalo",
             "google": "Buscar en Google",
             "21distritos": "Ver en 21distritos.es",
+            "goodreads": "Ver en Goodreads",
+            "wikipedia": "Ver en Wikipedia"
         }.get(dom)
         if tit and not a.attrs.get("title"):
             a.attrs["title"] = tit
     return str(soup)
 
 
-PBLSH = sorted(set((e.publish for e in eventos if e.publish)), reverse=True)
-NEWS = PBLSH[0 if len(PBLSH) < 3 else 1]
+def get_novedad(x: int):
+    ids: set[str] = set()
+    PBLSH = sorted(set((e.publish for e in eventos if e.publish and e.publish <= STR_TODAY)), reverse=True)
+    if len(PBLSH) == 0:
+        return set()
+    index = min(x, len(PBLSH)-1)
+    NEWS = PBLSH[index]
+    for e in eventos:
+        if e.publish is None or NEWS <= e.publish:
+            ids.add(e.id)
+    return ids
 
-CLSS = defaultdict(list)
-CLSS_COUNT = defaultdict(int)
-for e in eventos:
-    if NEWS <= e.publish:
-        CLSS[e.id].append("novedad")
+
+id_novedad = get_novedad(1)
+if len(id_novedad) > 40:
+    id_novedad = get_novedad(0)
+
+
+for i in id_novedad:
+    CLSS[i].append("novedad")
+
 for arr in CLSS.values():
     for a in arr:
         CLSS_COUNT[a] = CLSS_COUNT[a] + 1
 
 
-j = Jnj2("template/", OUT, favicon="🗓", post=set_icons)
+j = Jnj2("template/", OUT, favicon="📅", post=set_icons)
 j.create_script(
     "rec/info.js",
     SESIONES=sesiones,
@@ -332,9 +460,14 @@ j.save(
     clss_count=CLSS_COUNT,
     categorias=categorias,
     session_ics=session_ics,
-    lugares=lugares,
+    places=places,
+    domains=domains,
+    precios=precios,
+    zones=zones,
+    horas=horas,
+    null_zone=null_zone,
     count=len(eventos),
-    precio=max(e.price for e in eventos),
+    precio=round(max(e.price for e in eventos)),
     fecha=dict(
         ini=min(sesiones.keys()),
         fin=max(sesiones.keys())
@@ -347,6 +480,18 @@ EventosRss(
     eventos=eventos
 ).save("eventos.rss")
 
-FM.dump(OUT+"eventos.json", eventos, compact=True)
-FM.dump(OUT+"publish.json", PUBLISH)
+
+def _re_parse(obj):
+    if isinstance(obj, Enum):
+        return str(obj)
+
+
+FM.dump(
+    OUT+"eventos.json",
+    eventos,
+    compact=True,
+    re_parse=_re_parse
+)
+
+PUBLISHDB.dump()
 logger.info("Fin")
