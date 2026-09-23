@@ -221,6 +221,7 @@ def _rm_prefix():
 def _rm_sufix():
     SEP = r"[–\-\.\|]"
     SUFIX_1 = "|".join([
+        r"Noche Europea de la Investigaci[oó]n \d+",
         r"Festival Cine por mujeres Madrid",
         r"Fiesta de verano",
         r"Cl[aá]sicos a refugio",

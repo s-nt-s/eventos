@@ -418,11 +418,20 @@ class Universidad(Base):
                     ),
                 ),
                 more=self.__get_more(link, e.SUMMARY),
-                description=e.get_full_description()
+                description=e.get_full_description(),
+                cycle=self.__get_cicle(e)
             )
             events.add(event)
         evs = tuple(sorted(events))
         return evs
+
+    def __get_cicle(self, e: IcsEventWrapper):
+        if re_or(
+            e.SUMMARY,
+            r"Noche Europea de la Investigaci[oó]n",
+            flags=re.I
+        ):
+            return "Noche Europea de la Investigación"
 
     def __find_place(self, e: IcsEventWrapper, url: str):
         description = self.__get_description(url, e.SUMMARY)
@@ -613,6 +622,7 @@ class Universidad(Base):
             "Jornadas?( Universitaria)? (sobre|de)",
             "congreso",
             r"Conferencia",
+            r"Noche Europea de la Investigaci[oó]n",
             flags=re.I
         ):
             return Category.CONFERENCE
