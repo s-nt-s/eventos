@@ -422,7 +422,7 @@ class TeatroBarrio(Base):
             return Category.THEATER
         if re_or(
             i.summary,
-            "trayectoria del fot[oó]grafo\b.*\barchivo",
+            r"trayectoria del fot[oó]grafo\b.*\barchivo",
             flags=re.I
         ):
             return Category.EXPO
