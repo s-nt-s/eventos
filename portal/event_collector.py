@@ -84,7 +84,9 @@ KO_CP = (
     # Barcelona
     8241,
     # Rascafría
-    28740
+    28740,
+    # Getafe
+    28901
 )
 
 
