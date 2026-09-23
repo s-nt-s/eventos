@@ -969,6 +969,12 @@ class MadridDestino(Base):
             return Category.CIRCUS
         if "humor" in cats:
             return Category.THEATER
+        for c in cats:
+            if re_or(
+                c,
+                "taller en familia"
+            ):
+                return Category.CHILDISH
 
     @cache
     def __get_price_categories(self):
@@ -979,16 +985,21 @@ class MadridDestino(Base):
             v = get_text(tag)
             if k and k.isdecimal() and v:
                 v = v.lower()
-                if v not in ("actividades", ):
-                    tags[k] = v
+                tags[k] = v
         data: dict[str, list[str]] = defaultdict(set)
         for k, v in tags.items():
             soup = WEB.get_cached_soup(f"https://www.teatrocircoprice.es/programacion?field_tags={k}")
-            for a in soup.select("div.views-row h3 > a"):
+            for d in soup.select("div.views-row div.group-info-dates"):
+                a = d.select_one("h3 > a")
+                if not a:
+                    continue
                 href = a.attrs.get("href")
                 if not href:
                     continue
                 data[href].add(v)
+                subtitle = get_text(d.select_one("div.field-name-field-subtitle > span"))
+                if subtitle:
+                    data[href].add(subtitle.lower())
         return {k: tuple(sorted(v)) for k, v in data.items() if v}
 
     def __find_centro_category(self, url: str):
@@ -1007,6 +1018,8 @@ class MadridDestino(Base):
         for c in cats:
             if re_or(c, "taller(es)?"):
                 return Category.WORKSHOP
+            if re_or(c, "microescena"):
+                return Category.THEATER
 
     @cache
     def __get_centro_categories(self):
