@@ -420,6 +420,12 @@ class TeatroBarrio(Base):
             flags=re.I
         ):
             return Category.THEATER
+        if re_or(
+            i.summary,
+            "trayectoria del fot[oó]grafo\b.*\barchivo",
+            flags=re.I
+        ):
+            return Category.EXPO
         logger.critical(str(CategoryUnknown(i.url, f"{i.category} {i.name} {i.summary}")))
         return Category.UNKNOWN
 
