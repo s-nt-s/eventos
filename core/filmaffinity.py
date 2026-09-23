@@ -179,6 +179,7 @@ class FilmAffinityApi:
             (210575, 2003, "La ciudad del arco iris"),
             (287641, 2017, "Ruibal, por libre"),
             (780388, 2026, "Enlorquecido"),
+            (840421, 1995, "Fallen angels"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:
