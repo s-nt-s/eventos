@@ -180,6 +180,8 @@ class FilmAffinityApi:
             (287641, 2017, "Ruibal, por libre"),
             (780388, 2026, "Enlorquecido"),
             (840421, 1995, "Fallen angels"),
+            (169134, 1972, "Lejos de los árboles"),
+            (207417, 2026, "La deriva"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:
