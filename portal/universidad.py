@@ -623,6 +623,7 @@ class Universidad(Base):
             "congreso",
             r"Conferencia",
             r"Noche Europea de la Investigaci[oó]n",
+            r"Conversaciones en la biblioteca",
             flags=re.I
         ):
             return Category.CONFERENCE

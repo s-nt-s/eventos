@@ -299,16 +299,21 @@ class CasaAmerica(Base):
             return Category.THEATER
         if cat == "musica":
             return Category.MUSIC
-        if cat == "literatura" and re_or(tit, "poesia"):
-            return Category.POETRY
-        if cat == "literatura" and re_or(tit, "club(es)? de lectura"):
-            return find_book_category(tit, content, Category.READING_CLUB)
-        if cat == "literatura" and content.count("Diálogo") > 2:
-            return Category.CONFERENCE
-        if cat == "literatura" and re_or(content, "lectura perform[aá]tica", flags=re.I):
-            return Category.THEATER
-        if cat == "literatura" and re_or(content, "presentaci[óo]n del libro", flags=re.I):
-            return find_book_category(tit, content, Category.LITERATURE)
+        if cat == "literatura":
+            if re_or(tit, "poesia"):
+                return Category.POETRY
+            if re_or(content, "lectura perform[aá]tica", flags=re.I):
+                return Category.THEATER
+            if re_or(tit, "club(es)? de lectura"):
+                return find_book_category(tit, content, Category.READING_CLUB)
+            if content.count("Diálogo") > 2 or re_or(
+                content,
+                r"Programa.*Participan",
+                flags=re.I | re.S
+            ):
+                return find_book_category(tit, content, Category.CONFERENCE)
+            if re_or(content, "presentaci[óo]n del libro", flags=re.I):
+                return find_book_category(tit, content, Category.LITERATURE)
         w1 = ((plain_text(content) or "").strip().lower().split()+[""])[0]
         if w1 == "concierto":
             return Category.MUSIC
@@ -322,7 +327,7 @@ class CasaAmerica(Base):
             return Category.EXPO
         if re.search(r"Programa:.*\d+:\d+\.?\s+Diálogo (con|sobre)", content, flags=re.I | re.S):
             return Category.CONFERENCE
-        if re.search(r"Participan\s*:.*Turno de preguntas", content, flags=re.I | re.S):
+        if re.search(r"Participan\s*:.*(Turno de preguntas|Participan)", content, flags=re.I | re.S):
             return Category.CONFERENCE
         if re.search(r"Programa:.*Presenta y modera\s*:", content, flags=re.I | re.S):
             return Category.CONFERENCE

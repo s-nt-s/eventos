@@ -37,6 +37,18 @@ def _parse_place(p: Place):
         )
     if re_or(
         p.name,
+        "Geograf[ií]a e Historia",
+        flags=re.I
+    ):
+        return Place(
+            name="UCM Geografía e historia",
+            address=p.address,
+            map="https://maps.app.goo.gl/ZJaWwobW7u8fGpvT8",
+            latlon="40.44934300908306,-3.73467314796211",
+            zone=Zones.COMPLUTENSE.value.name
+        )
+    if re_or(
+        p.name,
         ("Facultad", "Matemáticas"),
         flags=re.I
     ):
