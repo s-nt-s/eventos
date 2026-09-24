@@ -183,6 +183,7 @@ class FilmAffinityApi:
             (169134, 1972, "Lejos de los árboles"),
             (207417, 2026, "La deriva"),
             (837486, 2026, "Salen las lobas"),
+            (936040, 2026, re.compile(r"^El casitllo\b.*\bcap[íi]tulo.*", flags=re.I)),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:
