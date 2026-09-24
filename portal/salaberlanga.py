@@ -261,7 +261,7 @@ class SalaBerlanga(Base):
                 return ev.merge(
                     cycle="La mirada tabú: Cortometrajes"
                 )
-            m = re.match(r"^(Ramblas|El Castillo)\b.*cap[íi]tulos?.*", ev.name or '', flags=re.I)
+            m = re.match(r"^\s*(Ramblas|El Castillo)\b.*\bcap[íi]tulos?\b.*", ev.name or '', flags=re.I)
             if m:
                 return ev.merge(
                     cycle=m.group(1)
