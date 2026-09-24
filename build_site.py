@@ -98,7 +98,7 @@ def get_current_img(*urls: str):
         })
         if len(cls) != 1:
             continue
-        if =img.attrs["src"]  in ("https://s-nt-s.github.io/eventos/img/sb11518.jpg", "https://salaberlanga.com/wp-content/uploads/2026/09/viva-313076765-large-210x300.jpg"):
+        if img.attrs["src"]  in ("https://s-nt-s.github.io/eventos/img/sb11518.jpg", "https://salaberlanga.com/wp-content/uploads/2026/09/viva-313076765-large-210x300.jpg"):
             continue
         i = FakeImg(
             orientation=cls.pop(),
