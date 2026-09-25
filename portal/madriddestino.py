@@ -578,7 +578,7 @@ class MadridDestino(Base):
         }.items():
             desc = desc.replace(v, k)
 
-        if  "/espacio-abierto-quinta-de-los-molinos/" in url:
+        if "/espacio-abierto-quinta-de-los-molinos/" in url:
             return Category.CHILDISH
 
         if re_or(
@@ -860,6 +860,8 @@ class MadridDestino(Base):
     def __find_category_from_more(self, more: str, desc: str):
         if more is None:
             return None
+        if get_domain(more) == "festivaldejazzmadrid.com":
+            return Category.MUSIC
         if more.startswith("https://www.condeduquemadrid.es/actividades/"):
             return Category.CONFERENCE
         if more.startswith("https://www.cinetecamadrid.com/programacion/"):
