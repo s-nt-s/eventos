@@ -388,7 +388,7 @@ class Place:
         if re_and(name, "catedral", "la almudena", flags=re.I):
             return Places.LA_ALMUDENA.value
         if re_and(name, "teatro", "monumental", flags=re.I) and re_and(address, "atocha", flags=re.I):
-            return Places.TEATRO_MONUMENTAL.valuevalue
+            return Places.TEATRO_MONUMENTAL.value
         if re_or(name, "teatro fern[áa]n g[oó]mez", flags=re.I):
             return Places.TEATRO_FERNAN_GOMEZ.value
         if re_or(
