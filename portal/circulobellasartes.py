@@ -233,6 +233,12 @@ def _find_category(url: str, title: str, soup: Tag, inf: dict):
     ))
     isPresentacion = re_or(full_title, "presentaci[oó]n", flags=re.I) or re.search(r"^Presentamos\b", desc or '')
     if re_or(
+        full_title,
+        r"Entrega de la Medalla de Oro",
+        flags=re.I
+    ):
+        return Category.NO_EVENT
+    if re_or(
         cat,
         "cursos",
         "talleres",

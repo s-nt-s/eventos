@@ -537,6 +537,7 @@ class MadridDestino(Base):
             f"{pt} {psub}",
             r"CIMA en corto",
             r"Cortometrajes de",
+            r"Sesi[óo]n de cortometrajes",
             flags=re.I
         ):
             return "Cortometrajes"
@@ -565,8 +566,9 @@ class MadridDestino(Base):
         desc = info.get('description') or ''
 
         is_cine = is_cat('cine') or re_or(
-            psub,
+            f"{pt} {psub}",
             r"proyecci[óo]n de cortometrajes?",
+            r"Sesi[oó]n de cortometrajes",
             flags=re.I
         )
 

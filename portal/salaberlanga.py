@@ -220,7 +220,9 @@ class SalaBerlanga(Base):
 
     def __complete(self, ev: Event, item: Item):
         if ev.img is None:
-            ev = ev.merge(img=get_attr(item.tag.select_one("img"), "src"))
+            img = get_attr(item.tag.select_one("img"), "src")
+            if img:
+                ev = ev.merge(img=img.replace("-large-211x300.jpg", "-large.jpg"))
         category = self.__find_category(ev, item)
         if category is not None:
             ev = ev.merge(category=category)
@@ -261,13 +263,10 @@ class SalaBerlanga(Base):
                 return ev.merge(
                     cycle="La mirada tabú: Cortometrajes"
                 )
-            if re_or(
-                ev.name,
-                ("Ramblas", "cap[íi]tulos?"),
-                flags=re.I
-            ):
+            m = re.match(r"^\s*(Ramblas|El Castillo)\b.*\bcap[íi]tulos?\b.*", ev.name or '', flags=re.I)
+            if m:
                 return ev.merge(
-                    cycle="Ramblas"
+                    cycle=m.group(1)
                 )
         return ev
 
