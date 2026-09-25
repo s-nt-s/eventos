@@ -59,7 +59,7 @@ class MadConvoca(Base):
         )
         self.__ics = IcsReader(
             "https://fal.cnt.es/events/lista/?ical=1",
-            "https://lahorizontal.net/events/lista/?ical=1",
+            #"https://lahorizontal.net/events/lista/?ical=1",
             "https://madrid.cnt.es/agenda/lista/?ical=1",
             isOkDate=isOkDate
         )
