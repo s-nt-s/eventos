@@ -357,6 +357,7 @@ DIRECTORS = list(map(_escape, map(str.lower, [
     'Jessica Palud',
     'Stephen Daldry',
     'Mike Nichols',
+    'Leyla Bouzid',
     'Woody Allen',
     'Avelina Prat',
     'Albert Serra',

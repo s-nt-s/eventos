@@ -461,7 +461,8 @@ class Universidad(Base):
         if re_or(
             e.SUMMARY,
             r" \(Online\)$",
-            r"^Graduaci[oó]n(es)? de",
+            r"Acto de Graduaci[oó]n",
+            r"Graduaci[oó]n(es)? de",
             r"M[aá]ster de",
             r"Actividad formativa de Doctorado",
             r"pr[aá]cticas y empleo",
