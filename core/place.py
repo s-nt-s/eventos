@@ -388,7 +388,9 @@ class Place:
         if re_and(name, "catedral", "la almudena", flags=re.I):
             return Places.LA_ALMUDENA.value
         if re_and(name, "teatro", "monumental", flags=re.I) and re_and(address, "atocha", flags=re.I):
-            return Places.TEATRO_MONUMENTAL.value
+            return Places.TEATRO_MONUMENTAL.valuevalue
+        if re_or(name, "teatro fern[áa]n g[oó]mez", flags=re.I):
+            return Places.TEATRO_FERNAN_GOMEZ.value
         if re_or(
             name,
             r"librer[ií]a parent\(?h\)?esis",
@@ -1214,4 +1216,11 @@ class Places(Enum):
         address="C. de las Cigarreras, 6, Arganzuela, 28005 Madrid",
         latlon="40.405025536050104,-3.707462528836356",
         zone="Embajadores",
+    )
+    TEATRO_FERNAN_GOMEZ = Place(
+        name="Teatro Fernán Gómez",
+        map="https://maps.app.goo.gl/siMUR2ByBvhBnLKy5",
+        address="Pl. de Colón, 4, Salamanca, 28001 Madrid",
+        latlon="40.42526312827186,-3.689867299999017",
+        zone="Conlón",
     )
