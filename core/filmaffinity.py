@@ -182,6 +182,7 @@ class FilmAffinityApi:
             (840421, 1995, "Fallen angels"),
             (169134, 1972, "Lejos de los árboles"),
             (207417, 2026, "La deriva"),
+            (661530, 2025, "Los sueños que compartimos"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:

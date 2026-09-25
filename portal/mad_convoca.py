@@ -410,6 +410,7 @@ class MadConvoca(Base):
             r"Proyecto Hebra",
             r"se buscan voluntari[aoxe@]s para",
             r"Trueque Solidario de Ropa",
+            r"Asamblea\b[^\w]*\babierta",
         ):
             return Category.ACTIVISM
         if re_or(
