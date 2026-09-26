@@ -450,7 +450,7 @@ class Goethe(Base):
             "Encuentro literario",
             flags=re.I
         ):
-            return Category.LITERATURE
+            return find_book_category(i['headline'], None, Category.LITERATURE)
         if re_or(
             et,
             "Debate",
@@ -461,13 +461,13 @@ class Goethe(Base):
             r"Encuentro con la editora",
             flags=re.I
         ):
-            return Category.CONFERENCE
+            return find_book_category(i['headline'], None, Category.CONFERENCE)
         if re_or(
             et,
             "club de lectura",
             flags=re.I
         ):
-            return Category.READING_CLUB
+            return find_book_category(i['headline'], None, Category.READING_CLUB)
         if re_or(
             et,
             "formación",
