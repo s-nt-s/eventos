@@ -488,6 +488,7 @@ def _re_parse(obj):
 
 
 def _save(name: str, evs: list[Event | Cinema]):
+    logger.info(f"Generando {name}")
     FM.dump(
         OUT+name,
         evs,
