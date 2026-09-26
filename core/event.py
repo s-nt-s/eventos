@@ -1221,6 +1221,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"Presentaci[oó]n (del|de los) poemarios?",
         r"Edmond Jab[eèé]s",
         r"Defender el [AÁ]lamo",
+        r"Rainer Maria Rilke",
         flags=re.I
     ):
         return Category.POETRY
