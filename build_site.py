@@ -2,7 +2,7 @@
 
 from core.event import Event, Category, Session, Cinema
 from core.ics import SimpleIcsEvent
-from core.j2 import Jnj2, toTag, dom_simplify
+from core.j2 import Jnj2, toTag, dom_simplify, simplify
 from datetime import datetime, timedelta, date
 from core.log import config_log
 from core.img import MyImage
@@ -487,7 +487,7 @@ def _re_parse(obj):
         return str(obj)
 
 
-def _save(name: str, evs: list[Event|Cinema]):
+def _save(name: str, evs: list[Event | Cinema]):
     FM.dump(
         OUT+name,
         evs,
@@ -499,7 +499,7 @@ def _save(name: str, evs: list[Event|Cinema]):
 _save("eventos.json", eventos)
 
 for c in set(e.category for e in eventos):
-    _save(f"{c}.json", [e for e in eventos if e.category == c])
+    _save(f"{simplify(c)}.json", [e for e in eventos if e.category == c])
 
 
 PUBLISHDB.dump()
