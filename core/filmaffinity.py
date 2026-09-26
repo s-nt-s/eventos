@@ -185,6 +185,7 @@ class FilmAffinityApi:
             (661530, 2025, "Los sueños que compartimos"),
             (837486, 2026, "Salen las lobas"),
             (936040, 2026, re.compile(r"^El casitllo\b.*\bcap[íi]tulo.*", flags=re.I)),
+            (435198, 2026, "Tres mujeres"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:

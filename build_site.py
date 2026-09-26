@@ -487,12 +487,20 @@ def _re_parse(obj):
         return str(obj)
 
 
-FM.dump(
-    OUT+"eventos.json",
-    eventos,
-    compact=True,
-    re_parse=_re_parse
-)
+def _save(name: str, evs: list[Event|Cinema]):
+    FM.dump(
+        OUT+name,
+        evs,
+        compact=True,
+        re_parse=_re_parse
+    )
+
+
+_save("eventos.json", eventos)
+
+for c in set(e.category for e in eventos):
+    _save(f"{c}.json", [e for e in eventos if e.category == c])
+
 
 PUBLISHDB.dump()
 logger.info("Fin")
