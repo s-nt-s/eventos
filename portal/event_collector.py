@@ -219,6 +219,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         r"Cernusco sul Naviglio MI",
         r"Milano$",
         r"Italy$",
+        r"Galapagar$",
         r"Hortaleza$",
         r"avenida de Betanzos",
         r"Aranjuez,? Madrid",
