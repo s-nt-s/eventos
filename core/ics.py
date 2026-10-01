@@ -1,21 +1,34 @@
 from textwrap import dedent
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from dataclasses import dataclass, asdict
 import re
-from .filemanager import FM
-from typing import Union
-from .util import to_uuid
+from core.filemanager import FM
+from typing import Union, Callable, Optional
+from core.util import to_uuid, get_domain
+from icalendar import Calendar, vDDDTypes, Component, vText
+from icalendar.prop import vCategory
+from datetime import date
+from zoneinfo import ZoneInfo
+import logging
+from core.my_session import buildSession
+from functools import cached_property
+
+logger = logging.getLogger(__name__)
+
+
+TZ_ZONE = 'Europe/Madrid'
+NOW = datetime.now(tz=pytz.timezone(TZ_ZONE))
 
 
 ICS_BEGIN = dedent(
-    '''
+    f'''
     BEGIN:VCALENDAR
     PRODID:-//Eventos//python3.10//ES
     VERSION:2.0
     CALSCALE:GREGORIAN
     METHOD:PUBLISH
-    X-WR-TIMEZONE:Europe/Madrid
+    X-WR-TIMEZONE:{TZ_ZONE}
     '''
 ).strip()
 
@@ -35,8 +48,24 @@ def _fix_width(s: str, prefix: int):
     return "\n ".join(arr)
 
 
+def normalize_date(dt: date | datetime, tz: ZoneInfo, domain: Optional[str] = None):
+    if isinstance(dt, date) and not isinstance(dt, datetime):
+        return datetime.combine(
+            dt,
+            datetime.min.time(),
+            tzinfo=tz
+        )
+    if isinstance(dt, datetime):
+        if dt.tzinfo is None or (domain == "madrid.cnt.es" and str(dt.tzinfo) == "Europe/Helsinki"):
+            return dt.replace(
+                tzinfo=tz
+            )
+        return dt.astimezone(tz)
+    raise ValueError(dt)
+
+
 @dataclass(frozen=True)
-class IcsEvent:
+class SimpleIcsEvent:
     dtstamp: str
     uid: str
     url: str
@@ -47,6 +76,7 @@ class IcsEvent:
     description: str
     location: str
     organizer: str
+    img: Optional[str] = None
 
     def __post_init__(self):
         for f, v in asdict(self).items():
@@ -61,16 +91,15 @@ class IcsEvent:
         if isinstance(d, str):
             if not re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$", d):
                 return d
-            tz = pytz.timezone('Europe/Madrid')
+            tz = pytz.timezone(TZ_ZONE)
             dt = datetime.strptime(d, "%Y-%m-%d %H:%M")
             d = tz.localize(dt)
         if d is None:
             if k != 'dtstamp':
                 return None
-            d = datetime.now(tz=pytz.timezone('Europe/Madrid'))
+            d = NOW
 
-        d_utc = d.astimezone(pytz.UTC)
-        return d_utc.strftime('%Y%m%dT%H%M%SZ')
+        return d.strftime('%Y%m%dT%H%M%S')
 
     def parse_uid(self, s: str):
         return to_uuid(s)
@@ -84,11 +113,14 @@ class IcsEvent:
         for k, v in asdict(self).items():
             if v is None:
                 continue
+            if k == "img":
+                lines.append(f"IMAGE;VALUE=URI:{v}")
+                continue
             lines.append(f"{k.upper()}:{_fix_width(v, prefix=len(k)+1)}")
         lines.append("END:VEVENT")
         return "\n".join(lines)
 
-    def __lt__(self, o: "IcsEvent"):
+    def __lt__(self, o: "SimpleIcsEvent"):
         return self.key_order < o.key_order
 
     @property
@@ -96,11 +128,275 @@ class IcsEvent:
         return (self.dtstart, self.dtend, self.uid)
 
     @staticmethod
-    def dump(path, *events: "IcsEvent"):
+    def dump(path, *events: "SimpleIcsEvent"):
         events = sorted(events)
         ics = ICS_BEGIN+"\n"+("\n".join(map(str, events)))+"\n"+ICS_END
         ics = re.sub(r"[\r\n]+", r"\r\n", ics)
         FM.dump(path, ics)
 
     def dumpme(self, path):
-        IcsEvent.dump(path, self)
+        SimpleIcsEvent.dump(path, self)
+
+
+class IcsEventInvalid(ValueError):
+    def __init__(self, msg: str):
+        super().__init__(msg)
+
+
+class IcsEventMandatory(ValueError):
+    def __init__(self, field: str, source: str):
+        super().__init__(f"Campo obligatorio {field} es None en {source}")
+
+
+class IcsEventWrapper:
+    def __init__(self, event: Component, source: str = None):
+        self.__event = event
+        self.__source = source
+        self.__domain = get_domain(source)
+
+    @property
+    def source(self):
+        return self.__source
+
+    def __str__(self):
+        return str(self.__event)
+
+    def __get_datetime(self, key: str, mandatory: bool = False) -> datetime | None:
+        val = self.__event.get(key)
+        if val is None:
+            if mandatory:
+                raise IcsEventMandatory(key, self.__source)
+            return None
+        if not isinstance(val, vDDDTypes):
+            raise IcsEventInvalid(f"Valor no es vDDDTypes: {val!r}")
+        dt = val.dt
+        if not isinstance(dt, date) and not isinstance(dt, datetime):
+            raise IcsEventInvalid(f"Valor no es vDDDTypes con datetime: {val!r}")
+        return normalize_date(dt, ZoneInfo(TZ_ZONE), domain=self.__domain)
+
+    def __get_text(self, key: str, mandatory: bool = False):
+        val = self.__event.get(key)
+        if val is None:
+            if mandatory:
+                raise IcsEventMandatory(key)
+            return None
+        if not isinstance(val, (vText, str)):
+            raise IcsEventInvalid(f"Valor no es vText: {val!r}")
+        s = str(val).strip()
+        if len(s) == 0:
+            return None
+        return s
+
+    @property
+    def UID(self) -> str:
+        return self.__get_text("UID", mandatory=True)
+
+    @property
+    def SUMMARY(self) -> str:
+        return self.__get_text("SUMMARY", mandatory=True)
+
+    def get_full_description(self):
+        lines: list[str] = []
+        if self.SUMMARY:
+            lines.append(f"Título: {self.SUMMARY}")
+        if self.CATEGORIES:
+            lines.append(f"Categorías: {', '.join(self.CATEGORIES)}")
+        if self.DESCRIPTION:
+            lines.append(f"Descripción {self.DESCRIPTION}")
+        if len(lines) == 0:
+            return None
+        return "\n\n".join(lines)
+
+    def __find_hours(self):
+        txt = self.__get_text("DESCRIPTION") or ''
+        hms: set[tuple[int, int]] = set()
+        for h, m in re.findall(r"\b([01]\d|2[0-4]):([0-5]\d)[\b|h]", txt):
+            hms.add((int(h), int(m)))
+        return tuple(sorted(hms))
+
+    @cached_property
+    def DTSTART(self) -> datetime:
+        dt = self.__get_datetime("DTSTART", mandatory=True)
+        if dt.hour == 0 and dt.minute == 0 and self.__get_datetime("DTEND") in (None, dt):
+            hm = self.__find_hours()
+            if len(hm) in (1, 2):
+                dt = dt.replace(hour=hm[0][0], minute=hm[0][1])
+                logger.warning(f"FIX HOUR {dt:%Y-%m-%d %H:%M} {self.UID}")
+        return dt
+
+    @cached_property
+    def DTEND(self):
+        st = dt = self.__get_datetime("DTSTART", mandatory=True)
+        dt = self.__get_datetime("DTEND")
+        if dt in (None, st) and st.hour == 0 and st.minute == 0:
+            hm = self.__find_hours()
+            if len(hm) in (1, 2):
+                dt = st.replace(hour=hm[-1][0], minute=hm[-1][1])
+                logger.warning(f"FIX HOUR {dt:%Y-%m-%d %H:%M} {self.UID}")
+        return dt
+
+    @property
+    def LOCATION(self):
+        return self.__get_text("LOCATION")
+
+    @property
+    def CREATED(self):
+        return self.__get_datetime("CREATED")
+
+    @property
+    def duration(self):
+        dtstart = self.DTSTART
+        dtend = self.DTEND
+        if dtstart is None or dtend is None:
+            return None
+        m = (dtend - dtstart).total_seconds() / 60
+        return int(m)
+
+    @property
+    def CATEGORIES(self) -> tuple[str, ...]:
+        val = self.__event.get("CATEGORIES")
+        if val is None:
+            return tuple()
+        if not isinstance(val, vCategory):
+            raise ValueError(f"Valor no es vCategory: {val!r}")
+        cats: list[str] = []
+        for c in val.cats:
+            if not isinstance(c, (vText, str)):
+                raise ValueError(f"Valor no es vText: {c!r}")
+            s = str(c).strip()
+            if len(s) and s not in cats:
+                cats.append(s)
+        return tuple(cats)
+
+    @property
+    def ATTACH(self):
+        return self.__get_text("ATTACH")
+
+    @property
+    def URL(self):
+        return self.__get_text("URL")
+
+    @property
+    def DESCRIPTION(self):
+        return self.__get_text("DESCRIPTION")
+
+    @property
+    def publish(self):
+        p = None
+        for k in ("DTSTAMP", "CREATED", "LAST-MODIFIED"):
+            dt = self.__get_datetime(k)
+            if dt is not None and dt <= NOW and (p is None or dt < p):
+                p = dt
+        return p
+
+    @property
+    def str_publish(self):
+        if self.publish:
+            return self.publish.strftime("%Y-%m-%d")
+
+    def is_in(self, dt: date | datetime | None):
+        if dt is None:
+            return False
+        if not isinstance(dt, date) and isinstance(dt, datetime):
+            raise ValueError(dt)
+        dt = normalize_date(
+            dt,
+            ZoneInfo(TZ_ZONE)
+        )
+    
+        dtend = self.DTEND or (self.DTSTART + timedelta(days=1))
+
+        return self.DTSTART <= dt < dtend
+
+
+class IcsReader:
+    def __init__(
+        self,
+        *urls: str,
+        name: Optional[str] = None,
+        verify_ssl: bool = True,
+        isOkDate: Callable[[datetime], bool] = None,
+    ):
+        self.__urls = urls
+        self.__name = name
+        self.__s = buildSession()
+        self.__verify_ssl = verify_ssl
+        self.__isOkDate = isOkDate or (lambda x: True)
+
+    @classmethod
+    def safe_load(cls, url: str, name: Optional[str] = None):
+        if url is None:
+            return None
+        try:
+            return cls(url, name=name)
+        except:
+            return None
+
+    def is_in(self, dt: date | datetime | None):
+        if dt is None:
+            return None
+        if not isinstance(dt, date) and isinstance(dt, datetime):
+            raise ValueError(dt)
+        dt = normalize_date(
+            dt,
+            ZoneInfo(TZ_ZONE)
+        )
+        for e in self.events:
+            if e.is_in(dt):
+                return True
+        return False
+
+    def __from_ical(self, url: str):
+        page_of = re.sub(r"/p%c3%a1gina/\d+/", "/", url)
+        is_page = page_of != url and page_of in self.__urls
+        r = self.__s.get(url, timeout=10, verify=self.__verify_ssl)
+        try:
+            r.raise_for_status()
+        except Exception as e:
+            logger.critical(f"Calendario status_code={r.status_code} {url} {e}", exc_info=True)
+        if r.text is None:
+            if not is_page:
+                logger.warning(f"Calendario vació {url}")
+            return None
+        text = r.text.strip()
+        if len(text) == 0:
+            if is_page:
+                logger.warning(f"Calendario vació {url}")
+            return None
+        try:
+            return Calendar.from_ical(text)
+        except Exception as e:
+            logger.critical(f"Calendario erróneo {url} {e}", exc_info=True)
+        return None
+
+    def __iter_events(self):
+        for url in self.__urls:
+            cal = self.__from_ical(url)
+            if cal is not None:
+                logger.info(f"Recuperando eventos de {self.__name or url}")
+                for e in cal.walk("VEVENT"):
+                    e = IcsEventWrapper(e, source=url)
+                    try:
+                        if not self.__isOkDate(e.DTSTART):
+                            continue
+                        if None not in (
+                            e.UID,
+                            e.DTSTART,
+                            e.SUMMARY
+                        ):
+                            yield e
+                    except IcsEventMandatory as err:
+                        logger.warning(f"{err} {self.__name or url} {e}")
+                        continue
+
+    @cached_property
+    def events(self):
+        return tuple(self.__iter_events())
+
+
+if __name__ == "__main__":
+    ics = IcsReader(
+        "https://madrid.cnt.es/agenda/lista/?ical=1",
+    )
+    for e in ics.events:
+        print(e.DTSTART, e.DTEND)

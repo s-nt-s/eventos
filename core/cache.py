@@ -4,11 +4,14 @@ import time
 import logging
 import hashlib
 
-from .filemanager import FM
+from core.filemanager import FM
 
 logger = logging.getLogger(__name__)
 
-def myhash(s: str) -> str:
+
+def myhash(s: str | int | float) -> str:
+    if isinstance(s, (int, float)):
+        s = str(s)
     return hashlib.sha256(s.encode('utf-8')).hexdigest()
 
 
@@ -25,7 +28,7 @@ class Cache:
         self._kwargs = kwargs
         self.skip = skip
 
-    def parse_file_name(self, *args, slf=None, **kwargs):
+    def parse_file_name(self, *args, **kwargs):
         if args or kwargs:
             return self.file.format(*args, **kwargs)
         return self.file
@@ -118,8 +121,31 @@ class TupleCache(Cache):
         return tuple((self.builder(d) for d in data))
 
 
+class StaticTupleCache(StaticCache):
+    def __init__(self, *args, builder=None, **kwargs):
+        if not callable(builder):
+            raise ValueError('builder is None')
+        self.builder = builder
+        super().__init__(*args, **kwargs)
+
+    def read(self, file, *args, **kwargs):
+        data = super().read(file, *args, **kwargs)
+        if isinstance(data, dict):
+            return self.builder(data)
+        return tuple((self.builder(d) for d in data))
+
+
 class HashCache(Cache):
-    def parse_file_name(self, *args, slf=None, **kwargs):
+    def parse_file_name(self, *args, **kwargs):
+        args = tuple(myhash(a) for a in args)
+        kwargs = {k: myhash(v) for k, v in kwargs.items()}
+        if args or kwargs:
+            return self.file.format(*args, **kwargs)
+        return self.file
+
+
+class HashTupleCache(TupleCache):
+    def parse_file_name(self, *args, **kwargs):
         args = tuple(myhash(a) for a in args)
         kwargs = {k: myhash(v) for k, v in kwargs.items()}
         if args or kwargs:

@@ -1,5 +1,4 @@
-
-from sqlite3 import OperationalError, connect, Cursor
+from sqlite3 import OperationalError, ProgrammingError, connect, Cursor
 from atexit import register
 import logging
 from functools import cache
@@ -45,7 +44,8 @@ class DBlite:
             logger.info(f"Connecting to {self.__file}")
             self.__con = connect(
                 f"file:{self.__file}?mode=ro&immutable=1",
-                uri=True
+                uri=True,
+                check_same_thread=False
             )
         return self.__con
 
@@ -57,8 +57,8 @@ class DBlite:
                 cursor.execute(sql, args)
             else:
                 cursor.execute(sql)
-        except OperationalError:
-            logger.critical(sql)
+        except (OperationalError, ProgrammingError):
+            logger.critical(f"len(args)=={len(args)} sql={sql}")
             raise
         for r in cursor:
             yield r
@@ -156,7 +156,8 @@ class DBlite:
     @cache
     def __search_movie_by_title(self, *titles: str, min_year=None, max_year=None, duration: int = None) -> tuple[tuple[str, ...], ...]:
         arr_titles = []
-        for t in map(str.strip, titles):
+        for t in titles:
+            t = (t or '').strip()
             if t and t not in arr_titles:
                 arr_titles.append(t)
         if len(arr_titles) == 0:
@@ -193,7 +194,7 @@ class DBlite:
     def __search_movie_by_director(self, *directors: str, min_year=None, max_year=None, duration: int = None) -> tuple[tuple[str, ...], ...]:
         arr_directors = []
         for d in directors:
-            d = d.strip()
+            d = (d or '').strip()
             if d and d not in arr_directors:
                 arr_directors.append(d)
         if len(arr_directors) == 0:

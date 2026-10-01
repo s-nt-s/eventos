@@ -9,6 +9,9 @@ import requests
 from bs4 import BeautifulSoup, Tag
 from json.decoder import JSONDecodeError
 from dataclasses import is_dataclass, asdict
+from typing import Optional, Callable, Any
+from core.util import parse_obj
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +46,7 @@ class FileManager:
 
         self.root = root
 
-    def resolve_path(self, file) -> Path:
+    def resolve_path(self, file) -> Path | None:
         """
         Si es una ruta absoluta se devuelve tal cual
         Si es una ruta relativa se devuelve bajo la ruta root
@@ -54,6 +57,8 @@ class FileManager:
         file: str | Path
             Ruta a resolver
         """
+        if file is None:
+            return None
         if isinstance(file, str):
             file = Path(file)
 
@@ -79,7 +84,8 @@ class FileManager:
             "sql": "txt",
             "gql": "txt",
             "htm": "html",
-            "ics": "txt"
+            "ics": "txt",
+            "sparql": "txt"
         }.get(ext, ext)
 
     def load(self, file, *args, **kwargs):
@@ -148,9 +154,24 @@ class FileManager:
             except JSONDecodeError as e:
                 raise myex(e, str(file))
 
-    def dump_json(self, file, obj, *args, indent=2, compact=False, **kwargs):
+    def dump_json(
+        self,
+        file,
+        obj,
+        *args,
+        indent=2,
+        compact=False,
+        rm_key: tuple[str, ...] = None,
+        re_parse: Optional[Callable[[Any], Any]] = None,
+        **kwargs
+    ):
         with open(file, "w") as f:
-            json.dump(self.__parse(obj, compact), f, *args, indent=indent, **kwargs)
+            json.dump(parse_obj(
+                obj,
+                compact=compact,
+                rm_key=rm_key,
+                re_parse=re_parse
+            ), f, *args, indent=indent, **kwargs)
 
     def load_html(self, file, *args, parser="lxml", **kwargs):
         with open(file, "r") as f:
@@ -174,26 +195,6 @@ class FileManager:
             txt = txt.format(*args, **kwargs)
         with open(file, "w") as f:
             f.write(txt)
-
-    def __parse(self, obj, compact: bool):
-        if getattr(obj, "_asdict", None) is not None:
-            obj = obj._asdict()
-        if is_dataclass(obj):
-            obj = asdict(obj)
-        if isinstance(obj, (list, tuple, set)):
-            obj = list(map(lambda x: self.__parse(x, compact), obj))
-        if isinstance(obj, dict):
-            obj = {k: self.__parse(v, compact) for k, v in obj.items()}
-        if compact:
-            if isinstance(obj, str):
-                obj = obj.strip()
-            if isinstance(obj, list):
-                obj = [a for a in obj if a is not None]
-            if isinstance(obj, dict):
-                obj = {k: v for k, v in obj.items() if v is not None}
-            if isinstance(obj, (list, dict, str)) and len(obj) == 0:
-                return None
-        return obj
 
 
 # Mejoras dinamicas en la documentacion

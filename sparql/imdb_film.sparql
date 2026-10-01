@@ -1,0 +1,5 @@
+SELECT DISTINCT ?k ?v WHERE {
+    VALUES ?k {}
+    ?item wdt:P345 ?k .
+    ?item wdt:P480 ?v .
+}

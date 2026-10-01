@@ -48,14 +48,25 @@ class CustomEncoder(json.JSONEncoder):
         return super().encode(self.__parse(o))
 
 
+def dom_simplify(s: str):
+    if s is None:
+        return None
+    s = re.sub(r"[\-_\.]+", "_", s).lower()
+    s = unidecode(s)
+    if s and s[0].isdecimal():
+        s = '_' + s
+    return s
+
+
 def simplify(s: str):
-    re_rm = re.compile(r"[/\.\(\)\[\]]+")
+    re_rm = re.compile(r"[/\.\(\)\[\]'\"&]+|amp;")
     s = re_rm.sub(" ", str(s)).strip().lower()
     s = re_sp.sub(" ", s).strip().lower()
     s = unidecode(s)
     spl = s.rsplit(",", 1)
     if len(spl) == 2 and spl[1].strip() in ('el', 'la', 'los', 'las'):
         s = spl[0].strip()
+    s = re.sub(r",+", " ", s)
     s = re_rm.sub(" ", s)
     s = re_sp.sub(" ", s)
     s = re_sp.sub("-", s)
@@ -142,12 +153,13 @@ class Jnj2():
         self.j2_env.filters['to_attr'] = to_attr
         self.j2_env.filters['to_value'] = to_value
         self.j2_env.filters['simplify'] = simplify
+        self.j2_env.filters['dom_simplify'] = dom_simplify
         self.j2_env.filters['twoDec'] = twoDec
         self.destino = destino
         self.pre = pre
         self.post = post
         self.lastArgs = None
-        self.minify = environ.get("MINIFY") == "1"
+        self.minify = False  # environ.get("MINIFY") == "1"
         self.favicon = favicon
 
     def get_svg_favicon(self):

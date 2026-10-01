@@ -10,10 +10,12 @@ CRITICAL = (
     'urllib3.connectionpool',
     'seleniumwire.proxy.storage',
     'selenium.webdriver.remote.remote_connection',
+    'selenium.webdriver.common.selenium_manager',
     'asyncio',
     'PIL.Image',
     'PIL.PngImagePlugin',
-    'PIL.TiffImagePlugin'
+    'PIL.TiffImagePlugin',
+    'selenium.webdriver.common.service',
 )
 
 

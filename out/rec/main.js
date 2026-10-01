@@ -1,3 +1,64 @@
+const INPUT_DATE_SUPPORT=(() => {
+    const i = document.createElement("input");
+    i.setAttribute("type", "date");
+    i.setAttribute("value", "2023-01-01");
+    if (i.type !== "date") return false;
+    if (i.valueAsDate == null) return false;
+    if (!(i.valueAsDate instanceof Date) || isNaN(i.valueAsDate)) return false;
+    return true;
+})();
+if (!Set.prototype.union) {
+    Set.prototype.union = function(setB) {
+        const unionSet = new Set(this);
+        setB.forEach(elem=>unionSet.add(elem));
+        return unionSet;
+    };
+}
+
+const nvl = (...args) => {
+  let i, v;
+  for (i = 0; i < args.length; i++) {
+    v = args[i];
+    if (v !== null && v !== undefined) return v;
+  }
+  return null;
+}
+
+const fire_on_ready = (fn) => {
+  if (document.readyState !== "loading") return fn();
+  document.addEventListener("DOMContentLoaded", fn);
+}
+
+
+const add_class_to_img = (i) => {
+    if (!i.complete || i.naturalWidth == 0) return;
+    i.classList.add("loaded");
+}
+
+fire_on_ready(function () {
+    document.body.classList.add("js");
+    if (!INPUT_DATE_SUPPORT) {
+        document.body.classList.add("noinputdate");
+    }
+    document.querySelectorAll("img").forEach((i) => {
+      i.addEventListener("error", (e) => e.target.classList.add("loaderror"));
+      if (i.complete && i.naturalWidth !== 0) add_class_to_img(i);
+      else i.addEventListener("load", (e) => add_class_to_img(e.target));
+    });
+    if (document.location.protocol != "file:") return;
+    Array.from(document.getElementsByTagName("a")).forEach(a => {
+        if (a.protocol != "file:") return;
+        if (a.pathname.endsWith("/")) {
+            a.pathname = a.pathname + "index.html"
+            return;
+        }
+        if (a.pathname.match(/.*\/e\/\d+$/)) {
+            a.pathname = a.pathname + ".html"
+            return;
+        }
+    });
+});
+
 function getVal(id) {
   const elm = document.getElementById(id);
   if (elm == null) {
@@ -10,7 +71,7 @@ function getVal(id) {
     if (v != null) return v;
     return elm.checked;
   }
-  const val = (elm.value ?? "").trim();
+  const val = nvl(elm.value, "").trim();
   if (val.length == 0) return null;
   const tp = elm.getAttribute("data-type") || elm.getAttribute("type");
   if (tp == "number") {
@@ -86,13 +147,13 @@ function isDate(s) {
 function set_counts(id) {
   const select = document.getElementById(id);
   Array.from(select.options).forEach(o => {
-    const txt = (o.getAttribute("data-txt") ?? "Todos");
-    const cat = o.value ?? "";
+    const txt = nvl(o.getAttribute("data-txt"), "Todos");
+    const cat = nvl(o.value, "");
     if (cat.length == 0) o.innerHTML = txt + " (" + document.querySelectorAll("div.evento:not(.hide)").length + ")"
     else o.innerHTML = txt + " (" + document.querySelectorAll("div.evento." + cat + ":not(.hide)").length + ")"
   })
   const op = select.selectedOptions[0];
-  const txt = (op.getAttribute("data-txt") ?? "").trim();
+  const txt = nvl(op.getAttribute("data-txt"), "").trim();
   if (txt.length == 0) return null;
   return txt;
 }
@@ -129,17 +190,19 @@ class FormQuery {
     let query = qr.length ? "?" + qr.join("&") : "";
     const title = document.querySelector("title");
     const txt = set_counts("filtro");
-    if (txt == null) title.textContent = window.__title__;
-    else title.textContent = window.__title__ + `: ${txt}`;
+    if (title) {
+      if (txt == null) title.textContent = window.__title__;
+      else title.textContent = window.__title__ + `: ${txt}`;
+    }
     if (document.location.search == query) return;
     const url = document.location.href.replace(/\?.*$/, "");
     history.pushState({}, "", url + query);
   }
   static query_to_form() {
     const query = FormQuery.query();
-    setVal("filtro", query.filtro ?? "");
-    setVal("ini", query.ini ?? FormQuery.MIN_DATE);
-    setVal("fin", query.fin ?? FormQuery.MAX_DATE);
+    setVal("filtro", nvl(query.filtro, ""));
+    setVal("ini", nvl(query.ini, FormQuery.MIN_DATE));
+    setVal("fin", nvl(query.fin, FormQuery.MAX_DATE));
   }
   static query() {
     const search = (() => {
@@ -198,7 +261,7 @@ function filtrar() {
     }
     e.classList.add("hide")
   });
-  FormQuery.CSS.innerHTML = getCss(form);
+  if (FormQuery.CSS) FormQuery.CSS.innerHTML = getCss(form);
   FormQuery.form_to_query();
   return;
 }
@@ -219,7 +282,7 @@ function fixDates() {
   const fin = document.getElementById("fin");
   const i = getValDate("ini");
   const f = getValDate("fin");
-  fin.setAttribute("min", i ?? FormQuery.MIN_DATE);
+  fin.setAttribute("min", nvl(i, FormQuery.MIN_DATE));
   if (i == null || f == null) return;
   if (i <= f) return;
   fin.value = i;
@@ -264,7 +327,8 @@ function removeOutdated() {
   }
   document.querySelectorAll("div.evento").forEach(rmKO);
   document.querySelectorAll("li[data-end]").forEach(rmKO);
-  document.getElementById("total").textContent = document.querySelectorAll("div.evento").length;
+  const total = document.getElementById("total");
+  if (total) total.textContent = document.querySelectorAll("div.evento").length;
   if (reorder) {
     console.log("Reordenar");
     const new_oreder = Array.from(document.querySelectorAll("div.evento")).map((e, i)=>{
@@ -303,7 +367,7 @@ function get_optgroups(id) {
   return optgroups;
 }
 
-document.addEventListener("DOMContentLoaded", function () {
+fire_on_ready(function () {
   removeOutdated();
   FormQuery.CSS = document.getElementById("jscss");
   FormQuery.MIN_DATE = getAtt("ini", "min");

@@ -6,7 +6,7 @@ import time
 from urllib.parse import parse_qsl, urljoin, urlsplit
 import json
 from functools import cache
-import cloudscraper
+from core.my_session import buildScraper, buildSession
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -31,13 +31,13 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 import logging
-from typing import Union
+from typing import Union, Optional
 from core.util import get_domain
 
 logger = logging.getLogger(__name__)
 
 re_sp = re.compile(r"\s+")
-re_emb = re.compile(r"^image/[^;]+;base64,.*", re.IGNORECASE)
+re_emb = re.compile(r"^image/[^;]+;base64,.*", re.I)
 is_s5h = os.environ.get('http_proxy', "").startswith("socks5h://")
 if is_s5h:
     proxy_ip, proxy_port = os.environ['http_proxy'].split(
@@ -51,18 +51,12 @@ default_headers = {
     "Expires": "Thu, 01 Jan 1970 00:00:00 GMT",
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
-    'Accept-Encoding': 'gzip, deflate, br',
+    #'Accept-Encoding': 'gzip, deflate, br',
+    'Accept-Encoding': 'gzip, deflate',
     'DNT': '1',
     'Connection': 'keep-alive',
     'Upgrade-Insecure-Requests': '1',
 }
-
-
-def get_query(url):
-    q = urlsplit(url)
-    q = parse_qsl(q.query)
-    q = dict(q)
-    return q
 
 
 def iterhref(soup: BeautifulSoup):
@@ -81,16 +75,21 @@ def iterhref(soup: BeautifulSoup):
 
 
 def buildSoup(root: str, source: str, parser="lxml"):
+    if source is None:
+        return None
     soup = BeautifulSoup(source, parser)
-    for n, attr, val in iterhref(soup):
-        val = urljoin(root, val)
-        n.attrs[attr] = val
+    if root:
+        for n, attr, val in iterhref(soup):
+            val = urljoin(root, val)
+            n.attrs[attr] = val
     return soup
 
 
-def get_text(node: Tag, default: str = None):
+def get_text(node: Tag | str, default: Optional[str] = None):
     if node is None:
         return default
+    if isinstance(node, str):
+        node = buildSoup(None, node)
     txt = None
     if node.name == "input":
         txt = node.attrs.get("value")
@@ -100,6 +99,24 @@ def get_text(node: Tag, default: str = None):
         txt = node.get_text()
     if txt is None:
         return default
+    if not isinstance(txt, str):
+        raise ValueError(txt)
+    txt = re_sp.sub(" ", txt).strip()
+    if len(txt) == 0:
+        return default
+    return txt
+
+
+def get_attr(node: Tag | str, attr: str, default: Optional[str] = None):
+    if node is None:
+        return default
+    if isinstance(node, str):
+        node = buildSoup(None, node)
+    txt = node.attrs.get(attr)
+    if txt is None:
+        return default
+    if not isinstance(txt, str):
+        raise ValueError(txt)
     txt = re_sp.sub(" ", txt).strip()
     if len(txt) == 0:
         return default
@@ -121,55 +138,40 @@ class WebException(Exception):
 
 class Web:
     def __init__(self, refer=None, verify=True):
-        self.s = cloudscraper.create_scraper()
+        self.s = buildSession() if verify is False else buildScraper()
         self.s.headers = default_headers
         self.response = None
         self.soup = None
         self.form = None
         self.verify = verify
-        self.__alt: dict[str, requests.Session] = {
-            "madrid.es": Driver.to_session("firefox", "https://www.madrid.es", cloudscraper.create_scraper())
-        }
-        self.__refer: dict[str, str] = {}
-        r_dom = get_domain(refer)
-        if r_dom in self.__alt:
-            self.__refer[r_dom] = refer
-        else:
-            self.refer = refer
+        self.refer = refer
 
     def _get(self, url, allow_redirects=True, auth=None, **kwargs):
-        session = self.__alt.get(get_domain(url)) or self.s
         verify = kwargs.get('verify', self.verify)
+        kwargs.pop('verify', None)
         if kwargs:
-            return session.post(url, data=kwargs, allow_redirects=allow_redirects, verify=verify, auth=auth)
-        return session.get(url, allow_redirects=allow_redirects, verify=verify, auth=auth)
+            return self.s.post(url, data=kwargs, allow_redirects=allow_redirects, verify=verify, auth=auth)
+        return self.s.get(url, allow_redirects=allow_redirects, verify=verify, auth=auth)
 
     def get_soup(self, url, auth=None, parser="lxml", **kwargs):
         r = self._get(url, auth=auth, **kwargs)
         return buildSoup(url, r.content, parser=parser)
 
     def get(self, url, auth=None, parser="lxml", **kwargs):
-        u_dom = get_domain(url)
-        refer = self.__refer.get(u_dom) if u_dom in self.__alt else self.refer
-        if u_dom in self.__alt:
-            refer = self.__refer.get(u_dom)
-            if refer:
-                self.__alt[u_dom].headers.update({'referer': refer})
-        elif self.refer:
+        if self.refer:
             self.s.headers.update({'referer': self.refer})
         self.response = self._get(url, auth=auth, **kwargs)
-        if u_dom in self.__alt:
-            self.__refer[u_dom] = self.response.url
-        else:
-            self.refer = self.response.url
+        self.refer = self.response.url
         self.soup = buildSoup(url, self.response.content, parser=parser)
         return self.soup
 
     def prepare_submit(self, slc, silent_in_fail=False, **kwargs):
         data: dict[str, Union[str, int, float, None]] = {}
         self.form = self.soup.select_one(slc)
-        if silent_in_fail and self.form is None:
-            return None, None
+        if self.form is None:
+            if silent_in_fail:
+                return None, None
+            raise WebException(f"{slc} not found in {self.url}")
         for i in self.form.select("input[name]"):
             name = i.attrs["name"]
             data[name] = i.attrs.get("value")
@@ -246,87 +248,127 @@ class Web:
         txt = self.select_one_txt(slc)
         try:
             return json.loads(txt)
-        except json.JSONDecodeError:
-            raise WebException(f"{slc} no json in {self.url}")
+        except json.JSONDecodeError as e:
+            raise WebException(f"{slc} no json in {self.__url} {e} {txt}")
 
     @cache
-    def __cached_get(self, url: str):
-        r = self._get(url)
+    def __cached_get(self, url: str, verify_ssl=True):
+        if get_domain(url) == "madrid.es":
+            s = Driver.cached_session(
+                "firefox",
+                "https://www.madrid.es",
+            )
+            return s.get(url, verify=verify_ssl).content
+        r = self._get(url, verify=verify_ssl)
         return r.content
 
-    def get_cached_soup(self, url: str, parser="lxml"):
-        content = self.__cached_get(url)
+    def get_cached_soup(self, url: str, parser="lxml", verify_ssl=True):
+        content = self.__cached_get(url, verify_ssl=verify_ssl)
         soup = buildSoup(url, content, parser=parser)
         return soup
 
+    def safe_get_cached_soup(self, *args, **kwargs):
+        try:
+            return self.get_cached_soup(*args, **kwargs)
+        except Exception:
+            return None
+
 
 class MyTag:
-    def __init__(self, url: str, node: Tag):
+    def __init__(self, url: str, node: Tag, status_code: int):
         self.__url = url
         self.__node = node
+        self.__status_code = status_code
 
-    def select_one(self, slc: str, warning: bool = False):
+    @property
+    def status_code(self):
+        return self.__status_code
+
+    def select_one(self, slc: str, if_none: str = "raise"):
         n = self.__node.select_one(slc)
         if n is None:
             ex = WebException(f"{slc} NOT FOUND in {self.__url}")
-            if warning:
+            if if_none == "raise":
+                raise ex
+            if if_none == "warn":
                 logger.warning(str(ex))
-                return None
-            raise ex
+            return None
         return n
 
-    def select_one_txt(self, slc: str, warning: bool = False):
-        n = self.select_one(slc, warning=warning)
-        if n is None and warning:
+    def select_one_txt(self, slc: str, if_none: str = "raise"):
+        n = self.select_one(slc, if_none=if_none)
+        if n is None and if_none != "raise":
             return None
         txt = get_text(n)
         if txt is None:
             ex = WebException(f"{slc} EMPTY in {self.__url}")
-            if warning:
+            if if_none == "raise":
+                raise ex
+            if if_none == "warn":
                 logger.warning(str(ex))
-                return None
-            raise ex
+            return None
         return txt
 
-    def select_one_attr(self, slc: str, attr: str, warning: bool = False):
-        n = self.select_one(slc, warning=warning)
-        if n is None and warning:
+    def select_one_attr(self, slc: str, attr: str, if_none: str = "raise"):
+        n = self.select_one(slc, if_none=if_none)
+        if n is None and if_none != "raise":
             return None
         if attr not in n.attrs:
             ex = WebException(f"{slc} has not {attr} in {self.__url}")
-            if warning:
+            if if_none == "raise":
+                raise ex
+            if if_none == "warn":
                 logger.warning(str(ex))
-                return None
-            raise ex
+            return None
         txt = n.attrs[attr]
         if txt is None:
             ex = WebException(f"{slc}[{attr}] EMPTY in {self.__url}")
-            if warning:
+            if if_none == "raise":
+                raise ex
+            if if_none == "warn":
                 logger.warning(str(ex))
-                return None
-            raise ex
+            return None
+        if not isinstance(txt, str):
+            raise ValueError(txt)
         return txt
 
-    def select_one_json(self, slc: str) -> Union[dict, list]:
-        txt = self.select_one_txt(slc)
+    def select_one_json(
+        self,
+        slc: str,
+        none: tuple[str, ...] = (),
+        if_none: str = "raise"
+    ) -> Union[dict, list, None]:
+        txt = self.select_one_txt(slc, if_none=if_none)
+        if txt is None and if_none != "raise":
+            return None
+        if txt in none:
+            return None
         try:
             return json.loads(txt)
-        except json.JSONDecodeError:
-            raise WebException(f"{slc} no json in {self.__url}")
+        except json.JSONDecodeError as e:
+            raise WebException(f"{slc} no json in {self.__url} {e} {txt}")
 
-    def select(self, slc: str):
+    def select(self, slc: str, if_none="raise"):
         nds = self.__node.select(slc)
         if len(nds) == 0:
-            raise WebException(f"{slc} NOT FOUND in {self.__url}")
+            ex = WebException(f"{slc} NOT FOUND in {self.__url}")
+            if if_none == "raise":
+                raise ex
+            if if_none == "warn":
+                logger.warning(str(ex))
         return nds
 
-    def select_txt(self, slc: str):
+    def select_txt(self, slc: str, if_none="raise"):
         arr: list[str] = []
-        for txt in map(get_text, self.select(slc)):
+        for txt in map(get_text, self.select(slc, if_none=if_none)):
             if txt:
                 arr.append(txt)
         if len(arr) == 0:
-            raise WebException(f"{slc} EMPTY in {self.__url}")
+            ex = WebException(f"{slc} EMPTY in {self.__url}")
+            if if_none == "raise":
+                raise WebException(f"{slc} EMPTY in {self.__url}")
+            if if_none == "warn":
+                logger.warning(str(ex))
         return tuple(arr)
 
     @property
@@ -538,6 +580,13 @@ class Driver:
             return self._driver.find_element(By.XPATH, id)
         return self._driver.find_element(By.ID, id)
 
+    def safe_waitjs(self, js: str, val=True, seconds=None):
+        try:
+            return self.waitjs(js, val=val, seconds=seconds)
+        except TimeoutException:
+            pass
+        return None
+
     def waitjs(self, js: str, val=True, seconds=None):
         if seconds is None:
             seconds = self._wait
@@ -620,10 +669,14 @@ class Driver:
         if self._driver is None:
             return session
         if session is None:
-            session = requests.Session()
+            session = buildSession()
         for cookie in self._driver.get_cookies():
             session.cookies.set(cookie['name'], cookie['value'], domain=cookie.get("domain"))
-        session.headers.update({"User-Agent": self._driver.execute_script("return navigator.userAgent;")})
+        for k, v in {
+            "User-Agent": self._driver.execute_script("return navigator.userAgent;")
+        }.items():
+            if v:
+                session.headers.update({k: v})
         return session
 
     def wait_ready(self):
@@ -640,12 +693,19 @@ class Driver:
         return self.execute_script(js)
 
     @staticmethod
-    def to_session(browser: str, url: str, session: requests.Session = None):
+    def to_session(browser: str, *urls: str, session: requests.Session = None):
         with Driver(browser=browser) as d:
-            d.get(url)
-            time.sleep(5)
-            d.wait_ready()
-            return d.pass_cookies(session)
+            for url in urls:
+                d.get(url)
+                time.sleep(5)
+                d.wait_ready()
+            s = d.pass_cookies(session)
+            return s
+
+    @staticmethod
+    @cache
+    def cached_session(browser: str, url: str):
+        return Driver.to_session(browser, url)
 
 
 WEB = Web()

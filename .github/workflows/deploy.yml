@@ -2,7 +2,10 @@ name: deploy
 on:
   workflow_dispatch:
   schedule:
-  - cron: '0 5 28,1,15 * *'
+    - cron: '0 10 * * 1-5'
+      timezone: "Europe/Madrid"
+    - cron: '0 12 * * 6,0'
+      timezone: "Europe/Madrid"
 permissions:
   contents: read
   pages: write
@@ -38,7 +41,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: '3.11'
       - name: Install pip packages
         run: pip install -r requirements.txt
       - name: RM and WGET
@@ -49,6 +52,12 @@ jobs:
       - name: BUILD
         continue-on-error: false
         uses: nick-fields/retry@v2
+        env:
+          PROXY_LIST: ${{ secrets.PROXY_LIST }}
+          ICS_BUSY: ${{ secrets.ICS_BUSY }}
+          ICS_BUSY_VILLAVERDE: ${{ secrets.ICS_BUSY_VILLAVERDE }}
+          API_INFO_KEY: ${{ secrets.API_INFO_KEY }}
+          API_INFO_URL: ${{ secrets.API_INFO_URL }}
         with:
           timeout_minutes: 50
           retry_wait_seconds: 60
