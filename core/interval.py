@@ -2,19 +2,36 @@ from typing import NamedTuple
 from requests import get
 import logging
 from os import environ
-from datetime import datetime
+from datetime import datetime, date
 from zoneinfo import ZoneInfo
 from requests.exceptions import JSONDecodeError
 from time import sleep
 
 
 logger = logging.getLogger(__name__)
+TZ = ZoneInfo("Europe/Madrid")
 
 
 def to_date(s: str):
     dt = datetime.strptime(s, "%Y-%m-%d %H:%M")
-    dt = dt.replace(tzinfo=ZoneInfo("Europe/Madrid"))
+    dt = dt.replace(tzinfo=TZ)
     return dt
+
+
+def normalize_date(dt: datetime):
+    if isinstance(dt, date) and not isinstance(dt, datetime):
+        return datetime.combine(
+            dt,
+            datetime.min.time(),
+            tzinfo=TZ
+        )
+    if isinstance(dt, datetime):
+        if dt.tzinfo is None:
+            return dt.replace(
+                tzinfo=TZ
+            )
+        return dt.astimezone(TZ)
+    raise ValueError(dt)
 
 
 def _safe_get_int(env_url: str, tries=3) -> list:
@@ -47,6 +64,7 @@ class Interval(NamedTuple):
     def is_in(self, dt: datetime) -> bool:
         if dt is None:
             return False
+        dt = normalize_date(dt)
         if not isinstance(dt, datetime):
             raise ValueError(dt)
         return self.start <= dt <= self.end
