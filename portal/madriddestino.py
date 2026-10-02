@@ -111,6 +111,9 @@ async def rq_to_info_seats(r: ClientResponse):
 
 
 async def rq_to_info_soup(r: ClientResponse):
+    if r.status == 404:
+        return None
+    r.raise_for_status()
     info: set[SoupInfo] = set()
     soup = buildSoup(str(r.url), await r.text())
     for script in map(get_text, soup.select("script")):
@@ -205,15 +208,18 @@ class MadridDestino(Base):
             onread=rq_to_data,
             headers=HEADERS,
             raise_for_status=False,
+            skip=({}, None, tuple(), [])
         )
         self.__info_session_getter = Getter(
             onread=rq_to_info_seats,
             headers=HEADERS,
             raise_for_status=False,
+            skip=({}, None, tuple(), [])
         )
         self.__soup_getter = Getter(
             onread=rq_to_info_soup,
             headers=HEADERS,
+            raise_for_status=False,
             skip=({}, None, tuple(), [])
         )
         self.__map_getter = Getter(
@@ -257,8 +263,8 @@ class MadridDestino(Base):
 
         return Data(
             state=state,
-            info={k: v for k, v in info.items() if v is not None},
-            soup={k: v for k, v in soup.items() if v is not None}
+            info=info,
+            soup=soup
         )
 
     def fix_sessions(self, events: tuple[Event]):
