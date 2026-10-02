@@ -60,6 +60,7 @@ def _get_str(obj: dict, *args: str):
 
 async def rq_to_data(r: ClientResponse):
     if r.status == 404:
+        logger.warning(f"status_code={r.status} {r.url}")
         return None
     r.raise_for_status()
     js = await r.json()
@@ -79,6 +80,7 @@ class Seat(NamedTuple):
 
 async def rq_to_info_seats(r: ClientResponse):
     if r.status == 404:
+        logger.warning(f"status_code={r.status} {r.url}")
         return None
     r.raise_for_status()
     js = await r.json()
@@ -112,6 +114,7 @@ async def rq_to_info_seats(r: ClientResponse):
 
 async def rq_to_info_soup(r: ClientResponse):
     if r.status == 404:
+        logger.warning(f"status_code={r.status} {r.url}")
         return None
     r.raise_for_status()
     info: set[SoupInfo] = set()
