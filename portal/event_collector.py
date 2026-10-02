@@ -29,6 +29,7 @@ from portal.eventim import Eventim
 from datetime import datetime, date
 from core.util import find_cp, round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
 from core.publish import PublishDB
+from core.interval import Interval
 import logging
 from typing import Tuple
 from core.cache import TupleCache
@@ -61,7 +62,8 @@ def safe_load_ics(name: str):
     return IcsReader.safe_load(environ.get(name), name=name)
 
 
-ICS_BUSY = safe_load_ics("ICS_BUSY")
+INT_BUSY = Interval.safe_load("INT_BUSY")
+ICS_BUSY = None  # safe_load_ics("ICS_BUSY")
 ICS_BUSY_VILLAVERDE = safe_load_ics("ICS_BUSY_VILLAVERDE")
 ICS_BUSY_ALCALA = safe_load_ics("ICS_BUSY_ALCALA")
 KO_CP = (
@@ -79,6 +81,7 @@ KO_CP = (
     28020,
     28011,
     28027,
+    28024,
     # Barajas
     28042,
     # Barcelona
@@ -171,6 +174,9 @@ def isAlcalaOkDate(dt: datetime):
 
 
 def isOkDate(dt: datetime, delta: int = 0.5):
+    for i in INT_BUSY:
+        if i.is_in(dt):
+            return False
     if ICS_BUSY and ICS_BUSY.is_in(dt):
         return False
     if dt.date() in get_festivos(dt.year):
@@ -233,6 +239,8 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         r"^Parco Sempione$",
         r"(Firenze|Torino)$",
         r"Manzanares el Real$",
+        r"Collado Villalba",
+        r"Pozuelo de Alarc[oó]n",
         flags=re.I
     ):
         return False

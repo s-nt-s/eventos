@@ -266,13 +266,15 @@ class AteneoMadrid(Base):
         if re_or(
             e.DESCRIPTION,
             r"Ciclo de\s*Tauromaquia",
+            r"Alfonso Zurita",
             flags=re.I,
         ):
-            return Category.NO_EVENT
+            return Category.SPAM
         if re_or(
             e.SUMMARY,
             "comunicaci[óo]n corporativa",
             r"(Cuarta|4[ºª\*\.]) Revoluci[oó]n Industrial",
+            r"Consejo de Empresarios Iberoamericanos",
             flags=re.I
         ):
             return Category.ENTERPRISE

@@ -19,6 +19,7 @@ NOW = datetime.now(tz=pytz.timezone('Europe/Madrid'))
 
 def _clean_name(name: str):
     name = RE_SUFIX.sub("", name)
+    name = re.sub(r"^\s*Sesi[oó]n \d+\.\s*", "", name, flags=re.I)
     name = re.sub(r"\s+\(En diferido desde[^\(\)]+\)\s*$", "", name, flags=re.I)
     return name
 

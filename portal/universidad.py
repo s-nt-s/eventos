@@ -580,7 +580,8 @@ class Universidad(Base):
 
         if has_cat(
             r"Investigaci[oó]n doctoral",
-            "Veterinaria",
+            r"Veterinaria",
+            r"Relaciones p[uú]blicas y protocolo",
         ):
             return Category.NO_EVENT
         if has_cat(

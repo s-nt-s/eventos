@@ -137,7 +137,11 @@ async def soup_to_cinema(url: str, soup: Tag):
             logger.warning(f"NOT FOUND price={k}={v} {url}")
             continue
         ev: Cinema = price_event.get(price, template)
-        d, m, h, mm = map(int, re.findall(r"\d+", k))
+        nums = tuple(map(int, re.findall(r"\d+", k)))
+        if len(nums) != 4:
+            logger.warning(f"NOT FOUND date={k} {url}")
+            continue
+        d, m, h, mm = nums
         dt = datetime(TODAY.year, m, d, h, mm)
         if TODAY.month == 1 and dt.month == (11, 12):
             dt = dt.replace(year=TODAY.year-1)

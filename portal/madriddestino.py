@@ -541,6 +541,13 @@ class MadridDestino(Base):
             flags=re.I
         ):
             return "Cortometrajes"
+        if category == Category.WORKSHOP and re_or(
+            f"{pt} {psub}",
+            r"Ganchillo (intermedio|iniciaci[oó]n|avanzado)",
+            r"a todo gancho",
+            flags=re.I
+        ):
+            return "Ganchillo"
 
     def __find_category(self, url: str, id: str, e: Dict, info: Dict, more: str | None):
         cats: Set[str] = set()
@@ -710,7 +717,13 @@ class MadridDestino(Base):
         ):
             return Category.VISIT
 
-        if re_or(pt, "^taller"):
+        if re_or(
+            pt,
+            "^taller",
+            r"Ganchillo (intermedio|iniciaci[oó]n|avanzado)",
+            r"a todo gancho",
+            flags=re.I
+        ):
             return Category.WORKSHOP
 
         if is_cat("teatro", "teatro de objetos", "performance"):

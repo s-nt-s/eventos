@@ -54,6 +54,7 @@ jobs:
         uses: nick-fields/retry@v2
         env:
           PROXY_LIST: ${{ secrets.PROXY_LIST }}
+          INT_BUSY: ${{ secrets.INT_BUSY }}
           ICS_BUSY: ${{ secrets.ICS_BUSY }}
           ICS_BUSY_VILLAVERDE: ${{ secrets.ICS_BUSY_VILLAVERDE }}
           API_INFO_KEY: ${{ secrets.API_INFO_KEY }}
