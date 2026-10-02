@@ -58,8 +58,10 @@ def _get_str(obj: dict, *args: str):
                 return v
 
 
-
 async def rq_to_data(r: ClientResponse):
+    if r.status == 404:
+        return None
+    r.raise_for_status()
     js = await r.json()
     if not isinstance(js, dict):
         raise ValueError(f'{r.url} is not a dict')
@@ -76,6 +78,9 @@ class Seat(NamedTuple):
 
 
 async def rq_to_info_seats(r: ClientResponse):
+    if r.status == 404:
+        return None
+    r.raise_for_status()
     js = await r.json()
     if not isinstance(js, dict):
         raise ValueError(f'{r.url} is not a dict')
@@ -198,11 +203,13 @@ class MadridDestino(Base):
         super().__init__(cache=cache)
         self.__data_getter = Getter(
             onread=rq_to_data,
-            headers=HEADERS
+            headers=HEADERS,
+            raise_for_status=False,
         )
         self.__info_session_getter = Getter(
             onread=rq_to_info_seats,
-            headers=HEADERS
+            headers=HEADERS,
+            raise_for_status=False,
         )
         self.__soup_getter = Getter(
             onread=rq_to_info_soup,
@@ -250,8 +257,8 @@ class MadridDestino(Base):
 
         return Data(
             state=state,
-            info=info,
-            soup=soup
+            info={k: v for k, v in info.items() if v is not None},
+            soup={k: v for k, v in soup.items() if v is not None}
         )
 
     def fix_sessions(self, events: tuple[Event]):
