@@ -113,6 +113,7 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"#leselust",
         r"Sesi[oó]n \d+",
         r"Evento",
         r"D[ií]a del cine español",
@@ -354,6 +355,8 @@ def _escape(s: str):
 
 
 DIRECTORS = list(map(_escape, map(str.lower, [
+    'Jaume Balagueró y Paco Plaza',
+    'Andrea Bussmann',
     'Luis García Berlanga',
     'Kevin McMahon',
     'Eduardo Mendoza',

@@ -267,6 +267,7 @@ class AteneoMadrid(Base):
             e.DESCRIPTION,
             r"Ciclo de\s*Tauromaquia",
             r"Alfonso Zurita",
+            r"Camino de Santiago",
             flags=re.I,
         ):
             return Category.SPAM

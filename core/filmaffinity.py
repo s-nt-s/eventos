@@ -186,6 +186,7 @@ class FilmAffinityApi:
             (837486, 2026, "Salen las lobas"),
             (936040, 2026, re.compile(r"^El casitllo\b.*\bcap[íi]tulo.*", flags=re.I)),
             (435198, 2026, "Tres mujeres"),
+            (889276, 2022, 'A Date in Minsk'),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:

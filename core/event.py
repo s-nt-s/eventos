@@ -1276,6 +1276,7 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.NARRATIVE
     if re_or(
         description,
+        r"la primera novela",
         r"la novela ganadora",
         r"una novela quinqui",
         r"colecci[oó]n de microrrelatos",

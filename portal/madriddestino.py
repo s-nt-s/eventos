@@ -561,6 +561,7 @@ class MadridDestino(Base):
             f"{pt} {psub}",
             r"Ganchillo (intermedio|iniciaci[oó]n|avanzado)",
             r"a todo gancho",
+            r"Dos agujas, mil historias",
             flags=re.I
         ):
             return "Ganchillo"
@@ -604,7 +605,6 @@ class MadridDestino(Base):
             flags=re.I
         )
 
-
         if "/espacio-abierto-quinta-de-los-molinos/" in url:
             return Category.CHILDISH
 
@@ -617,6 +617,7 @@ class MadridDestino(Base):
         if re_or(
             pt,
             r"taller(es)?.*? 1?\d [ay] 1?\d años?",
+            r"Baby Romo",
             flags=re.I
         ):
             return Category.CHILDISH
