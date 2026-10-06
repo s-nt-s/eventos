@@ -300,6 +300,8 @@ class MadConvoca(Base):
             return Category.LITERATURE
         if _has_cat(r"Mesa redonda", "Conferencias", "Charlas?", 'Homenaje'):
             return Category.CONFERENCE
+        if _has_cat(r"salida"):
+            return Category.VISIT
 
         if re_and(
             e.DESCRIPTION,
@@ -539,7 +541,7 @@ class MadConvoca(Base):
             return Category.ACTIVISM
         if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', r'Repair\s*Caf[eé]'):
             return Category.WORKSHOP
-        if has_tag_or_title("paseo") and has_tag_or_title("historia"):
+        if has_tag("salida") or (has_tag_or_title("paseo") and has_tag_or_title("historia")):
             return Category.VISIT
         if re_or(
             name,

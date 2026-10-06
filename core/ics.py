@@ -210,14 +210,27 @@ class IcsEventWrapper:
     def __find_hours(self):
         txt = self.__get_text("DESCRIPTION") or ''
         hms: set[tuple[int, int]] = set()
-        for h, m in re.findall(r"\b([01]\d|2[0-4]):([0-5]\d)[\b|h]", txt):
+        for h, m in re.findall(r"[\b\s]([01]\d|2[0-4]):([0-5]\d)[\bh\s]", txt):
             hms.add((int(h), int(m)))
         return tuple(sorted(hms))
 
+    def __is_wired_date(self):
+        start = self.__get_datetime("DTSTART", mandatory=True)
+        if start.hour != 0 or start.minute != 0:
+            return False
+        end = self.__get_datetime("DTEND")
+        if end in (None, start):
+            return True
+        if end.date() not in (start.date(), (start+timedelta(days=1)).date()):
+            return False
+        if (end.hour, end.minute) in ((23, 59), (24, 0), (0, 0)):
+            return True
+        return False
+    
     @cached_property
     def DTSTART(self) -> datetime:
         dt = self.__get_datetime("DTSTART", mandatory=True)
-        if dt.hour == 0 and dt.minute == 0 and self.__get_datetime("DTEND") in (None, dt):
+        if self.__is_wired_date():
             hm = self.__find_hours()
             if len(hm) in (1, 2):
                 dt = dt.replace(hour=hm[0][0], minute=hm[0][1])
@@ -226,9 +239,9 @@ class IcsEventWrapper:
 
     @cached_property
     def DTEND(self):
-        st = dt = self.__get_datetime("DTSTART", mandatory=True)
+        st = self.__get_datetime("DTSTART", mandatory=True)
         dt = self.__get_datetime("DTEND")
-        if dt in (None, st) and st.hour == 0 and st.minute == 0:
+        if self.__is_wired_date():
             hm = self.__find_hours()
             if len(hm) in (1, 2):
                 dt = st.replace(hour=hm[-1][0], minute=hm[-1][1])

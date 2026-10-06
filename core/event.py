@@ -791,6 +791,8 @@ class Event:
         if self.cycle:
             return self.cycle
         urls = set(self.iter_urls())
+        if self.img:
+            urls.add(self.img)
         name = self.name or ''
         if re.search(r"Festival Centro al comp[áa]s", name, flags=re.I):
             return "Festival Centro al compás"
@@ -863,6 +865,11 @@ class Event:
             "https://www.madrid.es/portales/munimadrid/es/Inicio/Actualidad/Actividades-y-eventos/Ciclo-de-conferencias-sobre-historia-con-Miguel-Arenas/?vgnextfmt=default&vgnextoid=c649606fb4e49910VgnVCM200000f921e388RCRD&vgnextchannel=ca9671ee4a9eb410VgnVCM100000171f5a0aRCRD",
         )):
             return "Conferencias sobre historia"
+        if urls.intersection((
+            "https://madrid.cnt.es/wp-content/uploads/2026/09/photo_2026-06-09_20-54-36.jpg",
+            "https://madrid.cnt.es/2026/09/22/visitas-guiadas-en-el-90-aniversario-de-la-revolucion-social/"
+        )):
+            return "90 aniversario de la Revolución Social"
         return None
 
 
