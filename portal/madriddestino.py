@@ -117,17 +117,27 @@ async def rq_to_info_soup(r: ClientResponse):
         logger.warning(f"status_code={r.status} {r.url}")
         return None
     r.raise_for_status()
-    info: set[SoupInfo] = set()
+    info: set[SoupSession] = set()
     soup = buildSoup(str(r.url), await r.text())
     for script in map(get_text, soup.select("script")):
         if not script:
             continue
         for m in re.findall(r'{id:(\d+),[^{}]+,sessionStart:"([\d\-: ]+)"', script):
-            info.add(SoupInfo(
+            info.add(SoupSession(
                 id=int(m[0]),
                 sessionStart=m[1]
             ))
-    return tuple(sorted(info))
+    salas: list[str] = []
+    for txt in map(get_text, soup.select("div.c-mod-bar-event__data span.o-tag")):
+        if txt and txt.startswith("Sala: "):
+            sala = txt.split(":", 1)[-1].strip()
+            if sala and sala not in salas:
+                salas.append(sala)
+    return SoupInfo(
+        url=str(r.url),
+        session=tuple(sorted(info)),
+        salas=tuple(salas)
+    )
 
 
 async def rq_to_mapa(r: ClientResponse):
@@ -143,7 +153,7 @@ def timestamp_to_date(timestamp: int):
     return d.strftime("%Y-%m-%d %H:%M")
 
 
-class SoupInfo(NamedTuple):
+class SoupSession(NamedTuple):
     id: int
     sessionStart: str
 
@@ -152,13 +162,29 @@ class SoupInfo(NamedTuple):
         obj = get_obj(*args, **kwargs)
         if obj is None:
             return None
+        return SoupSession(**obj)
+
+
+class SoupInfo(NamedTuple):
+    url: str
+    session: tuple[SoupSession, ...]
+    salas: tuple[str, ...]
+
+    @staticmethod
+    def build(*args, **kwargs):
+        obj = get_obj(*args, **kwargs)
+        if obj is None:
+            return None
+        ss = obj.get('session')
+        obj['session'] = tuple(map(SoupSession.build, ss or []))
+        obj['salas'] = tuple(obj.get('salas', []))
         return SoupInfo(**obj)
 
 
 class Data(NamedTuple):
     state: dict
     info: dict[int, dict]
-    soup: dict[int, tuple[SoupInfo, ...]]
+    soup: dict[int, SoupInfo]
 
     @staticmethod
     def build(*args, **kwargs):
@@ -167,15 +193,15 @@ class Data(NamedTuple):
             return None
         for kk, cst in {
             'info': None,
-            'soup': SoupInfo
+            'soup': SoupInfo.build
         }.items():
             o = {}
             for k, v in obj.get(kk, {}).items():
                 if cst:
                     if isinstance(v, dict):
-                        v = cst(**v)
+                        v = cst(v)
                     elif isinstance(v, list):
-                        v = tuple(map(lambda x: cst(**x), v))
+                        v = tuple(map(lambda x: cst(x), v))
                 o[int(k)] = v
             obj[kk] = o
         return Data(**obj)
@@ -260,7 +286,7 @@ class MadridDestino(Base):
             info_url
         )
 
-        soup: dict[int, dict] = self.__soup_getter.get_from_url_id(
+        soup: dict[int, SoupInfo] = self.__soup_getter.get_from_url_id(
             soup_url
         )
 
@@ -326,8 +352,10 @@ class MadridDestino(Base):
     def __get_event_info_from_session(self, id_session: int):
         for e in self.data.state['events']:
             soup = self.data.soup.get(e['id'])
-            if id_session in self.__get_session_from_soup(soup).values():
-                return e
+            if soup and soup.session:
+                vls = self.__get_session_from_soup(soup.session).values()
+                if id_session in vls:
+                    return e
 
     @HashCache("rec/madriddestino/state/{}.json")
     def get_state_from_url(self, url: str) -> Dict:
@@ -373,6 +401,9 @@ class MadridDestino(Base):
             more = info.get('webSource')
             durt = info.get('duration')
             category = self.__find_category(url, id, e, info, more)
+            place = self.__find_place(e, soup)
+            if place:
+                place = place.normalize()
             ev = Event(
                 id=id,
                 url=url,
@@ -381,8 +412,8 @@ class MadridDestino(Base):
                 price=e['highestPrice'],
                 duration=durt if durt is not None else 60,
                 category=category,
-                place=self.__find_place(e),
-                sessions=self.__find_sessions(url, e, soup),
+                place=place,
+                sessions=self.__find_sessions(url, e, soup.session if soup else tuple()),
                 more=None if more in KO_MORE else more,
                 cycle=self.__find_cycle(category, e, info),
                 description=MD.convert(info.get('description'))
@@ -455,37 +486,62 @@ class MadridDestino(Base):
             )
         return ev
 
-    def __find_place(self, e: Dict):
+    def __find_space_id(self, e: Dict):
         space_id = set()
         for s in e['rooms']:
             space_id.add(s.get('space_id'))
         for s in e.get('spaces', []):
             space_id.add(s.get('id'))
-        if None in space_id:
-            space_id.remove(None)
+        space_id.discard(None)
         if len(space_id) == 0:
             raise FieldNotFound("place", e['id'])
         if len(space_id) > 1:
             address: Set[str] = set()
             for i in space_id:
-                a = plain_text(self.__find("spaces", i)['address'])
-                if a:
-                    address.add(a)
-            if len(address) != 1:
-                logger.critical(FieldUnknown(MadridDestino.URL, "place", f"{e['id']}: " + ", ".join(
-                    map(str, sorted(space_id))
-                )))
-                return Place(
-                    name="¿?",
-                    address="¿?"
+                addr = plain_text(
+                    (self.__find("spaces", i) or {}).get('address')
                 )
-        space = self.__find("spaces", sorted(space_id).pop())
+                if addr:
+                    address.add(addr)
+            if len(address) != 1:
+                raise FieldUnknown(MadridDestino.URL, "place", f"{e['id']}: " + ", ".join(
+                    map(str, sorted(space_id))
+                ))
+        s_id = sorted(space_id).pop()
+        space = self.__find("spaces", s_id)
+        plc_name = (space or {}).get('name')
+        plc_address = (space or {}).get('address')
+        if (plc_name, plc_address) == (None, None):
+            raise FieldUnknown(MadridDestino.URL, "place", f"space_id={s_id} space={space}")
+        return space
+
+    def __safe_find_space_id(self, e: Dict):
+        try:
+            return self.__find_space_id(e)
+        except FieldUnknown as ex:
+            logger.critical(str(ex))
+        return None
+
+    def __find_place(self, e: Dict, soup: SoupInfo | None):
+        space = self.__safe_find_space_id(e)
+        if space is not None:
+            plc_name = (space or {}).get('name')
+            plc_address = (space or {}).get('address')
+            return Place(
+                name=re.sub(r"\s+Madrid$", "", (plc_name or plc_address)),
+                address=(plc_address or plc_name)
+            )
+        if soup and soup.salas:
+            return Place(
+                name=soup.salas[0],
+                address=soup.salas[0]
+            )
         return Place(
-            name=re.sub(r"\s+Madrid$", "", space['name']),
-            address=space['address']
+            name="¿?",
+            address="¿?"
         )
 
-    def __find_sessions(self, source: str, e: Dict, soup: tuple[SoupInfo, ...]):
+    def __find_sessions(self, source: str, e: Dict, soup: tuple[SoupSession, ...]):
         id_session = self.__get_session_from_soup(soup)
         sessions: Set[Session] = set()
         for s in e['uAvailableDates']:
@@ -519,7 +575,7 @@ class MadridDestino(Base):
                 ok_zones.remove(z)
         return tuple(sorted(zones)), tuple(sorted(ok_zones))
 
-    def __get_session_from_soup(self, soup: tuple[SoupInfo, ...]):
+    def __get_session_from_soup(self, soup: tuple[SoupSession, ...]):
         id_data: dict[str, int] = dict()
         if soup is None:
             return id_data

@@ -1322,6 +1322,7 @@ def find_book_category(name: str, description: str, default: Category):
         r"una novela encantadora",
         r"con la novela",
         r"Malte Laurids Brigge",
+        r"narrativa contempor[aá]nea",
         ("Madrid junto al mar", "Mar Garc[íi]a Lozano"),
         ("a trav[eé]s de estas ficciones", "literatura"),
         flags=re.I
