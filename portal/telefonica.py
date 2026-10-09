@@ -242,7 +242,7 @@ class Telefonica(Base):
             description,
             "CONVERSAN"
         ):
-            return Category.CONFERENCE
+            return find_book_category(name, plain_description, Category.CONFERENCE)
         if re_or(
             plain_description,
             r"encuentro con (el|la|los|las) escrito(ra|re)s?",
@@ -265,7 +265,7 @@ class Telefonica(Base):
             ("CONVERSAN", "MODERA"),
             flags=re.I
         ):
-            return Category.CONFERENCE
+            return find_book_category(name, plain_description, Category.CONFERENCE)
         logger.critical(str(CategoryUnknown(self.__w.url, cat)))
         return Category.UNKNOWN
 
