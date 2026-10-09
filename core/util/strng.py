@@ -2,7 +2,7 @@ import re
 from functools import cache
 from unidecode import unidecode
 
-_TRIM = r"[\s✨🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬📽 🌎🗣🎉🌍🍉🥾📚💥🌸💀👗👕🥾👠👜♻️💚]+"
+_TRIM = r"[\s✨✊🏿📣🕊 🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬📽 🌎🗣🎉🌍🍉🥾📚💥🌸💀👗👕🥾👠👜♻️💚]+"
 RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
 RE_DEDUP = re.compile(r"(!+|¡+|¿+|\?+)")
 
@@ -355,6 +355,8 @@ def _escape(s: str):
 
 
 DIRECTORS = list(map(_escape, map(str.lower, [
+    "Narciso Ibáñez Serrador",
+    "Tobe Hopper",
     'Jaume Balagueró y Paco Plaza',
     'Andrea Bussmann',
     'Luis García Berlanga',

@@ -48,12 +48,14 @@ CLSS_COUNT = defaultdict(int)
 
 EC = EventCollector(
     max_price={
+        Category.ACTIVISM: 0,
         Category.CINEMA: 6,
         Category.OTHERS: 10,
     },
     max_sessions=15,
     publish=PUBLISHDB,
     categories=(
+        Category.ACTIVISM,
         Category.CINEMA,
         Category.MUSIC,
         Category.THEATER,

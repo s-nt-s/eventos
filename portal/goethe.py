@@ -474,6 +474,7 @@ class Goethe(Base):
             "Seminario",
             "Mesa redonda",
             r"Encuentro con la editora",
+            r"K[uü]nstlerbegegnung",
             flags=re.I
         ):
             return find_book_category(i['headline'], None, Category.CONFERENCE)

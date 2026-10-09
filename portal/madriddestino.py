@@ -672,6 +672,7 @@ class MadridDestino(Base):
             return Category.CHILDISH
         if re_or(
             pt,
+            r"ARTE EN FAMILIA",
             r"taller(es)?.*? 1?\d [ay] 1?\d años?",
             r"Baby Romo",
             flags=re.I
@@ -856,6 +857,7 @@ class MadridDestino(Base):
         if re_or(
             desc,
             r"taller(es)? de",
+            r"este taller",
             flags=re.I
         ):
             return Category.WORKSHOP
@@ -940,8 +942,12 @@ class MadridDestino(Base):
         if ct is not None:
             return ct
 
-        if "/cineteca/" in url:
-            return Category.CINEMA
+        for k, v in {
+            '/cineteca/': Category.CINEMA, 
+            '/conde-duque/': Category.CONFERENCE
+        }.items():
+            if k in url:
+                return v
 
         logger.critical(str(CategoryUnknown(url, f"{pt} - {psub} - {audience}: " + ", ".join(sorted(cats)))))
         return Category.UNKNOWN

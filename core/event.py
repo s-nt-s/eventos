@@ -870,6 +870,11 @@ class Event:
             "https://madrid.cnt.es/2026/09/22/visitas-guiadas-en-el-90-aniversario-de-la-revolucion-social/"
         )):
             return "90 aniversario de la Revolución Social"
+        if urls.intersection((
+            "https://fal.cnt.es/wp-content/uploads/2026/10/Expo-Colmenar.jpg",
+            "https://fal.cnt.es/el-14-de-octubre-se-inaugurara-la-exposicion-una-brecha-en-el-silencio-exhumaciones-en-el-cementerio-parroquial-de-colmenar-viejo/"
+        )):
+            return "Exhumaciones en el cementerio de Colmenar Viejo"
         return None
 
 
@@ -1265,6 +1270,7 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.POETRY
     if re_or(
         name,
+        r"novela breve",
         "Presentaci[óo]n de la novela",
         "Richard Turvey",
         "Nelio Biedermann",

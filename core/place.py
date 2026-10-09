@@ -303,6 +303,7 @@ class Place:
             name,
             r"FAL",
             r"Fundaci[óo]n Anselmo Lorenzo",
+            r"Fundacion de Estudios Libertarios Anselmo Lorenzo",
             r"CNT Madrid en Madrid Destino",
             flags=re.I
         ) and re_or(

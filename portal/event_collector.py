@@ -14,6 +14,7 @@ from portal.madrid_es import MadridEs
 from portal.telefonica import Telefonica
 from portal.teatromonumental import TeatroMonumental
 from portal.mad_convoca import MadConvoca
+from portal.inquilinato import Inquilinato
 from portal.universidad import Universidades
 from portal.ateneomadrid import AteneoMadrid
 from portal.circulobellasartes import CirculoBellasArtes
@@ -478,6 +479,7 @@ class EventCollector:
         eventos = \
             store_events + \
             run_parallel(
+                Inquilinato,
                 CineEmbajadores,
                 Eventim("69ef5f152a2031003e75fe62"),
                 MadridEs(
@@ -560,7 +562,7 @@ class EventCollector:
                 if self.__filter(e):
                     arr.append(e)
         logger.info(f"{len(arr)} pasan 2º filtro")
-        apiInfo = ApiInfo.build("API_INFO_KEY", "API_INFO_URL")
+        apiInfo = None  # ApiInfo.build("API_INFO_KEY", "API_INFO_URL")
         if apiInfo:
             arr = [e for e in apiInfo.complete(*arr) if self.__filter(e)]
             logger.info(f"{len(arr)} pasan 3º filtro")
@@ -670,7 +672,7 @@ class EventCollector:
         def _mk_key_piano_city(e: Event):
             re_pianio = re.compile(r"\bPiano[\-\s]*city", flags=re.I)
             if not any((
-                re_pianio.search(e.cycle or ''),
+                re_pianio.search(e._fix_cycle() or ''),
                 re_pianio.search(e.name or ''),
                 re_pianio.search(" ".join(e.iter_urls())),
             )):
@@ -692,14 +694,15 @@ class EventCollector:
             ok_events.add(e)
 
         def _mk_key_cycle(e: Event | Cinema):
-            if not e.cycle:
+            cycle = e._fix_cycle()
+            if not cycle:
                 return None
             urls: set[str] = set()
             for s in e.sessions:
                 if s.url and get_domain(s.url) != "madrid.es":
                     urls.add(s.url)
             if len(e.sessions) == 1 or len(urls) == 0:
-                return (e.cycle, e.category, e.place, round_to_even(e.price))
+                return (cycle, e.category, e.place, round_to_even(e.price))
 
         for evs in find_duplicates(
             ok_events,
@@ -709,7 +712,7 @@ class EventCollector:
                 ok_events.remove(e)
             e = Event.fusion(
                 *evs,
-                name=evs[0].cycle,
+                name=evs[0]._fix_cycle(),
             )
             st_more = set(x.more for x in evs if x.more)
             st_url = set(x.url for x in evs if x.url)

@@ -87,6 +87,8 @@ class CineEmbajadores(Base):
             price=self.__find_price(div),
             place=None,
         )
+        if re.search(r"\(VOSI\)", template.name):
+            return None
         place_session = self.__find_place_session(div)
         if len(place_session) == 0:
             return None

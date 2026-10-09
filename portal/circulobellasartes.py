@@ -361,7 +361,9 @@ def _find_category(url: str, title: str, soup: Tag, inf: dict):
         return Category.CONFERENCE
     if re_or(
         inf.get("organiza"),
-        "editorial"
+        r"editorial",
+        r"Yonki Books",
+        flags=re.I
     ):
         return find_book_category(full_title, desc, Category.LITERATURE)
     logger.critical(str(CategoryUnknown(url, "")))

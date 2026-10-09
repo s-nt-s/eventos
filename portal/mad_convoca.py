@@ -47,7 +47,7 @@ class MadConvoca(Base):
         }
         self.__mad = GancioPortal(
             root="https://mad.convoca.la",
-            isOkDate=isOkDate
+            isOkDate=isOkDate,
         )
         self.__ext = GancioPortal(
             root="https://calendario.extinctionrebellion.es",
@@ -108,8 +108,14 @@ class MadConvoca(Base):
     def __is_ko_place(self, url: str, place: Place):
         if place is None:
             return True
+        pa = f"{place.name or ''} {place.address or ''}".strip().lower()
+        if pa in (
+            "madrid en las calles",
+            "en las calles madrid",
+        ):
+            return True
         if re_or(
-            f"{place.name} {place.address}",
+            pa,
             "Robledo de Chavela",
             flags=re.I
         ):
@@ -118,7 +124,7 @@ class MadConvoca(Base):
             'calendario.extinctionrebellion.es',
         ):
             if not re_or(
-                f"{place.name} {place.address}",
+                pa,
                 "Madrid",
                 flags=re.I
             ):
@@ -366,6 +372,14 @@ class MadConvoca(Base):
                 return True
             return False
 
+        if re_or(
+            name,
+            "Bienvenida Nuev[oax@e]s? Rebeldes?",
+            ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
+            flags=re.I,
+        ):
+            return Category.NO_EVENT
+
         if isLibreria and re_or(
             name,
             "poes[íi]as?",
@@ -403,6 +417,7 @@ class MadConvoca(Base):
         if has_tag(
             "asamblea"
         ) or has_tag_or_title(
+            r"D[iÍ]A MUNDIAL DE ACCI[oÓ]N",
             r'manifestaci[oó]n',
             r'concentraci[oó]n',
             r'regularizaci[oó]n extraordinaria',
@@ -427,11 +442,11 @@ class MadConvoca(Base):
             r"Desayuno en Magdalena",
             r"Desayuno domingo \d+ de",
             "Bienvenida Nuev[oax@e]s? Rebeldes?",
+            ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
             r"Mesa informativa.* alquiler",
             r"recogida (de )?material",
             r"Cena vegana las Regañas",
             r"Marcha Republicana",
-            ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
             ("Grupo", "masculinidades",),
             ("Convocatoria", "Vivotecnia"),
             flags=re.I,
