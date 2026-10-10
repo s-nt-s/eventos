@@ -73,7 +73,7 @@ class WPIcs:
 
     def get_items(self):
         self.__w.get(self.__url)
-        div = self.__select_one("div.post-content div.r34ics-ajax-container[data-args!='']")
+        div = self.__select_one("div.post-content div.r34ics-ajax-container[data-args]")
         obj = self.__get_r34ics_ajax_obj()
         url = obj["ajaxurl"]
         data = dict(
