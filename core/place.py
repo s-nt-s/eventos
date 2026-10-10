@@ -611,6 +611,12 @@ class Place:
         ):
             return Places.PL_XOSE_TARRIO.value
         if re_or(
+            f"{name} {address}",
+            r"Ziga\s*28",
+            flags=re.I
+        ):
+            return Places.ZIGA28.value
+        if re_or(
             name,
             "cines? embajadores",
             flags=re.I
@@ -636,6 +642,12 @@ class Place:
 
 
 class Places(Enum):
+    ZIGA28 = Place(
+        name="Ziga 28",
+        address="C. de Zigia, 28, Cdad. Lineal, 28027 Madrid",
+        latlon="40.43909839741032,-3.644383554275265",
+        map="https://maps.app.goo.gl/Pjfzs9NPYLGXthU29"
+    )
     CINES_CALLAO = Place(
         name="Cines Callao",
         address="Pl. del Callao, 3, Centro, 28013 Madrid",
