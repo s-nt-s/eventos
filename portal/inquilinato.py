@@ -20,12 +20,6 @@ class Inquilinato(Base):
         for i in self.__wp.get_items():
             if re.match(r".*_R\d+T\d+@google\.com$", i.uid):
                 continue
-            if re_or(
-                i.title,
-                "GT Mañanas?",
-                flags=re.I
-            ):
-                continue
             p = self.__get_place(i)
             if p is None:
                 continue
@@ -35,7 +29,7 @@ class Inquilinato(Base):
                 name=i.title,
                 img=None,
                 price=0,
-                category=Category.ACTIVISM,
+                category=self.__get_category(i),
                 place=p.normalize(),
                 duration=i.duration,
                 sessions=tuple((
@@ -52,6 +46,21 @@ class Inquilinato(Base):
             name=i.location,
             address=i.location
         )
+
+    def __get_category(self, i: IEvent):
+        if re_or(
+            i.title,
+            "GT Mañanas?",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
+        if re_or(
+            i.title,
+            r"formaci[oó]n(es)?",
+            flags=re.I
+        ):
+            return Category.WORKSHOP
+        return Category.ACTIVISM
 
 
 if __name__ == "__main__":
