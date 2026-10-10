@@ -126,18 +126,22 @@ class CaixaForum(Base):
         if warn is not None:
             logger.warning(warn+" "+url)
             return tuple()
-        slc = f"div.card-item:has({CaixaForum.TIT_SELECTOR})"
-        divs = soup.select(slc)
-        if len(divs) == 0:
-            raise WebException(f"{slc} NOT FOUND in {url}")
-        for div in divs:
+        count = 0
+        slc = "div.card-item"
+        for div in soup.select(slc):
             h2 = div.select_one(CaixaForum.TIT_SELECTOR)
+            if h2 is None:
+                continue
+            count = count + 1
             url = h2.find_parent("a").attrs["href"]
             eid = self.__get_id_from_url(url)
             if eid is None:
                 logger.warning(f"ID not found in {url}")
                 continue
             events.append(MyIdTag(id=eid, url=url, node=div, status_conde=soup_tag.status_code))
+        slc = f"{slc}:has({CaixaForum.TIT_SELECTOR})"
+        if count == 0:
+            raise WebException(f"{slc} NOT FOUND in {url}")
         logger.debug(f"{len(events)} {slc}")
         return tuple(events)
 
