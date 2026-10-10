@@ -69,20 +69,34 @@ class WPIcs:
                 js = json.loads(txt)
                 if isinstance(js, dict):
                     return js
-        raise ValueError(f"{k} not found in page")
+        raise ValueError(f"{k} not found in {self.__url}")
+
+    def __get_cal_id(self):
+        attr = "data-args"
+        selector = f"div.post-content div.r34ics-ajax-container[{attr}]"
+        div = self.__w.soup.select_one(selector)
+        if div is None:
+            raise ValueError(f"{selector} not found in {self.__w.url}")
+        val = div.attrs.get(attr)
+        if not isinstance(val, str):
+            raise ValueError(f"{selector} = {val} in {self.__w.url}")
+        val = val.strip()
+        if len(val) == 0:
+            raise ValueError(f"{selector} = is empty in {self.__w.url}")
+        return val
 
     def get_items(self):
         self.__w.get(self.__url)
-        div = self.__select_one("div.post-content div.r34ics-ajax-container[data-args]")
+        cid = self.__get_cal_id()
         obj = self.__get_r34ics_ajax_obj()
         url = obj["ajaxurl"]
         data = dict(
             action='r34ics_ajax',
             r34ics_nonce=obj['r34ics_nonce'],
             subaction='display_calendar',
-            args=div.attrs['data-args'],
+            args=cid,
             **{
-                "js_args[debug]": "true",
+                "js_args[debug]": "false",
                 "js_args[ajax]": "true",
                 "js_args[eventdl]": "true",
                 "js_args[attach]": "true"
