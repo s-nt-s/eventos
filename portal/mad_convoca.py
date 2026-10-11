@@ -374,7 +374,8 @@ class MadConvoca(Base):
 
         if re_or(
             name,
-            "Bienvenida Nuev[oax@e]s? Rebeldes?",
+            r"Bienvenida Nuev[oax@e]s? Rebeldes?",
+            r"Club de lectura en [aá]rabe",
             ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
             flags=re.I,
         ):

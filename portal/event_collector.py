@@ -54,7 +54,6 @@ from requests.exceptions import ConnectTimeout
 from typing import Type
 from asyncio import TimeoutError
 from aiohttp.client_exceptions import ClientConnectionError
-from core.apiinfo import ApiInfo
 
 logger = logging.getLogger(__name__)
 
@@ -250,6 +249,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
     if name:
         if re_or(
             name,
+            r"Spazio Comune Cuore in Gola",
             r"Biblioteca\b.*\bMar[ií]a Lej[aá]rraga",
             r"Collado Villalba",
             "campus somosaguas",
@@ -562,10 +562,10 @@ class EventCollector:
                 if self.__filter(e):
                     arr.append(e)
         logger.info(f"{len(arr)} pasan 2º filtro")
-        apiInfo = None  # ApiInfo.build("API_INFO_KEY", "API_INFO_URL")
-        if apiInfo:
-            arr = [e for e in apiInfo.complete(*arr) if self.__filter(e)]
-            logger.info(f"{len(arr)} pasan 3º filtro")
+        #apiInfo = ApiInfo.build("API_INFO_KEY", "API_INFO_URL")
+        #if apiInfo:
+        #    arr = [e for e in apiInfo.complete(*arr) if self.__filter(e)]
+        #    logger.info(f"{len(arr)} pasan 3º filtro")
         return tuple(arr)
 
     @cache

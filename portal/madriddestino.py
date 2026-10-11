@@ -1,6 +1,6 @@
 from core.web import Driver, WEB, get_text, buildSoup
 from core.util import re_or, plain_text, get_obj, get_domain
-from typing import Set, Dict
+from typing import Set, Dict, Optional
 from functools import cached_property, cache
 import logging
 from core.cache import TupleCache, HashCache
@@ -127,16 +127,18 @@ async def rq_to_info_soup(r: ClientResponse):
                 id=int(m[0]),
                 sessionStart=m[1]
             ))
-    salas: list[str] = []
+    room: list[str] = []
     for txt in map(get_text, soup.select("div.c-mod-bar-event__data span.o-tag")):
         if txt and txt.startswith("Sala: "):
             sala = txt.split(":", 1)[-1].strip()
-            if sala and sala not in salas:
-                salas.append(sala)
+            if sala and sala not in room:
+                room.append(sala)
+    a = soup.select_one("a.c-event-sheet__link[href]")
     return SoupInfo(
         url=str(r.url),
         session=tuple(sorted(info)),
-        salas=tuple(salas)
+        room=tuple(room),
+        more=a.attrs["href"] if a else None
     )
 
 
@@ -168,7 +170,8 @@ class SoupSession(NamedTuple):
 class SoupInfo(NamedTuple):
     url: str
     session: tuple[SoupSession, ...]
-    salas: tuple[str, ...]
+    room: tuple[str, ...]
+    more: Optional[str] = None
 
     @staticmethod
     def build(*args, **kwargs):
@@ -177,7 +180,7 @@ class SoupInfo(NamedTuple):
             return None
         ss = obj.get('session')
         obj['session'] = tuple(map(SoupSession.build, ss or []))
-        obj['salas'] = tuple(obj.get('salas', []))
+        obj['room'] = tuple(obj.get('room', []))
         return SoupInfo(**obj)
 
 
@@ -398,7 +401,7 @@ class MadridDestino(Base):
             soup = self.data.soup.get(e['id'])
             url = MadridDestino.URL+'/'+org['slug']+'/'+e['slug']
             id = MadridDestino.mk_id(e['id'])
-            more = info.get('webSource')
+            more = info.get('webSource') or (soup.more if soup else None)
             durt = info.get('duration')
             category = self.__find_category(url, id, e, info, more)
             place = self.__find_place(e, soup)
@@ -531,10 +534,10 @@ class MadridDestino(Base):
                 name=re.sub(r"\s+Madrid$", "", (plc_name or plc_address)),
                 address=(plc_address or plc_name)
             )
-        if soup and soup.salas:
+        if soup and soup.room:
             return Place(
-                name=soup.salas[0],
-                address=soup.salas[0]
+                name=soup.room[0],
+                address=soup.room[0]
             )
         return Place(
             name="¿?",
