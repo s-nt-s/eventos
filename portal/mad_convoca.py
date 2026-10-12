@@ -475,6 +475,7 @@ class MadConvoca(Base):
             r"hack",
         ) or re_or(
             name,
+            r"la uni en",
             "^clases de",
             "^curso de",
             ("no", "compres", "cose"),
