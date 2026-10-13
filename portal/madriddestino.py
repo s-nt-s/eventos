@@ -443,6 +443,24 @@ class MadridDestino(Base):
             'serreria-belga.es',
         ):
             ev = ev.merge(url=ev.more, more=None)
+        if re_or(ev.name, r"Ensayos gr[aá]ficos", flags=re.I) and ev.place == Places.CONDE_DUQUE.value and len(ev.session) == 1:
+            dt = ev.session[0].date.split()[0]
+            if dt == "2026-10-23":
+                return ev.merge(name="Hierba, de Keum Suk Gendry-Kim", more="http://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2016027")
+            if dt == "2026-11-27":
+                return ev.merge(name="El piano oriental, de Zeina Abichared", more="http://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1542781")
+            if dt == "2027-01-29":
+                return ev.merge(name="El arte de volar, de Altarriba y Kim", more="http://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2098483")
+            if dt == "2027-02-26":
+                return ev.merge(name="La fábrica de papel, de Marta Kaiser", more="http://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2256880")
+            if dt == "2027-03-26":
+                return ev.merge(name="La grieta, de Guillermo Abril y Carlos Spottorno", more="http://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1490417")
+            if dt == "2027-04-30":
+                return ev.merge(name="Los surcos del azar, de Paco Roca", more="http://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1832800")
+            if dt == "2027-05-28":
+                return ev.merge(name="Los grandes espacios, de Catherine Meurisse", more="http://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=1950706")
+            if dt == "2027-06-25":
+                return ev.merge(name="Samuel & Beckett, de Jorge Carrión y Javier Olivares", more="http://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2156645")
         ev = ev.fix_type()
         if not isinstance(ev, Cinema):
             return ev
