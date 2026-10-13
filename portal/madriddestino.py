@@ -6,6 +6,7 @@ import logging
 from core.cache import TupleCache, HashCache
 import json
 from core.event import Event, Cinema, Session, Place, Category, FieldNotFound, FieldUnknown, CategoryUnknown, find_book_category
+from core.place import Places
 from datetime import datetime
 import re
 import requests
