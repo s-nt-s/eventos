@@ -444,8 +444,8 @@ class MadridDestino(Base):
             'serreria-belga.es',
         ):
             ev = ev.merge(url=ev.more, more=None)
-        if re_or(ev.name, r"Ensayos gr[aá]ficos", flags=re.I) and ev.place == Places.CONDE_DUQUE.value and len(ev.session) == 1:
-            dt = ev.session[0].date.split()[0]
+        if re_or(ev.name, r"Ensayos gr[aá]ficos", flags=re.I) and ev.place == Places.CONDE_DUQUE.value and len(ev.sessions) == 1:
+            dt = ev.sessions[0].date.split()[0]
             if dt == "2026-10-23":
                 return ev.merge(name="Hierba, de Keum Suk Gendry-Kim", more="http://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2016027")
             if dt == "2026-11-27":
