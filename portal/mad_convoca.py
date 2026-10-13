@@ -525,7 +525,8 @@ class MadConvoca(Base):
             "charlas?",
             "conversatorio",
             "coloquio?",
-            r"Psicolog[ií]a en el Ateneo"
+            r"Psicolog[ií]a en el Ateneo",
+            r"Conferencias?",
         ):
             return Category.CONFERENCE
         if re_or(
