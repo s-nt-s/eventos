@@ -566,6 +566,7 @@ class Universidad(Base):
             r"coloquio posterior",
             r"seminario",
             r"conferencias?",
+            r"conversatorio",
             flags=re.I
         ):
             return Category.CONFERENCE

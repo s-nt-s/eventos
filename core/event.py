@@ -823,7 +823,7 @@ class Event:
             if re.search(r"^(Esc[áa]ner|Mrgente|Sesi[oó]n) \d+$", name, flags=re.I) or re.search("Stop Motion exquisito|Alzo mi voz.*realidades animadas", name, flags=re.I):
                 return "Cortometrajes"
         if self.category == Category.CINEMA:
-            if re.search(r"SGAE en corto", name, flags=re.I):
+            if re_or(name, r"Cortos ECAM", r"SGAE en corto", flags=re.I):
                 return "Cortometrajes"
         if re.search(r"cat[áa]logo.*Madrid entre libros", self.name, flags=re.I):
             return "Madrid entre libros"

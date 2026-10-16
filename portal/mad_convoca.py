@@ -490,6 +490,7 @@ class MadConvoca(Base):
             return Category.THEATER
         if has_tag_or_title(
             "club de lectura",
+            "Tertulia Literaria",
             "grupo de lectura",
             "clubdelectura",
             "grupodelectura",
@@ -555,6 +556,7 @@ class MadConvoca(Base):
             "movilizaciones por",
             "15años15M",
             r"Asamblea\b.*\bPAH",
+            r"^Salvemos",
         ):
             return Category.ACTIVISM
         if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', r'Repair\s*Caf[eé]'):

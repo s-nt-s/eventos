@@ -474,6 +474,7 @@ class Goethe(Base):
             "Seminario",
             "Mesa redonda",
             r"Encuentro con la editora",
+            r"Encuentro con artistas",
             r"K[uü]nstlerbegegnung",
             flags=re.I
         ):
