@@ -216,6 +216,8 @@ class Goethe(Base):
             lines.append(f"Título: {name}")
         if sub:
             lines.append(f"Subtitulo: {name}")
+        if i['event_type']:
+            lines.append(f"Tipo: {i['event_type']}")
         if cats:
             lines.append(f"Categorías: {', '.join(cats)}")
         if md:
@@ -459,15 +461,22 @@ class Goethe(Base):
         return None, None
 
     def __find_category(self, url: str, i: dict):
-        et = i['event_type']
-        if re_or(
-            et,
-            "Encuentro literario",
-            flags=re.I
+        cats: list[str] = [i['event_type']]
+        for cat in i.get("secondary_categories", []):
+            c = cat['category_text']
+            if c and c not in cats:
+                cats.append(c)
+
+        def _has_cat(*args):
+            for c in cats:
+                if re_or(c, *args, flags=re.I):
+                    return True
+
+        if _has_cat(
+            "Encuentro literario"
         ):
             return find_book_category(i['headline'], None, Category.LITERATURE)
-        if re_or(
-            et,
+        if _has_cat(
             "Debate",
             "conferencia",
             r"presentaci[oó]n",
@@ -475,62 +484,48 @@ class Goethe(Base):
             "Mesa redonda",
             r"Encuentro con la editora",
             r"Encuentro con artistas",
-            r"K[uü]nstlerbegegnung",
-            flags=re.I
+            r"K[uü]nstlerbegegnung"
         ):
             return find_book_category(i['headline'], None, Category.CONFERENCE)
-        if re_or(
-            et,
-            "club de lectura",
-            flags=re.I
+        if _has_cat(
+            "club de lectura"
         ):
             return find_book_category(i['headline'], None, Category.READING_CLUB)
-        if re_or(
-            et,
+        if _has_cat(
             "formación",
             "Ponencia y taller",
-            r"taller",
-            flags=re.I
+            r"taller"
         ):
             return Category.WORKSHOP
-        if re_or(
-            et,
+        if _has_cat(
             r"proyecci[oó]n(es)?",
             r"Pel[ií]culas?",
             r"Filmvorf[uü]hrung",
-            r"(pre-?)?Estreno",
-            flags=re.I
+            r"(pre-?)?Estreno"
         ):
             return Category.CINEMA
-        if re_or(
-            et,
+        if _has_cat(
             "concierto",
             "RAVE JAM",
             r"sesi[oó]n sonora",
             r"Festival internacional de Piano",
-            flags=re.I
         ):
             return Category.MUSIC
-        if re_or(
-            et,
+        if _has_cat(
             "teatro",
             "Performance",
             r"esc[eé]nicas?",
             "Lectura teatral",
-            r"radioteatro",
-            flags=re.I
+            r"radioteatro"
         ):
             return Category.THEATER
-        if re_or(
-            et,
+        if _has_cat(
             r"Exposici[oó]n",
             flags=re.I
         ):
             return Category.EXPO
-        if re_or(
-            et,
+        if _has_cat(
             r"fiesta",
-            flags=re.I
         ):
             return Category.PARTY
         if re_or(
@@ -539,7 +534,7 @@ class Goethe(Base):
             flags=re.I
         ):
             return Category.EXPO
-        logger.warning(str(CategoryUnknown(url, et)))
+        logger.warning(str(CategoryUnknown(url, cats)))
         return Category.UNKNOWN
 
 
