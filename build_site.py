@@ -362,7 +362,8 @@ def set_icons(html: str, **kwargs):
             "festivaldejazzmadrid": "https://festivaldejazzmadrid.com/wp-content/themes/booth-child/favicon.ico",
             "pianocitymadrid": "https://pianocitymadrid.es/wp-content/uploads/2024/05/cropped-PCM_LOGO_DEF-2-32x32.png",
             "autocines": "https://autocines.com/wp-content/uploads/2021/01/cropped-favicon-32x32-1-32x32.png",
-            "filmaffinity": "https://www.filmaffinity.com/favicon.png",
+            #"filmaffinity": "https://www.filmaffinity.com/favicon.png",
+            "filmaffinity": "📽",
             "atrapalo": "https://www.atrapalo.com/favicon.ico",
             "google": "https://www.google.es/favicon.ico",
             "cinesa": "https://www.cinesa.es/scripts/dist/favicon/es/favicon.ico",
@@ -407,8 +408,11 @@ def set_icons(html: str, **kwargs):
         if ico is None:
             continue
         cls = dom.replace(".", "_")
-        a.string = ""
-        a.append(toTag(f'<img src="{ico}" class="ico {cls}" alt="{txt}"/>'))
+        if len(ico) == 1:
+            a.string = ico
+        else:
+            a.string = ""
+            a.append(toTag(f'<img src="{ico}" class="ico {cls}" alt="{txt}"/>'))
         tit = {
             "filmaffinity": "Ver en Filmaffinity",
             "atrapalo": "Buscar en Atrapalo",

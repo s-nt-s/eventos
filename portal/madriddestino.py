@@ -770,6 +770,7 @@ class MadridDestino(Base):
             desc,
             r"para beb[eé]s y primera infancia",
             r"para p[uú]blico infantil",
+            r"trabajando juntos, en familia",
             flags=re.I
         ):
             return Category.CHILDISH
