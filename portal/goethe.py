@@ -521,7 +521,6 @@ class Goethe(Base):
             return Category.THEATER
         if _has_cat(
             r"Exposici[oó]n",
-            flags=re.I
         ):
             return Category.EXPO
         if _has_cat(
