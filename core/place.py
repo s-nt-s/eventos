@@ -642,6 +642,13 @@ class Place:
 
 
 class Places(Enum):
+    UCM_PARANINFO = Place(
+        name="Paraninfo UCM",
+        address="C. de San Bernardo, 49, Centro, 28015 Madrid",
+        latlon="40.42536331430922,-3.7075831040412988",
+        map="https://maps.app.goo.gl/R1eEbuqbffGCC7yg7",
+        zone="Complutense"
+    )
     ZIGIA28 = Place(
         name="Zigia 28",
         address="C. de Zigia, 28, Cdad. Lineal, 28027 Madrid",

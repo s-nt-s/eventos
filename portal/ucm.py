@@ -1,5 +1,6 @@
 from portal.universidad import Universidad
 from portal.eventim import Eventim
+from core.place import Places
 from core.event import Event, Place
 from core.util import re_or, get_domain, tp_join
 from core.zone import Zones
@@ -132,6 +133,12 @@ def _parse_place(p: Place):
             map="https://maps.app.goo.gl/aHGdJjgpsjohTVdn7",
             zone=Zones.COMPLUTENSE.value.name
         )
+    if re_or(
+        place_address,
+        r"paraninfo",
+        flags=re.I
+    ):
+        return Places.UCM_PARANINFO.value
     if re_or(
         p.name,
         r"Parque de El Retiro",

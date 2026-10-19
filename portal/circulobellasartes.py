@@ -2,7 +2,7 @@ from core.web import Web, get_text, buildSoup, Tag
 from functools import cached_property
 from core.event import Event, Cinema, Category, Session, CategoryUnknown, find_book_category
 from core.place import Places
-from core.util import plain_text, to_uuid, find_euros, re_or
+from core.util import plain_text, to_uuid, find_euros, re_or, KO_IMG
 import re
 from datetime import date, datetime
 from core.fetcher import Getter
@@ -79,11 +79,11 @@ def _find_img(soup: Tag):
         'div.fl-col-small div.fl-photo[role="figure"] div.fl-photo-content > img.fl-photo-img[data-src]'
     ))):
         img = n.attrs.get("data-src")
-        if img:
+        if img and img not in KO_IMG:
             return img
     for n in soup.select('meta[property="og:image"][content]'):
         img = n.attrs.get("content")
-        if img:
+        if img and img not in KO_IMG:
             return img
     return None
 

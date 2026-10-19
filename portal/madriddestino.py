@@ -130,10 +130,26 @@ async def rq_to_info_soup(r: ClientResponse):
             ))
     room: list[str] = []
     for txt in map(get_text, soup.select("div.c-mod-bar-event__data span.o-tag")):
-        if txt and txt.startswith("Sala: "):
-            sala = txt.split(":", 1)[-1].strip()
-            if sala and sala not in room:
-                room.append(sala)
+        if not txt:
+            continue
+        if ":" not in txt:
+            if txt not in room and re_or(
+                txt,
+                r"Biblioteca",
+                r"Centro Intergeneracional",
+                flags=re.I
+            ):
+                room.append(txt)
+            continue
+        pre, lit = txt.split(":", 1)
+        lit = lit.strip()
+        pre = pre.lower()
+        if pre == "sala" and lit not in room:
+            room.append(lit)
+        elif pre == "salas":
+            for s in re.split(r"\s*,\s*", lit):
+                if s not in room:
+                    room.append(s)
     a = soup.select_one("a.c-event-sheet__link[href]")
     return SoupInfo(
         url=str(r.url),
@@ -760,6 +776,7 @@ class MadridDestino(Base):
             return Category.VIEW_POINT
         if re_or(
             pt,
+            r"MI PRIMER FESTIVAL DE CINE",
             "taller infantil",
             "concierto matinal familiar",
             "canciones de cuna",
@@ -867,6 +884,7 @@ class MadridDestino(Base):
             "performance",
             r"els joglars",
             r"texto y direcci[óo]n de",
+            r"jornada de teatro",
             flags=re.I
         ):
             return Category.THEATER

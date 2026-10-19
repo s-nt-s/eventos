@@ -287,6 +287,7 @@ class Session(NamedTuple):
 
 
 KO_IMG = (
+    'https://www.circulobellasartes.com/wp-content/plugins/bb-plugin/img/pixel.png',
     'https://cdn.lacasaencendida.es/storage/40902/conversions/QBjURc0yKs3fbh9cx3B8Gy88rFTwAx-metaQ29tcHJlbmRlciA1LmpwZw==--detail.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Agata/Eventos/ficheros/D%C3%ADadeEuropa_Cartel%20peliculas.png',
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Bohemios/ficheros/D%C3%ADadeEuropa_Cartel%20peliculas%20.png',
@@ -1278,6 +1279,7 @@ def find_book_category(name: str, description: str, default: Category):
         "premio planeta",
         "Confianza Agustina",
         "Daniela Tarazona",
+        r"El Novio del dictador",
         r"obras? fundamental(es)? de la narrativa",
         r"Presentaci[oó]n (de )?La novela",
         r"La invenci[oó]n de todas las cosas",
@@ -1289,6 +1291,7 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.NARRATIVE
     if re_or(
         description,
+        r"una novela sobre",
         r"la primera novela",
         r"la novela ganadora",
         r"una novela quinqui",

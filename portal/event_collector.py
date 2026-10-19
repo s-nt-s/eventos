@@ -241,6 +241,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         r"Manzanares el Real$",
         r"Collado Villalba",
         r"Pozuelo de Alarc[oó]n",
+        r", Somosaguas,",
         flags=re.I
     ):
         return False
@@ -249,6 +250,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
     if name:
         if re_or(
             name,
+            r"Biblioteca.*Gabriel Garc[ií]a Marquez",
             r"Spazio Comune Cuore in Gola",
             r"Biblioteca\b.*\bMar[ií]a Lej[aá]rraga",
             r"Collado Villalba",

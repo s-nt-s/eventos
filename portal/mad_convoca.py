@@ -191,6 +191,17 @@ class MadConvoca(Base):
                     name=name.capitalize() if name else e.name
                 )
                 return ev
+        if re_or(e.title, r"^\s*Cine[\-\s]*f[óo]r[úu]m\s*$", flags=re.I):
+            m = re.search(r"La pel[ií]cula elegida es [“”\"']([^“”\"']+)[“”\"']", text, flags=re.I)
+            if m:
+                ev = ev.merge(
+                    category=Category.CINEMA
+                ).fix_type()
+                ev = ev.merge(
+                    director=find_all_directors(text) or ev.director,
+                    name=m.group(1)
+                )
+                return ev
 
     def __ics_to_event(self, e: IcsEventWrapper):
         if e.SUMMARY is None:

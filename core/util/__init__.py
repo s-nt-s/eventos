@@ -516,6 +516,7 @@ def un_camel(x: str):
 
 
 KO_IMG = (
+    'https://www.circulobellasartes.com/wp-content/plugins/bb-plugin/img/pixel.png',
     'https://www.madrid.es/UnidadesDescentralizadas/DistritoVillaverde/Actividades/Agata/Eventos/ficheros/definitivo_AAFF_Proyecciones_DiadeEuropa%20(2)-001.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Conferencias/ficheros/260426_ValorLibro_260x260.jpg',
     'https://www.madrid.es/UnidadesDescentralizadas/Bibliotecas/BibliotecasPublicas/Actividades/Actividades_Adultos/Cine_ActividadesAudiovisuales/ficheros/CineForum_260x260.jpg',
