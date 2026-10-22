@@ -106,7 +106,7 @@ def _re_parse(obj):
 class InstitutoFrances(Base):
     ROOT = "https://madrid.extranet-aec.com/"
     SEARCH = "https://ifespagne.aec.app/api/public/core/v1/events/availableEventsToday"
-    
+
     @cached_property
     def __w(self) -> Web:
         w = Web()
@@ -124,7 +124,7 @@ class InstitutoFrances(Base):
 
     @Cache("rec/ifrances/items.json")
     def get_items(self):
-        js:list[dict] = self.__search({
+        js: list[dict] = self.__search({
             "CURRENT_LANG": "es_ES",
             "EXTRANET_URL": "madrid.extranet-aec.com",
             "eventType": 16,

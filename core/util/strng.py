@@ -118,7 +118,7 @@ def _rm_prefix():
         r"Evento",
         r"D[ií]a del cine español",
         r"FLIPAS",
-        r"Preestreno de la serie",
+        r"Preestreno( de la serie)?",
         r"Confesiones Confusas",
         r"Cine",
         r"Teatro",

@@ -931,6 +931,7 @@ class MadridDestino(Base):
             desc,
             "Los Absurdos Teatro",
             "teatro de sombras",
+            "teatro inmersivo",
             "Un taller de experimentaci[oó]n",
             "Un taller de reflexi[oó]n",
             ("[eE]n esta actividad exploraremos", "con diversos materiales"),
