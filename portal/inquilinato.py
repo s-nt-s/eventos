@@ -44,7 +44,7 @@ class Inquilinato(Base):
             return None
         if re_or(
             i.location,
-            "Alcal[aá] de Heneares",
+            r"Alcal[aá] de Heneares",
             flags=re.I
         ):
             return None
