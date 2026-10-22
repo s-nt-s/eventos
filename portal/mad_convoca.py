@@ -259,6 +259,7 @@ class MadConvoca(Base):
             r"Asesorías? laboral(es)?",
             ("Redes Libertarias", r"n[úu]mero", "revista"),
             r"Acto anual de gratitud a las socias y los socios",
+            r"Antiespecis(ta|mo)",
             flags=re.I,
         ):
             return Category.NO_EVENT
@@ -440,11 +441,9 @@ class MadConvoca(Base):
         if has_tag_or_title("infantil"):
             return Category.CHILDISH
 
-        if has_tag_or_title(r"Antiespecis(ta|mo)"):
-            return Category.ANIMALS
         if has_tag_or_title(r"ceuta"):
             return Category.NO_EVENT
-        
+
         if has_tag_or_title("acampada") and has_tag_or_title("actuaciones"):
             return Category.PARTY
         if has_tag(
