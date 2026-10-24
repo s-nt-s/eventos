@@ -60,6 +60,7 @@ def _safe_get_int(env_url: str, tries=3) -> list:
 class Interval(NamedTuple):
     start: datetime
     end: datetime
+    hard: bool
 
     def is_in(self, dt: datetime) -> bool:
         if dt is None:
@@ -77,6 +78,10 @@ class Interval(NamedTuple):
                 continue
             if len(i) != 2:
                 continue
-            vals.add(Interval(start=to_date(i[0]), end=to_date(i[1])))
+            vals.add(Interval(
+                start=to_date(i[0]),
+                end=to_date(i[1]),
+                hard=i['hard'],
+            ))
         logger.info(f"{env_url} {len(vals)} intervals")
         return tuple(sorted(vals))

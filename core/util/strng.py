@@ -355,6 +355,7 @@ def _escape(s: str):
 
 
 DIRECTORS = list(map(_escape, map(str.lower, [
+    'Narges Mohammadi',
     "Juan Miguel del Castillo",
     'John Carpenter',
     "Narciso Ibáñez Serrador",

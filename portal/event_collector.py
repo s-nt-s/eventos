@@ -175,12 +175,12 @@ def isAlcalaOkDate(dt: datetime):
 
 
 def isOkDate(dt: datetime, delta: int = 0.5, event: Event | None = None):
-    if event is None or event.category not in (Category.ACTIVISM, ):
-        for i in INT_BUSY:
-            if i.is_in(dt):
-                return False
-        if ICS_BUSY and ICS_BUSY.is_in(dt):
+    allInt = event is None or event.category not in (Category.ACTIVISM, )
+    for i in INT_BUSY:
+        if i.is_in(dt) and (allInt or i.hard):
             return False
+    if ICS_BUSY and ICS_BUSY.is_in(dt):
+        return False
     if dt.date() in get_festivos(dt.year):
         return True
     min_hour = getMin(dt)
