@@ -157,12 +157,15 @@ class TeatroMonumental(Base):
             s_url = a.attrs.get("href")
             if not s_url or s_url.startswith("#"):
                 s_url = None
+            s_date = str_to_date(
+                info.get("fecha"),
+                info.get("hora"),
+                url=url,
+            )
+            if s_date is None:
+                continue
             sessions.add(Session(
-                date=str_to_date(
-                    info.get("fecha"),
-                    info.get("hora"),
-                    url=url,
-                ),
+                date=s_date,
                 url=s_url,
             ))
         price = max(prices) if len(prices) > 0 else None
