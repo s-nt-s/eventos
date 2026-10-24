@@ -623,6 +623,13 @@ class Place:
         ):
             return Places.ZIGIA28.value
         if re_or(
+            address,
+            r"calle alenza 13\b.*28003",
+            r"13 calle alenza\b.*28003",
+            flags=re.I
+        ):
+            return Places.CGT_MADRID.value
+        if re_or(
             name,
             "cines? embajadores",
             flags=re.I
@@ -838,6 +845,12 @@ class Places(Enum):
         latlon="40.39584448961841,-3.7177346134909293",
         zone="Marques de Vadillo",
         map="https://maps.app.goo.gl/H16dpZJyxoFXaxrx7"
+    )
+    CGT_MADRID = Place(
+        name="CGT de Madrid",
+        address="C. de Alenza, 13, Chamberí, 28003 Madrid",
+        latlon="40.4440409,-3.7007805",
+        map="https://maps.app.goo.gl/v7VsxLAQXxvfd94L8"
     )
     CS_PILEKA = Place(
         name="CS Pileka",
