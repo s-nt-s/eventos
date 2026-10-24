@@ -34,7 +34,7 @@ def str_to_date(txt_dmy: str | Tag | None, txt_hm: str | Tag | None, url: str = 
     if len(dmy+hm) != 5:
         logger.warning(f"DATE NOT FOUND in {txt_dmy} {txt_hm} {url}")
         return None
-    return "{2:04}-{1:02}-{0:02} {3:02}:{4:02}".format(*dmy, *hm),
+    return "{2:04}-{1:02}-{0:02} {3:02}:{4:02}".format(*dmy, *hm)
 
 
 class TeatroMonumental(Base):
