@@ -959,6 +959,7 @@ class MadridDestino(Base):
             r"Catedr[aá]tic[ao] de la Universidad",
             r"Profesora? Titular en",
             r"Hablaremos sobre ella",
+            r"En esta conferencia",
             r"una conferencia sobre",
             r"Vamos a hablar de",
             r"En esta conversaci[oó]n contaremos",
