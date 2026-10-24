@@ -92,6 +92,7 @@ class BookFinder:
             "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=2007820": r"\bYo soy el monstruo que os habla\b",
             "http://gestiona3.madrid.org/biblio_publicas/cgi-bin/abnetopac?TITN=2208050": r"\bSupervivencia de las pol[ií]ticas de igualdad\b",
             "https://madrid.ebiblio.es/resources/699342cadabe66ea10779751": r"C[oó]mo termin[oó] la Guerra Civil española",
+            "http://gestiona.comunidad.madrid/biblio_publicas/cgi-bin/abnetopac?TITN=2141568": r"Utop[ií]as Digitales\b.*\bImaginar el fin del capitalismo"
         }.items():
             if _is(title, r):
                 return k
