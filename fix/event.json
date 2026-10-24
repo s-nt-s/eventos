@@ -12,6 +12,7 @@
   "20260507160000Z-153659@eventos.uc3m.es": {"category": "CONFERENCE"},
   "B2A0F5EF-EAE0-55BB-9EC3-DFB64B91BC49": {"cycle": "Ramblas"},
   "D7E33971-D06D-5FCB-85CF-CF79C6334E1E": {"cycle": "Luz Madrid"},
+  "cbaA3F1D7E1-97AD-5531-9E93-85BEE5CC0F45": {"category": "LITERATURE"},
   "ac667": {"filmaffinity": 611674},
   "ac668": {"filmaffinity": 739265},
   "ac670": {"filmaffinity": 399102},
@@ -697,7 +698,14 @@
     "name": "Cine chino",
     "more": "https://eventos.ucm.es/getFiles/hash/Z0YGNwQjY2MWOiJjY0UzMkRmZ5cTYxYjNEGZwUTMzQG:ZWQ3K0hoZ0JHbnFNOVJIR0xXTFRZOXA4WWhlMmxQTi90OHpwZzZRcjJPc04ra295cWlXUng4VmpWSkVYdHBwT2JYS0lVUm85cVFSYlhWNVVMZEFLYTQyaWJkOG95TkorcGN6dlNKUytZMWtOOGtUZzZJWUJtZ2ZQWEdqSkU0dDk2Y2Y5UTV6TzI0cDNxNnh2TFg1TnZyMVlsOGpraHlZa0N3Wm1LWjI3dmZmVXVySVJ1MmoxWEtwekdSdHBHZjRySjBpVjkvVUdFMC8yK0NYSTZqUExkU1prQXlFTXFCRUM4Y21kS1cwcGhqRG9YZzNnSDE3SVNqV1lTU1Q4cEdGUA=="
   },
-  "mcmc28415": {"category": "ACTIVISM", "name": "Moratoria contra los centros de datos"},
-  "mc8ea37289-4efc-4c19-8f34-ca31f49ffa87": {"category": "ACTIVISM", "name": "Moratoria contra los centros de datos"},
-  "cbaA3F1D7E1-97AD-5531-9E93-85BEE5CC0F45": {"category": "LITERATURE"}
+  "mcmc28415": {
+    "name": "Moratoria contra los centros de datos",
+    "category": "ACTIVISM", 
+    "more": "https://stopdirtydatacentres.eu/es/"
+  },
+  "mc8ea37289-4efc-4c19-8f34-ca31f49ffa87": {
+    "name": "Moratoria contra los centros de datos",
+    "category": "ACTIVISM", 
+    "more": "https://stopdirtydatacentres.eu/es/"
+  }
 }
