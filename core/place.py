@@ -624,8 +624,8 @@ class Place:
             return Places.ZIGIA28.value
         if re_or(
             address,
-            r"calle alenza 13\b.*28003",
-            r"13 calle alenza\b.*28003",
+            r"calle de alenza 13\b.*28003",
+            r"13 calle de alenza\b.*28003",
             flags=re.I
         ):
             return Places.CGT_MADRID.value
