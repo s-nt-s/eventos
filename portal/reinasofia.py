@@ -27,6 +27,7 @@ re_sp = re.compile(r"\s+")
 class InfoSoup(NamedTuple):
     capacity: Optional[str] = None
     audience: Optional[str] = None
+    category: Optional[str] = None
     shop: Optional[str] = None
     schedule: Optional[str] = None
     txt: Optional[str] = None
@@ -90,6 +91,7 @@ async def rq_to_info(r: ClientResponse):
     info['schedule'] = _to_md(soup, "div[class*='FutureActivity-module--activityContent'] div[class*='ScheduleItem-module--scheduleItem']")
     info['txt'] = _to_md(div, "div[class*='ButtonWithHelpText']")
 
+    info['category'] = get_text(soup.select_one("a[class*='Categories-module--categoryTitle']"))
     return InfoSoup(**info)
 
 
@@ -371,6 +373,26 @@ class ReinaSofia(Base):
                 flags=re.I
             ):
                 return Category.NON_GENERAL_PUBLIC
+            if re_or(
+                info.category,
+                r"Seminarios?",
+                "conferencias?",
+                "encuentro",
+                flags=re.I
+            ):
+                return Category.CONFERENCE
+            if re_or(
+                info.category,
+                r"taller",
+                flags=re.I
+            ):
+                return Category.WORKSHOP
+            if re_or(
+                info.category,
+                r"visita",
+                flags=re.I
+            ):
+                return Category.VISIT
 
         title = get_text(i['title'])
         subtitle = get_text(i.get('subtitle'))

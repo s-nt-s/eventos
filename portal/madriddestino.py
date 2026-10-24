@@ -747,6 +747,13 @@ class MadridDestino(Base):
         ):
             return Category.NO_EVENT
 
+        if re_or(
+            f"{pt} {psub}",
+            r"teatro de titeres",
+            flags=re.I
+        ):
+            return Category.PUPPETRY
+
         is_para_todos = audience is None or re_or(
             audience,
             "todos los publicos",
