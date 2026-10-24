@@ -430,6 +430,7 @@ def _re_director(*directors):
 
 RE_YEAR_TAIL = re.compile(r"\s+\((?:\D+, )?(?P<year>(?:19|20)\d{2})\)\s*$")
 
+
 def find_director_year(name: str, *directors: str):
     year = None
     m = RE_YEAR_TAIL.search(name)
