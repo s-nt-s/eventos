@@ -76,8 +76,6 @@ class Interval(NamedTuple):
         for i in _safe_get_int(env_url):
             if not isinstance(i, dict):
                 continue
-            if len(i) != 2:
-                continue
             vals.add(Interval(
                 start=to_date(i['start']),
                 end=to_date(i['end']),
