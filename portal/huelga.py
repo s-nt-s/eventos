@@ -102,7 +102,7 @@ class Huelga(Base):
         ))
         return tuple(sorted(evs))
 
-    def __is_ok(i: dict):
+    def __is_ok(self, i: dict):
         lat = i['latitude']
         lon = i['longitude']
         for z in (
