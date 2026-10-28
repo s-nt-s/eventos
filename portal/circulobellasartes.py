@@ -235,7 +235,11 @@ def _find_category(url: str, title: str, soup: Tag, inf: dict):
     desc = MD.convert(soup.select_one(
         'div:has(+ footer) div.fl-col:not(.fl-col-small) div.fl-module-rich-text[data-node]'
     ))
-    isPresentacion = re_or(full_title, "presentaci[oó]n", flags=re.I) or re.search(r"^Presentamos\b", desc or '')
+    isPresentacion = re_or(
+        full_title,
+        r"presentaci[oó]n",
+        flags=re.I
+    ) or re.search(r"^Presentamos\b", desc or '')
     if re_or(
         full_title,
         r"Entrega de la Medalla de Oro",
@@ -335,7 +339,7 @@ def _find_category(url: str, title: str, soup: Tag, inf: dict):
         r"l[aox@]s ponentes (abordan|van)",
         r"la conferencia de",
         r"Con esta conversaci[oó]n",
-        ("programa", "modera"),
+        (("Participantes", "programa"), "modera"),
         flags=re.I
     ):
         return Category.CONFERENCE

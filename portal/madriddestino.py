@@ -747,6 +747,13 @@ class MadridDestino(Base):
         ):
             return Category.NO_EVENT
 
+        if re_or(
+            f"{pt} {psub}",
+            r"teatro de titeres",
+            flags=re.I
+        ):
+            return Category.PUPPETRY
+
         is_para_todos = audience is None or re_or(
             audience,
             "todos los publicos",
@@ -931,6 +938,7 @@ class MadridDestino(Base):
             desc,
             "Los Absurdos Teatro",
             "teatro de sombras",
+            "teatro inmersivo",
             "Un taller de experimentaci[oó]n",
             "Un taller de reflexi[oó]n",
             ("[eE]n esta actividad exploraremos", "con diversos materiales"),
@@ -951,6 +959,7 @@ class MadridDestino(Base):
             r"Catedr[aá]tic[ao] de la Universidad",
             r"Profesora? Titular en",
             r"Hablaremos sobre ella",
+            r"En esta conferencia",
             r"una conferencia sobre",
             r"Vamos a hablar de",
             r"En esta conversaci[oó]n contaremos",

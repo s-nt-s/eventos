@@ -321,7 +321,7 @@ class CasaAmerica(Base):
             return Category.POETRY
         if re.search(r"proyecci[oó]n del documental", content, re.I):
             return Category.CINEMA
-        if re.search(r"\b(conferencia|mesa redonda|debate|esta charla propone|seminario)\b", content, re.I) or w1 in ("presentacion", "dialogo", "jornada"):
+        if re.search(r"\b(conferencia|mesa redonda|debate|esta charla propone|seminario|p[oó]dcast)\b", content, re.I) or w1 in ("presentacion", "dialogo", "jornada"):
             return Category.CONFERENCE
         if re.search("Desfile de moda", content, flags=re.I):
             return Category.EXPO

@@ -113,12 +113,13 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Semana cultural anarquista",
         r"#leselust",
         r"Sesi[oó]n \d+",
         r"Evento",
         r"D[ií]a del cine español",
         r"FLIPAS",
-        r"Preestreno de la serie",
+        r"Preestreno( de la serie)?",
         r"Confesiones Confusas",
         r"Cine",
         r"Teatro",
@@ -355,6 +356,7 @@ def _escape(s: str):
 
 
 DIRECTORS = list(map(_escape, map(str.lower, [
+    'Narges Mohammadi',
     "Juan Miguel del Castillo",
     'John Carpenter',
     "Narciso Ibáñez Serrador",
@@ -428,6 +430,7 @@ def _re_director(*directors):
 
 
 RE_YEAR_TAIL = re.compile(r"\s+\((?:\D+, )?(?P<year>(?:19|20)\d{2})\)\s*$")
+
 
 def find_director_year(name: str, *directors: str):
     year = None

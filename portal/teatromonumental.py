@@ -28,6 +28,15 @@ def get_nums(s: str | Tag | None) -> tuple[int, ...]:
     return tuple(map(int, re.findall(r"\d+", s)))
 
 
+def str_to_date(txt_dmy: str | Tag | None, txt_hm: str | Tag | None, url: str = None):
+    dmy = get_nums(txt_dmy)
+    hm = get_nums(txt_hm)
+    if len(dmy+hm) != 5:
+        logger.warning(f"DATE NOT FOUND in {txt_dmy} {txt_hm} {url}")
+        return None
+    return "{2:04}-{1:02}-{0:02} {3:02}:{4:02}".format(*dmy, *hm)
+
+
 class TeatroMonumental(Base):
 
     @cached_property
@@ -36,7 +45,8 @@ class TeatroMonumental(Base):
         index = -1
         while True:
             index = index + 1
-            soup = WEB.get(f"https://teatromonumental.entradas.com/webshop/webticket/include/eventlistdelta?&weekdaysstring=NNNNNNN&index={index}")
+            index_url = f"https://teatromonumental.entradas.com/webshop/webticket/include/eventlistdelta?&weekdaysstring=NNNNNNN&index={index}"
+            soup = WEB.get(index_url)
             lnks = list(soup.select("a[href]"))
             if len(lnks) == 0:
                 break
@@ -50,12 +60,14 @@ class TeatroMonumental(Base):
                     logger.warning(f"event_id no esperado = {event_id} en {url}")
                     continue
                 div = next(reversed(a.find_parents("div", class_="row")))
-                dmy = get_nums(div.select_one("div.dateTime-date"))
-                hm = get_nums(div.select_one("span.evt-event-detail__time"))
                 rows.add(Info(
                     id=int(event_id),
                     name=get_text(div.select_one("h2")),
-                    date="{2:04}-{1:02}-{0:02} {3:02}:{4:02}".format(*dmy, *hm),
+                    date=str_to_date(
+                        div.select_one("div.dateTime-date"),
+                        div.select_one("span.evt-event-detail__time"),
+                        url=index_url
+                    ),
                     location=get_text(div.select_one("div.event-address-item")),
                     full=(a_txt == "Entradas agotadas")
                 ))
@@ -131,8 +143,6 @@ class TeatroMonumental(Base):
                     key, value = map(str.strip, txt.split(":", 1))
                     if key and value:
                         info[key.lower()] = value
-            dmy = get_nums(info.get("fecha"))
-            hm = get_nums(info.get("hora"))
             url_session = a.attrs.get("href")
             eventId = get_query(url_session).get("event")
             i = None if eventId is None else self.info.get(int(eventId))
@@ -147,8 +157,15 @@ class TeatroMonumental(Base):
             s_url = a.attrs.get("href")
             if not s_url or s_url.startswith("#"):
                 s_url = None
+            s_date = str_to_date(
+                info.get("fecha"),
+                info.get("hora"),
+                url=url,
+            )
+            if s_date is None:
+                continue
             sessions.add(Session(
-                date="{2:04}-{1:02}-{0:02} {3:02}:{4:02}".format(*dmy, *hm),
+                date=s_date,
                 url=s_url,
             ))
         price = max(prices) if len(prices) > 0 else None

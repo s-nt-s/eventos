@@ -61,6 +61,7 @@ class MadConvoca(Base):
             "https://fal.cnt.es/events/lista/?ical=1",
             #"https://lahorizontal.net/events/lista/?ical=1",
             "https://madrid.cnt.es/agenda/lista/?ical=1",
+            "https://movilizad.es/feed/instance/ics",
             isOkDate=isOkDate
         )
 
@@ -258,6 +259,7 @@ class MadConvoca(Base):
             r"Asesorías? laboral(es)?",
             ("Redes Libertarias", r"n[úu]mero", "revista"),
             r"Acto anual de gratitud a las socias y los socios",
+            r"Antiespecis(ta|mo)",
             flags=re.I,
         ):
             return Category.NO_EVENT
@@ -349,6 +351,8 @@ class MadConvoca(Base):
             flags=re.I
         ):
             return Category.MUSIC
+        if get_domain(e.URL) == "movilizad.es":
+            return Category.ACTIVISM
         if e.CATEGORIES:
             logger.critical(str(CategoryUnknown(e.source, f"{e.CATEGORIES} -- {e.SUMMARY}")))
         else:
@@ -356,11 +360,23 @@ class MadConvoca(Base):
         return Category.UNKNOWN
 
     def __find_ics_place(self, e: IcsEventWrapper):
-        if e.LOCATION:
-            return Place(
-                name=e.LOCATION,
-                address=e.LOCATION
-            )
+        if not e.LOCATION:
+            return None
+        location = re_sp.sub(" ", e.LOCATION).strip()
+        name = str(location)
+        if len(location) == 0:
+            return None
+        if get_domain(e.URL) == "movilizad.es" and "Madrid" not in location:
+            return None
+        for k, v in {
+            r"28\d{3} Madrid Comunidad de Madrid España": ""
+        }.items():
+            name = re.sub(k, v, name, flags=re.I)
+        return Place(
+            name=name,
+            address=location,
+            latlon=e.GEO
+        )
 
     def __find_gancio_category(self, e: GancioEvent) -> Category:
         name = plain_text(e.title)
@@ -424,6 +440,10 @@ class MadConvoca(Base):
             return Category.NON_GENERAL_PUBLIC
         if has_tag_or_title("infantil"):
             return Category.CHILDISH
+
+        if has_tag_or_title(r"ceuta"):
+            return Category.NO_EVENT
+
         if has_tag_or_title("acampada") and has_tag_or_title("actuaciones"):
             return Category.PARTY
         if has_tag(
@@ -440,6 +460,7 @@ class MadConvoca(Base):
             r"se buscan voluntari[aoxe@]s para",
             r"Trueque Solidario de Ropa",
             r"Asamblea\b[^\w]*\babierta",
+            r"huelga"
         ):
             return Category.ACTIVISM
         if re_or(
@@ -648,7 +669,15 @@ class MadConvoca(Base):
         ):
             return find_book_category(name, txt_desc, Category.LITERATURE)
 
-        if re_or(name, "Presentaci[óo]n del libro", flags=re.I):
+        if re_or(
+            name,
+            "Presentaci[óo]n del libro",
+            flags=re.I
+        ) or re_or(
+            txt_desc,
+            "Presentaci[óo]n del libro",
+            flags=re.I
+        ):
             return find_book_category(name, txt_desc, Category.LITERATURE)
 
         if has_tag("poesia"):

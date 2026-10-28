@@ -42,6 +42,12 @@ class Inquilinato(Base):
     def __get_place(self, i: IEvent):
         if i.location is None:
             return None
+        if re_or(
+            i.location,
+            r"Alcal[aá] de Henares",
+            flags=re.I
+        ):
+            return None
         return Place(
             name=i.location,
             address=i.location

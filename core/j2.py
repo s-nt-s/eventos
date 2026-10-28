@@ -59,7 +59,7 @@ def dom_simplify(s: str):
 
 
 def simplify(s: str):
-    re_rm = re.compile(r"[/\.\(\)\[\]'\"&]+|amp;")
+    re_rm = re.compile(r"[/\.\(\)\[\]'\"&:;]+|amp;")
     s = re_rm.sub(" ", str(s)).strip().lower()
     s = re_sp.sub(" ", s).strip().lower()
     s = unidecode(s)
@@ -71,7 +71,10 @@ def simplify(s: str):
     s = re_sp.sub(" ", s)
     s = re_sp.sub("-", s)
     s = re.sub(r"-+", "-", s)
-    return s.strip()
+    s = s.strip()
+    if len(s) and not s[0].isalpha():
+        s = '_' + s
+    return s
 
 
 def jinja_quote_plus(s: str):

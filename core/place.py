@@ -315,7 +315,13 @@ class Place:
             return Places.FUNDACION_ALSELMO_LORENZO.value
         if re.search(r"auditorio francisca (martinez|Mtnez\.?) garrido", name, flags=re.I):
             return Places.AUDITORIO_FRANCISCA_MARTINEZ_GARRIDO.value
-        if re.search(r"\b(CS la cheli|local de xr madrid)\b", name, flags=re.I):
+        if re_or(
+            name,
+            r"CS la cheli",
+            r"local de xr madrid",
+            r"Calle de la Iglesia 12",
+            flags=re.I
+        ):
             return Places.CS_LA_CHELI.value
         if re.search(r"CS[ROA]* [dD]is[ck]ordia", name) and re.search(r"Antoñita Jiménez", self.address, flags=re.I):
             return Places.CSO_DISKORDIA.value
@@ -362,7 +368,7 @@ class Place:
             return Places.MAKESPACE.value
         if re_or(self.name, "ASOCIACI[Óo]N GALEGA CORREDOR DO HENARES", flags=re.I) and re_and(self.address, "28806", flags=re.I):
             return Places.ALCALA_HENARES_GALEGA.value
-        if re.search(r"[lL]a [rR]osa", name) and re.search(r"bastero", self.address, flags=re.I):
+        if re_or(name, r"la rosa", "CSO Rosa", flags=re.I) and re_or(address, r"bastero", flags=re.I):
             return Places.CSO_ROSA.value
         if re_and(self.address, r"CNT", "embajadores", flags=re.I):
             return Places.CNT_EMBAJADORES.value
@@ -617,6 +623,13 @@ class Place:
         ):
             return Places.ZIGIA28.value
         if re_or(
+            address,
+            r"calle de alenza 13\b.*28003",
+            r"13 calle de alenza\b.*28003",
+            flags=re.I
+        ):
+            return Places.CGT_MADRID.value
+        if re_or(
             name,
             "cines? embajadores",
             flags=re.I
@@ -831,7 +844,13 @@ class Places(Enum):
         address="C. de la Iglesia, 12, Carabanchel, 28019 Madrid",
         latlon="40.39584448961841,-3.7177346134909293",
         zone="Marques de Vadillo",
-        map="https://maps.app.goo.gl/UVDe5M5jwip47W9h6"
+        map="https://maps.app.goo.gl/H16dpZJyxoFXaxrx7"
+    )
+    CGT_MADRID = Place(
+        name="CGT de Madrid",
+        address="C. de Alenza, 13, Chamberí, 28003 Madrid",
+        latlon="40.4440409,-3.7007805",
+        map="https://maps.app.goo.gl/v7VsxLAQXxvfd94L8"
     )
     CS_PILEKA = Place(
         name="CS Pileka",

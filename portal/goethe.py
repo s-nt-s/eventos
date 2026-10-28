@@ -10,7 +10,7 @@ from datetime import datetime
 from core.fetcher import Getter
 from functools import cached_property
 from aiohttp import ClientResponse
-from core.web import buildSoup, get_text, Tag, Web
+from core.web import buildSoup, get_text, Tag
 from typing import NamedTuple, Optional
 from unidecode import unidecode as ori_unidecode
 from core.md import MD

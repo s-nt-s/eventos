@@ -6,7 +6,7 @@ import re
 from core.filemanager import FM
 from typing import Union, Callable, Optional
 from core.util import to_uuid, get_domain
-from icalendar import Calendar, vDDDTypes, Component, vText
+from icalendar import Calendar, vDDDTypes, Component, vText, vGeo
 from icalendar.prop import vCategory
 from datetime import date
 from zoneinfo import ZoneInfo
@@ -187,6 +187,16 @@ class IcsEventWrapper:
             return None
         return s
 
+    def __get_geo(self, key: str, mandatory: bool = False):
+        val = self.__event.get(key)
+        if val is None:
+            if mandatory:
+                raise IcsEventMandatory(key)
+            return None
+        if not isinstance(val, vGeo):
+            raise IcsEventInvalid(f"Valor no es vGeo: {val!r}")
+        return val
+
     @property
     def UID(self) -> str:
         return self.__get_text("UID", mandatory=True)
@@ -194,6 +204,13 @@ class IcsEventWrapper:
     @property
     def SUMMARY(self) -> str:
         return self.__get_text("SUMMARY", mandatory=True)
+
+    @property
+    def GEO(self):
+        geo = self.__get_geo("GEO", mandatory=False)
+        if not geo:
+            return None
+        return f"{geo.latitude},{geo.longitude}"
 
     def get_full_description(self):
         lines: list[str] = []

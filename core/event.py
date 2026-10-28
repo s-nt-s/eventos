@@ -145,6 +145,7 @@ class Category(IntEnum):
     FULL = 49
     HISTORY = 50
     TRIBUTE = 51
+    ANIMALS = 52
 
     def __str__(self):
         if self == Category.UNKNOWN:
@@ -481,9 +482,9 @@ class Event:
         if name == "url" and fix_val == self.more:
             return False
         if fix_val == fix_event.get(name):
-            logger.debug(f"FIX_EVENT: {name}={fix_val} <- {old_val}")
+            logger.debug(f"[{self.id}].FIX_EVENT: {name}={fix_val} <- {old_val}")
         else:
-            logger.debug(f"FIX._fix_field: {name}={fix_val} <- {old_val}")
+            logger.debug(f"[{self.id}].FIX._fix_field: {name}={fix_val} <- {old_val}")
         object.__setattr__(self, name, fix_val)
         return True
 
@@ -631,7 +632,7 @@ class Event:
         w = 'LMXJVSD'
         for s in self.sessions:
             d = s.get_date()
-            if isOkDate(d):
+            if isOkDate(d, event=self):
                 sessions.append(s)
                 continue
             if to_log:

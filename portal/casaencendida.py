@@ -222,17 +222,23 @@ class CasaEncendida(Base):
             return Category.VISIT
         if re_or(
             name,
-            "master ?class",
-            "mesa redonda",
+            r"^POETAS \d+",
             flags=re.I
         ):
-            return Category.CONFERENCE
+            return Category.POETRY
         if re_or(
             name,
             "Juegatorio",
             flags=re.I
         ):
             return Category.NO_EVENT
+        if re_or(
+            name,
+            "master ?class",
+            "mesa redonda",
+            flags=re.I
+        ):
+            return Category.CONFERENCE
         if re_or(
             name,
             "workshop",

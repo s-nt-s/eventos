@@ -26,6 +26,7 @@ from portal.alcala import Alcala
 from portal.casaasia import CasaAsia
 from portal.goethe import Goethe
 from portal.ifrances import InstitutoFrances
+from portal.huelga import Huelga
 from portal.eventim import Eventim
 from datetime import datetime, date
 from core.util import find_cp, round_to_even, get_domain, find_duplicates, get_main_value, re_or, isWorkingHours, get_festivos, re_and
@@ -173,9 +174,10 @@ def isAlcalaOkDate(dt: datetime):
     )
 
 
-def isOkDate(dt: datetime, delta: int = 0.5):
+def isOkDate(dt: datetime, delta: int = 0.5, event: Event | None = None):
+    allInt = event is None or event.category not in (Category.ACTIVISM, )
     for i in INT_BUSY:
-        if i.is_in(dt):
+        if i.is_in(dt) and (allInt or i.hard):
             return False
     if ICS_BUSY and ICS_BUSY.is_in(dt):
         return False
@@ -210,7 +212,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         name = p.name
         address = p.address
         if p.latlon:
-            latlon = map(float, p.latlon.split(","))
+            latlon = tuple(map(float, p.latlon.split(",")))
     elif isinstance(p, str):
         name = p
     elif isinstance(p, tuple) and len(p) == 2:
@@ -245,74 +247,72 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
         flags=re.I
     ):
         return False
-    if all(x is None for x in (latlon, name)):
-        return True
-    if name:
-        if re_or(
-            name,
-            r"Biblioteca.*Gabriel Garc[ií]a Marquez",
-            r"Spazio Comune Cuore in Gola",
-            r"Biblioteca\b.*\bMar[ií]a Lej[aá]rraga",
-            r"Collado Villalba",
-            "campus somosaguas",
-            "San Lorenzo de Escorial",
-            "Fuenlabrada",
-            "Museo L[aá]zaro Galdiano",
-            # Aranjuez
-            "Campus( de)? Aranjuez",
-            # Mostoles
-            "Campus( de)? M[oó]stoles",
-            "COAJ",
-            "Centro cultural Maestro Alonso",
-            "centro juvenil",
-            "Centro cultural Lope de Vega",
-            "Espacio Abierto Quinta de los Molinos",
-            "Parroquia Nuestra Señora de Guadalupe",
-            ("La Pedriza", "Manzanares"),
-            "AV La Vecinal del Barrio Bilbao y Pueblo Nuevo",
-            'Quinta de la Fuente del Berro',
-            'Espacio de igualdad María Telo',
-            # Collado Villaba
-            'CSO La Tejedora',
-            # Colón
-            'Centro cultural Emilia Pardo Bazán',
-            # Carabanchel
-            'Espacio de igualdad María de Maeztu',
-            'Espacio de igualdad Lourdes Hernández',
-            # Vallecas
-            'Mercado Numancia',
-            '^El espacio$',
-            'Centro cultural Las Californias',
-            'Centro cultural Alberto Sánchez',
-            'Biblioteca Miguel Delibes',
-            'Biblioteca Pública Miguel Hernández',
-            # Villaverde
-            'Espacio de igualdad Clara Campoamor',
-            # Usera
-            ("centro", 'Maris Stella'),
-            # Manuel Becerra
-            ('Centro', 'Rafael Altamira'),
-            ('Centro', 'Buenavista'),
-            # Urgel
-            ('Centro', 'Fernando Lázaro Carreter'),
-            # Getafe
-            ('Edificio Concepción Arenal', 'Getafe'),
-            # El pozo
-            ("palomeras bajas", "felipe( de)? diego"),
-            # Pacifico
-            ("Espacio de igualdad", "Elena Arnedo Soriano"),
-            # Colmenar Viejo
-            'Colmenar Viejo',
-            # Lucero
-            'CCM Lucero',
-            # Laguna
-            ("Asociacion Vecinal", "Fraternidad de los Carmenes"),
-            # Ciudad Lineal
-            "Parque (de )?Arriaga",
-            flags=re.I
-        ):
-            logger.debug(f"Lugar descartado por name={name}")
-            return False
+    if re_or(
+        name,
+        r"Biblioteca.*Gabriel Garc[ií]a Marquez",
+        r"Spazio Comune Cuore in Gola",
+        r"Biblioteca\b.*\bMar[ií]a Lej[aá]rraga",
+        r"Collado Villalba",
+        "campus somosaguas",
+        "San Lorenzo de Escorial",
+        "Fuenlabrada",
+        "Museo L[aá]zaro Galdiano",
+        # Aranjuez
+        "Campus( de)? Aranjuez",
+        # Mostoles
+        "Campus( de)? M[oó]stoles",
+        "COAJ",
+        "Centro cultural Maestro Alonso",
+        "centro juvenil",
+        "Centro cultural Lope de Vega",
+        "Espacio Abierto Quinta de los Molinos",
+        "Parroquia Nuestra Señora de Guadalupe",
+        ("La Pedriza", "Manzanares"),
+        "AV La Vecinal del Barrio Bilbao y Pueblo Nuevo",
+        'Quinta de la Fuente del Berro',
+        'Espacio de igualdad María Telo',
+        # Collado Villaba
+        'CSO La Tejedora',
+        # Colón
+        'Centro cultural Emilia Pardo Bazán',
+        # Carabanchel
+        'Espacio de igualdad María de Maeztu',
+        'Espacio de igualdad Lourdes Hernández',
+        # Vallecas
+        'Mercado Numancia',
+        '^El espacio$',
+        'Centro cultural Las Californias',
+        'Centro cultural Alberto Sánchez',
+        'Biblioteca Miguel Delibes',
+        'Biblioteca Pública Miguel Hernández',
+        # Villaverde
+        'Espacio de igualdad Clara Campoamor',
+        # Usera
+        ("centro", 'Maris Stella'),
+        # Manuel Becerra
+        ('Centro', 'Rafael Altamira'),
+        ('Centro', 'Buenavista'),
+        # Urgel
+        ('Centro', 'Fernando Lázaro Carreter'),
+        # Getafe
+        ('Edificio Concepción Arenal', 'Getafe'),
+        # El pozo
+        ("palomeras bajas", "felipe( de)? diego"),
+        # Pacifico
+        ("Espacio de igualdad", "Elena Arnedo Soriano"),
+        # Colmenar Viejo
+        'Colmenar Viejo',
+        # Lucero
+        'CCM Lucero',
+        # Laguna
+        ("Asociacion Vecinal", "Fraternidad de los Carmenes"),
+        # Ciudad Lineal
+        "Parque (de )?Arriaga",
+        flags=re.I
+    ):
+        logger.debug(f"Lugar descartado por name={name}")
+        return False
+
     if latlon is None:
         return True
     lat, lon = latlon
@@ -483,6 +483,7 @@ class EventCollector:
             run_parallel(
                 Inquilinato,
                 CineEmbajadores,
+                Huelga,
                 Eventim("69ef5f152a2031003e75fe62"),
                 MadridEs(
                     isOkDate={
@@ -579,7 +580,7 @@ class EventCollector:
     def __filter(self, e: Event, to_log=True):
         if isKoEvent(e):
             return False
-        if not isOkPlace(e.place.name, e.place.address):
+        if not isOkPlace(e.place):
             if to_log:
                 logger.debug(f"Descartada por place={e.place.name} {e.url}")
             return False

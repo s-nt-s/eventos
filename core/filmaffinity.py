@@ -218,6 +218,7 @@ class FilmAffinityApi:
             (797481, 2026, "El deshielo"),
             (450543, 2006, "Wholetrain", "Wholetrain (D)"),
             (805086, 1986, "El tres de copas"),
+            (247502, 2026, "El director"),
             (398786, 2023, re.compile(r"Wann wird es wieder so, wie es nie war", flags=re.I)),
             (895672, 1961, "Plácido"),
         )
