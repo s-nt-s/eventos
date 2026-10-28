@@ -108,7 +108,9 @@ class Huelga(Base):
         for z in (
             Zones.LEGAZPI,
             Zones.SOL,
-            Zones.PUERTA_TOLEDO
+            Zones.PUERTA_TOLEDO,
+            Zones.LA_LATINA,
+            Zones.LAVAPIES
         ):
             if z.value.is_in(lat, lon):
                 return True

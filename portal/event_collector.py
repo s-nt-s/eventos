@@ -222,6 +222,7 @@ def isOkPlace(p: Place | tuple[float, float] | str, address: str = None):
 
     if re_or(
         address,
+        r"Sierra Norte",
         r"FS Rho Centro",
         r"Rho stazione",
         r"Cernusco sul Naviglio MI",
