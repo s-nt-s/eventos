@@ -8,6 +8,7 @@ from portal.base import Base
 from core.event import Event, Category, Session, Place
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from core.zone import Zones
 
 re_json = re.compile(r'{\\"activities\\":(\[{\\"id\\".*?\]),\\"labels\\":{\\"title\\"')
 
@@ -73,6 +74,8 @@ class Huelga(Base):
     def _get_events(self):
         evs: set[Event] = set()
         for i in self.get_items():
+            if not self.__is_ok(i):
+                continue
             st = to_datetime(i['starts_at'])
             en = to_datetime(i['ends_at'])
             duration = int((en-st).total_seconds() // 60)
@@ -98,6 +101,18 @@ class Huelga(Base):
             ('name', 'place')
         ))
         return tuple(sorted(evs))
+
+    def __is_ok(i: dict):
+        lat = i['latitude']
+        lon = i['longitude']
+        for z in (
+            Zones.LEGAZPI,
+            Zones.SOL,
+            Zones.PUERTA_TOLEDO
+        ):
+            if z.value.is_in(lat, lon):
+                return True
+        return False
 
     def __get_place(self, i: dict):
         name = i['location_name']

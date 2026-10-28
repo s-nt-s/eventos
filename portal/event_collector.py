@@ -51,7 +51,7 @@ from core.eventbrite import Api as EventBriteApi
 from os import environ
 from core.ics import IcsReader
 from portal.base import Base
-from requests.exceptions import ConnectTimeout
+from requests.exceptions import ConnectTimeout, ConnectionError, ReadTimeout
 from typing import Type
 from asyncio import TimeoutError
 from aiohttp.client_exceptions import ClientConnectionError
@@ -109,7 +109,7 @@ def get_events(source: Base | Type[Base]):
     if isinstance(source, MadridEs):
         return source.cache_get_events()
     for c, e in {
-        (SalaEquis, ReinaSofia): (ConnectTimeout,),
+        (SalaEquis, ReinaSofia): (ConnectTimeout, ConnectionError, ReadTimeout),
         (CasaMexico, ): (TimeoutError,),
         (MadridEs, ): (ClientConnectionError, MadridEsIdsDuplicated),
         (FundacionMarch, ): (PermissionError, )
@@ -545,7 +545,7 @@ class EventCollector:
                 Dore,
                 CasaEncendida,
                 SalaBerlanga,
-                SalaEquis(),
+                SalaEquis,
                 CaixaForum,
                 CasaMexico,
             )

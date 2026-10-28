@@ -39,7 +39,10 @@ class KineTike(Base):
             cache = f"events/{self.__class__.__name__}_{sala}.json"
         super().__init__(cache=cache)
         self.__w = Web()
-        self.__w.get(f"https://kinetike.com:83/views/sesionesFuturas.aspx?{sala}")
+        self.__w.get(
+            f"https://kinetike.com:83/views/sesionesFuturas.aspx?{sala}",
+            timeout=10
+        )
         id_button = self.__select_one_attr("#UpdatePanelCabecera input", "name")
         self.__w.submit("#formulario", **{
             f"{id_button}.x": "0",

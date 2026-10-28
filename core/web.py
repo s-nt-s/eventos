@@ -146,12 +146,12 @@ class Web:
         self.verify = verify
         self.refer = refer
 
-    def _get(self, url, allow_redirects=True, auth=None, **kwargs):
+    def _get(self, url, allow_redirects=True, auth=None, timeout=None, **kwargs):
         verify = kwargs.get('verify', self.verify)
         kwargs.pop('verify', None)
         if kwargs:
-            return self.s.post(url, data=kwargs, allow_redirects=allow_redirects, verify=verify, auth=auth)
-        return self.s.get(url, allow_redirects=allow_redirects, verify=verify, auth=auth)
+            return self.s.post(url, data=kwargs, timeout=timeout, allow_redirects=allow_redirects, verify=verify, auth=auth)
+        return self.s.get(url, allow_redirects=allow_redirects, timeout=timeout, verify=verify, auth=auth)
 
     def get_soup(self, url, auth=None, parser="lxml", **kwargs):
         r = self._get(url, auth=auth, **kwargs)
