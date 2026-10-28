@@ -2,13 +2,12 @@ from core.web import Web, get_text
 import re
 import json
 from core.cache import Cache
-from core.util import re_or
 import logging
 from portal.base import Base
 from core.event import Event, Category, Session, Place
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from core.zone import Zones
+from core.zone import Zones, Circles
 
 re_json = re.compile(r'{\\"activities\\":(\[{\\"id\\".*?\]),\\"labels\\":{\\"title\\"')
 
@@ -110,7 +109,8 @@ class Huelga(Base):
             Zones.SOL,
             Zones.PUERTA_TOLEDO,
             Zones.LA_LATINA,
-            Zones.LAVAPIES
+            Zones.LAVAPIES,
+            Circles.PENUELAS
         ):
             if z.value.is_in(lat, lon):
                 return True
