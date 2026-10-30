@@ -622,6 +622,15 @@ class Place:
             flags=re.I
         ):
             return Places.ZIGIA28.value
+        if re_and(
+            f"{name} {address}",
+            ("cnt", "ca"),
+            "ait",
+            "tirso",
+            "molina",
+            flags=re.I
+        ):
+            return Places.CA_AIT.value
         if re_or(
             address,
             r"calle de alenza 13\b.*28003",
@@ -655,6 +664,13 @@ class Place:
 
 
 class Places(Enum):
+    CA_AIT = Place(
+        name="CA-AIT",
+        address="Pl. de Tirso de Molina, 5, 28012 Madrid",
+        map="https://maps.app.goo.gl/TDMLS7ngFJJqSK367",
+        latlon="40.41224080060483,-3.704240118647872",
+        zone="Sol"
+    )
     UCM_PARANINFO = Place(
         name="Paraninfo UCM",
         address="C. de San Bernardo, 49, Centro, 28015 Madrid",
