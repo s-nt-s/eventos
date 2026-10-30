@@ -113,6 +113,7 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        "alcine \d+",
         r"Semana cultural anarquista",
         r"#leselust",
         r"Sesi[oó]n \d+",

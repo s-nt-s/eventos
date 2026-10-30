@@ -177,6 +177,12 @@ class Alcala(Base):
             flags=re.I
         ):
             return "Tour del talento"
+        if re_or(
+            x.name,
+            ("alcine", ("en corto", "palmar[eé]s cortos", "d[ií]a m[aá]s corto")),
+            flags=re.I
+        ):
+            return "Cortometrajes"
 
     def __get_place(self, x: EventOnEvent):
         if x.location_name is None:
@@ -217,6 +223,7 @@ class Alcala(Base):
             r"magia infantil",
             r"Pinta-?caras infantil",
             r"para los m[áa]s pequeños",
+            r"alcine kids",
             flags=re.I
         ):
             return Category.CHILDISH
@@ -232,6 +239,12 @@ class Alcala(Base):
             flags=re.I
         ):
             return Category.POETRY
+        if re_or(
+            x.name,
+            "alcine",
+            flags=re.I
+        ):
+            return Category.CINEMA
         if re_or(
             x.name,
             r"^Concierto",

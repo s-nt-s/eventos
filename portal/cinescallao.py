@@ -49,9 +49,10 @@ def _get_str(soup: Tag, rgx: str):
 
 
 def _get_int(soup: Tag, rgx: str):
-    v = _get_str(soup, rgx)
-    if v:
-        return int(v)
+    if soup:
+        v = _get_str(soup, rgx)
+        if v:
+            return int(v)
 
 
 def _get_tup(soup: Tag, rgx: str):
@@ -71,6 +72,7 @@ class CinesCallao(Base):
         url = "https://cinescallao.es/cartelera-de-cine/"
         soup = self.__w.get(url)
         events: list[Cinema] = set()
+        all_divs = list(soup.select("div.et_pb_column"))
         for p in soup.select("p"):
             txt = get_text(p)
             m = re_date.match(txt or "")
@@ -87,18 +89,22 @@ class CinesCallao(Base):
             if div is None:
                 logger.warning("No div found for event")
                 continue
+            log_div = f"div.et_pb_column[{all_divs.index(div)}]"
             shop = get_attr(
                 div.find("a", string=re.compile(r"^\s*Comprar\s+entradas?\s*", re.IGNORECASE)),
                 "href"
             )
             if shop is None:
-                logger.warning("No shop found for event")
+                logger.warning(f"NOT FOUND Shop {log_div} {url}")
                 continue
             shop = re.sub(r"[\?&]+$", "", shop)
             ficha = get_attr(
                 div.select_one("a[href^='https://cinescallao.es/']"),
                 "href"
             )
+            if ficha is None:
+                logger.warning(f"NOT FOUND Ficha {log_div} {url}")
+                continue
             soup_ficha = self.__w.get_cached_soup(ficha)
             sessions: set[Session] = set()
             for h, mm in re.findall(r"(\d{2}):(\d{2})", m.group("times")):
