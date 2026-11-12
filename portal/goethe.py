@@ -478,6 +478,7 @@ class Goethe(Base):
             return find_book_category(i['headline'], None, Category.LITERATURE)
         if _has_cat(
             "Debate",
+            "Coloquio",
             "conferencia",
             r"presentaci[oó]n",
             "Seminario",

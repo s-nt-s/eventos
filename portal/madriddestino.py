@@ -651,6 +651,13 @@ class MadridDestino(Base):
             flags=re.I
         ):
             return "Cortometrajes"
+        if category == Category.CINEMA and re_or(
+            f"{pt} {psub}",
+            r"Teleñecos",
+            r"Muppets",
+            flags=re.I
+        ):
+            return "Teleñecos"
         if category == Category.WORKSHOP and re_or(
             f"{pt} {psub}",
             r"Ganchillo (intermedio|iniciaci[oó]n|avanzado)",

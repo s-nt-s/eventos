@@ -199,7 +199,8 @@ async def soup_to_event(url: str, soup: Tag):
         sessions=(Session(date=dt.strftime("%Y-%m-%d %H:%M")), ),
         duration=60,
         category=_find_category(url, name, soup, inf),
-        description=_find_desription(soup, inf)
+        description=_find_desription(soup, inf),
+        cycle=_find_cycle(url, name, soup, inf),
     )
     return ev
 
@@ -227,6 +228,14 @@ def _find_desription(soup: Tag, inf: dict):
     if len(txt):
         return txt
 
+def _find_cycle(url: str, title: str, soup: Tag, inf: dict):
+    sub_title = get_text(soup.select_one("#fl-main-content div[data-post-id] h3"))
+    if re_or(
+        sub_title,
+        "Festival Solarpunk",
+        re.I
+    ):
+        return "Festival Solarpunk"
 
 def _find_category(url: str, title: str, soup: Tag, inf: dict):
     cat = get_text(soup.select_one("span.cba_single_cat"))
@@ -367,6 +376,10 @@ def _find_category(url: str, title: str, soup: Tag, inf: dict):
         inf.get("organiza"),
         r"editorial",
         r"Yonki Books",
+        flags=re.I
+    ) or re_or(
+        sub_title,
+        ("novela", "ensayo"),
         flags=re.I
     ):
         return find_book_category(full_title, desc, Category.LITERATURE)

@@ -472,6 +472,7 @@ class MadConvoca(Base):
         if re_or(
             name,
             r"Presentaci[óo]n.* Marcha Republicana",
+            r"Ven a desayunar",
             r"Desayuno en Magdalena",
             r"Desayuno domingo \d+ de",
             "Bienvenida Nuev[oax@e]s? Rebeldes?",
