@@ -221,7 +221,7 @@ class FilmAffinityApi:
             (247502, 2026, "El director"),
             (398786, 2023, re.compile(r"Wann wird es wieder so, wie es nie war", flags=re.I)),
             (895672, 1961, "Plácido"),
-            (688244, 2025, "La carn")
+            (688244, 2025, "La carn", "La Carn")
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:
