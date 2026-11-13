@@ -404,6 +404,12 @@ class MadConvoca(Base):
             r"Bienvenida Nuev[oax@e]s? Rebeldes?",
             r"Club de lectura en [aá]rabe",
             ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
+            r"Ven a desayunar",
+            r"Desayuno en Magdalena",
+            r"Desayuno domingo \d+ de",
+            "Bienvenida Nuev[oax@e]s? Rebeldes?",
+            r"Cena vegana las Regañas",
+            ("Grupo", "masculinidades",),
             flags=re.I,
         ):
             return Category.NO_EVENT
@@ -472,16 +478,9 @@ class MadConvoca(Base):
         if re_or(
             name,
             r"Presentaci[óo]n.* Marcha Republicana",
-            r"Ven a desayunar",
-            r"Desayuno en Magdalena",
-            r"Desayuno domingo \d+ de",
-            "Bienvenida Nuev[oax@e]s? Rebeldes?",
-            ("Bienvenida", r"Rebeli[óo]n", r"Extinci[oó]n"),
             r"Mesa informativa.* alquiler",
             r"recogida (de )?material",
-            r"Cena vegana las Regañas",
             r"Marcha Republicana",
-            ("Grupo", "masculinidades",),
             ("Convocatoria", "Vivotecnia"),
             flags=re.I,
         ):

@@ -420,7 +420,7 @@ class MadridDestino(Base):
             id = MadridDestino.mk_id(e['id'])
             more = info.get('webSource') or (soup.more if soup else None)
             durt = info.get('duration')
-            category = self.__find_category(url, id, e, info, more)
+            category = self.__find_category(url, id, e, info, more, soup)
             place = self.__find_place(e, soup)
             if place:
                 place = place.normalize()
@@ -667,7 +667,7 @@ class MadridDestino(Base):
         ):
             return "Ganchillo"
 
-    def __find_category(self, url: str, id: str, e: Dict, info: Dict, more: str | None):
+    def __find_category(self, url: str, id: str, e: Dict, info: Dict, more: str | None, soupInfo: SoupInfo | None):
         cats: Set[str] = set()
         eventCategories = e.get('eventCategories') or []
         for c in self.data.state['categories']:
@@ -1005,6 +1005,9 @@ class MadridDestino(Base):
         }.items():
             if k in url:
                 return v
+        rooms = tuple(map(str.lower, soupInfo.room)) if soupInfo else ()
+        if "teatro de titeres" in rooms:
+            return Category.PUPPETRY
 
         logger.critical(str(CategoryUnknown(url, f"{pt} - {psub} - {audience}: " + ", ".join(sorted(cats)))))
         return Category.UNKNOWN

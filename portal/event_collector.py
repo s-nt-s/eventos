@@ -109,8 +109,8 @@ def get_events(source: Base | Type[Base]):
     if isinstance(source, MadridEs):
         return source.cache_get_events()
     for c, e in {
-        (SalaEquis, ReinaSofia): (ConnectTimeout, ConnectionError, ReadTimeout),
-        (CasaMexico, ): (TimeoutError,),
+        (SalaEquis, ReinaSofia): (ConnectTimeout, ConnectionError, TimeoutError, ReadTimeout),
+        (CasaMexico, AteneoMadrid): (TimeoutError, ReadTimeout),
         (MadridEs, ): (ClientConnectionError, MadridEsIdsDuplicated),
         (FundacionMarch, ): (PermissionError, )
     }.items():
