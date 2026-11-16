@@ -591,6 +591,8 @@ class MadConvoca(Base):
             r"^Salvemos",
         ):
             return Category.ACTIVISM
+        if has_tag_or_title("clases de castellano"):
+            return Category.NO_EVENT
         if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', r'Repair\s*Caf[eé]'):
             return Category.WORKSHOP
         if has_tag("salida") or (has_tag_or_title("paseo") and has_tag_or_title("historia")):
@@ -668,7 +670,6 @@ class MadConvoca(Base):
             flags=re.I
         ):
             return find_book_category(name, txt_desc, Category.LITERATURE)
-
         if re_or(
             name,
             "Presentaci[óo]n del libro",
