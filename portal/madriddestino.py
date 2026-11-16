@@ -726,6 +726,7 @@ class MadridDestino(Base):
         audience = plain_text(info.get('audience'))
         if not is_cine and re_or(
             audience,
+            r"para peques",
             r"solo niñ[oax@]s",
             "especialmente recomendada para la infancia",
             "peques menores de",

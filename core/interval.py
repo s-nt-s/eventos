@@ -61,6 +61,7 @@ class Interval(NamedTuple):
     start: datetime
     end: datetime
     hard: bool
+    free: bool
 
     def is_in(self, dt: datetime) -> bool:
         if dt is None:
@@ -80,6 +81,7 @@ class Interval(NamedTuple):
                 start=to_date(i['start']),
                 end=to_date(i['end']),
                 hard=i['hard'],
+                free=i['free'],
             ))
         logger.info(f"{env_url} {len(vals)} intervals")
         return tuple(sorted(vals))

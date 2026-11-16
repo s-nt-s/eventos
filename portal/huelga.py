@@ -78,10 +78,7 @@ class Huelga(Base):
                     raise HuelgaError(f"committees.name type={type(name)}")
                 i['committee'] = committee
             items.append(i)
-        if items:
-            return items
-
-        raise ValueError("data not found")
+        return items
 
     def _get_events(self):
         evs: set[Event] = set()

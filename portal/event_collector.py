@@ -63,7 +63,7 @@ def safe_load_ics(name: str):
     return IcsReader.safe_load(environ.get(name), name=name)
 
 
-INT_BUSY = Interval.safe_load("INT_BUSY")
+INT_DATA = Interval.safe_load("INT_BUSY")
 ICS_BUSY = None  # safe_load_ics("ICS_BUSY")
 ICS_BUSY_VILLAVERDE = safe_load_ics("ICS_BUSY_VILLAVERDE")
 ICS_BUSY_ALCALA = safe_load_ics("ICS_BUSY_ALCALA")
@@ -176,8 +176,8 @@ def isAlcalaOkDate(dt: datetime):
 
 def isOkDate(dt: datetime, delta: int = 0.5, event: Event | None = None):
     allInt = event is None or event.category not in (Category.ACTIVISM, )
-    for i in INT_BUSY:
-        if i.is_in(dt) and (allInt or i.hard):
+    for i in INT_DATA:
+        if not i.free and i.is_in(dt) and (allInt or i.hard):
             return False
     if ICS_BUSY and ICS_BUSY.is_in(dt):
         return False
@@ -186,6 +186,9 @@ def isOkDate(dt: datetime, delta: int = 0.5, event: Event | None = None):
     min_hour = getMin(dt)
     if min_hour > 0:
         min_hour = min_hour + delta
+    for i in INT_DATA:
+        if i.free and i.is_in(dt):
+            return True
     return not isWorkingHours(dt, min_hour=min_hour)
 
 
