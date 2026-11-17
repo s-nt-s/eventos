@@ -17,6 +17,8 @@ _QUOTES = (
 _QT = "".join(_QUOTES)
 
 _SPECIAL_WORDS = (
+    "Arturo",
+    "Soria",
     "María la Rica",
     "Carmen",
     "Sevilla",
@@ -113,6 +115,10 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"PLAYLIST",
+        r"Historias con sabor",
+        r"Palestina en pantalla",
+        r"Ciclo de Cine Peruano",
         r"Cine club atenea",
         "alcine \d+",
         r"Semana cultural anarquista",
@@ -359,6 +365,10 @@ def _escape(s: str):
 
 
 DIRECTORS = list(map(_escape, map(str.lower, [
+    'Clarisa Navas',
+    'Camarera de piso y María Alché y Benjamin Naishtat',
+    'Lucien Castaing-Taylor e Ilisa Barbash',
+    'Véréna Paravel y Lucien Castaing-Taylor',
     'Narges Mohammadi',
     "Juan Miguel del Castillo",
     'John Carpenter',

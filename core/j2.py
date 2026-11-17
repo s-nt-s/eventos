@@ -51,7 +51,7 @@ class CustomEncoder(json.JSONEncoder):
 def dom_simplify(s: str):
     if s is None:
         return None
-    s = re.sub(r"[\-_\.]+", "_", s).lower()
+    s = re.sub(r"[\-_\.\|]+", "_", s).lower()
     s = unidecode(s)
     if s and s[0].isdecimal():
         s = '_' + s
@@ -59,7 +59,7 @@ def dom_simplify(s: str):
 
 
 def simplify(s: str):
-    re_rm = re.compile(r"[/\.\(\)\[\]'\"&:;]+|amp;")
+    re_rm = re.compile(r"[\|/\.\(\)\[\]'\"&:;]+|amp;")
     s = re_rm.sub(" ", str(s)).strip().lower()
     s = re_sp.sub(" ", s).strip().lower()
     s = unidecode(s)

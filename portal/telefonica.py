@@ -223,7 +223,7 @@ class Telefonica(Base):
         if re_or(
             plain_description,
             r"presenta su( [úu]ltima)? novela",
-            r"publicaci[oó]n de su( [úu]ltima| nuevo)? ensayo",
+            r"publicaci[oó]n (de su|del)( [úu]ltima| nuevo)? ensayo",
         ):
             return find_book_category(name, plain_description, Category.LITERATURE)
         if re_or(name, "madresfera"):

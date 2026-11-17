@@ -473,7 +473,8 @@ class Goethe(Base):
                     return True
 
         if _has_cat(
-            "Encuentro literario"
+            r"Encuentro literario",
+            r"Presentaci[oó]n de libro",
         ):
             return find_book_category(i['headline'], None, Category.LITERATURE)
         if _has_cat(

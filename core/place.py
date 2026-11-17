@@ -632,6 +632,12 @@ class Place:
         ):
             return Places.CA_AIT.value
         if re_or(
+            name,
+            r"Organizaci[oó]n de Cooperaci[oó]n y Solidaridad Internacional",
+            flags=re.I
+        ):
+            return Places.OCSI.value
+        if re_or(
             address,
             r"calle de alenza 13\b.*28003",
             r"13 calle de alenza\b.*28003",
@@ -664,6 +670,13 @@ class Place:
 
 
 class Places(Enum):
+    OCSI = Place(
+        name="Organización de Cooperación y Solidaridad Internacional",
+        address="C. de Ercilla, 48, Arganzuela, 28005 Madrid",
+        map="https://maps.app.goo.gl/SqfkwU4ePxiGzTLZ9",
+        latlon="40.40080465605104,-3.7012311715033266",
+        zone="Legazpi"
+    )
     CA_AIT = Place(
         name="CA-AIT",
         address="Pl. de Tirso de Molina, 5, 28012 Madrid",

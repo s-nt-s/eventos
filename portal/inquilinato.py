@@ -56,7 +56,7 @@ class Inquilinato(Base):
     def __get_category(self, i: IEvent):
         if re_or(
             i.title,
-            "GT Mañanas?",
+            r"(GT|Asamblea)\b.*\bMañanas?",
             flags=re.I
         ):
             return Category.NO_EVENT

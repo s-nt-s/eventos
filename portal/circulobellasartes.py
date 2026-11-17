@@ -228,14 +228,16 @@ def _find_desription(soup: Tag, inf: dict):
     if len(txt):
         return txt
 
+
 def _find_cycle(url: str, title: str, soup: Tag, inf: dict):
     sub_title = get_text(soup.select_one("#fl-main-content div[data-post-id] h3"))
     if re_or(
         sub_title,
-        "Festival Solarpunk",
+        "Solarpunk",
         re.I
     ):
         return "Festival Solarpunk"
+
 
 def _find_category(url: str, title: str, soup: Tag, inf: dict):
     cat = get_text(soup.select_one("span.cba_single_cat"))

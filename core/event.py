@@ -1233,6 +1233,7 @@ def find_book_category(name: str, description: str, default: Category):
         return default
     if re_or(
         name,
+        r"Devocionario",
         r"Antolog[ií]a po[ée]tica",
         r"por (el|la) poeta",
         r"Obra Po[eé]tica",
@@ -1292,6 +1293,7 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.NARRATIVE
     if re_or(
         description,
+        r"La novela recupera",
         r"una novela sobre",
         r"la primera novela",
         r"la novela ganadora",
@@ -1364,6 +1366,10 @@ def find_book_category(name: str, description: str, default: Category):
         r"Fuencisla Casanova",
         r"Silvia Bara Bancel",
         r"Teresa Mallada de Castro",
+        r"Ángeles González Sinde",
+        r"Juana Sánchez-Gey",
+        r"Jesús Sánchez-Gómez Llorca",
+        r"Lidia Falcón",
         flags=re.I
     ):
         return Category.SPAM
@@ -1371,6 +1377,7 @@ def find_book_category(name: str, description: str, default: Category):
     if re_or(
         txt,
         r"narrativas fotogr[aá]ficas y ensayos visuales",
+        r"fotolibro",
         flags=re.I
     ):
         return Category.PHOTO

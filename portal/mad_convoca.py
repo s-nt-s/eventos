@@ -432,7 +432,15 @@ class MadConvoca(Base):
             flags=re.I
         ):
             return Category.NARRATIVE
-
+        if has_tag_or_title(
+            "flinta",
+            r"No[\-\s]*mixto", "Social Swing Queer"
+        ) or re_or(
+            txt_desc,
+            r"Sesi[oó]n exclusiva para mujeres",
+            flags=re.I
+        ):
+            return Category.NON_GENERAL_PUBLIC
         if re_or(
             e.place.name,
             r"online y en las calles",
@@ -440,14 +448,16 @@ class MadConvoca(Base):
         ):
             return Category.ACTIVISM
 
-        if has_tag_or_title("flinta", r"No[\-\s]*mixto", "Social Swing Queer"):
-            return Category.NON_GENERAL_PUBLIC
         if has_tag_or_title("Bookelarre") and re_or(e.place.name, "ateneo\b.*\bmaliciosa", flags=re.I):
             return Category.NON_GENERAL_PUBLIC
         if has_tag_or_title("infantil"):
             return Category.CHILDISH
-
-        if has_tag_or_title(r"ceuta"):
+        if has_tag_or_title(
+            r"Ceuta",
+            r"clases de castellano",
+            r"Plenario villan[ao]",
+            r"Consultor[ií]a energ[eé]tica",
+        ):
             return Category.NO_EVENT
 
         if has_tag_or_title("acampada") and has_tag_or_title("actuaciones"):
@@ -591,8 +601,6 @@ class MadConvoca(Base):
             r"^Salvemos",
         ):
             return Category.ACTIVISM
-        if has_tag_or_title("clases de castellano"):
-            return Category.NO_EVENT
         if has_tag_or_title("teknokasa", 'a-k-m-e', 'kawin', r'Repair\s*Caf[eé]'):
             return Category.WORKSHOP
         if has_tag("salida") or (has_tag_or_title("paseo") and has_tag_or_title("historia")):
