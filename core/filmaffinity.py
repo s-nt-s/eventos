@@ -270,6 +270,7 @@ class FilmAffinityApi:
             (947062, 2026, "Iron Boy"),
             (941297, 2026, "Rose"),
             (641249, 2025, "Juana"),
+            (713191, 1981, "La posesión"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:
