@@ -718,8 +718,6 @@ class MadridDestino(Base):
             desc,
             r"cine experimental",
             flags=re.I
-        ) or has_tag(
-            r"animario"
         )
 
         if "/espacio-abierto-quinta-de-los-molinos/" in url:
@@ -734,6 +732,7 @@ class MadridDestino(Base):
         if re_or(
             pt,
             r"ARTE EN FAMILIA",
+            r"Taller para familias",
             r"taller(es)?.*? 1?\d [ay] 1?\d años?",
             r"Baby Romo",
             flags=re.I
