@@ -1246,6 +1246,7 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.POETRY
     if re_or(
         description,
+        r"aclamada novela",
         r"En estos versos el autor",
         r"Presentaci[oó]n del poemario",
         r"recital de poes[íi]a",
