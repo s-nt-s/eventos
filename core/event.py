@@ -1342,6 +1342,7 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.NARRATIVE
     if re_or(
         txt,
+        r"Psicoanalítico|psicoanálisis",
         r"Leopoldo L[oó]pez Gil",
         r"Andr[ée]s Trapiello",
         r"Pablo Díaz Esp[ií]",
