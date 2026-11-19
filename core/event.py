@@ -1343,6 +1343,7 @@ def find_book_category(name: str, description: str, default: Category):
     if re_or(
         txt,
         r"Psicoanalítico|psicoanálisis",
+        r"Almudena de Arteaga",
         r"Leopoldo L[oó]pez Gil",
         r"Andr[ée]s Trapiello",
         r"Pablo Díaz Esp[ií]",
