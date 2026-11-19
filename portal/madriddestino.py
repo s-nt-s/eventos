@@ -128,33 +128,35 @@ async def rq_to_info_soup(r: ClientResponse):
                 id=int(m[0]),
                 sessionStart=m[1]
             ))
-    room: list[str] = []
+    tags: set[str] = set()
+    room: set[str] = set()
     for txt in map(get_text, soup.select("div.c-mod-bar-event__data span.o-tag")):
         if not txt:
             continue
-        if ":" not in txt:
-            if txt not in room and re_or(
-                txt,
-                r"Biblioteca",
-                r"Centro Intergeneracional",
-                flags=re.I
-            ):
-                room.append(txt)
+        if re.search(r"^salas?:\s+", txt, flags=re.I):
+            pre, lit = txt.split(":", 1)
+            lit = lit.strip()
+            pre = pre.lower()
+            if pre == "sala":
+                room.add(lit)
+            elif pre == "salas":
+                room.update(re.split(r"\s*,\s*", lit))
             continue
-        pre, lit = txt.split(":", 1)
-        lit = lit.strip()
-        pre = pre.lower()
-        if pre == "sala" and lit not in room:
-            room.append(lit)
-        elif pre == "salas":
-            for s in re.split(r"\s*,\s*", lit):
-                if s not in room:
-                    room.append(s)
+        if re_or(
+            txt,
+            r"Biblioteca",
+            r"Centro Intergeneracional",
+            flags=re.I
+        ):
+            room.add(txt)
+            continue
+        tags.add(txt)
     a = soup.select_one("a.c-event-sheet__link[href]")
     return SoupInfo(
         url=str(r.url),
         session=tuple(sorted(info)),
-        room=tuple(room),
+        room=tuple(sorted(room)),
+        tags=tuple(sorted(tags)),
         more=a.attrs["href"] if a else None
     )
 
@@ -188,6 +190,7 @@ class SoupInfo(NamedTuple):
     url: str
     session: tuple[SoupSession, ...]
     room: tuple[str, ...]
+    tags: tuple[str, ...]
     more: Optional[str] = None
 
     @staticmethod
@@ -199,6 +202,12 @@ class SoupInfo(NamedTuple):
         obj['session'] = tuple(map(SoupSession.build, ss or []))
         obj['room'] = tuple(obj.get('room', []))
         return SoupInfo(**obj)
+
+    def has_tag(self, *args: str):
+        for t in self.tags:
+            if re_or(t, *args, flags=re.I):
+                return True
+        return False
 
 
 class Data(NamedTuple):
@@ -435,7 +444,7 @@ class MadridDestino(Base):
                 place=place,
                 sessions=self.__find_sessions(url, e, soup.session if soup else tuple()),
                 more=None if more in KO_MORE else more,
-                cycle=self.__find_cycle(category, e, info),
+                cycle=self.__find_cycle(category, e, info, soup),
                 description=MD.convert(info.get('description'))
             )
             ev = self.__complete(ev, info)
@@ -633,10 +642,12 @@ class MadridDestino(Base):
                 return i
         logger.warning(str(FieldNotFound(f"{k}.id={id}", self.data.state[k])))
 
-    def __find_cycle(self, category: Category, e: Dict, info: Dict):
+    def __find_cycle(self, category: Category, e: Dict, info: Dict, soupInfo: SoupInfo):
         psub = plain_text(e.get('subtitle')) or ''
         pt = plain_text(e['title']) or ''
         desc = info.get('description') or ''
+        if soupInfo and soupInfo.has_tag("animario"):
+            return "Animario"
         if re_or(
             f"{pt} {psub} {desc}",
             r"Piano[\-\s]*City",
@@ -686,6 +697,9 @@ class MadridDestino(Base):
             ok = cats.intersection((plain_text(a).lower() for a in args))
             return len(ok) > 0
 
+        def has_tag(*args: str):
+            return soupInfo and soupInfo.has_tag(*args)
+
         psub = plain_text(e.get('subtitle'))
         pt = plain_text(e['title'])
         desc = info.get('description') or ''
@@ -704,6 +718,8 @@ class MadridDestino(Base):
             desc,
             r"cine experimental",
             flags=re.I
+        ) or has_tag(
+            r"animario"
         )
 
         if "/espacio-abierto-quinta-de-los-molinos/" in url:
