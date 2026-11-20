@@ -722,7 +722,7 @@ class EventCollector:
                 if isinstance(e, Cinema):
                     if e.filmaffinity is not None or len(e.director) > 0 or e.year is not None:
                         return
-            return (cycle, e.category, e.place, round_to_even(e.price))
+                return (cycle, e.category, e.place, round_to_even(e.price))
 
         for evs in find_duplicates(
             ok_events,
