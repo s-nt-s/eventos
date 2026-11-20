@@ -709,11 +709,11 @@ class EventCollector:
                 if s.url and get_domain(s.url) != "madrid.es":
                     urls.add(s.url)
             if len(e.sessions) != 1 and len(urls) != 0:
-                continue
+                return
             if e.category == Category.CINEMA:
                 e = e.fix_type().fix()
                 if isinstance(e, Cinema) and e.filmaffinity is not None:
-                    continue
+                    return
             return (cycle, e.category, e.place, round_to_even(e.price))
 
         for evs in find_duplicates(
