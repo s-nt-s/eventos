@@ -515,7 +515,7 @@ class MadridDestino(Base):
             )
             minutes = tuple(map(int, re.findall(r"(\d+)['’]", desc or '')))
             shorts = tuple(i for i in minutes if i < 30)
-            if len(shorts) > 2 or (len(shorts) > 1 and (isVarios or not director)):
+            if not ev.cycle and len(shorts) > 2 or (len(shorts) > 1 and (isVarios or not director)):
                 ev = ev.merge(cycle="Cortometrajes")
         if not ev.director:
             director: list[str] = []
@@ -646,8 +646,11 @@ class MadridDestino(Base):
         psub = plain_text(e.get('subtitle')) or ''
         pt = plain_text(e['title']) or ''
         desc = info.get('description') or ''
-        if soupInfo and soupInfo.has_tag("animario"):
-            return "Animario"
+        if soupInfo:
+            if soupInfo.has_tag("animario"):
+                return "Animario"
+            if soupInfo.has_tag(r"FESTIVAL M[AÁ]RGENES"):
+                return "Margenes"
         if re_or(
             f"{pt} {psub} {desc}",
             r"Piano[\-\s]*City",
