@@ -171,7 +171,7 @@ class Ucm(Base):
                     continue
                 more_urls.add(e.sessions[0].url)
             more_urls.discard(None)
-            if len(more_urls)==0:
+            if len(more_urls) == 0:
                 events.add(e)
             for more in more_urls:
                 more_events[more].add(e)

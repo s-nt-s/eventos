@@ -219,6 +219,7 @@ def _rm_prefix():
         r"Muestra Teatral",
         r"Espect[aá]culo de Danza",
         r"Taller de Danza",
+        r"Teatro en la Berlanga",
         r"TALLER DE FORMACI[OÓ]N LIBERTARIA, ANARKADEMIA, \d+.? EDICI[OÓ]N",
     ])
     PREFIX_2 = r"|".join({
@@ -238,6 +239,7 @@ def _rm_prefix():
 def _rm_sufix():
     SEP = r"[–\-\.\|]"
     SUFIX_1 = "|".join([
+        r"Interautor \d+",
         r"Semana de la Ciencia \d+",
         r"Queercinemad \d+",
         r"Noche Europea de la Investigaci[oó]n \d+",

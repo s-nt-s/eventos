@@ -103,7 +103,12 @@ class Eventim(Base):
             flags=re.I
         ):
             return Category.DANCE
-
+        if re_or(
+            i.name,
+            "entrega\b.*\bpremios?",
+            flags=re.I
+        ):
+            return Category.NO_EVENT
         logger.critical(str(CategoryUnknown(i.id, f"category={i.category}")))
         return Category.UNKNOWN
 
