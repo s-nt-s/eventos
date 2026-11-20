@@ -355,8 +355,9 @@ class TeatroBarrio(Base):
             return Category.DANCE
         if re_or(
             i.category,
-            "ensayo general",
-            "performance"
+            r"ensayo\s*general",
+            r"performance",
+            r"lectura\s*dramatizada",
         ):
             return Category.THEATER
         if re_or(
@@ -366,7 +367,7 @@ class TeatroBarrio(Base):
             return Category.NO_EVENT
         if re_or(
             i.name,
-            "Presentaci[oó]n del doss?ier",
+            r"Presentaci[oó]n del (doss?ier|suplemento)",
             "futurock",
             flags=re.I
         ):

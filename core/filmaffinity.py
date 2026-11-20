@@ -36,8 +36,14 @@ def get_text(n: Tag | None) -> str | None:
     return txt
 
 
-def _gap_year(y: int):
-    return (None, y-1, y, y+1)
+def _gap_year(y: int | tuple[int, ...]):
+    if isinstance(y, int):
+        return (None, y-1, y, y+1)
+    gap: set[int] = set()
+    for x in y:
+        gap.update(_gap_year(x))
+    gap.discard(None)
+    return (None, ) + tuple(sorted(gap))
 
 
 def _is_match(literals: tuple[str, ...], *args):
@@ -267,10 +273,14 @@ class FilmAffinityApi:
             (585133, 2026, "Pedro en el país"),
             (861662, 2026, "Inhumanus: animal libre", "Inhumanus: Animal libre"),
             (734485, 2026, "El mal padre"),
-            (947062, 2026, "Iron Boy"),
+            (947062, (2026, 2024), "Iron Boy"),
             (941297, 2026, "Rose"),
             (641249, 2025, "Juana"),
             (713191, 1981, "La posesión"),
+            (812894, 2026, "Fatherland"),
+            (846837, 2026, "O Filho da Puta", "Son of a Bitch"),
+            (811234, (2026, 2023), "Mu-Ki-Ra"),
+            (906872, 2026, "La Violinista", "La violinista"),
         )
         need_year: set[int] = {425836, 167195}
         for k, y, *tt in TITLES:

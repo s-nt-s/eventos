@@ -2,7 +2,7 @@ import re
 from functools import cache
 from unidecode import unidecode
 
-_TRIM = r"[\s✨✊🏿📣🕊 🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬📽 🌎🗣🎉🌍🍉🥾📚💥🌸💀👗👕🥾👠👜♻️💚🌿🐛🧑👯]+"
+_TRIM = r"[\s✨✊🏿📣🕊 🔥🌊🎞️📢🥳⚠️🧵🐚🪷👨🏼‍🎨🖼⚠🍲🍿🎬📽📣🌳 🌎🗣🎉🌍🍉🥾📚💥🌸💀👗👕🥾👠👜♻️💚🌿🐛🧑👯]+"
 RE_TRIM = re.compile(r"^"+_TRIM+r"|"+_TRIM+r"$")
 RE_DEDUP = re.compile(r"(!+|¡+|¿+|\?+)")
 
@@ -115,6 +115,9 @@ def _rm_prefix():
     SEP = r"["+SP+r"]"
     TAIL_NO_SEP = r"\b[^"+SP+"]*?"
     PREFIX_1 = r"|".join([
+        r"Semana de la Ciencia \d+",
+        r"Presentaci[oó]n de TELOS \d+",
+        r"Congreso Internacional",
         r"PLAYLIST",
         r"Historias con sabor",
         r"Palestina en pantalla",
@@ -235,6 +238,7 @@ def _rm_prefix():
 def _rm_sufix():
     SEP = r"[–\-\.\|]"
     SUFIX_1 = "|".join([
+        r"Semana de la Ciencia \d+",
         r"Queercinemad \d+",
         r"Noche Europea de la Investigaci[oó]n \d+",
         r"Festival Cine por mujeres Madrid",

@@ -462,8 +462,15 @@ class EventCollector:
             Category.INSTITUTIONAL_POLICY,
         }).difference(self.__categories))
 
+    @TupleCache("rec/events_fix1.json", builder=Event.build)
+    def __get_events_first_fix(self):
+        events: set[Event | Cinema] = set()
+        for e in self.__get_events():
+            events.add(e.fix_type().fix())
+        return tuple(sorted(events))
+
     @TupleCache("rec/events.json", builder=Event.build)
-    def __get_events(self,):
+    def __get_events(self):
         logger.info("Recuperar eventos")
         store_events = run_parallel(
             self.__madrid_destino,
@@ -620,7 +627,7 @@ class EventCollector:
         return True
 
     def get_events(self):
-        aux = self.__get_events()
+        aux = self.__get_events_first_fix()
         aux = self.__dedup(aux)
         aux = self.__check_sessions(aux)
         aux = self.__complete_filmaffinity(aux)
@@ -708,8 +715,14 @@ class EventCollector:
             for s in e.sessions:
                 if s.url and get_domain(s.url) != "madrid.es":
                     urls.add(s.url)
-            if len(e.sessions) == 1 or len(urls) == 0:
-                return (cycle, e.category, e.place, round_to_even(e.price))
+            if len(e.sessions) != 1 and len(urls) != 0:
+                return
+            if e.category == Category.CINEMA and e.cycle != "Cortometrajes":
+                e = e.fix_type().fix()
+                if isinstance(e, Cinema):
+                    if e.filmaffinity is not None or len(e.director) > 0 or e.year is not None:
+                        return
+            return (cycle, e.category, e.place, round_to_even(e.price))
 
         for evs in find_duplicates(
             ok_events,
