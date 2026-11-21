@@ -453,6 +453,7 @@ class MadConvoca(Base):
         if has_tag_or_title("infantil"):
             return Category.CHILDISH
         if has_tag_or_title(
+            r"G\.A\.Fo",
             r"Ceuta",
             r"clases de castellano",
             r"Plenario villan[ao]",

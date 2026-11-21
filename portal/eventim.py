@@ -105,7 +105,7 @@ class Eventim(Base):
             return Category.DANCE
         if re_or(
             i.title,
-            "entrega\b.*\bpremios?",
+            r"entrega\b.*\bpremios?",
             flags=re.I
         ):
             return Category.NO_EVENT

@@ -198,6 +198,7 @@ def _rm_prefix():
         r"Ciclo de conferencias?",
         r"Magia",
         r"Cine",
+        r"Evento especial",
         r"M[uú]sica",
         r"Semana de la Ciencia \d+",
         r"Charlas con altura",
