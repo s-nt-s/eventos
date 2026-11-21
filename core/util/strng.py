@@ -17,6 +17,7 @@ _QUOTES = (
 _QT = "".join(_QUOTES)
 
 _SPECIAL_WORDS = (
+    "Madrid",
     "Arturo",
     "Soria",
     "María la Rica",
