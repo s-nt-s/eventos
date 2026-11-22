@@ -397,6 +397,8 @@ class MadConvoca(Base):
                     return True
             if re_or(name, *args, flags=re.I):
                 return True
+            if re_or(e.title, *args, flags=re.I):
+                return True
             return False
 
         if re_or(
