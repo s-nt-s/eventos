@@ -263,12 +263,6 @@ class MadConvoca(Base):
             flags=re.I,
         ):
             return Category.NO_EVENT
-        if re_or(
-            e.SUMMARY,
-            r"Mesa ciudadana del [aá]rbol",
-            flags=re.I,
-        ):
-            return Category.ACTIVISM
         if re_and(
             e.SUMMARY,
             "presentaci[oó]n del?",
@@ -460,6 +454,7 @@ class MadConvoca(Base):
             r"clases de castellano",
             r"Plenario villan[ao]",
             r"Consultor[ií]a energ[eé]tica",
+            r"mesa ciudadana del [aá]rbol",
         ):
             return Category.NO_EVENT
 
