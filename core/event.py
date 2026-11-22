@@ -1246,7 +1246,7 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.POETRY
     if re_or(
         description,
-        r"aclamada novela",
+        r"Po[eé]ticas",
         r"En estos versos el autor",
         r"Presentaci[oó]n del poemario",
         r"recital de poes[íi]a",
@@ -1254,9 +1254,6 @@ def find_book_category(name: str, description: str, default: Category):
         r"presentan? este poemario de",
         r"poemas in[eé]ditos",
         r"libros? de poes[ií]a",
-        r"novela negra",
-        r"su (nueva|premiada) novela",
-        r"una de las novelas\b.*\bm[aá]s le[ií]das",
         r"participaci[oó]n del poeta",
         r"recitar[aá]n poemas de",
         r"el poemario publicado",
@@ -1294,11 +1291,13 @@ def find_book_category(name: str, description: str, default: Category):
         return Category.NARRATIVE
     if re_or(
         description,
-        r"La novela recupera",
-        r"una novela sobre",
+        r"una novela (de|sobre)",
+        r"aclamada novela",
+        r"novela negra",
+        r"su (nueva|premiada) novela",
+        r"una de las novelas\b.*\bm[aá]s le[ií]das",
         r"la primera novela",
-        r"la novela ganadora",
-        r"una novela quinqui",
+        r"(la|una) novela (recupera|ganadora|quinqui)",
         r"colecci[oó]n de microrrelatos",
         r"(La|Esta) novela (relata|retrata|presenta|publicada)",
         r"(La|Esta) (nueva|[uú]ltima) novela del?",
